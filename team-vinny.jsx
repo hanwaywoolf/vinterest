@@ -15,13 +15,13 @@ function _TVChips({wines,dishes,open}){ const T=useTheme();
 /* The Vinny tab is a practice hub: one card with the thing to do now (TeamVinny.next), a line on what knowing the
    list is worth here (TeamReport.worth, from the till), then three doors, each its own screen: Ask Vinny, a guest at
    the table, Vinny's test. No text field on the hub; the inputs live where they're used. */
-function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
+function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLayoutSize()!=='phone';
   const empty=!TeamData.wines().length;
   const nx=React.useMemo(()=>empty?null:TeamVinny.next(pid),[pid,empty]);
   const worth=React.useMemo(()=>{ try{ return empty?null:TeamReport.worth(pid); }catch(e){ return null; } },[pid,empty]);
   const [worthOpen,setWorthOpen]=React.useState(false);
   const test=React.useMemo(()=>empty?null:TeamVinny.test(pid),[pid,empty]);
-  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={wide?{display:'flex',alignItems:'center',gap:12,padding:'16px 14px',border:`1px solid ${T.line}`,borderRadius:16,background:T.glass,cursor:'pointer'}:{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
     <div aria-hidden="true" style={{width:40,height:40,borderRadius:12,background:_alpha(cr,0.16),color:cr,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,fontFamily:C.P,flexShrink:0}}>{icon}</div>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{title}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{sub}</div></div>
     <Icon n="chevron" sz={12} col={T.mid}/></div>;
@@ -42,7 +42,8 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
         :<>When a server recommends a wine by name, tables buy about <b style={{color:T.ink}}>8–12% more wine</b> (research, not measured here yet). Knowing the list is how that starts.</>}
       {worthOpen&&worth&&<div style={{marginTop:6,fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,borderLeft:`3px solid ${T.amber}`,paddingLeft:10}}>{worth.caveat}</div>}
     </div>
-    <div style={{borderBottom:`1px solid ${T.line}`,marginTop:4}}>
+    {/* The three ways to practise: a list on a phone, three cards across on a tablet. */}
+    <div data-testid="vinny-doors" style={wide?{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,marginTop:10}:{borderBottom:`1px solid ${T.line}`,marginTop:4}}>
       {door('ask','V','Ask Vinny','The list, a bottle, the menu, a price',{view:'ask'})}
       {door('guest','🗣','A guest at your table','Spoken. Marked. Help if you want it',{view:'guest'})}
       {door('test','10',"Vinny's test",faded||'Ten questions on what you need',{view:'vtest'})}
@@ -56,7 +57,11 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr);
 function TeamVinnyAsk({pid,open}){ const T=useTheme();
   const [q,setQ]=React.useState(''), [turns,setTurns]=React.useState([]), [busy,setBusy]=React.useState(false);
   const sugg=React.useMemo(()=>TeamVinny.suggest(pid),[pid]), recent=TeamVinny.recent();
-  const send=async(text)=>{ const t=String(text||q).trim(); if(!t||busy) return; setQ(''); setBusy(true);
+  const send=async(text)=>{ const t=String(text||q).trim(); if(!t||busy) return; setQ('');
+    // "Quiz me on our reds" is a test, not a question: Vinny's test narrowed to the request opens as a drill (no call).
+    // Only when nothing they sell matches the request does the line go to Vinny as a question.
+    const quiz=TeamVinny.quizAsk(t); if(quiz!==null){ const vt=TeamVinny.test(pid,{ask:quiz}); if(vt.qs.length){ TeamVinny.remember&&TeamVinny.remember(t); open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}}); return; } }
+    setBusy(true);
     const prior=turns; setTurns(ts=>[...ts,{q:t}]);
     try{ const r=await TeamVinny.ask(t,prior); setTurns(ts=>ts.map((x,i)=>i===ts.length-1?{...x,a:r.answer,wines:r.wines,dishes:r.dishes}:x)); }
     catch(e){ setTurns(ts=>ts.map((x,i)=>i===ts.length-1?{...x,err:(e&&e.message)||'Couldn\'t reach Vinny.'}:x)); }
@@ -282,8 +287,22 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your delivery</div>
         {lastDel.notes.map((n,i)=><div key={i} data-testid="delivery-note" data-good={n.good?'1':'0'} style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:5,lineHeight:1.45}}><b style={{color:n.good?'#5FD48F':'#F2B84B'}}>{n.good?'✓ ':'→ '}</b>{n.text}</div>)}
         {trend&&<div data-testid="delivery-trend" style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8}}>{trend}</div>}
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Only you see this. It doesn't change your readiness.</div>
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Only you see this. How you said it isn't part of readiness.</div>
       </div>}
+      {/* What this table did for them (TeamVinny.noteTable): whether it counted, the wine's standing and readiness before and
+          after, their last ten tables and how the help has moved. */}
+      {moved&&moved.before&&(()=>{ const b=moved.before, a=moved.after, w=TeamData.wine(sc.wines[0]), nm=w?TeamData.short(w):'the wine';
+        const word=x=>!x?'':x.state==='known'?'known':x.state==='new'?'not started':`${x.known} of ${x.total} answers`;
+        const ready=x=>x.tier==='essentials'&&x.count?`${x.count.known} of ${x.count.total} known`:`${x.pct}%`;
+        const up=(x,y)=>x!==y?<span style={{color:'#5FD48F',fontWeight:700}}> ▲</span>:null;
+        const lv=moved.levels||[], first=lv[0], last=lv[lv.length-1], help=first&&last&&first!==last?` · Help: ${TeamVinny.LEVEL_LABEL[first].toLowerCase()} → ${TeamVinny.LEVEL_LABEL[last].toLowerCase()}`:'';
+        return <div data-testid="guest-progress" style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${T.line}`}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your progress</div>
+          <div data-testid="guest-counted" style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:5,lineHeight:1.45}}>{moved.counted?`This counts: the ${nm}'s At-the-table question is right from this table.`:moved.landed&&moved.level!=='choices'&&level!=='choices'?`Landed. The ${nm} has no At-the-table question to mark right at your level, so readiness stays where it is.`:moved.score>=TeamVinny.LAND?(moved.level==='choices'||level==='choices'?`With choices a table doesn't count toward readiness: land one with hints or on your own and it does.`:`With ${moved.hints} hints it doesn't count toward readiness: one hint at most, or none, and it does.`):`A table that doesn't land never lowers readiness. Another go, or practise the ${nm} in the drill.`}</div>
+          {b.wine&&a.wine&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{nm}: {word(b.wine)}{b.wine.state!==a.wine.state||b.wine.known!==a.wine.known?<> → <b style={{color:T.ink}}>{word(a.wine)}</b>{up(0,1)}</>:''}</div>}
+          <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>{b.tier==='essentials'?'You know':'Readiness'} {ready(b)}{ready(a)!==ready(b)?<> → <b style={{color:T.ink}}>{ready(a)}</b>{up(ready(a),ready(b))}</>:' · no change'}</div>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.45}}>Landed {moved.recent.landed} of your last {moved.recent.of===1?'table':`${moved.recent.of} tables`}{help}</div>
+        </div>; })()}
       {movedLine&&<div data-testid="guest-moved" style={{fontSize:14,fontWeight:600,color:moved.moved==='up'?'#5FD48F':T.ink2,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>{movedLine}</div>}
       <_TVChips wines={sc.wines} dishes={[sc.dish]} open={open}/>
     </Card></div>}

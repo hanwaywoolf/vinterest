@@ -8,6 +8,8 @@ The wine list (id | wine | type | prices | style):
 The cocktails and other mixed drinks (id | drink | section | base | ingredients | price). Leave "cocktail" empty if there are none:
 {{cocktails}}
 
+[[cache-above]]
+
 Dishes:
 {{dishes}}
 

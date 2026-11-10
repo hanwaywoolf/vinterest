@@ -86,7 +86,8 @@ const TeamReport = {
       const q=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0), s=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
       kn.q+=q(k); kn.s+=s(k); un.q+=q(u); un.s+=s(u); });
     const a=kn.s?kn.q/kn.s:0, b=un.s?un.q/un.s:0;
-    return {wines,known:a,unknown:b,pct:b>0?Math.round(100*(a-b)/b):null}; },
+    // `x`: how many times as much a server who knows a wine takes on it as one who doesn't (3.1×), the plainer figure.
+    return {wines,known:a,unknown:b,pct:b>0?Math.round(100*(a-b)/b):null,x:b>0?Math.round(10*a/b)/10:null}; },
   /* What to learn first: the wines that sell most and that the fewest of their sellers know. */
   priority(days=28,n=6){ const sold=Object.fromEntries(this.salesByWine(days).map(x=>[x.id,x]));
     return TeamData.wines().map(w=>{ const s=sold[w.id], sel=this._sellers(w), gap=sel.of?1-sel.knows/sel.of:0; return {wine:w,qty:s?s.qty:0,...sel,gap,score:(s?s.qty:0)*(0.25+gap)}; })
@@ -155,8 +156,13 @@ const TeamReport = {
     const top=byWine[0];
     if(top) out.push({k:'top',tone:top.of&&top.knows<top.of?'bad':'good',title:`Best seller: ${TeamData.short(top.wine)}`,text:`${m(top.revenue)} over 28 nights, ${Math.round(100*top.share)}% of wine sales. ${top.of?(top.knows<top.of?`Only ${top.knows} of the ${top.of} on the team who serve it know it.`:`Everyone on the team who serves it knows it.`):''}`,open:{view:'wine',id:top.wine.id}});
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
-    if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your 8 best-selling wines: most of the team who serve it don't know it yet`:`${gaps.length} of your 8 best-selling wines: most of the team who serve them don't know them yet`,text:gaps.slice(0,3).map(x=>`${TeamData.short(x.wine)}, known by ${x.knows} of the ${x.of} on the team who serve it`).join('; ')+(gaps.length===1?'. Drill it first.':'. Drill these first.'),open:{view:'wine',id:gaps[0].wine.id}});
-    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`Training is worth ${lift.pct}% more sales`:`No sales lift from training yet`,text:lift.pct>0?`A server sells ${TeamData.money(lift.known,{dp:2})} of a wine a shift once they know it, against ${TeamData.money(lift.unknown,{dp:2})} before. Shifts and sections affect this too, so read it as a pointer.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
+    // One row per wine (its name, then how many of those who serve it know it), not one long sentence of them.
+    if(gaps.length) out.push({k:'gaps',tone:'bad',title:gaps.length===1?`1 of your top 8 sellers isn't known yet`:`${gaps.length} of your top 8 sellers aren't known yet`,
+      text:`Most of the team who serve ${gaps.length===1?'it don\'t know it':'them don\'t know them'}. Drill ${gaps.length===1?'it':'these'} first.`,
+      rows:gaps.map(x=>({label:TeamData.short(x.wine),value:`${x.knows} of ${x.of} know it`,open:{view:'wine',id:x.wine.id}})),open:{view:'wine',id:gaps[0].wine.id}});
+    // Said as what was compared: servers who know a wine against servers who don't, on the same wine, per shift; never
+    // "before", since it isn't the same person before and after training.
+    if(lift.pct!=null&&lift.wines) out.push({k:'lift',tone:lift.pct>0?'good':'note',title:lift.pct>0?`A wine sells ${lift.x>=1.95?Math.round(lift.x)+'×':lift.x+'×'} better with a server who knows it`:`No sales lift from training yet`,text:lift.pct>0?`On the shifts of servers who know a wine, it sells about ${lift.x} times as much as on the shifts of servers who don't (${lift.wines} wines compared over 28 nights: ${TeamData.money(lift.known,{dp:2})} against ${TeamData.money(lift.unknown,{dp:2})} a shift, per wine). Other things move this too, like who works the busy nights, so treat it as a pointer rather than a measurement.`:`Across ${lift.wines} wines, servers who know a wine don't yet sell more of it.`});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];
       if(low&&low.readiness&&low.readiness.state!=='ready') out.push({k:'drill',tone:'bad',title:`${low.person.name.split(' ')[0]} sells the least wine per shift`,text:`${m(low.revenuePerShift||0)} a shift: ${[(low.glassesPerShift||0)>=0.05?`${low.glassesPerShift.toFixed(1)} glasses`:'',(low.bottlesPerShift||0)>=0.05?`${low.bottlesPerShift.toFixed(1)} bottles`:''].filter(Boolean).join(' and ')||'nothing yet'}, and ${low.readiness.pct}% ready. A few drills on what sells is the quickest lift.`,open:{view:'person',id:low.person.id}}); }

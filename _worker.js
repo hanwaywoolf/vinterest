@@ -83,6 +83,7 @@ const CLAUDE_PURPOSE_LIMITS = {
   team_guest: 700,         // team-vinny.js TeamVinny.guest — Vinny plays a guest at a table and marks the server (prompts/team-guest.txt)
   team_fix: 6144,
   team_review: 6144,       // team-data.js TeamData.sommelierReview — a head sommelier reads every question as the drill shows it (prompts/team-review.txt)          // team-data.js TeamData.checkQuestions — rewrites the questions that failed the publish check (prompts/team-fix.txt)
+  team_special: 4096,      // team-shift.js TeamShift.read — tonight's specials from a photo of the chef's board or a typed note, each paired from the list (prompts/team-special.txt)
   team_dishes: 12288       // team-data.js TeamData.writeDishCards — a dish in a sentence, its likely allergens for the kitchen to confirm, changes, what guests ask (prompts/team-dish-cards.txt)
 };
 
@@ -93,7 +94,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -105,7 +106,37 @@ function modelOptions(model, purpose, env) {
 
 /* The staff-training app (team_*) can run on its own model, TEAM_MODEL, so its cards and pairings can be
    written by a stronger model without the consumer app's scans, articles and Vinny changing with it. */
-function modelFor(purpose, env) {
+// Prompt caching. A prompt marks where its unchanging part ends with a line "[[cache-above]]" (the Teams prompts in
+// prompts/team-*.txt: the instructions, the restaurant, the wine list and the menu above it, the wines, dishes or
+// questions of this one call below). The text above is sent as its own block marked for Anthropic's prompt cache, so the
+// calls of one publish or review read it back at a fraction of the input price instead of paying for it every time; the
+// marker itself never reaches the model. A prompt without it is sent exactly as it came.
+const CACHE_MARK = /\n?\[\[cache-above\]\]\n?/;
+function cacheSplit(messages) {
+  const split = (text) => {
+    const m = CACHE_MARK.exec(text); if (!m) return null;
+    const above = text.slice(0, m.index), below = text.slice(m.index + m[0].length).replace(CACHE_MARK, "\n");
+    if (!above.trim()) return below.trim() ? [{ type: "text", text: below }] : null;
+    return [{ type: "text", text: above, cache_control: { type: "ephemeral" } }, ...(below.trim() ? [{ type: "text", text: below }] : [])];
+  };
+  return messages.map((msg) => {
+    if (!msg || typeof msg !== "object") return msg;
+    if (typeof msg.content === "string") { const parts = split(msg.content); return parts ? { ...msg, content: parts } : msg; }
+    if (Array.isArray(msg.content)) {
+      let changed = false;
+      const content = msg.content.flatMap((b) => { if (b && b.type === "text" && typeof b.text === "string") { const parts = split(b.text); if (parts) { changed = true; return parts; } } return [b]; });
+      return changed ? { ...msg, content } : msg;
+    }
+    return msg;
+  });
+}
+
+// A team call marked `draft` (npm run team:write -- --teaser: a quick teaser install for a prospective restaurant)
+// is written by TEAM_DRAFT_MODEL, default Claude Sonnet 5.5, whatever TEAM_MODEL says. It can only make a call
+// cheaper, so the request may ask for it; the model itself still never comes from the request.
+const TEAM_DRAFT_DEFAULT = "claude-sonnet-5-5";
+function modelFor(purpose, env, draft) {
+  if (draft && /^team_/.test(purpose)) return env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
   if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
   return env.CLAUDE_MODEL || "claude-sonnet-4-6";
 }
@@ -113,7 +144,7 @@ function modelFor(purpose, env) {
 /* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
    writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
    could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
-const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1 };
+const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1 };
 // The short team answers (a guest's line with its choices, Ask Vinny, a marked answer) were sized for a model that
 // doesn't think: on Opus the thinking used the whole cap and the answer came back cut off mid-JSON. They get room.
 const THINKING_FLOOR = { team_vinny: 4096, team_guest: 4096, team_grade: 2048 };
@@ -141,7 +172,7 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
 
 // The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
 // app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
@@ -483,8 +514,8 @@ async function handleClaude(request, env, ctx) {
     return json(400, { error: "Request must include a non-empty messages[] array.", code: "invalid_messages" });
   }
 
-  // The model always comes from the environment — never from the request.
-  const model = modelFor(purpose, env);
+  // The model always comes from the environment — never from the request (a team draft only picks the cheaper one).
+  const model = modelFor(purpose, env, payload.draft === true);
   const cap = thinkingCap(model, purpose, purposeCap);
   const max_tokens = Math.min(Number(payload.max_tokens) || cap, cap);
 
@@ -499,7 +530,7 @@ async function handleClaude(request, env, ctx) {
         "anthropic-version": "2023-06-01",
         ...(opts.betas.length ? { "anthropic-beta": opts.betas.join(",") } : {})
       },
-      body: JSON.stringify({ model, max_tokens, messages, ...opts.body })
+      body: JSON.stringify({ model, max_tokens, messages: cacheSplit(messages), ...opts.body })
     });
     const data = await r.json();
     if (!r.ok) {
@@ -529,7 +560,7 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
-/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
+/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
    with TEAM_PRO once restaurants have accounts. */
 const TEAM_PRO = "Vinterest Teams needs a Pro account while it's in pilot.";

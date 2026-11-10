@@ -110,6 +110,41 @@ test('TEAM_MODEL moves only the staff-training purposes, with room for Opus to t
   const plain = await run({ CLAUDE_MODEL: 'claude-sonnet-5-5' }, [msg('team_cards')]);
   expect(plain.upstream[0].body).toMatchObject({ model: 'claude-sonnet-5-5', max_tokens: 12288 });
 });
+// Prompt caching: a prompt's "[[cache-above]]" line splits it, the part above sent as a block marked for Anthropic's cache,
+// the marker never sent; a prompt without it goes as it came, and a PDF's document block is left alone.
+test('a prompt marked [[cache-above]] is sent with its unchanging part cached and without the marker', async () => {
+  const body = (content) => ({ purpose: 'team_cards', messages: [{ role: 'user', content }] });
+  const { upstream } = await run({}, [body('Instructions\nThe list\n[[cache-above]]\n\nThese wines'), msg('team_cards'),
+    body([{ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: 'x' } }, { type: 'text', text: 'Read it\n[[cache-above]]\nPage 1' }])]);
+  expect(upstream[0].body.messages[0].content).toEqual([{ type: 'text', text: 'Instructions\nThe list', cache_control: { type: 'ephemeral' } }, { type: 'text', text: '\nThese wines' }]);
+  expect(upstream[1].body.messages[0].content).toBe('Hello');
+  expect(upstream[2].body.messages[0].content.map((b) => b.type)).toEqual(['document', 'text', 'text']);
+  expect(JSON.stringify(upstream.map((u) => u.body))).not.toContain('[[cache-above]]');
+});
+// Each Teams prompt puts what one call is about (its wines, dishes, questions, the example) below the marker, so the part
+// above is the same for every call of a publish; a placeholder above it would make every call a cache miss.
+test('every Teams prompt that is cached keeps the per-call parts below its marker', async () => {
+  const fs = require('node:fs'), dir = path.join(__dirname, '..', 'prompts');
+  const perCall = { 'team-cards.txt': ['facts', 'wines', 'example'], 'team-fix.txt': ['facts', 'items'], 'team-review.txt': ['items'],
+    'team-pairings.txt': ['dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'] };
+  for (const [f, keys] of Object.entries(perCall)) {
+    const t = fs.readFileSync(path.join(dir, f), 'utf8'), at = t.indexOf('[[cache-above]]');
+    expect(at, f).toBeGreaterThan(0);
+    expect(t.indexOf('[[cache-above]]', at + 1), f).toBe(-1);
+    for (const k of keys) { expect(t.indexOf(`{{${k}}}`), `${f} {{${k}}}`).toBeGreaterThan(at); }
+    expect(t.slice(0, at), f).toMatch(/\{\{(list|dishes)\}\}/); // the long, shared part is what's cached
+  }
+});
+// A teaser install (npm run team:write -- --teaser) marks its calls `draft`: a team call then runs on the cheaper
+// draft model whatever TEAM_MODEL says, and a draft flag on any other purpose changes nothing.
+test('a draft team call runs on TEAM_DRAFT_MODEL (Sonnet 5.5 by default), and only a team call', async () => {
+  const env = { CLAUDE_MODEL: 'claude-sonnet-4-6', TEAM_MODEL: 'claude-opus-5-5' };
+  const draft = (p) => ({ ...msg(p), draft: true });
+  const { upstream } = await run(env, [draft('team_cards'), msg('team_cards'), draft('label_scan')]);
+  expect(upstream.map((u) => u.body.model)).toEqual(['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-sonnet-4-6']);
+  const set = await run({ ...env, TEAM_DRAFT_MODEL: 'claude-haiku-5-5' }, [draft('team_pairings')]);
+  expect(set.upstream[0].body.model).toBe('claude-haiku-5-5');
+});
 // data/tts-say.json as deployed: a name the voice gets wrong is swapped for a spelling it reads right, whole words
 // only and the longest first, before it's sent; the model is chosen by ELEVENLABS_MODEL.
 test('/tts: names are said as data/tts-say.json spells them, and ELEVENLABS_MODEL picks the model', async () => {

@@ -88,6 +88,48 @@ keys `c:`), listed in their own section: on the phone a Wines | Cocktails switch
 ("Cocktails with it", `TeamData.cocktailsFor`). A restaurant with no cocktails has no cocktail part anywhere.
 Vinny's test stays on the wine list and menu.
 
+## Teaser installs
+
+A teaser is a quick, cheap install to show a prospective restaurant before anything is signed: `npm run team:write --
+<restaurant> --teaser` (`scripts/team-write.mjs`) from the same list file a full install uses. It trains a slice of the
+list, the wines sold by the glass (or `--wines id,id,…` picked by hand), at most `--max` (30) in list order, with every dish
+and cocktail; the rest of the list isn't shown. Every call is marked `draft`, so the Worker writes it on `TEAM_DRAFT_MODEL`
+(Claude Sonnet 5.5 unless set) whatever `TEAM_MODEL` is (`modelFor` in `_worker.js`); a draft can only make a call cheaper,
+so the request may ask for it. Drinking windows are left to the app's own estimate, labelled as one, and the sommelier
+review isn't run: `npm run team:audit` (free, no network) is the check. `--no-dish-notes` drops the dish notes too. On The
+Princess Royal's list that is about 50 calls on Sonnet against about 500 on Opus for the full install. The training file
+carries `teaser` {wines, at}. Once the restaurant signs, the same command without `--teaser` brings the rest of the list
+back and writes what's missing on `TEAM_MODEL`, keeping the teaser's cards, then `team:review` runs as for any install.
+
+## Prompt caching
+
+Every Teams prompt that writes or checks a restaurant's training (`prompts/team-cards.txt`, `team-fix`, `team-review`,
+`team-pairings`, `team-cocktail-cards`, `team-dish-cards`) puts what's the same for every call of a publish first (the
+instructions, the restaurant, the wine list and the menu) and marks where it ends with a line `[[cache-above]]`; what one
+call is about (its wines and their checked facts, its dishes, its questions) comes after. The Worker (`cacheSplit` in
+`_worker.js`) sends the part above as its own block marked for Anthropic's prompt cache and drops the marker, so the second
+and later calls of a run read the list and menu back at a twentieth of the input price on Opus 5.5. Measured on The
+Princess Royal's review: about 12,400 tokens read from the cache per call, the call about three-quarters cheaper. A new
+prompt that should be cached needs the marker, and `tests/worker-model.spec.js` fails if a per-call placeholder sits above it.
+
+## The Princess Royal install
+
+`/team/?seed=princess` (the seed is `princess-royal`) opens The Princess Royal, a Cubitt House pub and boutique hotel in
+Notting Hill, built for a sales pitch the same way The Social Corner was: from the menus and wine list on its site
+(`intake/princess-royal/`: the PDFs as downloaded, and `menus.md`, which says what went in and what was corrected).
+`data/team-princess-royal-list.json` holds its 132 wines (the whole wine list: by the glass and by the bottle as one wine,
+carafes, half bottles and magnums in `other`, the four magnum-only wines with no bottle price), 55 dishes (à la carte,
+Sunday roasts and puddings, breakfast, the Festive Feasting dishes) and 25 cocktails, in pounds (`venue.currency` GBP,
+`venue.country` GB, so the UK's fourteen allergens). Its logo is the one-line white wordmark Carey supplied (`team/brand/princess-royal/wordmark-white.svg`, `venue.brand.logo`), with no mark or accent of its own. It
+carries The Social Corner's invented team and `TeamSales.seedDemo`'s eight weeks of invented sales, labelled Demo data:
+pours are 175ml and 125ml (ounces only where the venue counts in dollars), and the POS item the list doesn't carry is the
+venue's own `offList` ("House Prosecco 125 (Events)"). Its training (`data/team-princess-royal.json`) was written through
+the branch preview's Worker on Claude Opus 5.5 by `npm run team:write -- princess-royal` (`scripts/team-write.mjs`: the
+app's own writers for cards, cocktail cards, pairings, drinking windows and dish notes, saved after each step), then put
+through `npm run team:audit` and `npm run team:review -- princess-royal`. Its demo address is
+princessroyal.vinterest.team (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), a custom domain on the vinterest Pages
+project.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the
@@ -116,6 +158,20 @@ wine without being caught out.
 - **The daily drill.** Five questions: assigned new wines and dishes first, then what's due, then
   the next new question in list order (by the glass first). About one in ten is an unannounced
   re-ask of something known, which measures retention honestly; the Team tab shows the rate.
+
+### The staff app on a tablet (built)
+
+Staff and prospects test on iPads as much as phones, so from 768px wide (`useLayoutSize`, the consumer app's breakpoint) the staff app uses the width instead of one centred phone column: the tabs are a rail down the left (`team-rail`; the bottom bar is the phone's), the page runs to 1000px, Today is two columns (`WideColumns`: readiness, its parts and the drill on the left; Tonight, the figures and what's new on the right), Practise shows its three doors across, and on Wines and Menu a wine, cocktail or dish opens beside its list (`team-split-list`, the list with its own scroll and the open row tinted, `aria-current`; another row replaces the one open rather than stacking on it, and Back returns to the list alone). Anything deeper (a drill from the wine, the guest, Ask Vinny) takes the width as a single column, and the phone layout never changes. `tests/team.spec.js` ("the staff app on an iPad") runs it at 1180×820 and 820×1180 and keeps a screenshot of each screen.
+
+### Training depth (built)
+
+The ladder, readiness against a minimum, two-part table questions and ten-pill recall were written for a wine-led dining room, and even its Low level kept that shape. A pub or a neighbourhood restaurant needs less, so training depth is three tiers (`TeamLearn.TIERS`), set for the restaurant in the console's Team section (`console-tier`) with a tier per role over it (`roleTiers`; the sommelier at Master while servers are on Essentials). A restaurant starts at Master, where the app has always been; an install's list file can carry its own (`venue.training: {tier, roleTiers}`, applied by `TeamSample.load` to a restaurant that hasn't set one, so The Princess Royal opens with servers on Essentials and the sommelier on Master).
+
+- **Essentials** (a pub, a neighbourhood restaurant): what to say about each wine, its price and what it pours with; what each dish is, its allergens and the wine to suggest. Low's content (`contentLevel` is `low`) plus a price question built from the list when the card has no plain one (`#price` in `lightQs`: a glass for a wine poured by the glass, else the bottle, against the three nearest prices sold the same way). Every question is four options (`tierQ`: a pills question with one right answer keeps it and its first three wrong ones; one with several right answers is Master's; the allergen question stays choose-all everywhere); the table question is "Which wine?" from the wines offered, the reason shown after the answer as the thing to say and never tested (`_tableInTier`); a dish's menu-change and name-a-glass questions aren't asked. No ladder (`rungsFor` is empty, `_open` always true) and no confidence asks. Readiness is a count, "You know 18 of 24", Ready once every wine and dish they sell is known (`readiness().count`); the drill's words say what's about ("Our wines", "The menu", "At the table"), never a rung.
+- **Service** (a good restaurant or hotel dining room without a sommelier): Medium's content; four options everywhere; at the table the wine, then one reason from three (a question that names its wine and asks only why keeps the one reason from three); two rungs, Know it (recognise and recall) and At the table (apply); readiness and minimums as Master's.
+- **Master**: everything the cards hold, with Low, Medium and High inside it (below); the only tier with levels.
+
+A tier filters and reshapes what's written, never rewrites it (`qsFor(role, id)`, `dishQsFor(role, id)`), and a question keeps its id in every shape, so an answer given on Essentials counts on Master and nothing is lost moving either way; `cardShows` follows the tier's content level. The sommelier review and the app's own review read Master's shape, which the lower tiers' options are drawn from in order.
 
 ### Training levels (built)
 
@@ -195,6 +251,58 @@ Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
   the reasons first and the dish to steer away from, the alternatives with their price, then where
   they stand and the reference material.
 
+## The pre-shift briefing and specials (built, November 2026)
+
+What management decides before service reaches every member of staff as one page they read and accept before
+the app opens for them that day. It replaces the pre-shift huddle's "did everyone hear that?" with a record.
+
+**What goes in.** The dishes that are 86'd, the wines and cocktails on feature, a note from the manager, and
+tonight's specials. All of it is set in one place: the Tonight card on the console's dashboard, or Tonight on
+the manager's phone (the same component, `TeamShiftManage`).
+
+**Adding a special.** One button, three ways in, because a manager at 4.45pm has a chef's scribble and no time:
+
+- A photo of the chef's board or note. One call reads the handwriting and returns every special on it.
+- A typed line, as loose as "halibut, brown butter, capers 34".
+- Say it, with the speech-to-text the guest at the table already uses.
+
+The same call pairs each special from the restaurant's own list: a bottle, a pick by the glass, two alternatives
+of another style or price, and a line to say at the table. It also lists the allergens the dish states or very
+likely contains. With no connection, a typed line is kept as it is and the manager picks the wine.
+
+**Approval.** A special is a draft until the manager approves it. The draft is one card: fix the name or price,
+correct the description, add or remove allergens, swap either wine, choose how long it runs (tonight, through
+Sunday, until taken off). Approve stays off until "The kitchen has confirmed these allergens" is ticked, since
+the allergen line is the part of a special that can hurt someone. Nothing unapproved reaches the team.
+
+**The briefing.** Compiled from that, with no call: what's off, each special with its price, description,
+allergens and pour, what we're pushing with its price and one line, the manager's note, and for each person the
+two wines they should look at before service. "Send briefing" makes it version 1.
+
+**The gate.** Once sent, the app opens on the briefing for every person, over everything, until they tap "Got
+it". Whoever sent it has read it. The console shows "5 of 7 have read it" and who is still to read.
+
+**Changes during service.**
+
+- Sold out is one tap on the special. It shows on every Today at once with the time, and nobody accepts anything
+  again: it takes something away, it doesn't add a risk.
+- A new special, a changed allergen or wine, another dish 86'd: the manager sends the update, and everyone accepts
+  the briefing again with what's new marked "New".
+
+**Expiry.** A special ends with its run. Ended specials are offered under "Bring back", so Friday's fish is one
+tap next week with its pairing kept; the kitchen confirms the allergens afresh. The briefing ends with the day.
+
+**What a special is not.** It isn't on the list or the menu, it's never drilled and it never counts towards
+readiness. It lasts a night; the briefing is how it's learnt. Ask Vinny and the guest at the table do know
+tonight's specials and 86'd dishes.
+
+**One device for now.** The pilot keeps a restaurant on one device, so in a demo restaurant the rest of the team
+accept over the next few minutes after a send (two never do, so the register has someone to chase), labelled
+Demo data, and the person switcher shows any one person's gate. A live install is each person on their own
+phone in the native app: the shift, its specials and the acknowledgements become rows in Supabase once
+restaurants have accounts (they are already shaped as rows in `vbiz_shift_v1`), and push tells the team
+"Tonight's briefing is ready" and "The halibut is sold out" (the consumer app's Worker already sends push).
+
 ## Vinny in the staff app (built)
 
 A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js` (logic) and `team-vinny.jsx` (screens):
@@ -231,7 +339,12 @@ A Vinny tab (between Today and Wines) and a row on Today, all in `team-vinny.js`
   varied, and the table says why under its heading ("Picked for you: you haven't started on the Bründlmayer
   yet, and it's on your list to learn"; `tableWhy`). The guest opens, the server types a reply, the guest answers, and after
   the server has recommended (or three replies) the table is marked against the key: what worked, what was
-  missing, and a line they could have said. It never moves readiness, which comes only from drills.
+  missing, and a line they could have said. A table landed with hints or on your own counts as the wine's At-the-table
+  question answered right (`TeamVinny.noteTable`: the card's table question at this dish where there is one), so
+  readiness and the wine's standing move and the progress card under the mark says so (`guest-progress`: the wine
+  before and after, readiness or the Essentials count before and after, tables landed out of the last ten, how the
+  help has moved); a table landed with choices doesn't count, since the wine was handed to them, and a miss never
+  lowers readiness, since the mark is Claude's on a free reply.
 
   Help at the table follows the person (`TeamVinny.level`, `noteTable`). **Choices**: three wines to pick
   from (the right one, the table's wrong idea or a near miss, and one that doesn't pair), each wrong pick
@@ -339,8 +452,10 @@ Sections, in sidebar order:
    the people who sell it, and at least two, know it; the holes are by-the-glass wines under that);
    and "learn first" (`priority`: sells most, known least) once the till is in. Then the sales row
    (`_CSales`): wine sales for the last seven nights against the seven before, wine per cover, bottles
-   and their share, the trained lift (the money a server takes on a wine per shift when they know it against
-   when they don't, with the caveat that shifts and sections confound it), the weekly trend, what sells,
+   and their share, the trained lift (`trainedLift`: over the wines some of the team know and some don't, the money a
+   server who knows a wine takes on it per shift against one who doesn't, said as a multiple ("sell 3.1× as much of
+   it") and as known against not known across people, never "before", with the caveat that shifts and sections
+   confound it), the weekly trend, what sells,
    who sells (lines per shift, compared within a role), slow movers by the glass with the card's line
    to say, and items on the till with no wine on the list behind them.
 2. **Team.** Everyone with readiness, state, overdue, fading answers, last drill and re-check record;

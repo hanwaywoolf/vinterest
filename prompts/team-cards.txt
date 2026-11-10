@@ -2,16 +2,18 @@ You are the head sommelier of {{venue}} writing training cards so every server, 
 
 About the restaurant: {{about}}
 
-Use ONLY these checked facts, what the wine list says and what the menu says. Never invent a producer's history, a vineyard, a score, an award, a winemaking detail or a fact about this specific bottle. If you don't know something about the producer, leave "producer" empty rather than guess. When the grapes are only "typical", say "usually" about them.
-
-Checked facts:
-{{facts}}
+Use ONLY the checked facts given below with the wines, what the wine list says and what the menu says. Never invent a producer's history, a vineyard, a score, an award, a winemaking detail or a fact about this specific bottle. If you don't know something about the producer, leave "producer" empty rather than guess. When the grapes are only "typical", say "usually" about them.
 
 The whole wine list (id | wine | type | prices):
 {{list}}
 
 The menu (dish | main ingredient | how it's cooked | what dominates):
 {{menu}}
+
+[[cache-above]]
+
+Checked facts:
+{{facts}}
 
 Write a card for EACH of these wines:
 {{wines}}
@@ -23,5 +25,5 @@ Return ONLY valid JSON, no markdown, no code fences: {"cards":[{"id":"the wine's
 "qs" are exactly six training questions for this wine, each testing one thing a server must know at the table, phrased positively, standing on their own (name the wine in each), never giving the answer away in the question:
 - two {"k":"recognise","q":"…","opts":["four options, the wrong ones real and believable, of the same kind and length"],"a":0,"why":"one sentence"}; a description or style question keeps every option to this kind of wine (four rosés for a rosé, four reds for a red), differing in body, sweetness, acidity, tannin or flavour, since a server always knows the wine's colour; and no option may repeat a word from the question that the others lack
 - two {"k":"recall","q":"a question answered in a few words, e.g. 'What grape is the {{example}} made from?'","ans":"the short answer","acc":["other wordings that count as right"],"why":"one sentence"}
-- one {"k":"apply","q":"a guest at a table at a dish this wine genuinely suits (one a trained sommelier would pour it with), asking for something this wine is the answer to, ending 'What would you suggest, and why?'","key":["the wine by name first, then the two points a good answer must contain"],"decoys":[{"id":"another wine's id from THIS list","why":"why it's wrong for this guest"}],"wrong":["three reasons a new server might believe, each false for this wine at this dish and each a different mistake (body, tannin, acidity, flavour), about as long and in the same tone as the key, never about bubbles or sweetness this wine plainly can't have"],"why":"one sentence"}. This question tests whether a server can CHOOSE the wine, so the question must never name this wine, and the guest's request must rule out other wines of the same kind on the list: a style ("a red that isn't too heavy", "a crisp white", "something soft"), a price ("under $60 a bottle") or by the glass. "decoys" are three wines on this list of the same kind the guest asks for that a new server might reach for but that are wrong for this guest: they fail the request or don't suit the dish. Never a decoy that would also be a good answer.
+- one {"k":"apply","q":"a guest at a table at a dish this wine genuinely suits (one a trained sommelier would pour it with), asking for something this wine is the answer to, ending 'What would you suggest, and why?'","key":["the wine by name first, then the two points a good answer must contain"],"decoys":[{"id":"another wine's id from THIS list","why":"why it's wrong for this guest"}],"wrong":["three reasons a new server might believe, each false for this wine at this dish and each a different mistake (body, tannin, acidity, flavour), about as long and in the same tone as the key, never about bubbles or sweetness this wine plainly can't have, each a reason about THIS wine ('Its …', 'It is …'), never an instruction ('Pour the …', 'Avoid the …') and never naming another wine"],"why":"one sentence"}. This question tests whether a server can CHOOSE the wine, so the question must never name this wine, and the guest's request must rule out other wines of the same kind on the list: a style ("a red that isn't too heavy", "a crisp white", "something soft"), a price ("under $60 a bottle") or by the glass. "decoys" are three wines on this list of the same kind the guest asks for that a new server might reach for but that are wrong for this guest: they fail the request or don't suit the dish. Never a decoy that would also be a good answer.
 - one {"k":"contrast","q":"a question that tells this wine apart from the most similar wine on the list, naming both","ans":"the short answer","acc":["other wordings that count as right"],"why":"one sentence"}

@@ -34,14 +34,31 @@ function _CRow({lead,label,value,share,col,sub,right,onClick,testid}){ const T=u
   </div>; }
 /* "Demo data": on every sales figure while the till is invented. */
 /* The console's Tonight: two columns of chips, tap to 86 a dish or feature a wine. */
-function _CTonight({tn,bump}){ const T=useTheme();
+/* Tonight on the dashboard shows what's set (the dishes 86'd and the wines on feature, each a tap to clear it) and opens the
+   picker of the whole menu and list only on "Change tonight", remembered on this device (TeamFold), so it never takes the
+   first screen of the dashboard. */
+function _CTonight({tn,bump,me}){ const T=useTheme(), sps=TeamShift.specials(), drafts=TeamShift.drafts(), st=TeamShift.status(), reg=TeamShift.register(), [prev,setPrev]=React.useState(false);
+  // What the briefing holds beyond the chips, in a line, while the card is compact.
+  const shiftLine=[sps.length&&`${sps.length} special${sps.length>1?'s':''}${sps.some(s=>s.status==='soldout')?` (${sps.filter(s=>s.status==='soldout').length} sold out)`:''}`,drafts.length&&`${drafts.length} to approve`,st.empty?null:!st.sent?'briefing not sent':st.changed?'briefing changed since it was sent':`briefing read by ${reg.read} of ${reg.total}`].filter(Boolean).join(' · ');
+  const preview=prev&&<div style={{position:'fixed',inset:0,zIndex:60}}><TeamBriefing pid={me.id} preview onAck={()=>setPrev(false)}/></div>;
   const chip=(kind,id,name,on,col)=><span key={kind+id} role="button" data-testid={`dash-tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'inline-block',padding:'5px 11px',borderRadius:12,border:`1px solid ${on?col:T.line}`,background:on?_alpha(col,0.14):'transparent',color:on?T.ink:T.mid,fontSize:13,fontFamily:C.P,cursor:'pointer',margin:'0 6px 6px 0'}}>{name}</span>;
-  const [more,setMore]=React.useState(false), ds=TeamData.dishes(), ws=TeamData.wines();
-  return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
-    <div>{_cLabel(T,"86'd tonight")}<div>{(more?ds:[...ds.filter(x=>tn.off.includes(x.id)),...ds.filter(x=>!tn.off.includes(x.id))].slice(0,10)).map(x=>chip('off',x.id,x.name,tn.off.includes(x.id),'#F28B7D'))}</div></div>
-    <div>{_cLabel(T,'On feature')}<div>{(more?ws:[...ws.filter(x=>tn.feature.includes(x.id)),...ws.filter(x=>!tn.feature.includes(x.id))].slice(0,10)).map(x=>chip('feature',x.id,TeamData.short(x),tn.feature.includes(x.id),'#5FD48F'))}</div></div>
-    <div role="button" onClick={()=>setMore(x=>!x)} style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{more?'Fewer':'Show the whole list and menu'}</div>
-  </div>; }
+  const [more,setMore]=React.useState(false), [pick,setPick]=React.useState(()=>!TeamFold.folded('dash-tonight-pick',true)), ds=TeamData.dishes(), ws=TeamData.wines();
+  const togglePick=()=>setPick(p=>{ TeamFold.set('dash-tonight-pick',p); return !p; });
+  const offD=ds.filter(x=>tn.off.includes(x.id)), featW=ws.filter(x=>tn.feature.includes(x.id)), cr=T.lift(C.cr);
+  const btn=<span role="button" data-testid="dash-tonight-change" aria-expanded={pick} onClick={togglePick} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{pick?'Done':offD.length||featW.length?'Change tonight':'Set tonight'}</span>;
+  if(!pick) return <div data-testid="dash-tonight-set">
+    {offD.length||featW.length?<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:8}}>
+      <div>{_cLabel(T,"86'd tonight")}<div>{offD.length?offD.map(x=>chip('off',x.id,x.name,true,'#F28B7D')):<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Nothing 86'd</span>}</div></div>
+      <div>{_cLabel(T,'On feature')}<div>{featW.length?featW.map(x=>chip('feature',x.id,TeamData.short(x),true,'#5FD48F')):<span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Nothing on feature</span>}</div></div></div>
+    :<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginBottom:8}}>Nothing 86'd or on feature tonight.</div>}
+    {shiftLine&&<div data-testid="dash-shift-line" style={{fontSize:14,color:drafts.length||(!st.empty&&(!st.sent||st.changed))?T.amber:T.ink2,fontFamily:C.P,marginBottom:8}}>{shiftLine.charAt(0).toUpperCase()+shiftLine.slice(1)}</div>}
+    {btn}</div>;
+  return <div>{preview}<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+    <div>{_cLabel(T,"86'd tonight")}<div>{(more?ds:[...offD,...ds.filter(x=>!tn.off.includes(x.id))].slice(0,10)).map(x=>chip('off',x.id,x.name,tn.off.includes(x.id),'#F28B7D'))}</div></div>
+    <div>{_cLabel(T,'On feature')}<div>{(more?ws:[...featW,...ws.filter(x=>!tn.feature.includes(x.id))].slice(0,10)).map(x=>chip('feature',x.id,TeamData.short(x),tn.feature.includes(x.id),'#5FD48F'))}</div></div>
+    <div role="button" onClick={()=>setMore(x=>!x)} style={{fontSize:13,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{more?'Fewer':'Show the whole list and menu'}</div>
+    <div style={{textAlign:'right'}}>{btn}</div>
+  </div><TeamShiftManage pid={me.id} preview={()=>setPrev(true)}/></div>; }
 function _CDemoTag(){ const T=useTheme(); if(!TeamSales.demo()) return null; return <span data-testid="demo-tag" style={{fontSize:11,fontWeight:700,fontFamily:C.P,color:T.amber,border:`1px solid ${T.amber}66`,borderRadius:6,padding:'1px 6px',letterSpacing:'0.04em'}}>Demo data</span>; }
 /* A stat tile: label, value, an optional signed delta against the period before, and a line under it. */
 function _CStat({label,value,delta,up='good',sub,onClick,testid,hero,demo}){ const T=useTheme();
@@ -156,9 +173,9 @@ function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size
   const pid=(me&&me.id)||'console', [edit,setEdit]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0), [drag,setDrag]=React.useState(null);
   const tn=TeamData.tonight(), [,bumpT]=React.useReducer(x=>x+1,0);
   const cards={
-    tonight:{title:'Tonight',wide:true,summary:tn.off.length||tn.feature.length?`${tn.off.length} 86'd · ${tn.feature.length} on feature`:'Nothing set yet',body:<div data-testid="dash-tonight">
-      <_CTonight tn={tn} bump={bumpT}/>
-      {_cNote(T,"What's 86'd and what's on feature, on every Today until the end of the day, with the two wines each person should look at before service. Never scored.")}</div>},
+    tonight:{title:'Tonight',wide:true,summary:(()=>{ const sp=TeamShift.specials().length, st=TeamShift.status(), rg=TeamShift.register(); return st.empty?'Nothing set yet':`${tn.off.length} 86'd · ${sp} special${sp===1?'':'s'} · ${tn.feature.length} on feature · ${!st.sent?'briefing not sent':st.changed?'briefing changed, not re-sent':`briefing read by ${rg.read} of ${rg.total}`}`; })(),body:<div data-testid="dash-tonight">
+      <_CTonight tn={tn} bump={bumpT} me={me}/>
+      {_cNote(T,"What's 86'd, tonight's specials and what's on feature go out as the briefing: everyone reads and accepts it before the app opens for them today, with the two wines each should look at before service. Never scored.")}</div>},
     glance:{title:'At a glance',wide:true,summary:`${o.avg}% ready · ${o.behind} behind · ${o.slipping} slipping${sales?` · ${_cMoney(sales.revenue)} wine this week`:''}`,body:<div style={grid(sales?3:5)}>
       <_CStat hero label="Team readiness" value={`${o.avg}%`} sub={`${o.ready} of ${o.total} ready · ${byRole.filter(r=>r.n>1||r.role==='server').map(r=>`${r.label}s ${r.avg}%`).slice(0,2).join(' · ')}`} testid="dash-readiness" onClick={()=>setSection('team')}/>
       <_CStat label="Behind" value={o.behind} sub={o.behind?`${o.behind===1?'person is':'people are'} past the wave they're on`:'everyone on track with their waves'} testid="dash-overdue" onClick={()=>setSection('team')}/>
@@ -224,10 +241,16 @@ function _CDash({open,setSection,me}){ const T=useTheme(), cr=T.lift(C.cr), size
   </div>; }
 /* One line of the sales briefing: a dot in its tone, the headline, the sentence; a tap opens what it's about. */
 function _CBrief({b,open}){ const T=useTheme(), col=b.tone==='good'?T.green:b.tone==='bad'?T.tone.bad:T.amber;
-  return <div role={b.open?'button':undefined} data-testid="sales-brief" data-tone={b.tone} onClick={b.open?()=>open(b.open):undefined} style={{display:'flex',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:b.open?'pointer':'default'}}>
+  const whole=b.open&&!b.rows; // with rows, each row opens its own wine
+  return <div role={whole?'button':undefined} data-testid="sales-brief" data-tone={b.tone} onClick={whole?()=>open(b.open):undefined} style={{display:'flex',gap:10,padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:whole?'pointer':'default'}}>
     <span style={{width:9,height:9,borderRadius:5,background:col,flexShrink:0,marginTop:6}}/>
-    <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{b.title}</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.text}</div></div>
-    {b.open&&<Icon n="chevron" sz={12} col={T.mid}/>}</div>; }
+    <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{b.title}</div><div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.text}</div>
+      {/* A list of wines: one row each, the name on the left and its figure on the right, each opening its wine. */}
+      {b.rows&&<div data-testid="sales-brief-rows" style={{marginTop:6}}>{b.rows.map((r,i)=><div key={i} role={r.open?'button':undefined} onClick={r.open?e=>{e.stopPropagation();open(r.open);}:undefined}
+        style={{display:'flex',alignItems:'baseline',gap:12,padding:'5px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:r.open?'pointer':'default'}}>
+        <span style={{flex:1,minWidth:0,fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{r.label}</span>
+        <span style={{flexShrink:0,fontSize:13,fontWeight:700,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{r.value}</span></div>)}</div>}</div>
+    {b.open&&!b.rows&&<Icon n="chevron" sz={12} col={T.mid}/>}</div>; }
 /* Sales Insights: what a manager needs to know first, in sentences, then the detail from the till. */
 function _CSalesTab({open,setSection}){ const T=useTheme(), cr=T.lift(C.cr), sales=TeamReport.salesSummary(7), brief=TeamReport.salesBrief(), demo=TeamSales.demo();
   return <div data-testid="console-sales-tab">{_cH(T,'Sales Insights',sales?`${demo?'Demo data':(TeamSales.source()||{}).label||'From your POS'} · the last 7 nights against the 7 before, and 28 nights of detail`:'Connect your POS to see what sells')}
@@ -252,7 +275,7 @@ function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.
       <_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.glasses} glasses · ${sales.bottles} bottles · ${sales.covers} covers`} testid="sales-revenue"/>
       <_CStat label="Glasses per guest" value={sales.glassesPerCover==null?'—':sales.glassesPerCover.toFixed(2)} delta={sales.delta.glassesPerCover} sub={`${sales.glasses} glasses to ${sales.covers} covers`} testid="sales-glasses"/>
       <_CStat label="Bottles per guest" value={sales.bottlesPerCover==null?'—':sales.bottlesPerCover.toFixed(2)} delta={sales.delta.bottlesPerCover} sub={`${sales.bottles} bottles · ${_cPct(sales.bottleTakings)} of wine takings`} testid="sales-bottles"/>
-      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a server sells ${TeamData.money(lift.known,{dp:2})} of a wine a shift when they know it, ${TeamData.money(lift.unknown,{dp:2})} when not`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
+      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a wine sells ${lift.x}× as much on the shifts of servers who know it (${lift.wines} wines compared)`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
     </div>
     <div style={two}>
       <Card>{_cLabel(T,'Wine sales by week',toggle)}<_CSpark points={m.pts} fmt={m.fmt}/>
@@ -338,16 +361,27 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useL
 /* The restaurant's training level with a level per role, and the minimum each role needs to work the floor: the same
    cards on the console's Team section and the phone's Team tab. On a phone the minimums are a list per role, not a
    table that scrolls sideways. */
-function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), levelOpts=TeamLearn.LEVELS.map(k=>[k,TeamLearn.LEVEL_LABEL[k]]);
+/* Training depth (the tier) for the restaurant and per role, and inside Master the level (Low, Medium, High) for the
+   restaurant and per role; the level row shows only while the restaurant, or that role, is on Master. */
+function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), tr=TeamLearn.tier(), levelOpts=TeamLearn.LEVELS.map(k=>[k,TeamLearn.LEVEL_LABEL[k]]), tierOpts=TeamLearn.TIERS.map(k=>[k,TeamLearn.TIER_LABEL[k]]);
+  const anyMaster=tr==='master'||_CONSOLE_ROLES.some(rk=>TeamLearn.tier(rk)==='master');
   return <>
-    <Card style={{marginTop:14}}><div data-testid="console-level">{_cLabel(T,'Training level')}
+    <Card style={{marginTop:14}}><div data-testid="console-tier">{_cLabel(T,'Training depth')}
+      <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><_CSeg label="Training depth for the restaurant" options={tierOpts} value={tr} onPick={k=>{ TeamLearn.setTier(k); changed(); }} testid={k=>'console-tier-'+k}/>
+        <div data-testid="console-tier-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,flex:'1 1 240px'}}>{TeamLearn.TIER_ABOUT[tr]}</div></div>
+      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.map(rk=>{ const own=TeamLearn.roleTier(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+        <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,minWidth:96}}>{TeamLearn.ROLES[rk].label}</div>
+        <_CSeg label={`Training depth for ${TeamLearn.ROLES[rk].label}`} options={[['same',`Same (${TeamLearn.TIER_LABEL[tr]})`],...tierOpts]} value={own||'same'} onPick={k=>{ TeamLearn.setRoleTier(rk,k==='same'?null:k); changed(); }} testid="console-role-tier"/></div>; })}</div>
+      {_cNote(T,"Changes the cards staff see, what they're asked and how, at once. Nothing is rewritten and no answer is lost: a question keeps its place in every depth, so moving up adds questions and moving down sets some aside until you move back.")}
+    </div></Card>
+    {anyMaster&&<Card style={{marginTop:14}}><div data-testid="console-level">{_cLabel(T,'Level inside Master')}
       <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}><_CSeg label="Training level for the restaurant" options={levelOpts} value={lv} onPick={k=>{ TeamLearn.setLevel(k); changed(); }} testid={k=>'console-level-'+k}/>
         <div data-testid="console-level-about" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,flex:'1 1 240px'}}>{TeamLearn.LEVEL_ABOUT[lv]}</div></div>
-      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
+      <div style={{marginTop:14,borderTop:`1px solid ${T.line}`}}>{_CONSOLE_ROLES.filter(rk=>TeamLearn.tier(rk)==='master').map(rk=>{ const own=TeamLearn.roleLevel(rk); return <div key={rk} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'9px 0',borderBottom:`1px solid ${T.line}`}}>
         <div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,minWidth:96}}>{TeamLearn.ROLES[rk].label}</div>
         <_CSeg label={`Training level for ${TeamLearn.ROLES[rk].label}`} options={[['same',`Same (${TeamLearn.LEVEL_LABEL[lv]})`],...levelOpts]} value={own||'same'} onPick={k=>{ TeamLearn.setRoleLevel(rk,k==='same'?null:k); changed(); }} testid="console-role-level"/></div>; })}</div>
-      {_cNote(T,"Changes the cards staff see and what they're asked, at once. Nothing is rewritten and no answer is lost: moving up adds questions, moving down sets some aside until you move back.")}
-    </div></Card>
+      {_cNote(T,"Only roles on Master have a level. Moving up adds questions, moving down sets some aside until you move back.")}
+    </div></Card>}
   </>; }
 function TeamMinimumsCard({changed}){ const T=useTheme(), phone=useLayoutSize()==='phone';
   const parts=Object.keys(TeamLearn.PART_LABEL).filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
@@ -411,6 +445,24 @@ function _CCocktails({open}){ const T=useTheme(), cov=TeamReport.cocktailCoverag
           <span style={{color:x.of&&x.knows<Math.ceil(x.of/2)?T.tone.bad:T.ink2,whiteSpace:'nowrap'}}>{x.knows} of {x.of}</span>,
           x.card?<Icon n="check" sz={14} col={T.green} style={{display:'inline-block',verticalAlign:'middle'}}/>:<span style={{color:T.mid}}>—</span>]}; })}/></Card></div>)}
   </div>; }
+/* The app's own review of every question as the drill shows it (TeamLearn.reviewKept), on the Wines section, run when asked
+   ("Check every question"): on a long list it takes seconds (The Princess Royal's 1,000 questions held the page for two),
+   and every publish and npm run team:audit run it anyway. Once worked out it's kept until the list changes. */
+function _CReview({open}){ const T=useTheme(), cr=T.lift(C.cr);
+  const [rv,setRv]=React.useState(()=>TeamLearn.reviewIfKept()), [busy,setBusy]=React.useState(false);
+  const run=()=>{ setBusy(true); setTimeout(()=>{ setRv(TeamLearn.reviewKept()); setBusy(false); },30); };
+  if(!rv) return <Card style={{marginBottom:14}}><div data-testid="console-review-run">{_cLabel(T,"The app's review")}
+    <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>Every question is checked the way the drill shows it at each publish. Check them again now, after editing a card.</div>
+    <Btn small onClick={run}>{busy?'Checking every question…':'Check every question'}</Btn></div></Card>;
+  if(!rv.length) return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,"The app's review")}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>Every question checked: nothing to fix.</div></div></Card>;
+      // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
+      const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
+      return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,`The app's review · ${rv.length} to fix`)}
+        {rv.slice(0,10).map((f,i)=>{ const w=f.q.wine&&TeamData.wine(f.q.wine), d=f.q.dish&&TeamData.dish(f.q.dish);
+          return <div key={f.q.id+f.code+i} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{f.q.q}</span>{_cChip(T,WORD[f.code]||f.code,T.amber)}</div>
+            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {f.note}</div></div>; })}
+        {_cNote(T,'Every question is checked the way the drill shows it. The next publish sends these back to be rewritten; until then they are still asked.')}</div></Card>; }
 function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamData.wines(), cov=TeamReport.coverage(), by=Object.fromEntries(cov.rows.map(x=>[x.wine.id,x]));
   const [edit,setEdit]=React.useState(null); // {id, glass, bottle, section}
   const secs=[...new Set(ws.map(w=>w.section).filter(Boolean))];
@@ -429,15 +481,7 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
             <div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{q?q.q:id}</div>
             <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {n.note||n.problem}</div></div>; })}
         {_cNote(T,'Held questions are left out of every drill until the next review, when they are read again.')}</div></Card>; })()}
-    {(()=>{ const rv=TeamLearn.review(); if(!rv.length) return null;
-      // The app's own review of every question as the drill shows it: what a reviewer would catch, before anyone drills it.
-      const WORD={offsubject:'Off the subject',kind:'Mixed kinds',request:'Gives the answer away',echo:'Repeats the answer',long:'Too long to read',dupe:'Same option twice',cue:'Length gives it away',giveaway:'Gives the answer away'};
-      return <Card style={{marginBottom:14}}><div data-testid="console-review">{_cLabel(T,`The app's review · ${rv.length} to fix`)}
-        {rv.slice(0,10).map((f,i)=>{ const w=f.q.wine&&TeamData.wine(f.q.wine), d=f.q.dish&&TeamData.dish(f.q.dish);
-          return <div key={f.q.id+f.code+i} role="button" onClick={()=>w?open({view:'wine',id:w.id}):d&&open({view:'dish',id:d.id})} style={{padding:'9px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{f.q.q}</span>{_cChip(T,WORD[f.code]||f.code,T.amber)}</div>
-            <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:2}}>{w?TeamData.short(w):d?d.name:''} · {f.note}</div></div>; })}
-        {_cNote(T,'Every question is checked the way the drill shows it. The next publish sends these back to be rewritten; until then they are still asked.')}</div></Card>; })()}
+    <_CReview open={open}/>
     {(()=>{ const hs=TeamLearn.questionHealth(); if(!hs.length) return null; const pct=x=>Math.round(x*100)+'%';
       return <Card style={{marginBottom:14}}><div data-testid="console-question-health">{_cLabel(T,'Questions to look at')}
         {hs.slice(0,8).map((h,i)=>{ const w=h.q.wine&&TeamData.wine(h.q.wine), d=h.q.dish&&TeamData.dish(h.q.dish);

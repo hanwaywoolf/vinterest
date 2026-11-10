@@ -11,6 +11,13 @@ const BASE = 'http://localhost:4173';
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const DAY = 86400000;
 
+// The demo's team all have progress now (a manager at about 76%), so a test about someone who hasn't started
+// wipes the person in view first.
+async function startFresh(page) {
+  await page.evaluate(() => { const P = TeamLearn._all(); delete P[TeamLearn.me().id]; TeamLearn._saveAll(P); });
+  await page.reload();
+  await expect(page.getByTestId('team-state')).toBeVisible();
+}
 async function openSample(context, page, opts = {}) {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -54,6 +61,36 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
   await page.reload(); // stays put, with its team
   await expect(page.getByTestId('team-venue-logo')).toBeVisible();
   expect(await page.evaluate(() => TeamLearn.people().length)).toBe(7);
+  expect(errors).toEqual([]);
+});
+
+// The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
+// (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
+// with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
+test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const st = await page.evaluate(() => {
+    const ppl = TeamLearn.people(), rows = TeamSales.get().rows;
+    return { me: TeamLearn.me().name, people: ppl.length, sym: TeamData.currency().sym, venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
+      wines: TeamData.wines().length, cards: TeamData.wines().filter((w) => TeamData.card(w.id)).length, dishes: TeamData.dishes().length, cocktails: TeamData.cocktails().length,
+      demo: TeamSales.demo(), rows: rows.length, pours: [...new Set(rows.filter((r) => r.s === 'glass' && r.w).map((r) => r.n.split(' ').pop()))].sort(),
+      offList: rows.some((r) => /House Prosecco 125/.test(r.n) && !r.w) };
+  });
+  expect(st.me).toBe('Elena Ruiz');
+  expect(st.people).toBe(7);
+  expect(st.sym).toBe('£');
+  expect(st.allergens).toBe('GB');
+  expect(st.venue).toMatchObject({ name: 'The Princess Royal', city: 'London', sample: 'princess-royal' });
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', /^brand\/princess-royal\/wordmark-white\.svg(\?v=|$)/);
+  expect((await page.request.get(`${BASE}/team/brand/princess-royal/wordmark-white.svg`)).status()).toBe(200);
+  expect(st).toMatchObject({ wines: 132, cards: 132, dishes: 55, cocktails: 25, demo: true, offList: true });
+  expect(st.pours).toEqual(['125', '175']);
+  expect(st.rows).toBeGreaterThan(1000);
+  await expect(page.locator('#root')).not.toContainText('$');
   expect(errors).toEqual([]);
 });
 
@@ -291,7 +328,7 @@ test('the drill deals one question per wine, caps new things once answers are du
   await expect(page.getByTestId('team-state')).toBeVisible();
   const r = await page.evaluate(() => {
     const who = (n) => TeamLearn.people().find((p) => p.name.startsWith(n)).id, item = (q) => q.wine || q.dish || q.cocktail;
-    const amara = who('Amara'), priya = who('Priya'), items = TeamLearn._all();
+    const amara = who('Amara'), priya = who('Marco'), items = TeamLearn._all(); // Marco: slipping, with faded answers due
     const dueFor = (pid) => Object.values((items[pid] || { items: {} }).items).filter((it) => it.reps && (it.wrong || it.due <= Date.now())).length;
     const d = TeamLearn.drill(priya), ids = d.map(item);
     const fresh = d.filter((q) => !(items[priya].items[q.id] && items[priya].items[q.id].reps) && !q.check).length;
@@ -576,8 +613,21 @@ test('the demo seeds staff at different stages of training', async ({ context, p
   expect(states.Dani.pct).toBeGreaterThan(40); expect(states.Dani.pct).toBeLessThan(100);
   expect(states.Priya.overdue).toBeGreaterThan(0);
   expect(states.Amara.state).toBe('not'); expect(states.Amara.overdue).toBe(0);
+  // Like a live install: nobody at 0%, the newest person a little way in, the manager most of the way.
+  Object.values(states).forEach((x) => expect(x.pct).toBeGreaterThan(10));
+  expect(states.Amara.pct).toBeLessThan(30); expect(states.Priya.pct).toBeLessThan(55);
+  expect(states.Elena.pct).toBeGreaterThan(65); expect(states.Elena.state).toBe('not');
   await page.getByTestId('team-tab-team').click();
-  await expect(page.locator('#root')).toContainText('1 ready, 1 slipping');
+  await expect(page.locator('#root')).toContainText('2 ready, 1 slipping');
+  // The same team on every restaurant, whatever the size of its list.
+  for (const seed of ['social', 'princess-royal']) {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    const st = await page.evaluate(() => TeamLearn.people().map((p) => { const r = TeamLearn.readiness(p.id); return { n: p.name.split(' ')[0], state: r.state, pct: r.pct }; }));
+    st.forEach((x) => expect(x.pct, `${seed} ${x.n}`).toBeGreaterThan(10));
+    expect(st.filter((x) => x.state === 'ready').length, seed).toBeGreaterThanOrEqual(2);
+    expect(st.find((x) => x.n === 'Marco').state, seed).toBe('slipping');
+  }
 });
 
 // A laptop that opened the demo before its training was written holds a stale Larkspur; the next
@@ -602,6 +652,7 @@ test('a row of the drill summary opens the wine card, and Back returns to the su
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
+  await startFresh(page);
   await page.getByText(/Start today's drill|Practise/).first().click();
   for (let i = 0; i < 5; i++) {
     await expect(page.getByTestId('drill-q')).toBeVisible();
@@ -670,6 +721,7 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
+  await startFresh(page);
   expect(await page.getByTestId('team-part').count()).toBe(3);
   await page.getByTestId('team-part-practise').first().click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
@@ -903,6 +955,15 @@ test('Ask Vinny answers from the list and menu, and opens the wines it names', a
   expect(prompt).toMatch(/Bründlmayer[^\n]*say "/); // with the card of the wine the dish pairs with
   await page.getByTestId('vinny-chip').first().click();
   await expect(page.getByTestId('team-pitch')).toBeVisible();
+  // "Quiz me on our red wines" is a test, not a question: Vinny's test narrowed to the reds opens as a drill, with no call.
+  await page.getByLabel('Back').first().click();
+  const calls = reqs.filter((r) => r.purpose === 'team_vinny').length;
+  await page.getByTestId('vinny-input').fill('Quiz me on our red wines');
+  await page.getByLabel('Ask', { exact: true }).click();
+  await expect(page.getByTestId('team-drill')).toBeVisible();
+  await expect(page.getByTestId('drill-intro')).toContainText(/reds/i);
+  expect(reqs.filter((r) => r.purpose === 'team_vinny').length).toBe(calls);
+  expect(await page.evaluate(() => [TeamVinny.quizAsk('Quiz me on our red wines'), TeamVinny.quizAsk('test me'), TeamVinny.quizAsk('Ask me a few questions about the Malbec'), TeamVinny.quizAsk('What goes with the olives?')])).toEqual(['red wines', '', 'Malbec', null]);
   expect(errors).toEqual([]);
 });
 
@@ -954,6 +1015,9 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   await page.getByText('Say', { exact: true }).click();
   await expect(page.getByTestId('guest-help-used')).toHaveText('With choices');
   await expect(page.getByTestId('guest-moved')).toHaveCount(0);
+  // A table landed with choices doesn't count toward readiness, and the progress card says so.
+  await expect(page.getByTestId('guest-counted')).toContainText("doesn't count");
+  await expect(page.getByTestId('guest-progress')).toContainText(/Landed 1 of your last table/);
 
   // A second table that lands at the same step moves them up to hints.
   await page.getByText('Another table').click();
@@ -973,12 +1037,24 @@ test('a guest at the table comes with choices, hints or none, and two tables tha
   await page.getByTestId('guest-reply').fill('The Grüner by the glass.');
   await page.getByText('Say', { exact: true }).click();
   await expect(page.getByTestId('guest-help-used')).toHaveText('With 3 hints');
+  await expect(page.getByTestId('guest-counted')).toContainText("With 3 hints it doesn't count");
 
   // On your own: no choices and no hints.
   await page.getByText('Another table').click();
   await page.getByTestId('guest-help-own').click();
   await expect(page.getByTestId('guest-choices')).toHaveCount(0);
   await expect(page.getByTestId('guest-hints')).toHaveCount(0);
+  // Landed on their own: the wine's At-the-table question is right from it, and readiness moves.
+  const before = await page.evaluate(() => { const pid = TeamLearn.me().id, sc = TeamVinny.scenario(pid); return { pct: TeamLearn.readiness(pid).pct, known: TeamLearn.progress(pid, sc.wines[0]).known }; });
+  await page.getByTestId('guest-reply').fill('The Grüner by the glass, peppery and fresh with the dish.');
+  await page.getByText('Say', { exact: true }).click();
+  await expect(page.getByTestId('guest-help-used')).toHaveText('On your own');
+  // It counts where the table's wine has an At-the-table question for their role; where it has none, the screen says so
+  // (never "With 0 hints it doesn't count").
+  await expect(page.getByTestId('guest-counted')).toContainText(/This counts|Landed\. The .* has no At-the-table question/);
+  const after = await page.evaluate(() => { const pid = TeamLearn.me().id; const log = TeamVinny.tableState(pid).log, last = log[log.length - 1]; return { pct: TeamLearn.readiness(pid).pct, known: TeamLearn.progress(pid, last.wines[0]).known, counted: true }; });
+  if (/This counts/.test(await page.getByTestId('guest-counted').textContent())) expect(after.known).toBeGreaterThanOrEqual(1);
+  await expect(page.getByTestId('guest-progress')).toContainText(/Landed \d of your last 4 tables/);
   expect(errors).toEqual([]);
 });
 
@@ -1528,7 +1604,7 @@ test('training levels: the console sets them, cards and drills follow, a role ca
 
 // Vinny's test and the drill (TeamLearn.spread): ten questions never ask for the same right answer twice, and no
 // two in a row share a wine or dish, a shape or an answer; wrong answers are ones the pairings rule out.
-test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings that are plainly wrong', async ({ context, page }) => {
+test('a test mixes its questions: no answer twice, nothing grouped, and wrong pairings the pairings rule out', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
@@ -1542,8 +1618,10 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
         sameShapeInARow: shape.filter((x, i) => i && x === shape[i - 1]).length };
     }
     TeamLearn.setLevel('high');
-    // Every "which wine suits this dish best" offers its first pick against wines that are clearly wrong for the dish.
-    const bad = TeamData.dishes().flatMap((d) => TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && !TeamLearn.clearlyWrong(w.id, d.id)).map((w) => d.name + ': ' + TeamData.short(w))));
+    // Every "which wine suits this dish best" offers its first pick against wines the pairings rule out for the dish
+    // (never one of its picks, never a wine tableFit calls good), so a sommelier stands behind one answer.
+    const bad = TeamData.dishes().flatMap((d) => { const pr = TeamData.pairing(d.id) || {}, picks = new Set([...(pr.best || []).map((b) => b.id), pr.glass && pr.glass.id].filter(Boolean));
+      return TeamLearn.dishQs(d.id).filter((q) => q.opts).flatMap((q) => q.opts.filter((o, i) => i !== q.a).map((o) => TeamData.wines().find((w) => TeamData.short(w) === o)).filter((w) => w && (picks.has(w.id) || TeamLearn.tableFit(w.id, d.id) === 'good')).map((w) => d.name + ': ' + TeamData.short(w))); });
     return { out, bad };
   });
   for (const lv of ['low', 'medium', 'high']) {
@@ -1560,6 +1638,7 @@ test('a test mixes its questions: no answer twice, nothing grouped, and wrong pa
 // away by its length, by being the only one of its colour asked for, or by three wrong answers making the
 // same claim; and question health flags what's answered right by everyone at once or missed by most.
 test('table questions: the choice first, wrong answers that are believable and clearly wrong, and question health', async ({ context, page }) => {
+  test.setTimeout(90000); // three restaurants' table questions
   await stubNetwork(context);
   const check = async (seed) => {
     await page.goto(`${BASE}/team/?seed=${seed}`);
@@ -1598,7 +1677,7 @@ test('table questions: the choice first, wrong answers that are believable and c
       return out;
     });
   };
-  for (const seed of ['demo', 'social']) {
+  for (const seed of ['demo', 'social', 'princess-royal']) {
     const r = await check(seed);
     expect(r.tooFew).toEqual([]); // no choice of one or two
     expect(r.lengthCue).toEqual([]);
@@ -1606,8 +1685,9 @@ test('table questions: the choice first, wrong answers that are believable and c
     expect(r.wrongWine).toEqual([]); // every wrong wine is on the list and wrong for this table
     expect(r.wish).toEqual([]); // and is what the guest asked for: a white for a white, by the glass for a glass
     // Table questions are written as choices; one is asked as a choice only where wrong wines meet the guest's request
-    // (kind, glass, price) and the dish alone rules them out, else it names the wine and asks why (demo 15 of 30, Social Corner 27 of 41).
-    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.45);
+    // (kind, glass, price) and the dish alone rules them out, else it names the wine and asks why (demo 11 of 27, Social Corner 27 of 41;
+    // fewer since a guest's floor counts too: "between £75 and £80" leaves few wrong wines that price alone doesn't rule out).
+    expect(r.decided).toBeGreaterThanOrEqual(r.total * 0.4);
   }
   // The Bandol with the venison asks for the wine, then why; the question no longer names it.
   await page.goto(`${BASE}/team/?seed=demo`);
@@ -1646,7 +1726,7 @@ test('the names check plays each name through the guest voice, numbered like the
 
 test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
   await asMarco(context, page);
-  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', null, null, 'demo']);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', 'princess-royal', null, null, 'demo']);
 });
 
 // Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
@@ -1737,6 +1817,18 @@ test('the console dashboard folds and reorders, and remembers it', async ({ brow
   await expect(page.getByTestId('console-dash')).toBeVisible();
   const order = () => page.getByTestId('dash-card').evaluateAll((els) => els.map((e) => e.dataset.card));
   expect((await order())[0]).toBe('tonight'); // Tonight leads the dashboard
+  // Tonight shows only what's set, never the whole menu and list, until Set tonight opens the picker; the picker's
+  // open or closed state is remembered, and a dish 86'd there shows on its own once it closes.
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(0);
+  await expect(page.getByTestId('dash-tonight-set')).toContainText("Nothing 86'd or on feature tonight");
+  await page.getByTestId('dash-tonight-change').click();
+  await page.getByTestId('dash-tonight-off').first().click();
+  await page.reload();
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(10); // the picker stayed open
+  await page.getByTestId('dash-tonight-change').click();
+  await expect(page.getByTestId('dash-tonight-off')).toHaveCount(1); // closed: only the dish that's 86'd
+  await page.reload();
+  await expect(page.getByTestId('dash-tonight-set')).toBeVisible();
   await page.getByTestId('dash-fold-people').click();
   await expect(page.locator('[data-card="people"]').getByTestId('dash-summary')).toContainText('ready');
   await page.getByTestId('dash-edit').click();
@@ -1775,7 +1867,7 @@ test('the sommelier runs the wine programme too: the console on a wide screen, U
 test('both restaurants: the drill answers in the same phases and at the same text sizes', async ({ context, page }) => {
   await stubNetwork(context);
   const seen = {};
-  for (const seed of ['demo', 'social']) {
+  for (const seed of ['demo', 'social', 'princess-royal']) {
     await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
     await expect(page.getByTestId('team-state')).toBeVisible();
     await page.getByText(/Start today's drill|Do another 5 questions/).first().click();
@@ -1791,8 +1883,8 @@ test('both restaurants: the drill answers in the same phases and at the same tex
     seen[seed] = { q, opt, venue: await page.evaluate(() => TeamData.get().venue.sample) };
   }
   expect(seen.social.venue).toBe('social');
-  expect(seen.social.q).toBe(seen.demo.q);
-  expect(seen.social.opt).toBe(seen.demo.opt);
+  expect(seen['princess-royal'].venue).toBe('princess-royal');
+  for (const seed of ['social', 'princess-royal']) { expect(seen[seed].q).toBe(seen.demo.q); expect(seen[seed].opt).toBe(seen.demo.opt); }
   expect(seen.demo.opt).toBeGreaterThanOrEqual(15);
 });
 
@@ -1823,6 +1915,192 @@ test('questions keep to their subject: a dish change, a country, a table request
   expect(r.asides).toBeGreaterThan(50);
 });
 
+test('after a miss the answer is explained, menu pairings practice asks pairings, table reasons are about the wine, and the summary says which questions come back', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess`);
+  await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0 && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => {
+    const out = { pours: [], orders: [], missedWhy: 0, missedPlace: 0 };
+    TeamData.wines().forEach((w) => TeamLearn.wineQs(w.id, { all: true }).forEach((q) => {
+      const ans = q.opts && q.a != null ? q.opts[q.a] : q.ans;
+      // A place question missed is followed by where it's from, never a dish to pour it with.
+      if (q.k !== 'apply' && /^(place|country)$/.test(TeamLearn._topic(q.q))) { const a = TeamLearn.aside(q, ans, new Set(), { missed: true }); if (a) { out.missedPlace++; if (/^Pour it with/.test(a.text)) out.pours.push(q.q); } }
+      if (q.k === 'apply') TeamLearn.choices(q).opts.forEach((o) => { if (/^(pour|avoid|suggest|recommend) the\b/i.test(o)) out.orders.push(o); });
+    }));
+    const pid = TeamLearn.addPerson('Sam New', 'server'); // someone who hasn't started: everyone on the demo team has
+    out.practice = TeamLearn.drill(pid, 5, 'dishes').map((q) => q.id); TeamLearn.removePerson(pid);
+    const badassiere = TeamLearn.wineQs('w-baron-de-badassiere-syrah', { all: true }).find((q) => /part of France/.test(q.q));
+    out.explained = (TeamLearn.aside(badassiere, 'Languedoc', new Set(), { missed: true }) || {}).text;
+    return out;
+  });
+  expect(r.missedPlace).toBeGreaterThan(20);
+  expect(r.pours).toEqual([]);
+  expect(r.orders).toEqual([]); // "Pour the La Giustiniana Gavi, because…" is never a reason under Why it works
+  expect(r.explained).toMatch(/Languedoc/);
+  expect(r.practice.length).toBe(5);
+  expect(r.practice.every((id) => /#\d+$/.test(id))).toBe(true); // which wine suits it, not what's in it
+  const line = await page.evaluate(() => { const pid = TeamLearn.people()[0].id, items = TeamLearn._mine(TeamLearn._all(), pid).items, day = Date.now() + 86400000;
+    ['zz#0', 'zz#1'].forEach((id) => { items[id] = { reps: 1, due: day }; }); return TeamLearn.comesBack(pid, [{ id: 'zz#0' }, { id: 'zz#1' }]); });
+  expect(line).toBe("You'll get the two questions you got right again tomorrow, to check they've stuck.");
+});
+
+test('training depth: Essentials asks four options with no ladder and counts what is known, Service two rungs and one reason from three, Master is unchanged', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(ctx);
+  // The Princess Royal's list file sets its start: servers on Essentials, the sommelier on Master.
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  const r = await page.evaluate(() => {
+    const ws = TeamData.wines(), ds = TeamData.dishes(), srv = TeamLearn.people().find((p) => p.role === 'server'), som = TeamLearn.people().find((p) => p.role === 'sommelier');
+    const all = (role) => [...ws.flatMap((w) => TeamLearn.qsFor(role, w.id)), ...ds.flatMap((d) => TeamLearn.dishQsFor(role, d.id))];
+    const ess = all('server'), mas = all('sommelier');
+    const four = ess.filter((q) => !q.allergen).every((q) => (q.k === 'recognise' || q.mc) && q.opts.length <= 4 && q.opts.length >= 3);
+    const ids = new Set(mas.map((q) => q.id).concat(ws.flatMap((w) => TeamLearn.lightQs(w.id).map((q) => q.id))));
+    const table = ess.find((q) => q.k === 'apply' && q.wine);
+    const priced = ws.filter((w) => w.glass || w.bottle).filter((w) => TeamLearn.qsFor('server', w.id).some((q) => /[£$€]/.test(String(q.ans || '')))).length;
+    const rd = TeamLearn.readiness(srv.id), essRungs = TeamLearn.progress(srv.id, ws[0].id).rungs.length, somRungs = TeamLearn.progress(som.id, ws[0].id).rungs.map((x) => x.label);
+    TeamLearn.setTier('service'); TeamLearn.setRoleTier('sommelier', null);
+    const svc = all('server'), svcTable = svc.find((q) => q.k === 'apply' && q.wine && q.pills && q.pills.groups.length === 2);
+    const svcFour = svc.filter((q) => !q.allergen && !q.pills).every((q) => (q.k === 'recognise' || q.mc) && q.opts.length <= 4);
+    TeamLearn.setTier('master'); const masterNow = all('sommelier').map((q) => q.id).join();
+    return { tiers: [TeamLearn.tier(), TeamLearn.tier('sommelier')], four, essN: ess.length, masN: mas.length, idsKept: ess.every((q) => ids.has(q.id)),
+      noContrast: !ess.some((q) => q.k === 'contrast'), noMod: !ess.some((q) => q.dish && /#(mod|1)$/.test(q.id)), allergenKept: (() => { const a = { id: 'd:x#allergen', dish: 'x', k: 'recall', allergen: true, pills: { opts: ['Milk', 'Eggs', 'None of these'], right: [0, 1], n: 2 } }; return TeamLearn.tierQ(a, 'essentials') === a; })(), // The Princess Royal's kitchen hasn't confirmed allergens yet: the shape is checked on one
+      table: table && { opts: table.opts.length, why: !!table.why, mc: table.mc }, priced, pricedOf: ws.filter((w) => w.glass || w.bottle).length,
+      rungs: essRungs, somRungs, ready: { tier: rd.tier, count: rd.count, pct: rd.pct },
+      label: TeamLearn.rungLabel(ess.find((q) => q.wine && q.k !== 'apply'), 'essentials'), svcRungs: TeamLearn.rungsFor('service', ['recognise', 'recall', 'apply']).map((x) => x.label),
+      svcTable: svcTable && svcTable.pills.groups.map((g) => g.to - g.from), svcFour, masterSame: masterNow === mas.map((q) => q.id).join(), // the sommelier's Master set is the same before the switches and after
+      conf: [TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'essentials'), TeamLearn.asksConfidence({ k: 'recall', ans: '£9 a glass' }, 'service')] };
+  });
+  expect(r.tiers).toEqual(['master', 'master']); // after the test put them back
+  expect(r.four).toBe(true); // every Essentials question is four options (three where the list offers no more)
+  expect(r.essN).toBeLessThan(r.masN / 1.5);
+  expect(r.idsKept).toBe(true); // a question keeps its id in every shape
+  expect(r.noContrast).toBe(true); expect(r.noMod).toBe(true); expect(r.allergenKept).toBe(true);
+  expect(r.table).toMatchObject({ mc: true, why: true }); expect(r.table.opts).toBeGreaterThanOrEqual(3);
+  expect(r.priced).toBeGreaterThan(r.pricedOf * 0.8); // nearly every priced wine asks its price at Essentials
+  expect(r.rungs).toBe(0); expect(r.somRungs).toEqual(['Recognise', 'Recall', 'At the table']);
+  expect(r.ready.tier).toBe('essentials'); expect(r.ready.count.total).toBeGreaterThan(100); expect(r.ready.pct).toBe(Math.round(100 * r.ready.count.known / r.ready.count.total));
+  expect(r.label).toBe('Our wines');
+  expect(r.svcRungs).toEqual(['Know it', 'At the table']);
+  expect(r.svcTable).toEqual([expect.any(Number), 3]); expect(r.svcFour).toBe(true);
+  expect(r.masterSame).toBe(true); // Master is what it has always been
+  expect(r.conf).toEqual([false, true]);
+  // The console: the depth card, a role's own depth, and the level row only while someone is on Master.
+  await page.getByTestId('console-nav-team').click();
+  await page.evaluate(() => { TeamLearn.setTier('essentials'); TeamLearn.setRoleTier('sommelier', 'master'); });
+  await page.getByTestId('console-tier-service').click();
+  await expect(page.getByTestId('console-tier-about')).toContainText('one reason from three');
+  await expect(page.getByTestId('console-level')).toBeVisible(); // the sommelier is still on Master
+  await page.locator('[data-testid="console-role-tier"]').filter({ hasText: /^Same/ }).nth(2).click(); // the sommelier follows the restaurant
+  await expect(page.getByTestId('console-level')).toHaveCount(0); // nobody on Master: no level row
+  await page.getByTestId('console-tier-essentials').click();
+  // A server on Essentials: Today counts what they know, the drill shows four options under a plain heading and no "how sure".
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await expect(page.getByTestId('team-state')).toContainText(/You know \d+ of \d+/);
+  await page.getByText(/Start today's drill|Do another 5 questions|Practise/).first().click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  expect(await page.getByTestId('drill-opt').count()).toBeLessThanOrEqual(4);
+  await expect(page.getByTestId('drill-sure')).toHaveCount(0);
+  await expect(page.getByTestId('team-drill')).not.toContainText(/RECOGNISE|RECALL/);
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// The staff app on an iPad (docs/business.md "The staff app on a tablet"): a rail of tabs down the left, Today and Practise
+// in two columns, a wine or dish open beside its list, nothing off the side; a screenshot of each is kept to look at.
+for (const [name, viewport] of [['landscape', { width: 1180, height: 820 }], ['portrait', { width: 820, height: 1180 }]]) {
+  test(`the staff app on an iPad (${name}): a rail, two columns, the wine beside the list`, async ({ browser }, info) => {
+    const ctx = await browser.newContext({ viewport });
+    const page = await ctx.newPage();
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    await stubNetwork(ctx);
+    await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+    await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+    await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+    await page.reload();
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    const noOverflow = () => page.evaluate(() => { const vw = document.documentElement.clientWidth; return [...document.querySelectorAll('#root *')].filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.right > vw + 1; }).length; });
+    // The rail replaces the bottom bar, and Today runs in two columns with Tonight on the right.
+    await expect(page.getByTestId('team-rail')).toBeVisible();
+    expect(await page.locator('[data-wide-columns]').count()).toBe(1);
+    const cols = page.locator('[data-wide-columns] > div');
+    const [a, b] = [await cols.nth(0).boundingBox(), await cols.nth(1).boundingBox()];
+    expect(b.x).toBeGreaterThan(a.x + 200); expect(Math.abs(a.y - b.y)).toBeLessThan(10);
+    expect(await cols.nth(1).locator('[role="button"]').count()).toBeGreaterThan(0); // what's new to learn, on the right (Tonight too, when the day has an 86'd or a feature)
+    await expect(page.getByText(/Start today's drill|Practise · 5|Do another 5/).first()).toBeVisible();
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-today-${name}.png`) });
+    // Practise: the three doors across.
+    await page.getByTestId('team-rail').getByTestId('team-tab-vinny').click();
+    const doors = page.getByTestId('vinny-doors').locator('[data-testid^="vinny-door-"]');
+    const [d0, d1] = [await doors.nth(0).boundingBox(), await doors.nth(1).boundingBox()];
+    expect(Math.abs(d0.y - d1.y)).toBeLessThan(4);
+    // Wines: a wine opens beside the list, another row replaces it, Back returns to the list alone.
+    await page.getByTestId('team-rail').getByTestId('team-tab-wines').click();
+    await page.getByTestId('team-wine-row').nth(3).click();
+    await expect(page.getByTestId('team-split-list')).toBeVisible();
+    await expect(page.getByTestId('team-pitch')).toBeVisible();
+    const name3 = await page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(3).getAttribute('aria-current');
+    expect(name3).toBe('true');
+    await page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(5).click();
+    await expect(page.getByTestId('team-split-list').getByTestId('team-wine-row').nth(5)).toHaveAttribute('aria-current', 'true');
+    expect(await page.evaluate(() => document.querySelectorAll('[data-testid="team-pitch"]').length)).toBe(1);
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-wine-${name}.png`) });
+    await page.getByLabel('Back').first().click();
+    await expect(page.getByTestId('team-split-list')).toHaveCount(0);
+    await expect(page.getByTestId('team-wine-row').first()).toBeVisible();
+    // Menu: the same, and the rail stays while a dish is open.
+    await page.getByTestId('team-rail').getByTestId('team-tab-menu').click();
+    await page.getByTestId('team-dish-row').nth(4).click();
+    await expect(page.getByTestId('team-split-list')).toBeVisible();
+    await expect(page.getByTestId('team-rail')).toBeVisible();
+    expect(await noOverflow()).toBe(0);
+    await page.screenshot({ path: info.outputPath(`tablet-team-dish-${name}.png`) });
+    expect(errors).toEqual([]);
+    await ctx.close();
+  });
+}
+
+test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => {
+    const som = TeamLearn.people().find((p) => p.role === 'sommelier'), srv = TeamLearn.people().find((p) => p.role === 'server');
+    // Master: every wine with a two-step table question, practised alone, asks the reason only.
+    const bad = [], reworded = [];
+    TeamData.wines().forEach((w) => TeamLearn.qsFor('sommelier', w.id).filter((q) => q.k === 'apply').forEach((q) => {
+      const c = TeamLearn.choices(q); if (!(c.groups || []).some((g) => /suggest/i.test(g.label))) return;
+      const o = TeamLearn.oneWine(q); if (!o) { bad.push(q.q); return; }
+      const oc = TeamLearn.choices(o); if ((oc.groups || []).some((g) => /suggest/i.test(g.label)) || /What would you suggest/.test(o.q)) bad.push(o.q); else reworded.push(o.q);
+    }));
+    // Essentials: the wine-only table question isn't asked alone; a narrowed test on one wine carries no "which wine".
+    const ess = TeamData.wines().flatMap((w) => TeamLearn.qsFor('server', w.id).filter((q) => q.k === 'apply' && q.mc));
+    const essGone = ess.every((q) => TeamLearn.oneWine(q) === null);
+    const t = TeamVinny.test(som.id, { ask: 'Tondonia' });
+    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, test: t.qs.map((q) => q.q), title: t.title };
+  });
+  expect(r.bad).toEqual([]);
+  expect(r.reworded).toBeGreaterThan(20);
+  expect(r.sample).toMatch(/You suggest the .+\. Why does it work\?$/);
+  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true);
+  expect(r.test.some((q) => /What would you suggest/.test(q))).toBe(false);
+  // On the screen: Practise this wine from a card with a table question.
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'sommelier'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').filter({ hasText: 'Tondonia' }).first().click();
+  await page.getByText(/Start this wine|Practise this wine/).click();
+  await expect(page.getByTestId('drill-q')).toBeVisible();
+  const seen = await page.evaluate(() => [...document.querySelectorAll('[data-testid="team-drill"]')].length);
+  expect(seen).toBe(1);
+  expect(await page.evaluate(() => TeamLearn.qsFor('sommelier', TeamData.wines().find((w) => /Tondonia/.test(w.name)).id).map((q) => TeamLearn.oneWine(q)).filter(Boolean).some((q) => /What would you suggest/.test(q.q)))).toBe(false);
+});
+
 test('the phone Team tab is the console Team: Add in a dialog, training level, minimums per role', async ({ context, page }) => {
   await stubNetwork(context);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -1847,6 +2125,7 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=social&view=phone`);
   await expect(page.getByTestId('team-state')).toBeVisible();
+  await startFresh(page);
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').first().click();
   const top = async (id) => page.getByTestId(id).first().evaluate((el) => el.getBoundingClientRect().top);
@@ -1866,9 +2145,9 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
 // it, against the faults found by hand: a wrong answer about another dish, answers of mixed kinds, a table request that
 // gives the answer away, an answer screen that repeats the answer or runs long, duplicates, length cues, giveaway words.
 test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
-  test.setTimeout(120000); // the whole review of three restaurants, twice over
+  test.setTimeout(240000); // the whole review of four restaurants, twice over
   await stubNetwork(context);
-  for (const seed of ['demo', 'sample', 'social']) {
+  for (const seed of ['demo', 'sample', 'princess-royal', 'social']) { // The Social Corner last: the checks below are on it
     await page.goto(`${BASE}/team/?seed=${seed}`);
     await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
     const flags = await page.evaluate(() => TeamLearn.review().map((f) => `[${f.code}] ${f.q.q.slice(0, 80)}: ${f.note}`));
@@ -1931,7 +2210,9 @@ test('the demo sales: best sellers mostly known, and a glass known but not selli
   await expect(page.getByTestId('team-state')).toBeVisible();
   const brief = await page.evaluate(() => TeamReport.salesBrief());
   const gaps = brief.find((x) => x.k === 'gaps');
-  expect(!gaps || /^[12] of your 8 best-selling wines/.test(gaps.title)).toBe(true);
+  expect(!gaps || /^[12] of your top 8 sellers (isn't|aren't) known yet$/.test(gaps.title)).toBe(true);
+  // One row per wine, its figure on the right, never one long sentence of names.
+  if (gaps) { expect(gaps.rows.length).toBeGreaterThan(0); gaps.rows.forEach((r) => { expect(r.value).toMatch(/^\d+ of \d+ know it$/); expect(r.open.view).toBe('wine'); }); expect(gaps.text.length).toBeLessThan(80); }
   const known = brief.find((x) => x.k === 'known');
   expect(known && known.title).toMatch(/: known, but not selling$/);
   const row = await page.evaluate((id) => TeamReport.slowMovers(28, Infinity).find((x) => x.wine.id === id), known.open.id);
@@ -2003,7 +2284,8 @@ test('what the reviewers read is what the drill shows: four options as dealt, re
       const c = TeamLearn._countryIn(q.q);
       if (q.k === 'recall' && TeamLearn._topic(q.q) === 'place' && c) s.opts.filter((o, i) => !s.right.includes(i)).forEach((o) => { const oc = TeamLearn._placeCountry(o); if (oc && oc !== c) out.abroad.push(`${q.q} → ${o}`); });
       if (q.dish && /#1$/.test(q.id)) s.opts.forEach((o) => { if (!names.some((n) => TeamLearn._norm(o).includes(n))) out.notWines.push(`${q.q} → ${o}`); });
-      if (q.k === 'contrast' && s.right.length !== 1) out.contrastRight.push(q.id);
+      // (A comparison with no wrong answers about what it asks borrows other wines' answers, isn't asked, and goes back at publish.)
+      if (q.k === 'contrast' && s.via !== 'pool' && s.right.length !== 1) out.contrastRight.push(q.id);
     });
     return out;
   });
@@ -2050,4 +2332,104 @@ test('a changed demo story re-invents The Social Corner sales and keeps its prog
   expect(after.current).toBe(true);
   expect(after.rows).toBeGreaterThan(3);
   expect(after.people).toEqual(before.people);
+});
+
+test('the faults the sommelier review found stay fixed on every restaurant: grape colours, "the The", cut-off lines, one claim per comparison', async ({ context, page }) => {
+  await stubNetwork(context);
+  for (const seed of ['social', 'demo']) {
+    await page.goto(`${BASE}/team/?seed=${seed}`);
+    await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
+    const r = await page.evaluate(() => {
+      const out = { colour: [], theThe: [], cut: [], claims: [], faults: [] };
+      TeamData.wines().forEach((w) => [...TeamLearn.wineQs(w.id), ...TeamLearn.lightQs(w.id)].forEach((q) => {
+        const s = TeamLearn.shown(TeamLearn.deal(q, 't')), wrong = s.opts.filter((o, i) => !s.right.includes(i));
+        const col = TeamLearn._wineSkin(w);
+        if (q.k === 'recall' && col && TeamLearn._topic(q.q) === 'grape') wrong.forEach((o) => { if (TeamLearn._grapeSkin(o) === TeamLearn._otherSkin(col)) out.colour.push(`${w.name}: ${o}`); });
+        if (q.k === 'contrast') { const seen = new Set(); wrong.forEach((o) => TeamLearn._styleAxes(o).forEach((a) => { if (seen.has(a)) out.claims.push(q.id); seen.add(a); })); }
+        const a = TeamLearn.aside(q, s.right.map((i) => s.opts[i]).join(' ')); if (a && a.text && /…$/.test(a.text)) out.cut.push(q.id);
+        if (TeamLearn._fault(q)) out.faults.push(q.id);
+      }));
+      TeamData.dishes().forEach((d) => TeamLearn.dishQs(d.id, { all: true }).forEach((q) => { const t = [q.q, ...(q.opts || []), ...((q.pills || {}).opts || [])].join(' '); if (/\bthe The\b/.test(t)) out.theThe.push(q.id); }));
+      return out;
+    });
+    expect(r.colour, seed).toEqual([]); // a still white is never asked against Syrah, a red never against Riesling
+    expect(r.theThe, seed).toEqual([]);
+    expect(r.cut, seed).toEqual([]); // the line after an answer is whole sentences or nothing
+    expect(r.claims, seed).toEqual([]); // "Veuve is lighter" and "Lanson is fuller" are one mistake, offered once
+    expect(r.faults, seed).toEqual([]); // nothing the drill asks is thin, pooled or picked out by the length of its reasons
+  }
+});
+
+// The pre-shift briefing (TeamShift, docs/business.md "The pre-shift briefing"): a manager adds a special by typing it,
+// one call reads and pairs it from the list, nothing reaches the team until it's approved with the allergens
+// confirmed, and the briefing sent is a gate every person accepts before the app opens. Sold out shows at once with
+// no second acceptance; a new special is an update with what's new marked. A special is gone when its run ends.
+test('the pre-shift briefing: a special read, paired and approved, a gate everyone accepts, sold out, an update, expiry', async ({ context, page }) => {
+  const asked = [];
+  const special = (name, price) => JSON.stringify({ specials: [{ name, description: 'Pan-roasted, with brown butter and capers.', price, section: 'main',
+    allergens: [{ code: 'fish', sure: 'stated' }, { code: 'milk', sure: 'likely' }, { code: 'not-a-code', sure: 'likely' }],
+    bottle: { id: 'w-jolivet-sancerre', why: 'Its sharp citrus cuts the butter.' }, glass: { id: 'w-jolivet-sancerre', why: 'Not sold by the glass, so this is dropped.' },
+    alts: [{ id: 'w-laroche-chablis', why: 'Steely and clean beside the fish.' }, { id: 'w-not-on-the-list', why: 'Invented.' }], say: `Tonight's special is the ${name}, lovely with our Sancerre.` }] });
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (b) => (b.purpose === 'team_special' ? special(/turbot/i.test(JSON.stringify(b.messages)) ? 'Turbot' : 'Halibut', 34) : '') });
+  // The manager: 86 a dish, then add a special by typing it.
+  await page.getByTestId('tonight-edit').click();
+  await page.getByTestId('tonight-off').first().click();
+  await expect(page.getByTestId('shift-status')).toContainText('Not sent yet');
+  await page.getByTestId('special-add-open').click();
+  await page.getByTestId('special-text').fill('halibut, brown butter, capers 34');
+  await page.getByTestId('special-read').click();
+  const draft = page.getByTestId('special-draft');
+  await expect(draft).toBeVisible();
+  expect(asked.filter((b) => b.purpose === 'team_special')).toHaveLength(1);
+  // What came back is made safe: only allergens on the restaurant's list, only wines on it, a glass pick only if it's poured by the glass.
+  await expect(draft.getByTestId('special-name')).toHaveValue('Halibut');
+  await expect(draft.getByTestId('special-allergen')).toHaveCount(2);
+  await expect(draft).toContainText('Sancerre'); await expect(draft).toContainText('By the glass: none picked');
+  expect(await page.evaluate(() => TeamShift.drafts()[0].pairing.alts.map((a) => a.id))).toEqual(['w-laroche-chablis']);
+  // Not approved until the kitchen has confirmed the allergens; the team sees nothing meanwhile.
+  await draft.getByTestId('special-approve').click();
+  expect(await page.evaluate(() => TeamShift.specials().length)).toBe(0);
+  // Swap the glass pick for one that is poured by the glass, confirm, approve.
+  await draft.getByText('Pick one').click();
+  await draft.getByTestId('special-wine-option').filter({ hasText: 'Chablis' }).click();
+  await draft.getByTestId('special-confirm').click();
+  await draft.getByTestId('special-approve').click();
+  await expect(page.getByTestId('special-live')).toContainText('Halibut');
+  await page.getByTestId('shift-send-btn').click();
+  await expect(page.getByTestId('shift-status')).toContainText('Sent at');
+  await expect(page.getByTestId('shift-register')).toContainText('have read it');
+  // Whoever sent it isn't asked to accept it; a server is, before anything else opens.
+  await expect(page.getByTestId('briefing-ack')).toHaveCount(0);
+  await page.getByLabel('Back').click();
+  await expect(page.getByTestId('tonight-specials')).toContainText('Halibut');
+  await page.evaluate(() => { const d = TeamShift.get(); Object.keys(d.acks).forEach((k) => { if (d.acks[k].demo) delete d.acks[k]; }); TeamLearn.setMe(TeamLearn.people().find((p) => p.name === 'Sam').id); TeamShift.save(d); });
+  const gate = page.getByTestId('team-briefing');
+  await expect(gate).toBeVisible();
+  await expect(gate.getByTestId('briefing-off')).toBeVisible();
+  await expect(gate.getByTestId('briefing-special')).toContainText('Halibut');
+  await expect(gate.getByTestId('briefing-allergens')).toContainText('Fish');
+  await expect(gate.getByTestId('briefing-special')).toContainText('Chablis');
+  expect(await page.evaluate(() => TeamShift.register().waiting.map((p) => p.name))).toContain('Sam');
+  await page.getByTestId('briefing-ack').click();
+  await expect(gate).toHaveCount(0);
+  await expect(page.getByTestId('tonight-specials')).toContainText('Halibut');
+  expect(await page.evaluate(() => TeamShift.register().waiting.map((p) => p.name))).not.toContain('Sam');
+  // Sold out: on Today at once, and no second acceptance.
+  await page.evaluate(() => { TeamShift.soldOut(TeamShift.specials()[0].id, true); });
+  await expect(page.getByTestId('tonight-soldout')).toContainText('Halibut');
+  await expect(page.getByTestId('team-briefing')).toHaveCount(0);
+  // A second special, read from a photo, approved and sent as an update: accepted again, with what's new marked.
+  await page.evaluate(async () => { const [s] = await TeamShift.read({ b64: 'AAAA', text: 'turbot' }); TeamShift.update(s.id, { confirmed: true, run: 'week' }); TeamShift.approve(s.id); });
+  expect(await page.evaluate(() => TeamShift.status().changed)).toBe(true);
+  expect(asked.filter((b) => b.purpose === 'team_special')[1].messages[0].content.some((c) => c.type === 'image')).toBe(true);
+  await page.evaluate(() => { TeamShift.send(TeamLearn.people()[0].id); const d = TeamShift.get(); Object.keys(d.acks).forEach((k) => { if (d.acks[k].demo) delete d.acks[k]; }); TeamShift.save(d); });
+  await expect(page.getByTestId('team-briefing')).toContainText("Tonight's briefing has changed");
+  await expect(page.getByTestId('briefing-special').filter({ hasText: 'Turbot' })).toContainText('New');
+  await expect(page.getByTestId('briefing-special').filter({ hasText: 'Halibut' })).not.toContainText('New');
+  await page.getByTestId('briefing-ack').click();
+  // Tomorrow: tonight's special has run out and can be brought back; the one that runs through Sunday may still be on,
+  // and nobody is held at yesterday's briefing.
+  const r = await page.evaluate(() => { const t = Date.now() + 86400000, me = TeamLearn.me().id; return { live: TeamShift.specials(t).map((s) => s.name), past: TeamShift.past(t).map((s) => s.name), gate: TeamShift.needsAck(me, t), far: TeamShift.specials(Date.now() + 8 * 86400000).length }; });
+  expect(r.live).not.toContain('Halibut'); expect(r.past).toContain('Halibut'); expect(r.gate).toBe(false); expect(r.far).toBe(0);
+  expect(errors).toEqual([]);
 });

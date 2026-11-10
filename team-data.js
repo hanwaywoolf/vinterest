@@ -17,10 +17,16 @@ const TeamData = {
   /* The venue is one 300KB document once the cards are written, and the screens and TeamLearn read
      it many times a render, so the parsed copy is kept until the stored text changes (the text is
      compared, never trusted by reference, so a write from anywhere else is seen). */
-  get(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._raw) return this._val;
-    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; return v; },
-  save(d){ Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
-  reset(){ Store.remove(this.KEY); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  // Kept until the stored text is written again: every write goes through Store, which says so (Store.subscribe), and
+  // another tab's write arrives as a storage event. Comparing the whole stored text on every call, as before, cost
+  // seconds a screen on a long list (The Princess Royal's restaurant is over a megabyte, read thousands of times).
+  get(){ if(this._fresh&&this._val) return this._val;
+    const raw=Store.get(this.KEY);
+    if(raw!==null&&raw===this._raw&&this._val){ this._fresh=true; return this._val; }
+    const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
+  _fresh:false,
+  save(d){ this._relist(); Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
@@ -28,9 +34,12 @@ const TeamData = {
      floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
      it feeds the Tonight card on every Today, Vinny's suggestions and the guest's tables, not readiness. */
   _day(now=Date.now()){ const x=new Date(now); return `${x.getFullYear()}-${x.getMonth()+1}-${x.getDate()}`; },
-  tonight(now=Date.now()){ const t=(this.get().tonight)||null; const empty={day:this._day(now),off:[],feature:[],note:''};
-    if(!t||t.day!==this._day(now)) return empty; return {...empty,...t,off:(t.off||[]).filter(id=>this.dishes().some(x=>x.id===id)),feature:(t.feature||[]).filter(id=>this.wines().some(w=>w.id===id)||this.cocktails().some(c=>c.id===id))}; },
-  setTonight(fields,now=Date.now()){ const doc=this.get(), t=this.tonight(now); doc.tonight={...t,...fields,day:this._day(now),at:now}; this.save(doc); },
+  /* Tonight has a key of its own (vbiz_tonight_v1): kept on the venue's document, every tap rewrote and re-read the
+     whole list (300KB at The Princess Royal) and threw away everything worked out from it, 2 to 5 seconds a tap. */
+  TONIGHT:'vbiz_tonight_v1',
+  tonight(now=Date.now()){ const d=this.get(), t=Store.getJSON(this.TONIGHT,null)||d.tonight||null; const empty={day:this._day(now),off:[],feature:[],note:''};
+    if(!t||t.day!==this._day(now)) return empty; return {...empty,...t,off:(t.off||[]).filter(id=>(d.dishes[id]||{}).onMenu),feature:(t.feature||[]).filter(id=>(d.wines[id]||{}).onList||((d.cocktails||{})[id]||{}).onList)}; },
+  setTonight(fields,now=Date.now()){ const t=this.tonight(now); Store.setJSON(this.TONIGHT,{...t,...fields,day:this._day(now),at:now}); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   toggleTonight(kind,id,now=Date.now()){ const t=this.tonight(now), list=[...(t[kind]||[])], i=list.indexOf(id); if(i>=0) list.splice(i,1); else list.push(id); this.setTonight({[kind]:list},now); return i<0; },
   isOff(dishId){ return this.tonight().off.includes(dishId); },
   isFeature(id){ return this.tonight().feature.includes(id); },
@@ -49,15 +58,24 @@ const TeamData = {
   /* What the training is written for: the restaurant in its own words, for every prompt's {{about}}. */
   about(){ const v=this.get().venue||{}; return v.about||[v.name,v.style,v.city].filter(Boolean).join(', ')||'A restaurant. Write in British English.'; },
 
-  wines(){ return Object.values(this.get().wines).filter(w=>w.onList).sort((a,b)=>a.order-b.order); },
-  dishes(){ return Object.values(this.get().dishes).filter(x=>x.onMenu).sort((a,b)=>a.order-b.order); },
+  /* What's on the list, in order. Kept per parsed document until the end of the running task (a redraw asks hundreds
+     of times, and nothing between two saves changes it in between); a copy each time, since callers sort and filter
+     what they're given. A function that changes the document in place and reads the list before saving calls _relist. */
+  _listMemo:new WeakMap(), _listTick:false,
+  _relist(){ this._listMemo=new WeakMap(); },
+  _listed(key,flag){ const d=this.get(); let m=this._listMemo.get(d); if(!m){ m={}; this._listMemo.set(d,m); }
+    if(!this._listTick){ this._listTick=true; Promise.resolve().then(()=>{ this._listTick=false; this._relist(); }); }
+    if(!m[key]) m[key]=Object.values(d[key]||{}).filter(x=>x[flag]).sort((a,b)=>a.order-b.order);
+    return m[key].slice(); },
+  wines(){ return this._listed('wines','onList'); },
+  dishes(){ return this._listed('dishes','onMenu'); },
   wine(id){ return this.get().wines[id]||null; },
   dish(id){ return this.get().dishes[id]||null; },
   card(id){ return this.get().cards[id]||null; },
   pairing(dishId){ return this.get().pairings[dishId]||null; },
   /* The cocktail list, where the restaurant has one (The Social Corner's, from its drinks page): each with its
      ingredients as the list prints them, and a card written by prompts/team-cocktail-cards.txt. */
-  cocktails(){ return Object.values(this.get().cocktails||{}).filter(c=>c.onList).sort((a,b)=>a.order-b.order); },
+  cocktails(){ return this._listed('cocktails','onList'); },
   cocktail(id){ return (this.get().cocktails||{})[id]||null; },
   cocktailCard(id){ return (this.get().cocktailCards||{})[id]||null; },
   /* A dish's front-of-house notes (prompts/team-dish-cards.txt, purpose team_dishes): the dish in a sentence (with three near-miss descriptions of the same dish, `wrong`, for the know-it question), its
@@ -248,6 +266,9 @@ const TeamData = {
   // The drinks list as the cocktail prompts see it: every ingredient as the menu lists it, and the price.
   _drinkLines(){ return this.cocktails().map(c=>`${c.id} | ${c.name} | ${c.section||''} | base: ${c.spirit||'not given'} | ${(c.ingredients||[]).join(', ')} | ${c.price||''}${c.by?` | created by ${c.by}`:''}`).join('\n')||'(no cocktails)'; },
   _menuLines(){ return this.dishes().map(x=>`${x.name} | ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')}`).join('\n')||'(no menu uploaded yet)'; },
+  // The menu as printed (section, description, price) for the sommelier review, which checks prices and what a dish is:
+  // given only the short lines above it held The Princess Royal's fudge for a £4 price it couldn't see.
+  _menuFull(){ return this.dishes().map(x=>`${x.name} | ${x.section||''} | ${x.desc||''} | ${x.price||'no price printed'}`).join('\n')||'(no menu uploaded yet)'; },
 
   /* One Claude call, tried a second time after a short pause if the first fails. */
   // A busy moment upstream comes back as a 502; it passes in seconds, so the waits grow (RETRY_WAITS).
@@ -318,7 +339,7 @@ const TeamData = {
      built from the list (a dish's, a cocktail's, Low's) it doubts, is held out of the drill (`venue.reviewed.held`)
      until the next review. The pre-handover gate for a new install (docs/business.md, "Handing over an install"):
      `npm run team:review` runs it on a seed and writes the result into its file. The demo restaurant is never sent. */
-  REVIEW_BATCH:10,
+  REVIEW_BATCH:10, REVIEW_AT_ONCE:1,
   _reviewItem(q){ const d=TeamLearn.deal(q,'review'), c=TeamLearn.shown(d), opts=c.opts, right=c.right;
     const about=q.wine?`WINE ${this.label(this.wine(q.wine)||{})}`:q.cocktail?`COCKTAIL ${(this.cocktail(q.cocktail)||{}).name||''}`:q.dish?`DISH ${(this.dish(q.dish)||{}).name||''}`:'';
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
@@ -330,11 +351,14 @@ const TeamData = {
     if(this.isDemo()) return null;
     const tpl=_loadTextSync('prompts/team-review.txt'), venue=this.get().venue.name||'the restaurant';
     const cock=this.cocktails().length?`The cocktail list:\n${this._drinkLines()}`:'';
-    const ask=async qs=>{ const out={}; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH){ const part=qs.slice(i,i+this.REVIEW_BATCH);
-        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
+    // REVIEW_AT_ONCE batches are read at the same time (one on a phone; npm run team:review raises it for a long list).
+    const ask=async qs=>{ const out={}, starts=[]; for(let i=0;i<qs.length;i+=this.REVIEW_BATCH) starts.push(i); let done=0;
+      const lane=async()=>{ while(starts.length){ const i=starts.shift(), part=qs.slice(i,i+this.REVIEW_BATCH);
+        const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuFull()).replace('{{cocktails}}',cock).replace('{{items}}',part.map(q=>this._reviewItem(q)).join('\n\n'));
         let j=null; try{ j=this._json(await this._callRetry('team_review',prompt)); }catch(e){}
         (j&&j.reviews||[]).forEach(r=>{ if(r&&r.id&&part.some(q=>q.id===r.id)) out[r.id]=r; });
-        onStep&&onStep(Math.min(qs.length,i+this.REVIEW_BATCH),qs.length); }
+        done+=part.length; onStep&&onStep(done,qs.length); } };
+      await Promise.all(Array.from({length:Math.max(1,Math.min(this.REVIEW_AT_ONCE||1,starts.length))},lane));
       return out; };
     const first=await ask(all), doubted=all.filter(q=>first[q.id]&&first[q.id].fit===false);
     // A wine card's own question is rewritten and read again; the rest are built from the list and can only be held.
@@ -531,6 +555,8 @@ const TeamData = {
 };
 /* The sample restaurant (data/team-sample.json): a ten-wine list, a seven-dish menu, their staff cards
    and pairings written ahead, and four staff, so the app can be shown without an upload or a call. */
+// TeamData.get's kept copy is dropped whenever its key is written, here or in another tab.
+try{ Store.subscribe(k=>{ if(k===TeamData.KEY) TeamData._fresh=false; }); window.addEventListener('storage',e=>{ if(!e.key||e.key===TeamData.KEY) TeamData._fresh=false; }); }catch(e){}
 const TeamSample = {
   /* `which`: 'sample' (The Copper Pan, small, written by hand) or 'demo' (The Larkspur, 60 wines and 27
      dishes for the wine-show demo: data/team-demo.json once it has been written by a publish and
@@ -538,17 +564,18 @@ const TeamSample = {
   /* `social`: The Social Corner, Vancouver (Per Se Hospitality Group), a real restaurant's install from its
      website (intake/perse/): its list and menu (data/team-social-list.json), its branding and currency, and
      its training once written and exported (data/team-social.json). No invented staff: whoever opens it
-     sets themselves up as its manager (TeamSetup). */
+     sets themselves up as its manager (TeamSetup). `princess-royal`: The Princess Royal, Notting Hill (Cubitt House), the
+     same kind of install from the menus and wine list on its site (intake/princess-royal/), in pounds, for a sales pitch. */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
      paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'}},
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):null; },
-  // ?seed=perse was this restaurant's first name on another branch; it opens The Social Corner.
-  ALIAS:{perse:'social'},
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):null; },
+  // ?seed=perse was The Social Corner's first name on another branch; ?seed=princess is The Princess Royal's short address.
+  ALIAS:{perse:'social',princess:'princess-royal'},
   load(which='sample'){ which=this.ALIAS[which]||which;
     let s=this.file(which);
     if(which==='demo'&&(!s||s.pending)) s={..._loadJSON('data/team-demo-list.json'),cards:{},pairings:{},staff:null};
@@ -580,16 +607,21 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    // The install's training depth (venue.training in its list file: the tier, and a tier per role) applies to a
+    // restaurant that hasn't set one yet, on a fresh load or a kept team alike; a manager's own choice is never undone.
+    const training=meta.training||{}; const applyTier=()=>{ if(TeamLearn.team().tier!=null) return; if(training.tier) TeamLearn.setTier(training.tier); Object.entries(training.roleTiers||{}).forEach(([r,t])=>TeamLearn.setRoleTier(r,t)); };
     if(keep){ // anyone the new copy's team adds joins (by name), and the demo sales are written if there are none
+      applyTier();
       const have=new Set(TeamLearn.people().map(p=>p.name.toLowerCase()));
       (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[])).filter(p=>!have.has(String(p.name).toLowerCase())).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
       TeamLearn.people().forEach(p=>TeamLearn.assignExisting(p.id));
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
+    applyTier();
     if((which==='demo'||this.social(which))&&Object.keys(d.cards).length) TeamDemo.seedProgress();
     return true;
   },
@@ -607,7 +639,7 @@ const TeamSample = {
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
      Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social','demo.vinterest.team':'demo'},
+  HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','demo.vinterest.team':'demo'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ which=this.ALIAS[which]||which; const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
@@ -642,7 +674,7 @@ const TeamDemo = {
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a
      changed stamp reloads a device that already has the restaurant. */
-  STORY:2,
+  STORY:3,
   /* A list in the order a restaurant teaches it and pushes it: dry before sweet, cheapest first. The demo's
      sales favour the first half (TeamSales.seedDemo), so the house pours sell most and are the ones a
      working team already knows. */
@@ -662,29 +694,33 @@ const TeamDemo = {
       wines.forEach(w=>[...TeamLearn.wineQs(w.id),...TeamLearn.lightQs(w.id)].filter(q=>kinds.includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
         for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(pid,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } })); };
     const check=(pid,n,okShare)=>{ const m=TeamLearn._mine(P,pid); for(let i=0;i<n;i++) m.checks.push({at:now-Math.round(Math.random()*25)*this.DAY,ok:i<Math.round(n*okShare),id:'x'+i}); };
-    // Claire, head sommelier: ready, the whole list at every rung, kept fresh.
-    const claire=by('sommelier'); if(claire){ spaced(claire.id,all,['recognise','recall','apply','contrast'],70,4); dishes(claire.id,menu,now-5*this.DAY); check(claire.id,14,0.93); }
-    // David, buyer: most of it, the sweet wines and a few reds still to do.
-    const david=by('buyer'); if(david){ spaced(david.id,all.filter(w=>!/sweet|fortif/i.test(w.section)).slice(0,38),['recognise','recall','apply','contrast'],50,3); dishes(david.id,menu.slice(0,20),now-8*this.DAY); check(david.id,9,0.78); }
-    // Marco, bartender: was ready; kept half the glass list fresh, learned the rest 24 days ago and hasn't
-    // drilled it since, so he's slipping at about half.
-    const marco=by('bartender'); if(marco){ const half=Math.ceil(glass.length/2), dry=glass.filter(w=>!/sweet|fortif|dessert/i.test(w.section||'')), top=dry[dry.length-1]; // and the dearest dry glass, which he pours at the bar
-      const fresh=[...glass.slice(0,half),...(top&&!glass.slice(0,half).includes(top)?[top]:[])]; spaced(marco.id,fresh,['recognise','recall','apply'],40,3); learn(marco.id,glass.filter(w=>!fresh.includes(w)),['recognise','recall','apply'],now-24*this.DAY);
-      dishes(marco.id,menu.slice(0,8),now-6*this.DAY); dishes(marco.id,menu.slice(8,14),now-24*this.DAY,false);
-      TeamLearn._mine(P,marco.id).wasReady=now-20*this.DAY; check(marco.id,6,0.5); }
-    // Dani: about 60% through, drilling daily.
-    if(srv[0]){ spaced(srv[0].id,glass,['recognise','recall','apply'],30,3); spaced(srv[0].id,bottle.slice(0,5),['recognise','recall','apply'],20,2); dishes(srv[0].id,menu.slice(0,13),now-3*this.DAY); check(srv[0].id,7,0.86); }
-    // Priya: assigned the list 12 days ago, barely started: overdue.
-    if(srv[1]){ learn(srv[1].id,glass.slice(0,6),['recognise'],now-10*this.DAY,'guess'); const m=TeamLearn._mine(P,srv[1].id); Object.values(m.assigned).forEach(a=>{ a.at=now-12*this.DAY; a.due=now-5*this.DAY; }); }
-    // Cocktails, where the restaurant has them (The Social Corner): Marco knows the list but for the newest
-    // spritzes and the sangrias, Claire the classics and the signatures (enough for her minimum), Dani a few; nobody else has started.
-    const mixes=TeamData.cocktails(), mixLearn=(p,cs,firstDaysAgo,steps)=>p&&cs.forEach(c=>TeamLearn.cocktailQs(c.id).filter(q=>TeamLearn.kindsFor(p.role,c.id).includes(q.k)).forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
-      for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(p.id,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } }));
-    if(mixes.length){ mixLearn(marco,mixes.slice(0,13),45,3); mixLearn(claire,mixes.filter(c=>/Inspired|Signature/i.test(c.section)),40,3); mixLearn(srv[0],mixes.slice(0,4),15,2); }
-    // David (The Social Corner, a server there): steady, the glass list known and the first of the bottles.
-    if(srv[3]){ spaced(srv[3].id,glass,['recognise','recall','apply'],35,3); spaced(srv[3].id,bottle.slice(0,3),['recognise','recall','apply'],18,2); dishes(srv[3].id,menu.slice(0,20),now-4*this.DAY); check(srv[3].id,8,0.88); }
-    // Amara: joined this week, five wines in.
-    if(srv[2]){ learn(srv[2].id,glass.slice(0,5),['recognise','recall'],now-2*this.DAY,'think'); const m=TeamLearn._mine(P,srv[2].id); Object.values(m.assigned).forEach(a=>{ a.at=now-2*this.DAY; a.due=now+5*this.DAY; }); }
+    // Each person knows a share of the list in the order it's taught (house glasses first, then bottles), at the rungs
+    // their role needs, so every restaurant, 30 wines or 132, shows the same working team: two ready, the manager and one more nearly
+    // there, one slipping, one behind and one new this week. A person the plan doesn't name knows half.
+    const order=[...glass,...bottle], mixes=TeamData.cocktails();
+    const spacedQs=(pid,qs,firstDaysAgo,steps)=>qs.forEach(q=>{ let t=now-firstDaysAgo*this.DAY, it=null;
+      for(let i=0;i<12&&(i<steps||(it&&it.due<now+this.DAY));i++){ it=TeamLearn.record(pid,q,true,'sure',t); t=Math.min(now-this.DAY/2,it.due); } });
+    const qsOf=(p,id,cocktail)=>{ const ks=TeamLearn.kindsFor(p.role,id); return (cocktail?TeamLearn.cocktailQs(id):[...TeamLearn.wineQs(id),...TeamLearn.lightQs(id)]).filter(q=>ks.includes(q.k)); };
+    // A readiness to reach, not a share of the list: a server's minimum is mostly the glass list and a sommelier's the whole of
+    // it, so the same share lands differently by role and by restaurant. Wines are learnt in teaching order, checked every few.
+    const PLAN={Claire:{to:100,checks:[14,0.93]},Elena:{to:76,checks:[8,0.88]},David:{to:100,checks:[9,0.89]},Dani:{to:82,checks:[7,0.86]},
+      Marco:{to:62,stale:0.35,wasReady:20,checks:[6,0.5]},Priya:{to:36,overdue:true,checks:[3,0.67]},Amara:{to:18,newbie:true}};
+    const pct=pid=>TeamLearn.readiness(pid).pct;
+    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||{to:60}, days=plan.newbie?4:40, steps=plan.newbie?1:3;
+      dishes(p.id,menu.slice(0,Math.round(menu.length*Math.min(1,plan.to/100+0.1))),now-(plan.newbie?2:5)*this.DAY);
+      if(mixes.length) mixes.slice(0,Math.round(mixes.length*plan.to/100)).forEach(c=>spacedQs(p.id,qsOf(p,c.id,true),days,steps));
+      // Someone meant to be ready learns until they are (a figure that rounds to 100% can still be one part short).
+      const short=()=>plan.to>=100?TeamLearn.readiness(p.id).state!=='ready':pct(p.id)<plan.to;
+      let n=0; while(n<order.length&&short()){ order.slice(n,n+3).forEach(w=>spacedQs(p.id,qsOf(p,w.id),days,steps)); n+=3; }
+      if(plan.to>=100&&short()){ mixes.forEach(c=>spacedQs(p.id,qsOf(p,c.id,true),days,steps)); dishes(p.id,menu,now-5*this.DAY); }
+      // Slipping: the next part of the list learnt once, weeks ago, and not drilled since, so it has faded.
+      if(plan.stale) order.slice(n,n+Math.round(order.length*plan.stale)).forEach(w=>qsOf(p,w.id).forEach(q=>TeamLearn.record(p.id,q,true,'sure',now-24*this.DAY)));
+      const m=TeamLearn._mine(P,p.id);
+      if(plan.wasReady) m.wasReady=now-plan.wasReady*this.DAY;
+      // Behind: the list was assigned twelve days ago and was due five days ago. New: assigned two days ago, due in five.
+      if(plan.overdue) Object.values(m.assigned).forEach(a=>{ a.at=now-12*this.DAY; a.due=now-5*this.DAY; });
+      if(plan.newbie) Object.values(m.assigned).forEach(a=>{ a.at=now-2*this.DAY; a.due=now+5*this.DAY; });
+      if(plan.checks) check(p.id,...plan.checks); });
     TeamLearn._batchP=null; TeamLearn._saveAll(P);
     ppl.forEach(p=>TeamLearn.note(p.id));
     // Three wines went on the list nine days ago, so new-wine adoption has something to show; then the till.

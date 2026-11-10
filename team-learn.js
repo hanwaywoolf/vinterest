@@ -60,6 +60,25 @@ const TeamLearn = {
   roleLevel(role){ const r=(this.team().roleLevels||{})[role]; return this.LEVELS.includes(r)?r:null; },
   setLevel(lv){ if(!this.LEVELS.includes(lv)) return; const t=this.team(); t.level=lv; this._saveTeam(t); },
   setRoleLevel(role,lv){ const t=this.team(); t.roleLevels={...(t.roleLevels||{})}; if(this.LEVELS.includes(lv)) t.roleLevels[role]=lv; else delete t.roleLevels[role]; this._saveTeam(t); },
+  /* Training depth (docs/business.md "Training depth"): three tiers over the levels. A tier fixes what is learnt and the
+     shape it's learnt in; Low/Medium/High exist only inside Master. Essentials (a pub, a neighbourhood restaurant): what
+     to say about each wine, its price and what it pours with; what each dish is, its allergens and the wine to suggest;
+     every question four options, no ladder, readiness as a count. Service (a good restaurant without a sommelier): Medium's
+     content, four options everywhere, the table question as the wine then one reason from three, two rungs (Know it, At
+     the table). Master: everything, as it has always been. A tier filters and reshapes what's written, never rewrites
+     it, and a question keeps its id in every shape, so moving up or down loses nothing. Set for the restaurant with a
+     tier per role over it (the sommelier at Master while servers are on Essentials); a restaurant starts at Master. */
+  TIERS:['essentials','service','master'],
+  TIER_LABEL:{essentials:'Essentials',service:'Service',master:'Master'},
+  TIER_ABOUT:{essentials:"What to say about each wine, its price and what it pours with; what each dish is, its allergens and the wine to suggest. Every question is four options, and readiness is a count: you know 18 of 24 wines.",
+    service:"Adds each wine's grape, where it's from, how it tastes and one alternative. Four options everywhere; at the table, the wine then one reason from three. Two rungs: Know it, At the table.",
+    master:"Everything the cards hold, as a sommelier would be asked, with Low, Medium and High inside it."},
+  tier(role){ const t=this.team(), r=role&&(t.roleTiers||{})[role]; return this.TIERS.includes(r)?r:this.TIERS.includes(t.tier)?t.tier:'master'; },
+  roleTier(role){ const r=(this.team().roleTiers||{})[role]; return this.TIERS.includes(r)?r:null; },
+  setTier(tr){ if(!this.TIERS.includes(tr)) return; const t=this.team(); t.tier=tr; this._saveTeam(t); },
+  setRoleTier(role,tr){ const t=this.team(); t.roleTiers={...(t.roleTiers||{})}; if(this.TIERS.includes(tr)) t.roleTiers[role]=tr; else delete t.roleTiers[role]; this._saveTeam(t); },
+  // The level a role's content is drawn at: Essentials is Low, Service is Medium, Master the restaurant's own setting.
+  contentLevel(role){ const tr=this.tier(role); return tr==='essentials'?'low':tr==='service'?'medium':this.level(role); },
   // What a card shows at a level: staff are only asked about what they've been shown.
   cardShows(lv){ const hi=lv==='high', mid=hi||lv==='medium';
     return {fact:lv==='low',grapes:mid,style:mid,grape:mid,place:mid,serve:mid,alts:mid,spec:mid,story:mid,producer:hi,window:hi,usually:hi}; },
@@ -68,20 +87,91 @@ const TeamLearn = {
   MEDIUM_TOPICS:new Set(['wine','grape','place','country','flavour']),
   MEDIUM_DRINK:new Set(['spirit','ingredient','flavour','creator']),
   HIGH_ONLY:/classif|\btiers?\b|quality (label|level)|\brules?\b|\blaws?\b|\bminimum\b|designation|appellation|\blees\b|\bvintage\b|\bmonths\b|\byears\b/i,
-  atLevel(q,lv,drink){ if(lv==='high'||q.dish) return true; if(q.k==='contrast') return false; if(q.k==='apply') return true;
+  atLevel(q,lv,drink,price=false){ if(lv==='high'||q.dish) return true; if(q.k==='contrast') return false; if(q.k==='apply') return true;
     const t=this._topic(q.q,drink);
-    if(lv==='low') return drink?t==='spirit':t==='wine';
+    if(lv==='low') return drink?t==='spirit':t==='wine'||(price&&q.k==='recall'&&/[£$€]/.test(String(q.ans||'')));
     if(drink) return this.MEDIUM_DRINK.has(t);
     if(this.HIGH_ONLY.test(q.q)) return false; // rules and systems stay at High, whatever they mention
     if(this.MEDIUM_TOPICS.has(t)) return true;
     return q.k==='recognise'&&!t&&/describ|style|best fits|which of these/i.test(q.q); },
-  levelQs(id,lv){ const base=this.qsOf(id); if(lv==='high') return base; const drink=this.isCocktail(id)||TeamData.isDrink(TeamData.wine(id));
-    const kept=base.filter(q=>this.atLevel(q,lv,drink)); return lv==='low'?[...this.lightQs(id),...kept]:kept; },
-  // A role's questions on a wine: its level, then the rungs the role climbs.
-  qsFor(role,id){ const kinds=this.kindsFor(role,id); return this.levelQs(id,this.level(role)).filter(q=>kinds.includes(q.k)); },
+  levelQs(id,lv,{price=false}={}){ const base=this.qsOf(id); if(lv==='high') return base; const drink=this.isCocktail(id)||TeamData.isDrink(TeamData.wine(id));
+    const kept=base.filter(q=>this.atLevel(q,lv,drink,price)); return lv==='low'?[...this.lightQs(id),...kept]:kept; },
+  // A role's questions on a wine, cocktail or dish: its tier's content, the rungs the role climbs, then its tier's shape.
+  // Kept per restaurant document and tier, as wineQs is: readiness, the drill and Vinny's test ask for every item's.
+  qsFor(role,id){ const kinds=this.kindsFor(role,id), tr=this.tier(role), lv=this.contentLevel(role);
+    const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    const k=`for:${tr}:${lv}:${kinds.join(',')}:${id}`;
+    if(!m.has(k)){ const base=this.levelQs(id,lv,{price:tr==='essentials'}).filter(q=>kinds.includes(q.k)); m.set(k,tr==='master'?base:this._tierShape(base,tr)); }
+    return m.get(k).map(q=>({...q})); },
+  // A dish's questions for a role: Master's as written; Service's with the change question as four options; Essentials'
+  // without the change and name-a-glass questions (what it is, its allergens, the wine to suggest).
+  dishQsFor(role,id,opts={}){ const tr=this.tier(role), qs=this.dishQs(id,opts); return tr==='master'?qs:this._tierShape(qs,tr); },
+  _tierShape(qs,tr){ return qs.map(q=>this.tierQ(q,tr)).filter(Boolean); },
+  /* One question in a tier's shape, or null where the tier doesn't ask it. Four options always below Master: a pills
+     question with one right answer keeps that answer and its first three wrong ones (the nearest prices, the same kind
+     of place or grape, as choices() orders them); one with several right answers (a blend's grapes) is Master's; the
+     allergen question stays choose-all at every tier, since a wrong allergen reaches a guest. The id never changes, so
+     an answer given in one shape counts in every other. */
+  tierQ(q,tr){
+    if(!q||tr==='master') return q;
+    if(q.allergen) return q;
+    if(q.k==='contrast') return null;
+    if(tr==='essentials'&&q.dish&&/#(mod|1)$/.test(q.id)) return null;
+    if(q.k==='recognise'||q.mc) return q;
+    if(q.k==='apply'&&!q.pills) return this._tableInTier(q,tr);
+    let c=null; try{ c=this.choices(q); }catch(e){ return null; }
+    if(!c||!c.opts||c.right.length!==1) return null;
+    const right=c.opts[c.right[0]], wrong=c.opts.filter((_,i)=>!c.right.includes(i)).slice(0,3); if(wrong.length<2) return null;
+    const all=[right,...wrong], order=this._shuffle(all.map((_,i)=>i),q.id+'|'+tr);
+    const {pills,...rest}=q; return {...rest,mc:true,four:true,opts:order.map(i=>all[i]),a:order.indexOf(0),ans:q.ans||right};
+  },
+  /* A table question below Master. Essentials: "Which wine?", four options (the wine and the wines the pairings rule
+     out), the reason shown after the answer as the thing to say (why), never tested. Service: the wine, then one reason
+     from three. A question with no wine choice (one that names its wine and asks only why) is Master's. */
+  _tableInTier(q,tr){
+    let c=null; try{ c=this.choices(q); }catch(e){ return null; }
+    const gs=c&&c.groups||[], g1=gs.find(g=>/suggest/i.test(g.label||'')), g2=gs.find(g=>/why/i.test(g.label||''));
+    const idx=g=>[...Array(Math.max(0,g.to-g.from)).keys()].map(j=>g.from+j);
+    // A question that names its wine and asks only why: Essentials doesn't ask it (its "which dish" question covers
+    // what the wine pours with); Service asks the one reason from three.
+    if(c&&!g1&&g2&&tr==='service'){ const rs=idx(g2), rr=rs.find(i=>c.right.includes(i)), wr=rs.filter(i=>!c.right.includes(i)).slice(0,2); if(rr==null||wr.length<2) return null;
+      const all=[rr,...wr], o=this._shuffle(all.map((_,i)=>i),q.id+'|w'); return {...q,pills:{opts:o.map(i=>c.opts[all[i]]),right:[o.indexOf(0)],n:1,groups:[{label:g2.label,from:0,to:3,n:1}]}}; }
+    if(!c||!g1) return null;
+    const wines=idx(g1), rw=wines.find(i=>c.right.includes(i)); if(rw==null||wines.length<3) return null;
+    const reasons=g2?idx(g2):[], rr=reasons.find(i=>c.right.includes(i)), why=rr!=null?c.opts[rr]:(q.key||[])[1]||q.why||'';
+    if(tr==='essentials'){ const order=this._shuffle(wines.map((_,i)=>i),q.id+'|e'); const opts=order.map(i=>c.opts[wines[i]]);
+      return {...q,mc:true,four:true,opts,a:order.indexOf(wines.indexOf(rw)),ans:c.opts[rw],why:why||q.why}; }
+    if(rr==null) return {...q,pills:{opts:wines.map(i=>c.opts[i]),right:[wines.indexOf(rw)],n:1,groups:[{label:g1.label,from:0,to:wines.length,n:1}]}};
+    const wrongR=reasons.filter(i=>!c.right.includes(i)).slice(0,2); if(wrongR.length<2) return null;
+    const rs=[rr,...wrongR], ro=this._shuffle(rs.map((_,i)=>i),q.id+'|s'), rOpts=ro.map(i=>c.opts[rs[i]]);
+    const opts=[...wines.map(i=>c.opts[i]),...rOpts], right=[wines.indexOf(rw),wines.length+ro.indexOf(0)];
+    return {...q,pills:{opts,right,n:2,groups:[{label:g1.label,from:0,to:wines.length,n:1},{label:g2.label,from:wines.length,to:opts.length,n:1}]}};
+  },
+  /* A question in a drill about one wine (Practise this wine, a test narrowed to it): "which wine?" is given away by
+     the drill itself, so a table question keeps only its reason, asked as "You suggest the X. Why does it work?" (the
+     same wording a card gets when it names its own wine); at Essentials, where the reason isn't tested, the table
+     question isn't asked there (null). The id never changes, so the answer counts as the same question. */
+  oneWine(q){ if(!q||q.k!=='apply'||!q.wine) return q; const w=TeamData.wine(q.wine); if(!w) return q;
+    if(q.mc) return null;
+    let c=null; try{ c=this.choices(q); }catch(e){ return q; } const gs=c&&c.groups||[], g2=gs.find(g=>/why/i.test(g.label||'')); if(!g2||gs.length<2) return q;
+    const idx=[...Array(Math.max(0,g2.to-g2.from)).keys()].map(j=>g2.from+j), opts=idx.map(i=>c.opts[i]), right=idx.map((i,j)=>c.right.includes(i)?j:-1).filter(j=>j>=0); if(!right.length) return q;
+    const scen=String(q.q).replace(/\s*What (would|do) you suggest(, and why)?\?\s*$/i,'').trim();
+    return {...q,q:`${scen} You suggest the ${TeamData.short(w)}. Why does it work?`,pills:{opts,right,n:right.length,groups:[{label:g2.label,from:0,to:opts.length,n:right.length}]}}; },
+  /* The rungs a tier climbs for a role's kinds: Master the four of LADDER, Service two (Know it: recognise and recall;
+     At the table: apply), Essentials none. [{k, kinds, label}] */
+  rungsFor(tier,kinds){
+    if(tier==='essentials') return [];
+    if(tier==='service') return [{k:'know',kinds:['recognise','recall'].filter(k=>kinds.includes(k)),label:'Know it'},{k:'table',kinds:['apply'].filter(k=>kinds.includes(k)),label:'At the table'}].filter(r=>r.kinds.length);
+    return this.LADDER.filter(k=>kinds.includes(k)).map(k=>({k,kinds:[k],label:this.KIND_LABEL[k]}));
+  },
+  // The word over a question in the drill: its rung at Master, Know it or At the table at Service, and at Essentials
+  // only what it's about (the ladder's words are never shown).
+  rungLabel(q,tier){ if(!q) return ''; if(tier==='master'||!tier) return this.KIND_LABEL[q.k]||''; if(q.k==='apply') return 'At the table';
+    if(tier==='service') return 'Know it'; return q.dish?'The menu':q.cocktail?'Our cocktails':'Our wines'; },
 
-  team(){ const raw=Store.get(this.KEY); if(raw!==null&&raw===this._teamRaw) return this._teamVal;
-    const t=raw?Store.getJSON(this.KEY,null):null, v=t&&t.people?t:{people:{},me:null,targets:{}}; this._teamRaw=raw; this._teamVal=v; return v; },
+  team(){ const g=Store.gen(this.KEY); if(this._teamVal&&this._teamGen===g) return this._teamVal;
+    const raw=Store.get(this.KEY); if(raw!==null&&raw===this._teamRaw){ this._teamGen=g; return this._teamVal; }
+    const t=raw?Store.getJSON(this.KEY,null):null, v=t&&t.people?t:{people:{},me:null,targets:{}}; this._teamRaw=raw; this._teamVal=v; this._teamGen=g; return v; },
   _saveTeam(t){ Store.setJSON(this.KEY,t); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   people(){ return Object.values(this.team().people).sort((a,b)=>a.created-b.created); },
   person(id){ return this.team().people[id]||null; },
@@ -95,8 +185,9 @@ const TeamLearn = {
   setNeed(role,part,v){ const t=this.team(); t.targets=t.targets||{}; t.targets[role]={...(t.targets[role]||{}),[part]:v}; this._saveTeam(t); },
 
   // Progress is read per question in the drill and the readiness figures; parsed once per stored text, as TeamData.get.
-  _all(){ const raw=Store.get(this.PROGRESS); if(raw!==null&&raw===this._allRaw) return this._allVal;
-    const v=(raw?Store.getJSON(this.PROGRESS,{}):null)||{}; this._allRaw=raw; this._allVal=v; return v; },
+  _all(){ const g=Store.gen(this.PROGRESS); if(this._allVal&&this._allGen===g) return this._allVal;
+    const raw=Store.get(this.PROGRESS); if(raw!==null&&raw===this._allRaw){ this._allGen=g; return this._allVal; }
+    const v=(raw?Store.getJSON(this.PROGRESS,{}):null)||{}; this._allRaw=raw; this._allVal=v; this._allGen=g; return v; },
   _saveAll(p){ Store.setJSON(this.PROGRESS,p); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} }, // so Today redraws its figures after a drill
   _mine(p,pid){ p[pid]=p[pid]||{items:{},checks:[],assigned:{}}; return p[pid]; },
   /* Today's drill, done: the daily drill (not a part's practice or Vinny's test) finished on this phone's calendar
@@ -113,21 +204,25 @@ const TeamLearn = {
   _qsCache:new WeakMap(),
   // Questions the sommelier review still doubts (TeamData.reviewed().held) stay out of the drill until the next review;
   // {all:true} is the review's own view of everything.
-  _held(){ const r=typeof TeamData!=='undefined'&&TeamData.reviewed&&TeamData.reviewed(); return new Set(r&&r.held||[]); },
+  // The held questions as a set, made once per review result (TeamData.get keeps the same object until the data is written):
+  // the demo's sales setup asks for it hundreds of thousands of times, and The Princess Royal holds 407.
+  _held(){ const r=typeof TeamData!=='undefined'&&TeamData.reviewed&&TeamData.reviewed();
+    if(this._heldFor&&this._heldFor.r===r) return this._heldFor.set;
+    const set=new Set(r&&r.held||[]); this._heldFor={r,set}; return set; },
   _keep(qs,all){ if(all) return qs; const h=this._held(); return h.size?qs.filter(q=>!h.has(q.id)):qs; },
   wineQs(id,{all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
-    if(!m.has(id)) m.set(id,this._buildQs(id));
+    if(!m.has(id)){ this._building=(this._building||0)+1; try{ m.set(id,this._buildQs(id)); } finally{ this._building--; } }
     // A recall or comparison question with nothing of its own to offer as wrong answers (only the mixed pool) isn't
     // asked: the publish check sends it back as thin. Worked out once per list, outside the choices it calls.
     if(!m.has('pool:'+id)&&!this._poolBusy){ this._poolBusy=true;
-      try{ m.set('pool:'+id,new Set(m.get(id).filter(q=>q.k==='recall'||q.k==='contrast').filter(q=>{ try{ const c=this.choices(q); return c&&c.via==='pool'; }catch(e){ return false; } }).map(q=>q.id))); }
+      try{ m.set('pool:'+id,new Set(m.get(id).filter(q=>['recall','contrast','apply'].includes(q.k)&&this._fault(q)).map(q=>q.id))); }
       finally{ this._poolBusy=false; } }
     const pooled=m.get('pool:'+id)||new Set();
     return this._keep(m.get(id).filter(q=>all||!pooled.has(q.id)).map(q=>({...q})),all); },
   /* Which questions ask how sure they are: a price (a wrong price reaches the bill), an allergen (a wrong one reaches a
      guest). Everywhere else the drill reads confidence from how fast a right answer came (TeamDrill), so a grape
      question is one tap, not two. */
-  asksConfidence(q){ return !!(q&&(q.conf||(q.k==='recall'&&/[£$€]/.test(String(q.ans||'')))||q.allergen)); },
+  asksConfidence(q,tier){ if(tier==='essentials') return false; return !!(q&&(q.conf||(q.k==='recall'&&/[£$€]/.test(String(q.ans||'')))||q.allergen)); },
   /* A card question that asks what an earlier one on the same card already asks: the same answer ("What grape…" and
      "Which grape… 2021", both Cabernet Sauvignon), or an answer that sits inside an earlier one ("Blackcurrant and cedar"
      after "Full and weighty, firmly grippy, with blackcurrant and cedar"). Left out of the drill; the publish check
@@ -170,25 +265,41 @@ const TeamLearn = {
      pour it with, how to serve it or a term explained instead. Never a line already shown in the same drill (`used`). {label, text} | null */
   _first(t,max=22){ const one=(String(t||'').match(/^[^.!?]+[.!?]?/)||[''])[0].trim(), w=one.split(/\s+/);
     return w.length>max?w.slice(0,max).join(' ').replace(/[,;:]$/,'')+'…':one; },
+  // A line said whole: its first sentence when that fits in max words, else nothing (never cut off with "…").
+  _whole(t,max=30){ const one=(String(t||'').match(/^[^.!?]+[.!?]?/)||[''])[0].trim(); return one&&one.split(/\s+/).length<=max?one:''; },
   // `used`: the lines already shown in this drill, so the same dish or fact never comes up twice in a row of questions;
   // the first choice also turns with the question, so two questions on one wine start from different lines.
-  aside(q,answer,used=new Set()){
+  // `missed`: they got it wrong, so the line explains the right answer: the question's why even where it names the
+  // answer (that's the explanation), as long as it says more than the answer alone.
+  aside(q,answer,used=new Set(),{missed=false}={}){
     if(!q) return null; const ans=String(answer||q.ans||(q.opts&&q.a!=null?q.opts[q.a]:'')||'');
     const adds=t=>t&&this._overlap(t,ans)<0.45&&!this._norm(t).includes(this._norm(ans));
-    const trim=t=>{ const ss=String(t).match(/[^.!?]+[.!?]*/g)||[String(t)]; let o=''; for(const x of ss){ if((o+x).split(/\s+/).filter(Boolean).length>this.REVIEW_WORDS) break; o+=x; } return (o||this._first(t,this.REVIEW_WORDS)).trim(); };
+    const aw=new Set(this._words(ans).filter(x=>x.length>3)), more2=t=>this._words(t).filter(x=>x.length>3&&!aw.has(x)).length>=4;
+    // Whole sentences up to REVIEW_WORDS; a first sentence longer than that isn't shown at all.
+    const trim=t=>{ const ss=String(t).match(/[^.!?]+[.!?]*/g)||[String(t)]; let o=''; for(const x of ss){ if((o+x).split(/\s+/).filter(Boolean).length>this.REVIEW_WORDS) break; o+=x; } return o.trim(); };
     const fresh=t=>!used.has(trim(t))&&![...used].some(u=>this._overlap(u,t)>=0.6);
-    if(q.why&&adds(q.why)&&fresh(q.why)) return {label:null,text:trim(q.why)};
-    const more=[];
+    if(q.why&&trim(q.why)&&(adds(q.why)||missed&&more2(q.why))&&fresh(q.why)) return {label:null,text:trim(q.why)};
+    // Otherwise a line on the question's own subject first (where it's from for a place question, the grape for a
+    // grape question, the taste for a taste question); a dish to pour it with only on a question about the table, or
+    // when there's nothing else, since a pairing under "Which part of France…" explains nothing about the answer.
+    const more=[], near=[], pours=[], topic=q.q?this._topic(q.q,!!q.cocktail):'', table=q.k==='apply'||!!q.dish;
     if(q.wine){ const c=TeamData.card(q.wine)||{};
+      const place=c.place&&this._whole(c.place,30), grape=c.grape&&this._whole(c.grape,30);
+      if(/^(place|country|village|climate|influence)$/.test(topic)){ if(place) near.push(place); }
+      else if(topic==='grape'){ if(grape) near.push(grape); }
+      else if(topic==='flavour'||q.k==='recognise'){ if(c.hook) near.push(c.hook); if(grape) near.push(grape); }
       if(c.hook) more.push(c.hook);
-      (c.dishes||[]).forEach(d=>d&&d.dish&&more.push(`Pour it with the ${d.dish}: ${this._first(d.why).replace(/^./,ch=>ch.toLowerCase())}`));
+      // Not on a question whose answer is a dish: a line about another dish there reads as the answer to it.
+      if(!/#pair$/.test(q.id)) (c.dishes||[]).forEach(d=>{ const w=d&&d.dish&&this._whole(d.why,24); if(w) pours.push(`Pour it with the ${d.dish}: ${w.replace(/^./,ch=>ch.toLowerCase())}`); });
       if(c.serve&&(c.serve.temp||c.serve.glass)) more.push(`Serve it ${[c.serve.temp,c.serve.glass&&`in ${c.serve.glass.replace(/^an? /i,'a ')}`].filter(Boolean).join(', ')}.`);
-      if(c.place) more.push(this._first(c.place,30)); if(c.grape) more.push(this._first(c.grape,30)); }
+      if(place) more.push(place); if(grape) more.push(grape); }
     if(q.cocktail){ const c=TeamData.cocktailCard(q.cocktail)||{};
       (c.explain||[]).forEach(e=>e&&e.term&&more.push(`${e.term}: ${e.means}`));
-      (c.dishes||[]).forEach(d=>d&&d.dish&&more.push(`Good with the ${d.dish}: ${this._first(d.why).replace(/^./,ch=>ch.toLowerCase())}`)); }
+      (c.dishes||[]).forEach(d=>{ const w=d&&d.dish&&this._whole(d.why,24); if(w) more.push(`Good with the ${d.dish}: ${w.replace(/^./,ch=>ch.toLowerCase())}`); }); }
     if(q.dish){ const c=TeamData.dishCard(q.dish)||{}; (c.ask||[]).forEach(a=>a&&a.q&&more.push(`Guests ask "${a.q}" ${a.a}`)); }
-    const cand=more.map(t=>String(t).trim()).filter(Boolean).filter(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45)&&fresh(t)), off=cand.length?Math.abs(this._hash(String(q.id)))%cand.length:0;
+    const ok=l=>l.map(t=>String(t).trim()).filter(t=>t&&trim(t)).filter(t=>adds(t)&&(!q.why||this._overlap(t,q.why)<0.45)&&fresh(t));
+    const tiers=table?[near,[...pours,...more]]:[near,more,pours];
+    const cand=tiers.map(ok).find(l=>l.length)||[], off=cand.length?Math.abs(this._hash(String(q.id)))%cand.length:0;
     const pick=cand.length?cand[off]:null;
     return pick?{label:'Good to know',text:trim(pick)}:null; },
   _overlap(a,b){ const A=new Set(this._words(a).filter(x=>x.length>3)), B=new Set(this._words(b).filter(x=>x.length>3)); let n=0; A.forEach(x=>{ if(B.has(x)) n++; }); return n/Math.max(1,Math.min(A.size,B.size)); },
@@ -197,9 +308,16 @@ const TeamLearn = {
   _buildLight(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!w||!c) return []; const out=[], name=TeamData.short(w), drink=TeamData.isDrink(w), kind=this.kindOf(w);
     const st=c.style||{}, gap=o=>{ const s=(TeamData.card(o.id)||{}).style||{}; return Object.keys(st).reduce((a,k)=>a+Math.abs((st[k]||0)-(s[k]||0)),0); };
     const others=TeamData.wines().filter(o=>o.id!==id&&this.kindOf(o)===kind&&(TeamData.card(o.id)||{}).taste).sort((a,b)=>gap(b)-gap(a)||(a.id<b.id?-1:1));
+    // "Which of these would you tell a guest": every line has to be one you could say to a guest about this wine. A
+    // taste line written as advice to staff ("Expect a riper Chardonnay than our cooler ones, but taste it before
+    // service…") is out, and so is one that names a grape this wine isn't made from or another wine on the list,
+    // which rules it out at a glance.
+    const ownG=new Set((w.grapes||[]).flatMap(g=>this._words(g))), grapeWords=new Set(TeamData.wines().flatMap(o=>(o.grapes||[]).flatMap(g=>this._words(g))).filter(x=>x.length>3&&!ownG.has(x)));
+    const names=TeamData.wines().filter(o=>o.id!==id).map(o=>this._norm(TeamData.short(o))).filter(n=>n.split(' ').length>=2);
+    const sayable=t=>{ const n=' '+this._norm(t)+' '; return !/^\s*expect\b/i.test(t)&&!/\b(taste it|before service|in your own words|our (other|cooler|warmer)|than our)\b/i.test(t)&&!this._words(t).some(x=>grapeWords.has(x))&&!names.some(nm=>n.includes(' '+nm+' ')); };
     const tastes=[]; for(const o of others){ const t=TeamData.card(o.id).taste; if(gap(o)<this.SAY_GAP) break;
-      if(this._overlap(t,c.taste)<this.SAY_OVERLAP&&!tastes.some(x=>this._overlap(x,t)>=0.5)) tastes.push(t); if(tastes.length===3) break; }
-    if(c.taste&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
+      if(sayable(t)&&this._overlap(t,c.taste)<this.SAY_OVERLAP&&!tastes.some(x=>this._overlap(x,t)>=0.5)) tastes.push(t); if(tastes.length===3) break; }
+    if(c.taste&&sayable(c.taste)&&tastes.length===3) out.push(this._light(id+'#say',`Which of these would you tell a guest about the ${name}?`,[c.taste,...tastes],c.pitch,id));
     // What it pours with: the dish it ranks highest at in the pairings (its first pick if it is one), against
     // three the pairings say it doesn't suit.
     const menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));
@@ -207,10 +325,19 @@ const TeamLearn = {
     const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id));
     const top=ranked[0]||menu.find(x=>own.has(x.id));
     if(top){ const p=TeamData.pairing(top.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), cw=(c.dishes||[]).find(x=>byName(x.dish)===top);
-      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.clearlyWrong(id,x.id));
-      // The wrong dishes nearest the right one in the length of their names, so the answer never stands out by length.
-      const wrong=this._shuffle(menu.filter(wrongFor),id).sort((a,b)=>Math.abs(a.name.length-top.name.length)-Math.abs(b.name.length-top.name.length)).slice(0,3);
+      const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.tableFit(id,x.id)!=='good');
+      // Dishes it doesn't suit but a server might try (the nearest the pairings still rule out, so never desserts for a
+      // dry wine against one savoury dish), then names near the right one's length so it never stands out by length.
+      const wrong=this._shuffle(menu.filter(wrongFor),id).sort((a,b)=>(drink?0:this._gapAt(id,a.id)-this._gapAt(id,b.id))||Math.abs(a.name.length-top.name.length)-Math.abs(b.name.length-top.name.length)).slice(0,3);
       if(wrong.length===3) out.push(this._light(id+'#pair',`Which dish on our menu is the best match for the ${name}?`,[top.name,...wrong.map(x=>x.name)],(pick&&pick.why)||(cw&&cw.why)||'',id)); }
+    // Its price, when the card asks none of its own as a plain recall (most of a card's price questions compare two
+    // wines, which is Master's): a glass for a wine poured by the glass, else the bottle, against the list's three
+    // nearest prices sold the same way, every option in the same words ("£14 a glass").
+    if(!this.wineQs(id).some(q=>q.k==='recall'&&/[£$€]/.test(String(q.ans||'')))){ const side=w.glass?'glass':'bottle', n=this._num(side==='glass'?w.glass:w.bottle);
+      if(n!=null){ const fmt=x=>drink?TeamData.money(x,{dp:x%1?2:0}):`${TeamData.money(x,{dp:x%1?2:0})} a ${side}`;
+        const near=[...new Set(TeamData.wines().filter(o=>o.id!==id&&TeamData.isDrink(o)===drink).map(o=>this._num(side==='glass'?o.glass:o.bottle)).filter(x=>x!=null&&x!==n))].sort((a,b)=>Math.abs(a-n)-Math.abs(b-n)||a-b).slice(0,3);
+        const other=side==='glass'&&w.bottle&&this._num(w.bottle)!=null?` and ${TeamData.money(this._num(w.bottle),{dp:this._num(w.bottle)%1?2:0})} a bottle`:'';
+        if(near.length===3) out.push(this._light(id+'#price',`How much is a ${side} of the ${name}?`,[fmt(n),...near.map(fmt)],`It's ${fmt(n)}${other}.`,id)); } }
     return out.filter(q=>!this.givesAway(q)&&!this.lengthCue(q)); },
   _light(qid,q,opts,why,wine){ const order=this._shuffle(opts.map((_,i)=>i),qid); return {id:qid,k:'recognise',q,opts:order.map(i=>this._cap(opts[i])),a:order.indexOf(0),why,wine,light:true}; },
   /* At the table the decision comes first. A card's table question often names its own wine ("A guest is
@@ -250,16 +377,22 @@ const TeamLearn = {
      dish, which is what makes "a red that isn't heavy, with the duck" a real choice among reds. */
   wishStyle(text,dish){ let t=' '+String(text||'').toLowerCase()+' ';
     if(dish) this._words(dish.name+' '+(dish.desc||'')).forEach(w=>{ t=t.split(w).join(' '); });
-    const lim=t.match(/(?:under|below|less than|up to|no more than|at most|(?:spend|pay|go) more than|max(?:imum)?(?: of)?)\s*[£$€]?\s*(\d+)/);
+    // A range ("between £100 and £130", "happy to spend more than £100 but no more than £130") has a floor as well as a
+    // ceiling: a wrong wine under the floor is ruled out by the price alone (the sommelier review held those).
+    const betw=t.match(/between\s*[£$€]?\s*(\d+)\s*(?:and|to|-)\s*[£$€]?\s*(\d+)/);
+    const lim=betw?[null,betw[2]]:t.match(/(?:under|below|less than|up to|no more than|not more than|at most|(?:n['’]?t|not|never)\s+(?:want to |wish to |like to )?(?:spend|pay|go) (?:more than|over)|max(?:imum)?(?: of)?)\s*[£$€]?\s*(\d+)/)
+      ||(!/(?:happy|willing|keen|glad|prepared) to (?:spend|pay|go) more than/.test(t)&&t.match(/(?:spend|pay|go) more than\s*[£$€]?\s*(\d+)/));
+    const floor=betw?[null,betw[1]]:t.match(/(?:(?:happy|willing|keen|glad|prepared) to (?:spend|pay|go) (?:more than|over)|at least|(?<!no |not |n['’]t )more than|\bover|\babove)\s*[£$€]?\s*(\d+)/);
     return {light:/n['’]?t (too )?heavy|not (too )?heavy|\blight(er)?\b|won['’]?t overpower|not overpower|delicate|easy[- ]drinking/.test(t),
       full:/\bfull(-bodied)?\b|\bfuller\b|\bbold\b|\bbig\b|stands? up|\bpowerful\b|\brobust\b|\bricher\b|\brounder\b|(some|real|more|plenty of|with) body\b/.test(t),
       soft:/\bsoft\b|\bsmooth\b|not (too )?tannic|n['’]?t (too )?tannic|gentle tannin|\bsilky\b/.test(t),
       crisp:/\bcrisp\b|\bzesty\b|\brefreshing\b|\bzingy\b/.test(t),
       dry:/\bdry\b|not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet/.test(t),
       sweet:/\bsweet\b/.test(t)&&!/not (too )?sweet|n['’]?t (too )?sweet|nothing (too )?sweet|too sweet|sweeter than/.test(t),
-      under:lim?Number(lim[1]):null}; },
-  overPrice(w,ws,side){ if(!ws||ws.under==null) return false; const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
-    const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass)); return cost!=null&&cost>ws.under; },
+      under:lim?Number(lim[1]):null, over:floor&&!(lim&&floor[1]===lim[1])?Number(floor[1]):null}; },
+  // Outside the guest's price: over their ceiling or, where they gave one, under their floor.
+  overPrice(w,ws,side){ if(!ws||(ws.under==null&&ws.over==null)) return false; const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
+    const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass)); return cost!=null&&((ws.under!=null&&cost>ws.under)||(ws.over!=null&&cost<ws.over)); },
   breaksWish(w,ws,side){ const st=(TeamData.card(w.id)||{}).style||{}, v=k=>typeof st[k]==='number'?st[k]:null;
     const price=s=>{ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; };
     const cost=side==='glass'?price(w.glass):side==='bottle'?price(w.bottle):(price(w.bottle)!=null?price(w.bottle):price(w.glass));
@@ -306,6 +439,15 @@ const TeamLearn = {
      kind ("Full-bodied oaky white" for a rosé, "Golden with honey" for a Barolo) gives the answer away.
      Each one is swapped for a description of the same kind with this wine's style turned round
      (kindDecoys). */
+  /* What's wrong with a question as the drill would show it, or null: its wrong answers from the mixed pool (`pool`),
+     fewer than MIN_WRONG of them (`thin`), or at the table the right reasons standing out by length beside short wrong
+     ones (`cue`). Such a question isn't asked (wineQs) and goes back at publish (audit). Four-option questions have
+     their own checks (lengthCue, givesAway). */
+  _fault(q,c){ if(!q||q.k==='recognise'||q.mc||q.allergen) return null; if(!c){ try{ c=this.choices(q.k==='apply'?this._decide(q):q); }catch(e){ return null; } }
+    if(!c||!c.opts) return 'thin'; if(c.via==='pool') return 'pool'; if(c.opts.length-c.right.length<this.MIN_WRONG) return 'thin';
+    return this._reasonCue(c)?'cue':null; },
+  _reasonCue(c){ const g=c&&c.groups&&c.groups.find(x=>x.label==='Why it works'); if(!g) return false; const ids=[...Array(g.to-g.from).keys()].map(i=>g.from+i), L=i=>String(c.opts[i]).length;
+    const R=ids.filter(i=>c.right.includes(i)).map(L), W=ids.filter(i=>!c.right.includes(i)).map(L); return !!(R.length&&W.length&&Math.min(...R)>1.8*Math.max(...W)); },
   /* The publish check: every question on these wines' cards put through what the drill does with it,
      before anyone is asked it. A question fails when the drill would leave it out or ask it badly:
        giveaway  its answer is in the question, or one telling word picks it (_unspoil, givesAway), or its
@@ -324,6 +466,7 @@ const TeamLearn = {
       let c2=null; try{ c2=this.choices(un.k==='apply'?this._decide(un):un); }catch(e){}
       const wrong=c2?c2.opts.length-c2.right.length:0;
       if(!c2||wrong<this.MIN_WRONG) return fail('thin','too few believable wrong answers');
+      if(this._reasonCue(c2)) return fail('cue','the right reasons are much longer than the wrong ones, so they pick themselves out');
       if(c2.via==='pool') return fail('thin','nothing on the list or in the card gives wrong answers of its kind, so they would come from other wines\' questions: ask about something with answers of its own kind (a grape, a place, a flavour, a price)');
       // A guest at a dish this wine doesn't suit is fine when the key already steers them to another wine
       // on the list; it fails only where the card set it as a good match.
@@ -351,8 +494,21 @@ const TeamLearn = {
        repeat      two questions on the same wine, dish or cocktail with the same answer, or one inside the other
        aside       the line after the answer comes round again within one wine's questions
        empty       nothing to show: no options or no right answer
-       pool        wrong answers drawn from whatever other wines were asked (the "mixed pool") */
+       pool        wrong answers drawn from whatever other wines were asked (the "mixed pool")
+       thin        fewer than three wrong answers to choose from
+       form        only the right answer written "place, country" (or only it bare)
+       garbled     a word said twice over by a swap ("the Ermete Ermete")
+       claim       two wrong answers on a comparison making the same style claim
+       cut         the line after the answer stops mid-sentence */
   REVIEW_WORDS:45,
+  /* The review as the console's Wines section shows it: worked out once and kept until the restaurant's list, cards or
+     training levels change (TeamData.get and team() hand back the same objects until their stored text does), since a
+     long list's review takes seconds and the section redraws on every click. */
+  _reviewKept:null,
+  reviewIfKept(){ const k=this._reviewKept; return k&&k.doc===TeamData.get()&&k.team===this.team()?k.out:null; },
+  reviewKept(){ const doc=TeamData.get(), team=this.team(), k=this._reviewKept;
+    if(k&&k.doc===doc&&k.team===team) return k.out;
+    const out=this.review(); this._reviewKept={doc,team,out}; return out; },
   review(){ const out=[]; let flag=(q,code,note)=>out.push({q,code,note});
     const dishes=TeamData.dishes(), names=dishes.map(d=>d.name), wines=TeamData.wines();
     const countries=new Set([...wines.map(w=>w.country),...this.DECOYS.country].filter(Boolean).map(x=>this._norm(x)));
@@ -362,6 +518,22 @@ const TeamLearn = {
       const opts=c.opts, right=c.right, wrong=opts.filter((o,i)=>!right.includes(i));
       if(!opts.length||!right.length){ flag(q,'empty','No options or no right answer to show.'); continue; }
       if(c.via==='pool') flag(q,'pool','Its wrong answers come from other wines\' questions, not about this one.');
+      // Too few to choose from: a pill question with under three wrong answers ("Antipasti" alone).
+      if(!(q.k==='recognise'||q.mc)&&!q.allergen&&wrong.length<this.MIN_WRONG) flag(q,'thin',`Only ${wrong.length} wrong answer${wrong.length===1?'':'s'} to choose from.`);
+      // A grape of the other colour (Syrah offered for a white) is ruled out on sight.
+      if(q.k==='recall'&&q.wine&&this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine)))==='grape'){ const col=this._wineSkin(TeamData.wine(q.wine));
+        if(col&&right.every(i=>this._grapeSkin(opts[i])!==this._otherSkin(col))) wrong.forEach(o=>{ if(this._grapeSkin(o)===this._otherSkin(col)) flag(q,'kind',`A ${this._otherSkin(col)} grape for a ${col} wine: "${o}"`); }); }
+      // The right answer's shape alone ("Okanagan Valley, Canada" among bare regions): a comma in every right option and no wrong one, or the reverse.
+      if(q.k==='recall'&&!q.allergen&&wrong.length&&['place','country','state'].includes(this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine))))){ const cm=o=>/,/.test(o); const rc=right.map(i=>opts[i]);
+        if(rc.every(cm)&&!wrong.some(cm)) flag(q,'form','Only the right answer is written "place, country".');
+        else if(!rc.some(cm)&&wrong.every(cm)&&rc.length===1) flag(q,'form','Only the right answer is bare.'); }
+      // A word said twice over ("the Ermete Ermete", "Rosé Rosé"): a swap that garbled the name.
+      const realNames=[...wines.map(w=>this._norm(TeamData.short(w))),...names.map(n=>this._norm(n))];
+      opts.forEach(o=>{ const m=String(o).match(/(?<![\p{L}])(\p{L}{3,})\s+\1(?![\p{L}])/iu); if(m&&!realNames.some(n=>n.includes(this._norm(m[0])))) flag(q,'garbled',`"${o}"`); });
+      // Telling two wines apart: two wrong answers making the same style claim ("Veuve is lighter", "Lanson is fuller").
+      if(q.k==='contrast'){ const seenAx=new Set(); wrong.forEach(o=>{ const as=this._styleAxes(o); const hit=as.find(a=>seenAx.has(a)); if(hit) flag(q,'claim',`Two wrong answers make the same ${hit} claim.`); as.forEach(a=>seenAx.add(a)); }); }
+      // At the table, the right reasons standing out by length beside short wrong ones.
+      if(q.k==='apply'&&this._reasonCue(c)) flag(q,'cue','The right reasons stand out by their length.');
       const n=opts.map(o=>this._norm(o)); if(new Set(n).size<n.length) flag(q,'dupe','Two options say the same thing.');
       if(q.dish&&/#(mod|know)$/.test(q.id)){ const d=TeamData.dish(q.dish); wrong.forEach(o=>{ const other=names.find(x=>x!==d.name&&!d.name.includes(x)&&o.includes(x)); if(other) flag(q,'offsubject',`A wrong answer is about the ${other}: "${o}"`); }); }
       if(q.k==='recall'&&this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine)))==='wine'){ const names=[...wines.map(w=>TeamData.short(w)),...Object.values(this.OFF_LIST).flat()].map(x=>this._norm(x).replace(/^the /,''));
@@ -372,10 +544,12 @@ const TeamLearn = {
         if(t==='place') opts.forEach(o=>{ if(countries.has(this._norm(o))) flag(q,'kind',`A country among regions: "${o}"`); }); }
       if(q.k==='apply'&&q.wine&&c&&c.groups&&c.groups[0]&&c.groups[0].label==='What do you suggest?'){ const rw=TeamData.wine(q.wine), dish=this.dishIn(q.q), wish=this.wishIn(q.q,rw), ws=this.wishStyle(q.q,dish);
         const g=c.groups[0]; c.opts.slice(g.from,g.to).forEach((o,i)=>{ if(c.right.includes(g.from+i)) return; const ow=wines.find(w=>{ const nm=TeamData.short(w); return o.startsWith((/^the /i.test(nm)?'':'The ')+nm)||o.startsWith(nm); }); if(!ow) return;
-          if(this.overPrice(ow,ws,wish.side)) flag(q,'request',`${TeamData.short(ow)} is over the guest's price`);
+          if(this.overPrice(ow,ws,wish.side)) flag(q,'request',`${TeamData.short(ow)} is outside the guest's price`);
           const k=wish.kind||this.kindOf(rw); if(this.kindOf(ow)!==k) flag(q,'request',`${TeamData.short(ow)} isn't the kind asked for`); }); }
       if((q.k==='recognise'||q.mc)&&q.opts&&q.a!=null){ if(this.lengthCue(q)) flag(q,'cue','The right option stands out by its length.'); if(this.givesAway(q)) flag(q,'giveaway','A word of the question is in the right option alone.'); }
       const ans=right.map(i=>opts[i]).join(' ')||q.ans, ax=this.aside(q,ans);
+      if(ax&&ax.text&&/…$/.test(ax.text)) flag(q,'cut','The line after the answer stops mid-sentence.');
+      if(ax&&ax.text&&/#pair$/.test(q.id)){ const other=names.find(n=>ax.text.includes(n)&&!ans.includes(n)); if(other) flag(q,'offsubject',`The line after the answer is about the ${other}.`); }
       if(ax&&ax.text){ if(this._overlap(ax.text,ans)>=0.45) flag(q,'echo','The line after the answer says the answer again.'); if(words(ax.text)>this.REVIEW_WORDS) flag(q,'long',`The line after the answer is ${words(ax.text)} words.`); }
       if(ax&&ax.list) ax.list.forEach(x=>{ if(words(x.text)>30) flag(q,'long',`"${x.name}" has ${words(x.text)} words.`); });
     }
@@ -413,7 +587,8 @@ const TeamLearn = {
   GIVEAWAY_SKIP:new Set(['wine','wines','which','what','does','best','describes','description','fits','this','that','usually','style','guest','would','your','list','made','from','with','they','colour','smell','smells','taste','tastes','flavour','flavours','describe','would']),
   givesAway(q){ if(!q.opts||q.a==null) return false; const stem=new Set(this._words(q.q).filter(w=>w.length>3&&!this.GIVEAWAY_SKIP.has(w)));
     const ws=o=>new Set(this._words(o)), right=ws(q.opts[q.a]), wrong=q.opts.filter((_,i)=>i!==q.a).map(ws);
-    return [...right].some(w=>stem.has(w)&&!wrong.some(x=>x.has(w))); },
+    const shares=(w,set)=>[...set].some(x=>x===w||(Math.min(x.length,w.length)>=4&&(x.startsWith(w)||w.startsWith(x))));
+    return [...right].some(w=>shares(w,stem)&&!wrong.some(x=>shares(w,x))); },
   KIND_TAGS:[
     ['red',/\breds?\b(?!\s*(berr|fruit|cherr|currant|apple|onion|pepper|plum|flower|meat|wine vinegar))|\bdeep purple\b|\bruby\b/],
     ['white',/\bwhites?\b(?!\s*(pepper|flower|peach|fruit|truffle|blossom|stone|meat|fish))|\bgolden\b|\bstraw[- ]coloured\b/],
@@ -493,44 +668,55 @@ const TeamLearn = {
      choose-all against the venue's list, only once the kitchen has confirmed them; asked with confidence, a miss back
      within the shift), a change a guest asks for (what do you say), then its pairings (which wine, name a wine).
      Pills on the allergen and change questions are built here (q.pills), so choices() hands them straight back. */
-  dishQs(id,{allergen=true,all=false}={}){ return this._keep(this._dishQs(id,{allergen}),all); },
+  // Kept per restaurant document, as wineQs is: the dashboard asks for every dish's questions once per person.
+  dishQs(id,{allergen=true,all=false}={}){ const doc=TeamData.get(); let m=this._qsCache.get(doc); if(!m){ m=new Map(); this._qsCache.set(doc,m); }
+    const k=`dish:${id}:${allergen?1:0}`; if(!m.has(k)) m.set(k,this._dishQs(id,{allergen}));
+    return this._keep(m.get(k),all); },
   _dishQs(id,{allergen=true}={}){
     const x=TeamData.dish(id); if(!x) return [];
     const out=[], c=TeamData.dishCard(id), dishes=TeamData.dishes();
     // Know it: the dish's own sentence against three near-misses of the same dish (a wrong sauce, cut or richness,
     // written with the notes). Never another dish's description: the dish is named in the question, so that taught nothing.
-    if(c&&c.say&&(c.wrong||[]).length>=3){ const opts=[c.say,...c.wrong.slice(0,3)], order=this._shuffle([0,1,2,3],id+'k');
-      out.push({id:'d:'+id+'#know',dish:id,k:'recognise',q:`A guest asks what the ${x.name} is.`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:x.desc?`The menu says: ${x.desc}.`:''}); }
+    // Prices and add-ons ("…, and you can add burrata for $14") belong to the menu-change questions: off every option, so
+    // the right one is never the only one with a price tail.
+    const plain=t=>{ const parts=String(t||'').replace(/\.\s*$/,'').split(/;\s*|,\s*(?=and\b)/); const k=parts.filter(x=>!/[£$€]\s?\d|\b\d+\s*dollars\b|\byou can add\b/i.test(x)); return (k.length?k:parts).join('; ').replace(/;\s*and\b/,', and').trim()+'.'; };
+    if(c&&c.say&&(c.wrong||[]).length>=3){ const opts=[c.say,...c.wrong.slice(0,3)].map(plain), order=this._shuffle([0,1,2,3],id+'k');
+      out.push({id:'d:'+id+'#know',dish:id,k:'recognise',q:`A guest asks what ${this._the(x.name)} is.`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:x.desc?`The menu says: ${x.desc}.`:''}); }
     const conf=TeamData.allergensOf(id);
     if(allergen&&conf){ const list=TeamData.allergenList(), names=conf.map(code=>TeamData.allergenName(code));
       const opts=[...list.map(a=>a.name),'None of these'], right=conf.length?conf.map(code=>list.findIndex(a=>a.code===code)).filter(i=>i>=0):[opts.length-1];
-      out.push({id:'d:'+id+'#allergen',dish:id,k:'recall',allergen:true,conf:true,q:`Which of these are in the ${x.name}? Choose all that apply.`,ans:names.join(', ')||'None of these',
+      out.push({id:'d:'+id+'#allergen',dish:id,k:'recall',allergen:true,conf:true,q:`Which of these are in ${this._the(x.name)}? Choose all that apply.`,ans:names.join(', ')||'None of these',
         pills:{opts,right,n:right.length,groups:[{label:'Allergens in it',from:0,to:opts.length,n:right.length,all:true}]},
         why:conf.length?`${names.join(', ')}. A guest with ${conf.length===1?'that':'one of those'} allerg${conf.length===1?'y':'ies'} needs to know before they order${c&&c.allergens&&c.allergens.note?`. ${c.allergens.note}`:'.'}`:'None of the listed allergens, as the kitchen confirmed it.'}); }
     if(c&&(c.mods||[]).length){ const m=c.mods.find(z=>z.can!=='ask')||c.mods[0];
       // Every wrong answer is about this dish and this change: the two stances the kitchen didn't take, and
       // guessing on the kitchen's behalf (never right). Never another dish's change, which the name gives away.
-      const ask=m.ask, stance={yes:`Of course, the kitchen can do the ${x.name} ${ask}.`,no:`I'm afraid the kitchen can't do the ${x.name} ${ask}.`,
-        ask:`Let me check with the kitchen whether they can do it ${ask}, and I'll come straight back to you.`};
-      const wrongs=[...Object.keys(stance).filter(k=>k!==(m.can||'ask')).map(k=>stance[k]),`It should be fine; I'll put it through ${ask} and let the kitchen sort it out.`];
-      const all=[{x:m.say,ok:true},...wrongs.map(t=>({x:t,ok:false}))], order=this._shuffle(all.map((_,i)=>i),id+'c'), opts=order.map(i=>this._cap(all[i].x));
-      out.push({id:'d:'+id+'#mod',dish:id,k:'apply',q:`A guest asks for the ${x.name} ${m.ask}. What do you say?`,key:[m.say],ans:m.say,
-        pills:{opts,right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:1,groups:[{label:'What do you say?',from:0,to:opts.length,n:1}]},why:m.can==='no'?'It can\'t change, so say so plainly and offer something that works; never guess for the kitchen.':m.can==='yes'?'The kitchen can do it; say so and say what changes.':'Only the kitchen knows: say you\'ll ask, and come back with the answer.'}); }
+      // Four answers in one form (yes, no, ask the kitchen, guess for the kitchen), so the right one is picked by knowing
+      // the dish, not by being the only natural or specific sentence; what the kitchen actually says is the why.
+      const stance={yes:'Yes, the kitchen can do that for you.',no:"I'm sorry, the kitchen can't do that one.",ask:'Let me check with the kitchen and come straight back to you.',
+        guess:"That should be fine; I'll put it through and let the kitchen sort it out."};
+      const rk=m.can==='yes'||m.can==='no'?m.can:'ask';
+      const all=Object.keys(stance).map(k=>({x:stance[k],ok:k===rk})), order=this._shuffle(all.map((_,i)=>i),id+'c'), opts=order.map(i=>all[i].x);
+      out.push({id:'d:'+id+'#mod',dish:id,k:'apply',q:`A guest asks for ${this._the(x.name)} ${m.ask}. What do you say?`,key:[m.say],ans:m.say,
+        pills:{opts,right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:1,groups:[{label:'What do you say?',from:0,to:opts.length,n:1}]},why:`${this._cap(String(m.say).replace(/\.?\s*$/,'.'))} ${m.can==='no'?'Say so plainly and offer something that works; never guess for the kitchen.':m.can==='yes'?'Say so, and say what changes.':'Only the kitchen knows: say you\'ll ask, and come back with the answer.'}`}); }
     const p=TeamData.pairing(id); if(!p||!p.best||!p.best.length) return out;
     const best=TeamData.wine(p.best[0].id); if(!best) return out;
     const drink=TeamData.isDrink(best), picks=new Set([...p.best.map(b=>b.id),p.glass&&p.glass.id,p.cocktail&&p.cocktail.id].filter(Boolean));
-    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&this.clearlyWrong(w.id,id));
-    const bl=TeamData.short(best).length, near=(a,b)=>Math.abs(TeamData.short(a).length-bl)-Math.abs(TeamData.short(b).length-bl); // names near the right one's length
-    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>w.type===best.type),id).sort(near),...this._shuffle(clear,id+'x').sort(near)]
+    // Wrong wines a server could reach for: ones the pairings rule out (STEER_GAP or more from every pick, or the dish's
+    // avoid), of the same kind as the right one first and the nearest of those first, so three big reds against the
+    // only white for oysters never give it away; a drink is never offered against wines.
+    const clear=TeamData.wines().filter(w=>!picks.has(w.id)&&TeamData.isDrink(w)===drink&&(drink?this.clearlyWrong(w.id,id):this.tableFit(w.id,id)!=='good'));
+    const bk=this.kindOf(best), bl=TeamData.short(best).length, byGap=(a,b)=>this._gapAt(a.id,id)-this._gapAt(b.id,id)||Math.abs(TeamData.short(a).length-bl)-Math.abs(TeamData.short(b).length-bl);
+    const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)&&this.kindOf(TeamData.wine(p.avoid.id))===bk?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>this.kindOf(w)===bk),id).sort(byGap),...this._shuffle(clear.filter(w=>this.kindOf(w)!==bk),id+'x').sort(byGap)]
       .filter((w,i,a)=>a.indexOf(w)===i).slice(0,3);
     if(pick.length<3) return out;
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
     out.push(
-      {id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders the ${x.name}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why},
+      ...[{id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders ${this._the(x.name)}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why}].filter(q=>!this.lengthCue(q)),
       // Name a wine for it asks for the glass pick: "which wine suits it best" already asks for the first one, and asking
       // for it twice is a repeat (without a separate glass pick it isn't asked). Any of the dish's picks is accepted.
       ...((()=>{ const gw=p.glass&&TeamData.wine(p.glass.id); if(!gw||gw.id===best.id) return [];
-        return [{id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine by the glass for a guest having the ${x.name}.`,ans:TeamData.short(gw),acc:[gw,...p.best.map(b=>TeamData.wine(b.id))].filter(w=>w&&w.glass).flatMap(w=>[TeamData.short(w),w.name]),why:p.glass.why}]; })()),
+        return [{id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine by the glass for a guest having ${this._the(x.name)}.`,ans:TeamData.short(gw),acc:[gw,...p.best.map(b=>TeamData.wine(b.id))].filter(w=>w&&w.glass).flatMap(w=>[TeamData.short(w),w.name]),why:p.glass.why}]; })()),
     );
     return out;
   },
@@ -581,21 +767,24 @@ const TeamLearn = {
     return {glass:need.glass>0?ws.filter(w=>TeamData.byGlass(w)):[],bottle:need.bottle>0?ws.filter(w=>!TeamData.byGlass(w)):[],dishes:need.dishes>0?TeamData.dishes():[],cocktails:need.cocktails>0?TeamData.cocktails():[],allergens:need.allergens>0?TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)!=null):[]};
   },
   // A rung opens once every question on the rung below has been answered right at least once.
-  _open(qs,items,kind,kinds){
-    const idx=this.LADDER.indexOf(kind); if(!kinds.includes(kind)) return false;
+  _open(qs,items,kind,kinds,tier='master'){
+    if(!kinds.includes(kind)) return false;
+    if(tier==='essentials') return true; // no ladder: anything may be asked
+    if(tier==='service'){ if(kind!=='apply') return true; return !qs.some(q=>(q.k==='recognise'||q.k==='recall')&&!(items[q.id]&&items[q.id].reps)); }
+    const idx=this.LADDER.indexOf(kind);
     for(let r=0;r<idx;r++){ const k=this.LADDER[r]; if(!kinds.includes(k)) continue; const below=qs.filter(q=>q.k===k); if(below.some(q=>!(items[q.id]&&items[q.id].reps))) return false; }
     return true;
   },
   knowsWine(pid,role,id,items){ const qs=this.qsFor(role,id); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
-  knowsDish(pid,id,items){ const qs=this.dishQs(id,{allergen:false}); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
+  knowsDish(pid,id,items){ const p=this.person(pid), qs=this.dishQsFor(p?p.role:'server',id,{allergen:false}); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   /* How much of a wine (the role's questions) or a dish they hold today: {known, total, rungs:[{k,label,done}]}.
      The drill's summary shows it per wine, and readiness counts it as partial credit. */
   progress(pid,id,{dish=false}={}){
     const person=this.person(pid); if(!person) return {known:0,total:0,rungs:[]};
     const items=this._mine(this._all(),pid).items;
-    if(dish){ const qs=this.dishQs(id,{allergen:false}); return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs:[]}; }
+    if(dish){ const qs=this.dishQsFor(person.role,id,{allergen:false}); return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs:[]}; }
     const kinds=this.kindsFor(person.role,id), qs=this.qsFor(person.role,id);
-    const rungs=this.LADDER.filter(k=>kinds.includes(k)&&qs.some(q=>q.k===k)).map(k=>{ const rq=qs.filter(q=>q.k===k); return {k,label:this.KIND_LABEL[k],done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
+    const rungs=this.rungsFor(this.tier(person.role),kinds).filter(r=>qs.some(q=>r.kinds.includes(q.k))).map(r=>{ const rq=qs.filter(q=>r.kinds.includes(q.k)); return {k:r.k,label:r.label,done:rq.length>0&&rq.every(q=>this.known(items[q.id]))}; });
     return {known:qs.filter(q=>this.known(items[q.id])).length,total:qs.length,rungs};
   },
   KIND_LABEL:{recognise:'Recognise',recall:'Recall',apply:'At the table',contrast:'Tell them apart'},
@@ -628,17 +817,23 @@ const TeamLearn = {
       if(!need[k]) return;
       if(k==='cocktails'&&!sc.cocktails.length) return; // no cocktail list, no cocktail part
       if(k==='allergens'&&!(sc.allergens||[]).length) return; // nothing confirmed by the kitchen yet, no allergen part
-      const list=sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
+      // A wine or cocktail with nothing to ask at this role's level (every question held by the review, or above the level)
+      // can't be learnt, so it isn't counted against anyone: at The Princess Royal one spritz once kept a whole team off Ready.
+      const list=k==='glass'||k==='bottle'||k==='cocktails'?sc[k].filter(x=>this.qsFor(role,x.id).length):sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
       // partial: every answer they hold counts, so the figure moves with each drill; a wine is known (for the minimum) only whole.
       const partial=k==='allergens'?known:list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:k==='dishes'}); return a+(pr.total?pr.known/pr.total:0); },0);
       parts[k]={known,total:list.length,need:need[k],share:list.length?known/list.length:1,partial:list.length?partial/list.length:1};
     });
-    const ks=Object.keys(parts), met=ks.every(k=>parts[k].share>=parts[k].need-1e-9);
-    const pct=ks.length?Math.round(100*ks.reduce((a,k)=>a+Math.min(1,parts[k].partial/parts[k].need),0)/ks.length):0;
+    const ks=Object.keys(parts), tier=this.tier(role);
+    // Essentials has no minimum per part: readiness is how many of the things they sell they know, and Ready means all
+    // of them (the allergens among them). The parts keep their figures for the screens that list them.
+    const count=ks.reduce((a,k)=>({known:a.known+parts[k].known,total:a.total+parts[k].total}),{known:0,total:0});
+    const met=tier==='essentials'?count.total>0&&count.known>=count.total:ks.every(k=>parts[k].share>=parts[k].need-1e-9);
+    const pct=tier==='essentials'?(count.total?Math.round(100*count.known/count.total):0):ks.length?Math.round(100*ks.reduce((a,k)=>a+Math.min(1,parts[k].partial/parts[k].need),0)/ks.length):0;
     const overdue=Object.values(mine.assigned||{}).filter(a=>!a.done&&a.due<now).length;
     const due=Object.values(items).filter(it=>it.reps&&it.due<=now).length;
     const behind=Object.values(mine.assigned||{}).filter(a=>!a.done&&a.due<now).reduce((a,x)=>Math.max(a,Math.floor((now-x.due)/this.DAY)),0);
-    return {pct,parts,state:met?'ready':mine.wasReady?'slipping':'not',overdue,behind,due,role};
+    return {pct,parts,state:met?'ready':mine.wasReady?'slipping':'not',overdue,behind,due,role,tier,count};
   },
   /* Remembers that they've been ready, so dropping below the minimum later reads as Slipping. */
   note(pid){ const r=this.readiness(pid); if(!r) return r; const p=this._all(), m=this._mine(p,pid);
@@ -659,10 +854,13 @@ const TeamLearn = {
   drill(pid,size=this.DRILL_SIZE,part=null){ return this.spread(this._drillPool(pid,size*2,part),size); },
   _drillPool(pid,size,part){
     const person=this.person(pid); if(!person) return [];
-    const role=person.role, kinds=this.ROLES[role].kinds, mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
+    const role=person.role, kinds=this.ROLES[role].kinds, tier=this.tier(role), mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'||part==='allergens'?sc0.dishes:[],cocktails:part==='cocktails'?sc0.cocktails:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes, cocktails=sc.cocktails||[];
     // A part's practice is its questions alone: allergens drills the allergen question of every confirmed dish, dishes everything else.
-    const dqs=x=>part==='allergens'?this.dishQs(x.id).filter(q=>q.allergen):part==='dishes'?this.dishQs(x.id,{allergen:false}):this.dishQs(x.id);
+    // Practising "Menu pairings" leads with each dish's pairing questions, then what it is and the changes guests ask
+    // for: one question per dish a drill, so with what-it-is first the pairings never came up in practice.
+    const pairFirst=qs=>[...qs.filter(q=>/#\d+$/.test(q.id)),...qs.filter(q=>!/#\d+$/.test(q.id))];
+    const dqs=x=>part==='allergens'?this.dishQsFor(role,x.id).filter(q=>q.allergen):part==='dishes'?pairFirst(this.dishQsFor(role,x.id,{allergen:false})):this.dishQsFor(role,x.id);
     const inPart=key=>{ if(!part) return true; const t=key[0]; if(part==='allergens') return t==='a'; if(t==='a') return false; return t==='w'?wines.some(w=>w.id===key.slice(2)):t==='c'?cocktails.some(c=>c.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)); };
     // A wine's or a cocktail's questions at the rungs this role needs for it.
     const qsFor=w=>this.qsFor(role,w.id), out=[], used=new Set();
@@ -672,7 +870,7 @@ const TeamLearn = {
     const nextFor=(qs)=>{ // the lowest open rung's first question not yet answered right (a dish has no ladder: its first unanswered)
       if(qs.length&&qs[0].dish) return qs.find(q=>!(items[q.id]&&items[q.id].reps))||null;
       const kk=qs.length&&qs[0].cocktail?this.kindsFor(role,qs[0].cocktail):kinds;
-      for(const k of this.LADDER){ if(!this._open(qs,items,k,kk)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
+      for(const k of this.LADDER){ if(!this._open(qs,items,k,kk,tier)) continue; const q=qs.find(q=>q.k===k&&!(items[q.id]&&items[q.id].reps)); if(q) return q; }
       return null;
     };
     const pool=[...wines.flatMap(qsFor),...cocktails.flatMap(qsFor),...dishes.flatMap(dqs)];
@@ -682,7 +880,7 @@ const TeamLearn = {
     due.forEach(([id])=>push(byId[id]));
     // 2. New: assigned and not started, capped once anything is due, in the till's order, one per section.
     const assigned=Object.entries(mine.assigned||{}).filter(([k,a])=>!a.done&&inPart(k));
-    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQs(id).filter(q=>q.allergen):t==='d'?this.dishQs(id,{allergen:false}):qsFor({id}); };
+    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQsFor(role,id).filter(q=>q.allergen):t==='d'?(part==='dishes'?pairFirst:(x=>x))(this.dishQsFor(role,id,{allergen:false})):qsFor({id}); };
     const started=k=>qsOfKey(k).some(q=>items[q.id]&&items[q.id].reps);
     let rank={}; try{ if(typeof TeamReport!=='undefined'&&typeof TeamSales!=='undefined'&&TeamSales.has()) TeamReport.priority(28,12).forEach((x,i)=>{ rank['w:'+x.wine.id]=i; }); }catch(e){}
     const fresh=assigned.filter(([k])=>!started(k)).sort((a,b)=>((rank[a[0]]??99)-(rank[b[0]]??99))||(a[1].at-b[1].at)||(a[1].due-b[1].due));
@@ -726,11 +924,20 @@ const TeamLearn = {
     const dues=right.map(q=>items[q.id]&&items[q.id].due).filter(d=>d&&d>now).sort((a,b)=>a-b); if(!dues.length) return '';
     const first=dues[0], days=Math.round((first-now)/this.DAY), same=dues.filter(d=>Math.round((d-now)/this.DAY)===days).length;
     const when=days<=0?'later today':days===1?'tomorrow':days<7?`on ${new Date(first).toLocaleDateString(undefined,{weekday:'long'})}`:`in ${days} days`;
-    return `${same===1?'One of these comes':same===right.length?'They come':`${['','One','Two','Three','Four','Five'][same]||same} of these come`} back ${when}.`; },
+    // Said about the questions, never "they": "They come back tomorrow" read as the person coming back.
+    const n=right.length, num=x=>['','one','two','three','four','five','six','seven','eight','nine','ten'][x]||String(x);
+    return n===1?`You'll get this question again ${when}, to check it's stuck.`
+      :same===n?`You'll get the ${num(n)} questions you got right again ${when}, to check they've stuck.`
+      :`${this._cap(num(same))} of the questions you got right ${same===1?'comes':'come'} back ${when}; the rest later.`; },
 
   /* Marks a typed answer: locally when it plainly matches the answer or a wording that counts,
      else by Claude against the key (prompts/team-grade.txt). {ok, score, verdict, say, missing}. */
-  _norm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); },
+  // Remembered: the review and the table questions clean the same wine names and reasons many thousands of times on a
+  // long list (The Princess Royal's 132 wines took 10 seconds here when the console's Wines section opened).
+  _normMemo:new Map(),
+  _norm(s){ const k=String(s||''), m=this._normMemo; let v=m.get(k); if(v!==undefined) return v;
+    v=k.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+    if(m.size>50000) m.clear(); m.set(k,v); return v; },
   _lev(a,b){ const m=a.length,n=b.length, d=Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++) d[0][j]=j;
     for(let i=1;i<=m;i++) for(let j=1;j<=n;j++) d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[m][n]; },
   localMatch(q,answer){
@@ -748,7 +955,14 @@ const TeamLearn = {
      The review and the sommelier review read questions through this, so they see what a person sees. */
   shown(q){ if(q.k==='recognise'||q.mc) return {opts:q.opts||[],right:q.a!=null?[q.a]:[],n:1};
     let c=null; try{ c=this.choices(q); }catch(e){} return c&&c.opts&&c.opts.length?c:{opts:[],right:[],n:0}; },
-  choices(q){ const c=this._choices(q); if(!c||!c.opts) return c;
+  // An undealt question's options are the same until the restaurant's document changes: worked out once per document
+  // (the build, the publish check, readiness and the drill all ask), keyed by its id and words.
+  choices(q){ if(q&&!q.deal&&q.id){ const doc=TeamData.get(); let m=this._choiceMemo&&this._choiceMemo.get(doc); if(!m){ m=new Map(); (this._choiceMemo||(this._choiceMemo=new WeakMap())).set(doc,m); }
+      const k=q.id+'|'+q.k+'|'+q.q+'|'+(q.ans||'')+'|'+(q.key||[]).join('|'); if(m.has(k)) return m.get(k); const c=this._choices1(q);
+      // Never kept while a list is part-built: options worked out then can read other wines' questions half made.
+      if(!this._building&&!this._poolBusy) m.set(k,c); return c; }
+    return this._choices1(q); },
+  _choices1(q){ const c=this._choices(q); if(!c||!c.opts) return c;
     const key=o=>this._norm(o).replace(/^the /,''), keep=[], seen=new Map();
     c.opts.forEach((o,i)=>{ const k=key(o); if(!seen.has(k)){ seen.set(k,keep.length); keep.push(i); } else if(c.right.includes(i)&&!c.right.includes(keep[seen.get(k)])) keep[seen.get(k)]=i; });
     if(keep.length===c.opts.length) return c;
@@ -796,7 +1010,9 @@ const TeamLearn = {
     return {opts,right:rightIdx,n:rightIdx.length,via:'pool'};
   },
   /* What a recall question asks about, read from its words; null when it isn't one of these. */
-  _topic(text,drink=false){ const t=String(text).toLowerCase();
+  // Read once per wording: the options of every question ask it of every other question.
+  _topic(text,drink=false){ const k=(drink?'1':'0')+text; const M=this._topicMemo||(this._topicMemo=new Map()); if(M.has(k)) return M.get(k); const r=this._topic0(text,drink); if(M.size>20000) M.clear(); M.set(k,r); return r; },
+  _topic0(text,drink=false){ const t=String(text).toLowerCase();
     // A cocktail is asked about its own things: the base spirit, what's in it, who created it, its flavours.
     if(drink){
       if(/\bcreated\b|\binvented\b|\bbartender\b|who (made|created|came up)/.test(t)) return 'creator';
@@ -819,6 +1035,8 @@ const TeamLearn = {
     if(/\briver\b|\bwinds?\b|\binfluence\b|\bcools?\b|moderates|what gives/.test(t)) return 'influence';
     if(/climate/.test(t)) return 'climate';
     if(/\bferment|keep the sweetness|stays sweet|\bstop/.test(t)) return 'method';
+    // "Which Champagne village do the grapes come from?" asks for a village, not a grape.
+    if(/\b(which|what) ([a-zà-ÿ'-]+ )?(village|commune|grand cru village|premier cru village)\b/.test(t)) return 'village';
     if(/\bgrapes?\b/.test(t)) return 'grape';
     if(/\bcountry\b|which nation/.test(t)&&!/\bregion\b|\barea\b|\bvalley\b/.test(t)) return 'country'; // countries against countries, never a region among them
     if(/\bregion\b|\bcountry\b|\bvalley\b|\barea\b|\bcounty\b|\bwhere\b/.test(t)) return 'place';
@@ -828,7 +1046,18 @@ const TeamLearn = {
   // Only lists of names are split into one pill each ("Chardonnay, Pinot Noir and Pinot Meunier"); a
   // climate, a meaning or a change is one answer, commas and all.
   SPLIT_TOPICS:['grape','flavour','ingredient'],
-  COUNTRY_WORDS:{Italian:'Italy',French:'France',Spanish:'Spain',Portuguese:'Portugal',German:'Germany',Austrian:'Austria',American:'United States',Canadian:'Canada',Argentine:'Argentina',Argentinian:'Argentina',Chilean:'Chile',Australian:'Australia','New Zealand':'New Zealand','South African':'South Africa',Hungarian:'Hungary',Greek:'Greece'},
+  // A grape's skin, from the Learn list's types, else from the list's own wines of one colour; null when unknown.
+  _grapeSkin(g){ const n=String(g||'').trim(); if(typeof GRAPE_TYPES!=='undefined'){ const k=Object.keys(GRAPE_TYPES).find(x=>this._norm(x)===this._norm(n)); if(k) return grapeSkin(k)==='red'?'red':'white'; }
+    const ts=new Set(TeamData.wines().filter(w=>(w.grapes||[]).some(x=>this._norm(x)===this._norm(n))).map(w=>w.type)); return ts.size===1?(ts.has('red')?'red':ts.has('white')?'white':null):null; },
+  // The colour a still red or white wine asks its grapes to be; sparkling, rosé and the rest can be made from either.
+  _wineSkin(w){ return w&&(w.type==='red'||w.type==='white')?w.type:null; },
+  // "the Calamari", but "The Burger" as it is: never "the The Burger".
+  _the(n){ return /^the\s/i.test(String(n||''))?String(n):'the '+n; },
+  // The style claims a sentence makes: body, tannin, acidity, sweetness.
+  _styleAxes(t){ const n=this._norm(t), out=[]; if(/bodied|\bbody\b|lighter|fuller|richer/.test(n)) out.push('body'); if(/tannic|tannin|grip/.test(n)) out.push('tannin');
+    if(/acidity|fresher|tangier/.test(n)) out.push('acid'); if(/sweeter|drier/.test(n)) out.push('sweet'); return out; },
+  _otherSkin(c){ return c==='red'?'white':'red'; },
+  COUNTRY_WORDS:{English:'England',British:'England',Italian:'Italy',French:'France',Spanish:'Spain',Portuguese:'Portugal',German:'Germany',Austrian:'Austria',American:'United States',Canadian:'Canada',Argentine:'Argentina',Argentinian:'Argentina',Chilean:'Chile',Australian:'Australia','New Zealand':'New Zealand','South African':'South Africa',Hungarian:'Hungary',Greek:'Greece'},
   // The country a question names ("Which Italian region…", "…region of Italy"), else null.
   // "Name the Argentine region…" where the list and the guide know too few other Argentine regions for fair wrong answers:
   // the question loses the country word ("Name the region…"), so its wrong regions can come from anywhere.
@@ -847,6 +1076,10 @@ const TeamLearn = {
     return null; },
   _regionsOf(country){ const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{};
     return [...TeamData.wines().filter(w=>w.country===country&&w.region).map(w=>w.region),...Object.entries(K).filter(([,r])=>r.country===country).map(([n])=>n)]; },
+  // Villages a server could mistake for one another, by region (checked: Champagne's Grand Cru villages, Burgundy's
+  // best-known village appellations), for "Which Champagne village…" questions.
+  VILLAGES:{Champagne:['Aÿ','Bouzy','Ambonnay','Verzenay','Cramant','Avize','Le Mesnil-sur-Oger','Oger','Chouilly'],
+    Burgundy:['Meursault','Puligny-Montrachet','Chassagne-Montrachet','Gevrey-Chambertin','Volnay','Pommard','Nuits-Saint-Georges','Vosne-Romanée','Chambolle-Musigny','Saint-Aubin','Saint-Romain','Beaune']},
   DECOYS:{
     country:['France','Italy','Spain','Portugal','Germany','Austria','United States','Canada','Argentina','Chile','Australia','New Zealand','South Africa'],
     flavour:['Blackcurrant','Cedar','Lemon','Green apple','Peach','Black pepper','Plum','Honey','Toast','Gooseberry','Leather','Vanilla','Violet','Grapefruit','Dried fig','Liquorice','Mint','Smoke','Pineapple','Chocolate'],
@@ -859,6 +1092,10 @@ const TeamLearn = {
     duration:['Drunk young','A decade or more','Two to three years','Twenty years or more','Within a year of the vintage','Five to eight years'],
     change:['It softens','It gets more tannic','It turns sweeter','It loses its fruit within a year','It turns savoury and gamey','It gets darker in colour'],
     bank:['The Right Bank','Entre-Deux-Mers','The Graves'],
+    // The grapes sparkling wines are made from, for a sparkling wine's grape question.
+    sparklingGrape:['Chardonnay','Pinot Noir','Pinot Meunier','Pinot Blanc','Chenin Blanc','Glera','Xarel·lo','Macabeo','Parellada','Arbane','Petit Meslier'],
+    sparklingBlack:['Pinot Noir','Pinot Meunier','Gamay','Grolleau','Poulsard','Trousseau','Trepat','Garnacha'],
+    sparklingWhite:['Chardonnay','Pinot Blanc','Chenin Blanc','Arbane','Petit Meslier','Xarel·lo','Macabeo','Parellada','Glera','Savagnin'],
     // Cocktails: checked general answers of each kind, after the list's own.
     spirit:['Gin','Vodka','White rum','Aged rum','Blanco tequila','Mezcal','Bourbon','Rye whiskey','Scotch whisky','Cognac','Pisco'],
     ingredient:['Campari','Aperol','Sweet vermouth','Dry vermouth','Cointreau','Elderflower liqueur','Simple syrup','Fresh lime juice','Fresh lemon juice','Egg white','Angostura bitters','Soda water','Prosecco','Ginger beer','Agave syrup','Grenadine','Coffee liqueur','Maraschino liqueur'],
@@ -875,6 +1112,8 @@ const TeamLearn = {
     // country alone, so it stands among countries.
     if(topic==='country'){ const cs=[...new Set([...TeamData.wines().map(w=>w.country),...this.DECOYS.country].filter(Boolean))].sort((x,y)=>y.length-x.length);
       const hit=cs.find(c=>this._norm(q.ans).includes(this._norm(c))); if(hit) right=[hit]; }
+    // "Loire Valley, France" stands out among bare regions: cut to the region unless the question asks for the country too.
+    if(topic==='place'&&!/\bcountry\b/i.test(q.q)) right=right.map(r=>{ const m=String(r).match(/^([^,]+),\s*([^,]+)$/); return m&&this._placeCountry(m[1])?m[1].trim():r; });
     const norm=x=>this._norm(x).replace(/^the /,''), seen=new Set(right.map(norm)), wines=TeamData.wines(), pool=[];
     const rightWords=new Set(right.flatMap(r=>this._words(r)));
     // A wrong pill that says the same as a right one in fewer or other words ("Grape spirit" beside
@@ -907,6 +1146,10 @@ const TeamLearn = {
       const keep=pool.slice(0,this.WRONG_MAX), all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
       return {opts:order.map(i=>this._cap(all[i].x)),right:order.map((i,j)=>all[i].ok?j:-1).filter(j=>j>=0),n:right.length};
     }
+    // A village against villages of the same region: the regions guide's own villages, towns and crus, then a checked few.
+    if(topic==='village'){ const K=(typeof KNOWLEDGE!=='undefined'&&KNOWLEDGE&&KNOWLEDGE.regions)||{}, here=norm([own&&own.region,own&&own.name,q.q].join(' '));
+      Object.entries(K).filter(([n,r])=>here.includes(norm(n))||(r.aliases||[]).some(a=>here.includes(norm(a)))).forEach(([n,r])=>{ (r.places||[]).filter(x=>/village|cru|town|commune/.test(x.kind)).forEach(x=>add(x.name)); (this.VILLAGES[n]||[]).forEach(add); });
+      Object.entries(this.VILLAGES).forEach(([n,vs])=>{ if(here.includes(norm(n))) vs.forEach(add); }); }
     if(topic==='year'){ const y=this._num(right[0]); if(y) [y-1,y+1,y-2,y+2,y-3,y+3].forEach(v=>add(String(v))); }
     if(topic==='duration'&&/month/i.test(right[0])) ['6 months','12 months','18 months','24 months','36 months'].forEach(add);
     if(topic==='place') wines.map(w=>w.region).filter(Boolean).forEach(add); // regions against regions; a country question has its own kind
@@ -915,11 +1158,33 @@ const TeamLearn = {
     if(topic==='grape') wines.flatMap(w=>w.grapes||[]).forEach(add);
     if(topic==='country') wines.filter(w=>w.id!==q.wine).map(w=>w.country).filter(Boolean).forEach(add);
     (this.DECOYS[topic]||[]).forEach(add);
-    if(topic==='grape'){ const known=new Set([...wines.flatMap(w=>w.grapes||[]),...(typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[])].map(norm)); const g=pool.map(x=>String(x).replace(/^(usually|mostly|mainly)\s+/i,'')).filter(x=>known.has(norm(x))); pool.length=0; pool.push(...[...new Set(g)]); }
+    if(topic==='grape'){ const known=new Set([...wines.flatMap(w=>w.grapes||[]),...(typeof GRAPE_ALLOWLIST!=='undefined'?GRAPE_ALLOWLIST:[])].map(norm)); let g=pool.map(x=>String(x).replace(/^(usually|mostly|mainly)\s+/i,'')).filter(x=>known.has(norm(x)));
+      // A still red is asked against red grapes and a still white against white ones (Syrah for a Riesling is ruled out on sight),
+      // unless its own answer is of the other colour (a white from red grapes); the Learn list fills in where the list runs short.
+      const col=this._wineSkin(own); if(col&&right.every(r=>this._grapeSkin(r)!==this._otherSkin(col))){
+        if(typeof GRAPE_TYPES!=='undefined') Object.keys(GRAPE_TYPES).filter(x=>!seen.has(norm(x))).forEach(x=>g.push(x));
+        g=g.filter(x=>this._grapeSkin(x)===col&&!right.some(r=>norm(r)===norm(x))); }
+      pool.length=0; pool.push(...[...new Set(g)]); }
+    // A sparkling wine (which the colour rule above leaves alone) is asked against the grapes sparkling wines are made from:
+    // the sommelier review held a Champagne asked against Montepulciano and Tempranillo.
+    if(topic==='grape'&&!drink&&own&&own.type==='sparkling'){
+      // A Blanc de Noirs is asked among black grapes and a Blanc de Blancs among white ones, or the name gives it away.
+      const bdn=/blanc de noirs/i.test(own.name), bdb=/blanc de blancs/i.test(own.name);
+      const sp=new Set([...(bdn?this.DECOYS.sparklingBlack:bdb?this.DECOYS.sparklingWhite:this.DECOYS.sparklingGrape),...(bdn||bdb?[]:wines.filter(w=>w.type==='sparkling').flatMap(w=>w.grapes||[]))].map(norm));
+      (bdn?this.DECOYS.sparklingBlack:bdb?this.DECOYS.sparklingWhite:[]).forEach(add);
+      this.DECOYS.sparklingGrape.forEach(add); const f=pool.filter(x=>sp.has(norm(x))&&!right.some(r=>norm(r)===norm(x))); if(f.length>=3){ pool.length=0; pool.push(...[...new Set(f)]); } }
     // Like for like within a kind: a months answer against months, a valley against valleys.
     if(/month/i.test(right[0])){ const m=pool.filter(x=>/month/i.test(x)); pool.length=0; pool.push(...m); }
+    // A place inside a place ("Lalande-de-Pomerol, Bordeaux") isn't offered against a whole region ("The Loire Valley"),
+    // or the other way round: a question asking for a region gets regions, one asking for a commune gets communes.
+    if(topic==='place'){ const inner=x=>/,/.test(String(x)), r0=inner(right[0]), f=pool.filter(x=>inner(x)===r0); if(f.length>=3){ pool.length=0; pool.push(...f); } }
     if(inC){ const keep=pool.filter(x=>this._placeCountry(x)===inC); pool.length=0; pool.push(...keep); }
     else if(topic==='place'&&/valley/i.test(right[0])){ ['The Rhône Valley','The Douro Valley','The Napa Valley','The Mosel Valley','The Barossa Valley'].forEach(add); const v=pool.filter(x=>/valley/i.test(x)); pool.length=0; pool.push(...v); }
+    // "Region and country" asked and answered that way: every wrong region written the same way, one per region.
+    if(topic==='place'&&right.every(r=>/,/.test(r))){ const regs=new Set(right.map(r=>norm(String(r).split(',')[0]))), done=new Set();
+      const keep=pool.map(x=>{ if(/,/.test(x)) return x; const c=this._placeCountry(x); return c?`${String(x).replace(/^the\s+/i,'')}, ${c}`:null; })
+        .filter(x=>{ if(!x) return false; const r=norm(String(x).split(',')[0]); if(regs.has(r)||done.has(r)) return false; done.add(r); return true; });
+      pool.length=0; pool.push(...keep); }
     // A flavour pill that shares a word with a right one ("Black cherry" beside "Red cherry") would be unfair either way.
     const wrong=this._shuffle(pool.filter(x=>topic!=='flavour'||!this._words(x).some(w=>rightWords.has(w))),this._seed(q)+'t');
     if(wrong.length<3) return null;
@@ -937,7 +1202,13 @@ const TeamLearn = {
     // grape ("Riesling" is Trimbach's name too).
     // Its list name with or without a quoted or bracketed part ("Faustino Rioja Crianza" for 'Faustino Rioja Crianza "Art Collection"').
     const callsB=w=>[TeamData.short(w),w.name,TeamData.short(w).replace(/\s*["“(][^"”)]*["”)]\s*/g,' ')].filter(Boolean).map(x=>norm(x)).filter(x=>x.split(' ').length>=2);
-    const text=norm(q.q), B=TeamData.wines().filter(w=>w.id!==A.id&&callsB(w).some(x=>text.includes(x))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    // By its full list name first: a bare name ("Brut Rosé") sits inside other wines' names ("Coates & Seely Brut Rosé"),
+    // and once picked Charles Heidsieck's for a question about Gusbourne and Coates & Seely. A bare name counts only where
+    // it isn't part of this wine's own name or another wine's full name in the question.
+    const text=norm(q.q), others=TeamData.wines().filter(w=>w.id!==A.id);
+    const byShort=others.filter(w=>text.includes(norm(TeamData.short(w)))).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
+    const fulls=[A,...others].filter(w=>text.includes(norm(TeamData.short(w)))).map(w=>norm(TeamData.short(w)));
+    const B=byShort||others.filter(w=>callsB(w).some(x=>{ if(!text.includes(x)) return false; return !fulls.some(f=>f.includes(x)&&f!==x); })).sort((x,y)=>TeamData.short(y).length-TeamData.short(x).length)[0];
     if(!B) return null;
     // One right answer: the card's own. Its other wordings (acc) are for marking a typed answer; as pills they were the
     // same fact three times over ("choose 3"), with the wrong ones the same swap three times.
@@ -956,12 +1227,17 @@ const TeamLearn = {
     const fa=forms(A), fb=forms(B);
     // Unnamed in the answers: the producer's surname ("Fèvre", "Jadot").
     const nick=(w,f)=>f[0]||String(w.producer||'').split(/\s+/).filter(x=>!GENERIC.has(norm(x))).pop()||words(w).find(x=>!GENERIC.has(norm(x))&&!shared.has(norm(x)))||TeamData.short(w);
-    const a=nick(A,fa), b=nick(B,fb), sym=TeamData.currency().sym||'£', price=w=>this._num(w.bottle)||this._num(w.glass);
+    let a=nick(A,fa), b=nick(B,fb);
+    // Two wines from one house ("Jolivet" and "Jolivet", "Clicquot" and "Clicquot"): each called by a word the other's name lacks.
+    const own=(w,o)=>{ const ow=new Set(words(o).map(norm)); return words(w).filter(x=>!GENERIC.has(norm(x))&&!ow.has(norm(x))).join(' ')||TeamData.short(w); };
+    if(norm(TeamData.short(B)).split(' ').includes(norm(a))||norm(TeamData.short(A)).split(' ').includes(norm(b))||norm(a)===norm(b)){ a=own(A,B); b=own(B,A); }
+    const sym=TeamData.currency().sym||'£', price=w=>this._num(w.bottle)||this._num(w.glass);
     const place=w=>[w.region,w.country].filter(Boolean)[0]||'', grapes=w=>(w.grapes||[]).join(' and ');
     const wrong=[];
     if(place(A)&&place(B)&&norm(place(A))!==norm(place(B))) wrong.push(`${a} is from ${place(B)}; ${b} is from ${place(A)}`,`They're both from ${place(A)}`);
     if(grapes(A)&&grapes(B)&&norm(grapes(A))!==norm(grapes(B))) wrong.push(`${a} is ${grapes(B)}; ${b} is ${grapes(A)}`,`They're made from the same grapes`);
-    if(price(A)&&price(B)&&price(A)!==price(B)) wrong.push(price(A)>price(B)?`${a} is the cheaper of the two`:`${a} costs more than ${b}`);
+    if(price(A)&&price(B)&&price(A)!==price(B)){ const hi=price(A)>price(B)?a:b, lo=hi===a?b:a, gap=Math.abs(price(A)-price(B));
+      wrong.push(price(A)>price(B)?`${a} is the cheaper of the two`:`${a} costs more than ${b}`,`${lo} costs ${sym}${gap} more than ${hi}`,`They cost the same`); }
     if(!!A.glass!==!!B.glass) wrong.push(A.glass?`${a} is bottle only; ${b} is poured by the glass`:`${a} is poured by the glass; ${b} is bottle only`);
     else wrong.push(A.glass?`Only ${b} is poured by the glass`:`Both are poured by the glass`);
     const ya=this._num(A.vintage), yb=this._num(B.vintage);
@@ -971,24 +1247,31 @@ const TeamLearn = {
     const sa=(TeamData.card(A.id)||{}).style||{}, sb=(TeamData.card(B.id)||{}).style||{};
     const AX={body:['fuller-bodied','lighter-bodied'],tannin:['more tannic, with more grip','softer, with less tannin'],acid:['fresher, with more acidity','softer, with less acidity'],sweet:['sweeter','drier']};
     Object.entries(AX).forEach(([k,[more,less]])=>{ const x=sa[k], y=sb[k]; if(x!=null&&y!=null&&Math.abs(x-y)>=1) wrong.push(x>y?`${a} is ${less} than ${b}`:`${a} is ${more} than ${b}`); });
+    // One wrong answer per style claim: "Veuve is lighter" and "Lanson is fuller" are the same mistake twice.
+    const axisOf=t=>this._styleAxes(t);
     // The best wrong answer is a right one with the two wines swapped ("Barbaresco needs 38 months; Barolo
     // needs 26"): the same point, the same words, turned the wrong way round.
     const esc=x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), alts=[...fa.map(f=>[f,b]),...fb.map(f=>[f,a])].sort((x,y)=>y[0].length-x[0].length);
     const swap=t=>{ if(!alts.length) return t; const re=new RegExp(`(?<![\\p{L}])(${alts.map(x=>esc(x[0])).join('|')})(?![\\p{L}])`,'gu'); return t.replace(re,m=>(alts.find(x=>x[0]===m)||[0,m])[1]); };
-    const swapped=forms0.map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t)));
+    // One swap: the card's own answer turned round. Its other wordings turned round are the same mistake again.
+    const swapped=forms0.slice(0,1).map(swap).filter(t=>!forms0.some(r=>norm(r)===norm(t))&&!/(?<![\p{L}])(\p{L}{3,})\s+\1(?![\p{L}])/iu.test(t));
     // Only decoys about what the question asks: its grapes, its place, its price, how it's sold, its age.
-    const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour/,age:/vintage|older|younger|age/};
+    const ASPECT={style:/style|taste|flavour|body|bodied|rich|lighter|tannin|acid|sweet|dry/,grape:/grape|blend|variet/,place:/origin|where|place|region|country|come from|comes from/,price:/price|cost|cheap|dear|expensive|spend/,sold:/sold|glass|bottle|bought|pour|\border\b|ordered|ordering/,age:/vintage|older|younger|age/};
     const want=Object.keys(ASPECT).filter(k=>ASPECT[k].test(norm(q.q)));
     const aspectOf=t=>{ const n=norm(t); return /bodied|tannic|tannin|acidity|sweeter|drier/.test(n)?'style':/grape/.test(n)?'grape':/ from |both from/.test(' '+n)?'place':/cheaper|costs more/.test(n)?'price':/glass|bottle only/.test(n)?'sold':/vintage/.test(n)?'age':'type'; };
     // A question about something the list can't speak to (style, legal ageing) gets its swaps alone.
-    const onTopic=want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong);
+    // The list's own swap of the aspect the answer is about ("A is from B's place") is the answer's swap again: left out.
+    const swappedAsp=new Set(swapped.map(aspectOf)), listSwap=t=>/;/.test(t)&&swappedAsp.has(aspectOf(t));
+    const onTopic=(want.length?wrong.filter(t=>want.includes(aspectOf(t))):(swapped.length>=2?[]:wrong)).filter(t=>!listSwap(t));
     // Nor two wrong answers that say the same thing: one whose words all sit inside another's is the same claim.
     // (Against the other wrong answers only: a swap has the right answer's words by design.)
     const kept=[], st=t=>this._stems(t).filter(w=>w.length>2), inside=(x,y)=>{ const b=new Set(st(y)); const a=st(x); return a.length&&a.every(w=>b.has(w)); };
-    const seen=new Set(right.map(norm)), take=x=>{ const n=norm(x); if(seen.has(n)) return false;
-      if(kept.some(k=>inside(x,k)||inside(k,x))) return false; seen.add(n); kept.push(x); return true; };
-    let wr=[...swapped,...onTopic,...(onTopic.length+swapped.length<2?wrong:[])].filter(take);
-    if(wr.length<2) wr=[...wr,...wrong.filter(take)]; // short of distinct claims: the list's facts turned round make up the rest
+    const axes=new Set(), seen=new Set(right.map(norm)), take=x=>{ const n=norm(x); if(seen.has(n)) return false; const ax=axisOf(x); if(ax.some(a=>axes.has(a))) return false;
+      if(kept.some(k=>inside(x,k)||inside(k,x))) return false; seen.add(n); kept.push(x); ax.forEach(a=>axes.add(a)); return true; };
+    // A question about one thing (price, how it's sold) is never made up with answers about another (grapes): the
+    // sommelier review held those as off the subject. Only a question about nothing the list can speak to borrows them.
+    let wr=[...swapped,...onTopic,...(!want.length&&onTopic.length+swapped.length<2?wrong:[])].filter(take);
+    if(wr.length<2&&!want.length) wr=[...wr,...wrong.filter(take)]; // short of distinct claims: the list's facts turned round make up the rest
     if(wr.length<2) return null;
     const keep=[...wr.slice(0,swapped.length),...this._shuffle(wr.slice(swapped.length),this._seed(q)+'x')].slice(0,Math.max(3,6-right.length));
     const all=[...right.map(x=>({x,ok:true})),...keep.map(x=>({x,ok:false}))], order=this._shuffle(all.map((_,i)=>i),this._seed(q)+'c');
@@ -1013,7 +1296,9 @@ const TeamLearn = {
     const sym=TeamData.currency().sym||'£', drink=TeamData.isDrink(TeamData.wine(q.wine)), wines=TeamData.wines().filter(w=>TeamData.isDrink(w)===drink);
     const side=drink?'glass':/\bglass\b/i.test(q.q)?'glass':/\bbottle\b/i.test(q.q)?'bottle':/glass/i.test(right[0])?'glass':'bottle';
     // A cocktail's price is just its price ("$22"), against the other cocktails' prices.
-    const fmt=n=>drink?TeamData.money(n,{dp:n%1?2:0}):`${TeamData.money(n,{dp:n%1?2:0})} a ${side}`, n=this._num(right[0]); if(n==null) return null;
+    // The price is the number after the currency sign: "£17.50 for a 125ml glass" is 17.50, never 125.
+    const cur=String(right[0]||'').replace(/,/g,'').match(/[£$€]\s*(\d+(?:\.\d+)?)/);
+    const fmt=n=>drink?TeamData.money(n,{dp:n%1?2:0}):`${TeamData.money(n,{dp:n%1?2:0})} a ${side}`, n=cur?Number(cur[1]):this._num(right[0]); if(n==null) return null;
     // A glass question about a wine sold only by the bottle has that as its answer, said in words.
     const own=TeamData.wine(q.wine), bottleOnly=side==='glass'&&own&&!own.glass&&/bottle|not by the glass/i.test(right[0]);
     const rightText=bottleOnly?`Not by the glass: ${TeamData.money(n,{dp:n%1?2:0})} a bottle`:fmt(n);
@@ -1097,6 +1382,10 @@ const TeamLearn = {
      them), 'avoid' (the one to steer from) or 'steer' (body, tannin and sweetness together STEER_GAP or more
      from the nearest of its picks, as a pale rosé is from the reds a braised lamb shoulder wants). */
   STEER_GAP:3,
+  // How far a wine's style sits from the nearest of a dish's picks (body, tannin and sweetness together); 99 when unknown.
+  _gapAt(wineId,dishId){ const pr=TeamData.pairing(dishId)||{}, picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean);
+    const st=id=>(TeamData.card(id)||{}).style||{}, a=st(wineId); if(a.body==null||!picks.length) return 99;
+    return Math.min(...picks.map(id=>{ const b=st(id); return b.body==null?99:Math.abs(a.body-b.body)+Math.abs((a.tannin||0)-(b.tannin||0))+Math.abs((a.sweet||0)-(b.sweet||0)); })); },
   tableFit(wineId,dishId){ const pr=TeamData.pairing(dishId); if(!pr) return 'good';
     if(pr.avoid&&pr.avoid.id===wineId) return 'avoid';
     const picks=[...(pr.best||[]).map(b=>b.id),pr.glass&&pr.glass.id].filter(Boolean); if(!picks.length||picks.includes(wineId)) return 'good';
@@ -1133,7 +1422,8 @@ const TeamLearn = {
     const wines=TeamData.wines(), norm=x=>this._norm(x), key=(q.key||[]).map(String);
     // A sentence offers a wine when it names the wine as the list does (producer and name); a grape alone
     // ("Sauvignon Blanc", "Malbec") is a reason's word, not an offer.
-    const named=s=>wines.filter(w=>{ const t=norm(s), n=norm(TeamData.short(w)); return n.length>3&&t.includes(n); });
+    const shorts=wines.map(w=>[w,norm(TeamData.short(w))]).filter(([,n])=>n.length>3);
+    const named=s=>{ const t=norm(s); return shorts.filter(([,n])=>t.includes(n)).map(([w])=>w); };
     const own=TeamData.wine(q.wine), offered=key.flatMap(named).filter(w=>w.id!==q.wine);
     // The question naming its own wine ("…wants a glass of the Minuty") makes it that wine, whatever other
     // wine the key steers to.
@@ -1163,7 +1453,7 @@ const TeamLearn = {
     const choose=offers.length>=3;
     // A reason as something to say: "Say it's dry" → "It's dry"; price clauses and offers dropped.
     // Serving notes (decant, temperature) and bare instructions ("Link the wine to the dish") aren't reasons.
-    const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||named(s).length) return '';
+    const reason=s=>{ if(/^(offer|suggest|recommend|pour|go for|link|name|serve)\b/i.test(s)||/\bdecant|°C|\bserve at\b/i.test(s)||/^if they('re| are)? (want|fancy|feel)|treat (themselves|yourself)/i.test(s)||named(s).length) return '';
       let t=s.split(/;\s*/).filter(p=>!/[£$€]\s?\d/.test(p)).join('; ').trim();
       t=t.replace(/^describe it as\s+/i,"It's ").replace(/^(say|mention|explain|tell them|point out|add)\s+(that\s+)?/i,'').trim();
       return norm(t).split(' ').length>=3?this._cap(t):''; };
@@ -1209,7 +1499,13 @@ const TeamLearn = {
       const ks=claimKey(t); if(kind!=='cocktail'&&offKind(ks)) return; if(ks.length&&ks.every(k=>claimed.has(k))) return; ks.forEach(k=>claimed.add(k)); seen.add(norm(t)); kept.push(t); wrongs.push(t); };
     // Wrong reasons the card writer authored for this question (`wrong`, each a different mistake), checked like
     // any other: never alike to a right one, never a claim no wine of this kind could make.
-    (q.wrong||[]).forEach(t=>{ if(wrongs.length<4) take(this._cap(String(t).replace(/^(say|mention|tell them|explain|point out)\s+(that\s+)?/i,''))); });
+    // Never an instruction ("Pour the La Giustiniana Gavi, because…", "Avoid the Soave, because…") or a line naming
+    // another wine: under Why it works every option is a reason about the wine picked above, and an instruction there
+    // reads as a second wine choice.
+    const order=/^(pour|avoid|suggest|recommend|offer|steer|go with|try|choose|pick|skip|swap|sell|serve)\s+the\b/i;
+    const others=wines.filter(w=>w.id!==rw.id).map(w=>norm(TeamData.short(w))).filter(n=>n.split(' ').length>=2);
+    const namesOther=t=>{ const n=' '+norm(t)+' '; return others.some(o=>n.includes(' '+o+' ')); };
+    (q.wrong||[]).forEach(t=>{ if(wrongs.length>=4) return; const x=this._cap(String(t).replace(/^(say|mention|tell them|explain|point out)\s+(that\s+)?/i,'')); if(order.test(x)||namesOther(x)) return; take(x); });
     // Written for this question and passing the checks: nothing borrowed from other tables or templates beside
     // them, since a reason lifted from another dish ("a step up in finesse…") reads as out of place.
     const authored=wrongs.length>=3;
@@ -1240,7 +1536,9 @@ const TeamLearn = {
     const chosenW=this._shuffle(wrongs,this._seed(q)+'w').sort((a,b)=>Math.abs(a.length-L)-Math.abs(b.length-L)).slice(0,6-rights.length);
     // A right reason under half the length of every wrong one is a clue in itself; with another right one to
     // stand on, it's left out.
-    const minW=Math.min(...chosenW.map(x=>x.length)), keepR=rights.filter(x=>x.length>=0.5*minW), rs=keepR.length?keepR:rights;
+    // Nor one far longer than every wrong one (the review held "If they want to treat themselves, this Champagne's toasty,
+    // bready richness…" beside three short reasons).
+    const minW=Math.min(...chosenW.map(x=>x.length)), maxW=Math.max(...chosenW.map(x=>x.length)), keepR=rights.filter(x=>x.length>=0.5*minW&&x.length<=1.8*maxW), rs=keepR.length?keepR:rights;
     const reasons=[...rs.map(x=>({x,ok:true})),...chosenW.map(x=>({x,ok:false}))];
     const o1=inQ||!choose?[]:this._shuffle(offers.map((_,i)=>i),this._seed(q)+'c1').map(i=>offers[i]), o2=this._shuffle(reasons.map((_,i)=>i),this._seed(q)+'c2').map(i=>reasons[i]);
     const all=[...o1,...o2];
