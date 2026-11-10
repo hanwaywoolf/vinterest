@@ -17,6 +17,20 @@
   "brand": {
    "logo": "brand/barbary/wordmark-white.svg",
    "source": "thebarbary.co.uk/notting-hill (pointed to by Carey)"
+  },
+  "menu": "daily",
+  "home": {
+   "label": "Lebanon, Greece, Morocco, Georgia, Sicily and the Canaries",
+   "countries": [
+    "Lebanon",
+    "Greece",
+    "Morocco",
+    "Turkey",
+    "Georgia",
+    "Cyprus",
+    "Israel"
+   ],
+   "regions": "Sicily|Etna|Pantelleria|Tenerife|Canar|Lanzarote|La Palma|Jerez|Santorini|Crete"
   }
  },
  "wines": [

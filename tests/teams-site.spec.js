@@ -402,4 +402,14 @@ test('the page generator reads a seed and drafts a page the build accepts', asyn
   // A list of non-alcoholic bottles and magnums doesn't bend the figures (The Princess Royal's has both).
   const b = analyse(read('data/team-princess-royal-list.json'), read('data/team-princess-royal.json'));
   expect(b.moves.find((m) => m.k === 'fizz').why).not.toMatch(/non-alc/i);
+  // The stories are chosen per restaurant. The Barbary's glass list is already dear bottles, so trading up tells nothing;
+  // its own stories are its mains cut for the table, a bottle priced at 5.4 glasses, and its bottles with age (by the week).
+  const c = analyse(read('data/team-barbary-list.json'), read('data/team-barbary.json'));
+  expect(c.moves.map((m) => [m.k, m.price, m.per || 'day'])).toEqual([['share', 65, 'day'], ['size', 20, 'day'], ['aged', 200, 'week'], ['fizz', 17, 'day']]);
+  expect(c.facts.slice(0, 4).map((x) => x.title)).toEqual(['Bottle only', 'Wines from where your food is from', 'Mains cut for the table', 'From two glasses each to the bottle']);
+  expect(c.dailyMenu).toBe(true);
+  expect(c.picks[0]).toMatchObject({ dish: 'Hereford Côte De Boeuf' });
+  const page = render(c, { seed: 'barbary', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
+  expect(page).toContain('data-per="week"'); expect(page).toContain("Today's menu, paired before service."); expect(page).not.toMatch(/undefined|NaN/);
+  expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).not.toContain('paired before service');
 });

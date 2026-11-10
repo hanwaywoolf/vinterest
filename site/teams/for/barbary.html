@@ -45,11 +45,11 @@
     </div>
     <div class="pr-facts">
       <div class="pr-fact" style="--c:var(--cr)"><b>87%</b><h3>Bottle only</h3><p>271 of your 313 wines aren't poured by the glass. Nobody tastes their way into them; they sell when someone on the floor can say why.</p></div>
-      <div class="pr-fact" style="--c:var(--gold)"><b>£115</b><h3>Your median bottle-only wine</h3><p>The wines you pour by the glass have a median bottle of £105. A table that moves from one list to the other is worth about £10 more.</p></div>
-      <div class="pr-fact" style="--c:var(--sky)"><b>132</b><h3>Grape varieties</h3><p>From 248 producers in 23 countries. A lot for a new starter to hold.</p></div>
-      <div class="pr-fact" style="--c:var(--plum)"><b>184</b><h3>Bottles at £100 or more</h3><p>Up to the J.-F. Coche–Dury Meursault 2014 at £2,050. The bottles a confident recommendation sells.</p></div>
-      <div class="pr-fact" style="--c:var(--green)"><b>9</b><h3>Sweet and fortified by the glass</h3><p>From £8 to £43 a glass. They're rarely ordered unless someone offers.</p></div>
-      <div class="pr-fact" style="--c:var(--rose)"><b>3</b><h3>Sparkling wines by the glass</h3><p>From Hundred Hills and Billecart-Salmon, starting at £17. The easiest glass to offer before the menus are open.</p></div>
+      <div class="pr-fact" style="--c:var(--gold)"><b>48</b><h3>Wines from where your food is from</h3><p>Lebanon, Greece, Morocco, Georgia, Sicily and the Canaries: 36 of the 48 are bottle only, at a median £89 against your list's £115. They're the match for your kitchen and the bottles a guest won't pick unprompted, at the friendlier end of the list.</p></div>
+      <div class="pr-fact" style="--c:var(--sky)"><b>4</b><h3>Mains cut for the table</h3><p>From the Sandy Black Pork Chop at £61 to the Hereford Côte De Boeuf at £120. A table that shares a main is the table for a bottle: with the Hereford Côte De Boeuf, the Château des Graviers, Margaux at £130.</p></div>
+      <div class="pr-fact" style="--c:var(--plum)"><b>£20</b><h3>From two glasses each to the bottle</h3><p>You sell 29 wines by the glass and the bottle, most by the carafe too. A bottle is priced at about 5.4 glasses, so a table already on its second glass each is £20 from the bottle. It's an easy thing to say, if someone says it.</p></div>
+      <div class="pr-fact" style="--c:var(--green)"><b>132</b><h3>Grape varieties</h3><p>From 248 producers in 23 countries, and 81 of those grapes appear on one wine only. A lot for a new starter to hold.</p></div>
+      <div class="pr-fact" style="--c:var(--rose)"><b>14</b><h3>Bottles from 2006 or earlier</h3><p>Back to the 1975 Château Musar Blanc, from £179 to £1,450. Nobody orders these from a list; they sell when someone can tell the table why tonight.</p></div>
     </div>
   </div>
 </section>
@@ -58,28 +58,45 @@
   <div class="wrap">
     <div>
       <div class="eyebrow">What it's worth</div>
-      <h2>Three small moves, at <em style="font-style:normal;color:var(--cr)">your prices.</em></h2>
-      <p class="lead">Turning glasses into the same bottle earns little: a bottle costs about what its glasses do. The money is in three moves that only happen when the team knows the list.</p>
+      <h2>Four small moves, at <em style="font-style:normal;color:var(--cr)">your prices.</em></h2>
+      <p class="lead">These come from your own list and menu: how you price a glass against a bottle, what your mains are, what you hold. Each is a move that only happens when the team knows the list.</p>
       <div class="pr-moves">
-        <div class="pr-move"><b>A table trades up to a bottle-only wine</b><i>+£10</i><span>Your by-the-glass wines have a median bottle of £105; your bottle-only wines, £115.</span></div>
+        <div class="pr-move"><b>A bottle with a main for the table</b><i>+£65</i><span>Four of your mains are cut for the table, from the Sandy Black Pork Chop at £61 to the Hereford Côte De Boeuf at £120. Against a glass each, the bottle we'd pour with them is £65 more at the median.</span></div>
+        <div class="pr-move"><b>Two glasses each becomes the bottle</b><i>+£20</i><span>Across the 29 wines you sell both ways, the bottle is £20 more than four glasses at the median, and it's priced at about 5.4 glasses. From a carafe, the bottle is £40 more.</span></div>
+        <div class="pr-move"><b>One more bottle with age</b><i>+£200</i><span>You hold 14 bottles from 2006 or earlier, back to the 1975 Château Musar Blanc. £200 is the lower end of them; they run to £1,450.</span></div>
         <div class="pr-move"><b>A glass of sparkling to start</b><i>+£17</i><span>Hundred Hills Preamble No. 2, Brut 2022, your least expensive sparkling glass.</span></div>
-        <div class="pr-move"><b>A sweet or fortified glass with dessert</b><i>+£20</i><span>The median of your nine sweet and fortified wines by the glass.</span></div>
       </div>
     </div>
     <div class="card" id="forCalc" data-moves data-sym="£">
-      <div class="fld"><label>Tables trading up to a bottle-only wine<small>more a day, at +£10 each</small></label><div class="v" data-out="up">3</div><input type="range" min="0" max="15" step="1" value="3" data-in="up" data-price="10" aria-label="Tables trading up to a bottle-only wine a day"></div>
+      <div class="fld"><label>Tables with a sharing main taking the bottle<small>more a day, at +£65 each</small></label><div class="v" data-out="share">2</div><input type="range" min="0" max="12" step="1" value="2" data-in="share" data-price="65" aria-label="Tables with a sharing main taking the bottle a day"></div>
+      <div class="fld"><label>Tables moving from glasses to the bottle<small>more a day, at +£20 each</small></label><div class="v" data-out="size">4</div><input type="range" min="0" max="20" step="1" value="4" data-in="size" data-price="20" aria-label="Tables moving from glasses to the bottle a day"></div>
+      <div class="fld"><label>Bottles with twenty years on them<small>more a week, at +£200 each</small></label><div class="v" data-out="aged">1</div><input type="range" min="0" max="7" step="1" value="1" data-in="aged" data-price="200" data-per="week" aria-label="Bottles with twenty years on them a week"></div>
       <div class="fld"><label>Glasses of sparkling to start<small>more a day, at +£17 each</small></label><div class="v" data-out="fizz">5</div><input type="range" min="0" max="30" step="1" value="5" data-in="fizz" data-price="17" aria-label="Glasses of sparkling to start a day"></div>
-      <div class="fld"><label>Glasses with dessert<small>more a day, at +£20 each</small></label><div class="v" data-out="sweet">4</div><input type="range" min="0" max="30" step="1" value="4" data-in="sweet" data-price="20" aria-label="Glasses with dessert a day"></div>
       <div class="fld"><label>Days open a week</label><div class="v" data-out="days">7</div><input type="range" min="1" max="7" step="1" value="7" data-in="days" aria-label="Days open a week"></div>
       <div class="pr-out">
-        <div><small>A day</small><b data-t="day">£195</b></div>
+        <div><small>A day</small><b data-t="day">£324</b></div>
         <div><small>A week</small><b data-t="week">£0</b></div>
         <div><small>A month</small><b data-t="month">£0</b></div>
         <div class="pick"><small>A year</small><b data-t="year">£0</b></div>
       </div>
-      <div class="pr-bar" aria-hidden="true"><i data-b="up" style="--k:var(--cr)"></i><i data-b="fizz" style="--k:var(--gold)"></i><i data-b="sweet" style="--k:var(--green)"></i></div>
-      <p class="pr-sum"><span style="--k:var(--cr)">Trading up <b data-p="up"></b></span><span style="--k:var(--gold)">Sparkling <b data-p="fizz"></b></span><span style="--k:var(--green)">With dessert <b data-p="sweet"></b></span></p>
+      <div class="pr-bar" aria-hidden="true"><i data-b="share" style="--k:var(--cr)"></i><i data-b="size" style="--k:var(--sky)"></i><i data-b="aged" style="--k:var(--gold)"></i><i data-b="fizz" style="--k:var(--green)"></i></div>
+      <p class="pr-sum"><span style="--k:var(--cr)">Sharing mains <b data-p="share"></b></span><span style="--k:var(--sky)">Glasses to bottle <b data-p="size"></b></span><span style="--k:var(--gold)">With age <b data-p="aged"></b></span><span style="--k:var(--green)">Sparkling <b data-p="fizz"></b></span></p>
       <p class="assume">Illustrative: extra wine revenue from the counts you set, at the prices on your list. We don't know your covers, so nothing here is a forecast. Once your sales data is in, the console measures the real change.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--sky)">A menu that changes daily</div>
+      <h2>Today's menu, paired before service.</h2>
+      <p class="lead">Your menu changes every day and your list holds 313 wines, so no printed pairing sheet lasts the week. Vinterest Teams is built for that.</p>
+    </div>
+    <div class="pr-facts">
+      <div class="pr-fact" style="--c:var(--sky)"><b>1</b><h3>Send today's menu</h3><p>A photo or a PDF of the day's menu. New dishes are read and paired from your own list: the three best wines for each, a pick by the glass and the one to steer away from. Dishes that carry over keep what they had.</p></div>
+      <div class="pr-fact" style="--c:var(--gold)"><b>2</b><h3>You approve it</h3><p>Nothing reaches the team until a manager has read it. Swap a wine, change the line, and confirm the kitchen's allergens for each new dish.</p></div>
+      <div class="pr-fact" style="--c:var(--green)"><b>3</b><h3>Everyone reads it before the floor</h3><p>The pre-shift briefing opens over the app: what's new, what's 86'd, what to pour with it. Each person accepts it before they start, and you see who has.</p></div>
     </div>
   </div>
 </section>
@@ -92,9 +109,9 @@
       <p class="lead">Every wine on your list has a card, and every dish has its wines. These are four of them, as your team would learn them. The pairings are ours, written from your list and menu; you can change any of them before anyone sees them.</p>
     </div>
     <div class="pr-say">
-      <div class="pr-dish"><div class="d">Snacks · £6 each</div><h3>Lamb Batbout</h3><div class="w">Oenops Xinomavro 2023, Naousa and Amyntaio · £72 a bottle · bottle only</div><blockquote>"It's a Greek red with bright red fruit, a hint of tomato leaf and olive, and a firm grip. If you like a red with real structure that loves lamb and tomatoes, you'll enjoy this."</blockquote></div>
-      <div class="pr-dish"><div class="d">Snacks · £5 each</div><h3>Aubergine Batbout</h3><div class="w">Sette Barbera, Nizza 2022, Piedmont · £98 a bottle · bottle only</div><blockquote>"It's a juicy Italian red with bright cherry and plum fruit and a lovely freshness. It's soft and easy to drink, and great with rich, fatty or tomatoey food."</blockquote></div>
       <div class="pr-dish"><div class="d">Mains · £120 (800g)</div><h3>Hereford Côte De Boeuf</h3><div class="w">Château des Graviers, Margaux 2021, Bordeaux · £28 a glass · £130 a bottle</div><blockquote>"It's a classic dry red with blackcurrant and cedar, firm but smooth once it has a little air. It's made for rich, fire-cooked meat, which softens that grip."</blockquote></div>
+      <div class="pr-dish"><div class="d">Mains · £74 (900g)</div><h3>Wild Cornish Sea Bass</h3><div class="w">Vassaltis Assyrtiko, Alcyone 2023, Santorini · £132 a bottle · bottle only</div><blockquote>"It is very fresh and sharp with lemon and a smoky, flinty edge from the volcanic soil. Powerful and mineral, it is brilliant with seafood and anything charred."</blockquote></div>
+      <div class="pr-dish"><div class="d">Mains · £64</div><h3>Herdwick Lamb Rack</h3><div class="w">Château Musar 2019, Bekaa Valley · £22 a glass · £119 a bottle</div><blockquote>"It's a deep, savoury red with dark blackcurrant, cedar and a little spice, with firm tannin that loves rich meat. Pour it with the lamb or beef and it feels made for the fire."</blockquote></div>
       <div class="pr-dish"><div class="d">Dessert · £11</div><h3>Chocolate Crémeux</h3><div class="w">Graham 20 Y.O Tawny Port, Douro · £20 a glass</div><blockquote>"It's smooth and sweet, tasting of toffee, roasted nuts and dried fruit. Lovely with chocolate, or just on its own after dinner."</blockquote></div>
     </div>
   </div>
@@ -119,7 +136,7 @@
 
 <footer class="pr-foot">
   <div class="wrap">
-    <p>Prepared by Vinterest Teams for The Barbary, London. This page is private: it isn't linked from our site or listed in search.</p>
+    <p>Prepared by Vinterest Teams for The Barbary Notting Hill, 112 Westbourne Grove, London. This page is private: it isn't linked from our site or listed in search.</p>
     <p>Wines, dishes and prices are from your lists your November wine list, your dinner menu of 10 November and your dessert menu; if anything has changed since, the demo updates from a new copy. Pairings and staff lines are Vinterest's own, written from those lists. Vinterest is independent of The Barbary. <a href="https://vinterest.team/privacy">Privacy</a> · <a href="mailto:hello@vinterest.app">hello@vinterest.app</a></p>
   </div>
 </footer>

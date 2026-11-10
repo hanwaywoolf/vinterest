@@ -5,6 +5,12 @@
 // the wine and the line from its card, and what the demo holds. It is a draft to read and edit by hand before anyone
 // sees it; the bottles and their cards are filled in by the site build (scripts/site-teams.mjs) from the same seed.
 //
+// The calculator's moves and the facts are chosen per restaurant from a pool of stories (analyse): what is particular to
+// this list first (mains cut for the table, the glass-to-bottle ladder, bottles with age, a larger pour, trading up
+// to bottle only), then the standard ones (sparkling, a sweet glass, a better glass). The list file can add two things
+// only a person knows: venue.menu 'daily' (a section on pairing each day's menu) and venue.home {label, countries,
+// regions} (the wines from where the food is from, when the style alone doesn't say).
+//
 // Usage: npm run site:teams:for -- <seed> [--slug name] [--demo url] [--source "as published on example.com"]
 //          [--owner "the group it belongs to"] [--force] [--json]
 //   --json prints the analysis and writes nothing. Without --force an existing page is left alone.
@@ -51,44 +57,116 @@ export function analyse(list, train) {
     cards: Object.keys(cards).filter((id) => byId[id]).length, full: Object.keys(cards).filter((id) => byId[id] && (cards[id].qs || []).length).length,
     questions: Object.values(cards).reduce((n, c) => n + (c.qs || []).length, 0), cocktailCards: Object.keys(train.cocktailCards || {}).length, dishNotes: Object.keys(train.dishCards || {}).length };
 
-  // The calculator's moves, each only where the list has it.
-  const moves = [];
-  if (medBottleOnly > medGlassList && medGlassList) moves.push({ k: 'up', price: Math.round(medBottleOnly - medGlassList), n: 3, max: 15, title: 'A table trades up to a bottle-only wine', label: 'Tables trading up to a bottle-only wine', short: 'Trading up',
-    why: `Your by-the-glass wines have a median bottle of ${money(medGlassList)}; your bottle-only wines, ${money(medBottleOnly)}.`, each: `+${money(medBottleOnly - medGlassList)}` });
-  if (larger.length >= 4) { const step = median(larger.map((x) => x.step)), size = larger[0].size.replace(/\s/g, '');
-    moves.push({ k: 'pour', price: Math.round(step), n: 10, max: 50, title: `A glass becomes the ${size} pour`, label: `${size} pours in place of the smaller glass`, short: `${size} pours`, why: `The median step up across the ${say(larger.length)} wines you pour both ways.`, each: `+${money(step)}` }); }
-  if (fizz.length) moves.push({ k: 'fizz', price: glassOf(fizz[0]), n: 5, max: 30, title: 'A glass of sparkling to start', label: 'Glasses of sparkling to start', short: 'Sparkling',
-    why: `${label(fizz[0])}, your least expensive sparkling glass.`, each: `+${money(glassOf(fizz[0]))}` });
-  if (sweet.length) { const m = median(sweet.map(glassOf)); moves.push({ k: 'sweet', price: Math.round(m), n: 4, max: 30, title: 'A sweet or fortified glass with dessert', label: 'Glasses with dessert', short: 'With dessert',
-    why: sweet.length > 1 ? `The median of your ${say(sweet.length)} sweet and fortified wines by the glass.` : `${label(sweet[0])}, your dessert wine by the glass.`, each: `+${money(m)}` }); }
-  if (moves.length < 2 && medAll) moves.push({ k: 'bottle', price: Math.round(medAll), n: 2, max: 15, title: 'A table that would have skipped wine takes a bottle', label: 'Extra bottles sold', short: 'Extra bottles', why: `Your median bottle is ${money(medAll)}.`, each: `+${money(medAll)}` });
-
-  // The facts, the most telling first; the page shows six (or three when the list gives fewer).
+  /* The stories a list can tell, each worked out from the files and kept only where this list has it. A story is a move
+     for the calculator, a fact tile, or both. The page leads with what is particular to this restaurant (a size ladder,
+     mains cut for the table, bottles with age, wines from where its food is from) and fills up with the standard
+     ones (sparkling to start, a sweet glass, a better glass), so two prospects don't get the same three sliders. */
   const pct = (a, b) => Math.round(a / b * 100), named = (ws) => [...new Set(ws.map((w) => w.producer))].slice(0, 2).join(' and ');
   const plain = (w) => (w.name.includes(w.producer) ? w.name : `${w.producer} ${w.name}`);
-  const facts = [];
-  if (figures.bottleOnly) facts.push({ big: figures.bottleOnly > figures.wines / 2 ? `${pct(figures.bottleOnly, figures.wines)}%` : String(figures.bottleOnly), title: 'Bottle only',
-    text: `${figures.bottleOnly} of your ${figures.wines} wines aren't poured by the glass. Nobody tastes their way into them; they sell when someone on the floor can say why.` });
-  if (medBottleOnly > medGlassList && medGlassList) facts.push({ big: money(medBottleOnly), title: 'Your median bottle-only wine', text: `The wines you pour by the glass have a median bottle of ${money(medGlassList)}. A table that moves from one list to the other is worth about ${money(medBottleOnly - medGlassList)} more.` });
-  if (figures.firstBottleOnly >= 3) { const seen = new Set(), egs = firstBottleOnly.slice().sort((a, b) => num(b.price) - num(a.price)).filter((d) => { const id = pairings[d.id].best[0].id; if (seen.has(id)) return false; seen.add(id); return true; }).slice(0, 2);
-    const eg = egs.map((d) => `the ${d.name.split(',')[0].replace(/^the\s+/i, '')} with the ${plain(byId[pairings[d.id].best[0].id])}`).join(', ');
-    facts.push({ big: `${figures.firstBottleOnly}`, title: 'Dishes best with a bottle-only wine', text: `For ${figures.firstBottleOnly} of your ${figures.paired} dishes, the best match on your list isn't sold by the glass: ${eg}.` }); }
-  if (figures.grapes >= 8) facts.push({ big: String(figures.grapes), title: 'Grape varieties', text: `From ${figures.producers} producers in ${figures.countries} countries. A lot for a new starter to hold.` });
-  if (top && figures.overTop >= 3) facts.push({ big: String(figures.overTop), title: `Bottles at ${money(topAt)} or more`, text: `Up to the ${label(top)} at ${money(bottleOf(top))}. The bottles a confident recommendation sells.` });
-  if (larger.length >= 4) facts.push({ big: String(larger.length), title: 'Wines in two pours', text: `${say(larger.length, true)} wines come in a smaller and a larger glass. The larger pour is ${money(median(larger.map((x) => x.step)))} more at the median, and it's one question at the table.` });
-  if (sweet.length >= 2) { const ps = sweet.map(glassOf).sort((a, b) => a - b); facts.push({ big: String(sweet.length), title: 'Sweet and fortified by the glass', text: `From ${money(ps[0])} to ${money(ps[ps.length - 1])} a glass. They're rarely ordered unless someone offers.` }); }
-  if (figures.cocktails) facts.push({ big: String(figures.cocktails), title: 'Cocktails', text: `The floor needs to know what's in each one and what it suits. Vinterest Teams trains on cocktails as it does on wine, with a higher minimum for whoever is behind the bar.` });
-  if (fizz.length >= 2) facts.push({ big: String(fizz.length), title: 'Sparkling wines by the glass', text: `From ${named(fizz)}, starting at ${money(glassOf(fizz[0]))}. The easiest glass to offer before the menus are open.` });
+  const short = (d) => d.name.split(',')[0].replace(/^the\s+/i, '');
+  const still = (w) => /red|white|ros|orange/i.test(w.type || '');
+  const cand = [], facts = [];
 
-  // Four dishes: two whose best wine is bottle only (the dearest dishes first), one poured by the glass, one dessert.
-  const row = (d) => { const p = pairings[d.id], w = byId[p.best[0].id], c = cards[w.id] || {}; return { dish: d.name, section: d.section, price: d.price, wine: label(w), where: [w.region].filter(Boolean).join(''), glass: w.glass || '', bottle: w.bottle || '', bottleOnly: !glassOf(w), line: c.pitch || p.best[0].why, id: w.id }; };
-  const dear = (a, b) => num(b.price) - num(a.price), dessert = (d) => /dessert|pudding|sweet|dolci/i.test(d.section || '');
-  const picks = [], used = new Set(), take = (xs, n) => { for (const d of xs) { if (n <= 0) break; const r = row(d); if (used.has(r.id) || picks.some((x) => x.dish === r.dish)) continue; used.add(r.id); picks.push(r); n--; } };
-  take(firstBottleOnly.filter((d) => !dessert(d)).sort(dear), 2);
+  // Trading up to a bottle-only wine: only where the two lists really sit apart.
+  const upStep = medBottleOnly - medGlassList, upReal = medGlassList && upStep >= medGlassList * 0.1;
+  if (upReal) cand.push({ k: 'up', own: true, price: Math.round(upStep), n: 3, max: 15, title: 'A table trades up to a bottle-only wine', label: 'Tables trading up to a bottle-only wine', short: 'Trading up',
+    why: `Your by-the-glass wines have a median bottle of ${money(medGlassList)}; your bottle-only wines, ${money(medBottleOnly)}.`, each: `+${money(upStep)}` });
+  if (larger.length >= 4) { const step = median(larger.map((x) => x.step)), size = larger[0].size.replace(/\s/g, '');
+    cand.push({ k: 'pour', own: true, price: Math.round(step), n: 10, max: 50, title: `A glass becomes the ${size} pour`, label: `${size} pours in place of the smaller glass`, short: `${size} pours`, why: `The median step up across the ${say(larger.length)} wines you pour both ways.`, each: `+${money(step)}` }); }
+
+  // The size ladder: the same wine by the glass and by the bottle. Two people on two glasses each are this far from the bottle.
+  const both = byGlass.filter((w) => still(w) && std(w)), ratio = both.length ? median(both.map((w) => Math.round(std(w) / glassOf(w) * 10))) / 10 : 0;
+  const toBottle = median(both.map((w) => std(w) - 4 * glassOf(w))), carafes = both.map((w) => ({ w, c: num((/carafe[^£$€]*([£$€]\s?[\d,.]+)/i.exec(w.other || '') || [])[1]) })).filter((x) => x.c);
+  // Only where the bottle is priced at five glasses or more: under that, four glasses and the bottle are near enough the same money.
+  const ladder = both.length >= 6 && toBottle >= 5 && ratio >= 5 && both.filter((w) => std(w) - 4 * glassOf(w) > 0).length >= both.length * 0.7;
+  if (ladder) {
+    const fromCarafe = carafes.length >= 4 ? median(carafes.map((x) => std(x.w) - x.c)) : 0;
+    cand.push({ k: 'size', own: true, price: Math.round(toBottle), n: 4, max: 20, title: 'Two glasses each becomes the bottle', label: 'Tables moving from glasses to the bottle', short: 'Glasses to bottle',
+      why: `Across the ${both.length} wines you sell both ways, the bottle is ${money(toBottle)} more than four glasses at the median, and it's priced at about ${ratio} glasses.${fromCarafe ? ` From a carafe, the bottle is ${money(fromCarafe)} more.` : ''}`, each: `+${money(toBottle)}` });
+    facts.push({ w: 8, big: money(toBottle), title: 'From two glasses each to the bottle', text: `You sell ${both.length} wines by the glass and the bottle${carafes.length >= 4 ? ', most by the carafe too' : ''}. A bottle is priced at about ${ratio} glasses, so a table already on its second glass each is ${money(toBottle)} from the bottle. It's an easy thing to say, if someone says it.` });
+  }
+
+  // Mains cut for the table (a weight, "for two", or twice the least expensive main): the table for a bottle.
+  const mainSec = (() => { const by = {}; dishes.forEach((d) => { if (num(d.price) || /\d/.test(d.price || '')) (by[d.section] = by[d.section] || []).push(priceOf(d)); }); return Object.keys(by).filter((k) => !/dessert|pudding|side|snack|bread/i.test(k)).sort((x, y) => median(by[y]) - median(by[x]))[0]; })();
+  function priceOf(d) { const all = (String(d.price || '').match(/[£$€]\s?[\d,.]+/g) || []).map(num); return all.length ? Math.max(...all) : 0; }
+  const mains = dishes.filter((d) => d.section === mainSec && priceOf(d)), least = mains.length ? Math.min(...mains.map(priceOf)) : 0;
+  const sharing = mains.length >= 4 ? mains.filter((d) => /\d\s?k?g\b|for two|to share|for the table/i.test(`${d.price} ${d.name} ${d.desc}`) || priceOf(d) >= least * 2).filter((d) => paired.includes(d)).sort((x, y) => priceOf(x) - priceOf(y)) : [];
+  // The wine shown with such a dish: the bottle-only one among its three best where there is one, since that's the one to say.
+  const tableWine = (d) => { const ws = pairings[d.id].best.map((x) => byId[x.id]).filter((w) => w && std(w)); return ws.find((w) => !glassOf(w)) || ws[0]; };
+  const medGlass = (w) => glassOf(w) || median(byGlass.filter((x) => x.type === w.type).map(glassOf)) || median(byGlass.filter(still).map(glassOf));
+  if (sharing.length >= 2 && sharing.every(tableWine)) {
+    const steps = sharing.map((d) => { const w = tableWine(d); return std(w) - 2 * medGlass(w); }).sort((x, y) => x - y), step = Math.round((steps[Math.floor((steps.length - 1) / 2)] + steps[Math.floor(steps.length / 2)]) / 2);
+    if (step > 0) {
+      cand.push({ k: 'share', own: true, price: Math.round(step), n: 2, max: 12, title: 'A bottle with a main for the table', label: 'Tables with a sharing main taking the bottle', short: 'Sharing mains',
+        why: `${say(sharing.length, true)} of your mains are cut for the table, from the ${short(sharing[0])} at ${money(priceOf(sharing[0]))} to the ${short(sharing[sharing.length - 1])} at ${money(priceOf(sharing[sharing.length - 1]))}. Against a glass each, the bottle we'd pour with them is ${money(step)} more at the median.`, each: `+${money(step)}` });
+      const d = sharing[sharing.length - 1], w = tableWine(d);
+      facts.push({ w: 9, big: String(sharing.length), title: 'Mains cut for the table', text: `From the ${short(sharing[0])} at ${money(priceOf(sharing[0]))} to the ${short(d)} at ${money(priceOf(d))}. A table that shares a main is the table for a bottle: with the ${short(d)}, the ${plain(w)} at ${money(std(w))}.` });
+    }
+  }
+
+  // Bottles with age (twenty years or more): they sell one at a time and only with a story, so the slider is by the week.
+  const year = Number((train.exported || '').slice(0, 4)) || new Date().getFullYear(), old = wines.filter((w) => w.vintage && w.vintage <= year - 20 && std(w)).sort((x, y) => std(x) - std(y));
+  if (old.length >= 5) {
+    const price = std(old[Math.floor((old.length - 1) / 4)]), eldest = old.slice().sort((x, y) => x.vintage - y.vintage || std(y) - std(x))[0];
+    cand.push({ k: 'aged', own: true, per: 'week', price, n: 1, max: 7, title: 'One more bottle with age', label: 'Bottles with twenty years on them', short: 'With age',
+      why: `You hold ${say(old.length)} bottles from ${year - 20} or earlier, back to the ${eldest.vintage} ${plain(eldest)}. ${money(price)} is the lower end of them; they run to ${money(std(old[old.length - 1]))}.`, each: `+${money(price)}` });
+    facts.push({ w: 6, big: String(old.length), title: `Bottles from ${year - 20} or earlier`, text: `Back to the ${eldest.vintage} ${plain(eldest)}, from ${money(std(old[0]))} to ${money(std(old[old.length - 1]))}. Nobody orders these from a list; they sell when someone can tell the table why tonight.` });
+  }
+
+  // A better glass: one step up the glass list's own thirds.
+  const gl = byGlass.filter(still).map(glassOf).sort((x, y) => x - y), third = Math.floor(gl.length / 3);
+  if (gl.length >= 9) { const lo = median(gl.slice(0, third)), mid = median(gl.slice(third, 2 * third)), hi = median(gl.slice(2 * third)), step = Math.round((hi - lo) / 2);
+    if (step >= 4) cand.push({ k: 'tier', price: step, n: 6, max: 40, title: 'A better glass', label: 'Glasses one step up your glass list', short: 'A better glass', why: `Your glasses run from ${money(gl[0])} to ${money(gl[gl.length - 1])}: the lower third sits at ${money(lo)}, the middle at ${money(mid)}, the top at ${money(hi)}.`, each: `+${money(step)}` }); }
+  if (fizz.length) cand.push({ k: 'fizz', price: glassOf(fizz[0]), n: 5, max: 30, title: 'A glass of sparkling to start', label: 'Glasses of sparkling to start', short: 'Sparkling',
+    why: `${label(fizz[0])}, your least expensive sparkling glass.`, each: `+${money(glassOf(fizz[0]))}` });
+  if (sweet.length) { const m = median(sweet.map(glassOf)); cand.push({ k: 'sweet', price: Math.round(m), n: 4, max: 30, title: 'A sweet or fortified glass with dessert', label: 'Glasses with dessert', short: 'With dessert',
+    why: sweet.length > 1 ? `The median of your ${say(sweet.length)} sweet and fortified wines by the glass.` : `${label(sweet[0])}, your dessert wine by the glass.`, each: `+${money(m)}` }); }
+
+  // Up to three of the restaurant's own moves, the most valuable a day first, then the standard ones up to four.
+  const daily = (m) => m.price * m.n / (m.per === 'week' ? 7 : 1), byDay = (x, y) => daily(y) - daily(x);
+  const own = cand.filter((m) => m.own).sort(byDay).slice(0, 3), rest = cand.filter((m) => !m.own).sort(byDay);
+  const moves = [...own, ...rest.slice(0, Math.max(0, 4 - own.length))];
+  if (moves.length < 2 && medAll) moves.push({ k: 'bottle', price: Math.round(medAll), n: 2, max: 15, title: 'A table that would have skipped wine takes a bottle', label: 'Extra bottles sold', short: 'Extra bottles', why: `Your median bottle is ${money(medAll)}.`, each: `+${money(medAll)}` });
+
+  // Wines from where the food is from: the list file can say (venue.home {label, countries, regions}), else the style does.
+  const CUISINES = [[/north african|middle eastern|levant|lebanese|moroccan|turkish|israeli|persian/i, ['Lebanon', 'Greece', 'Morocco', 'Turkey', 'Georgia', 'Cyprus', 'Israel', 'Armenia', 'Tunisia', 'Algeria']],
+    [/italian|trattoria|osteria/i, ['Italy']], [/spanish|tapas|basque/i, ['Spain']], [/greek/i, ['Greece']], [/portuguese/i, ['Portugal']], [/french|bistro|brasserie/i, ['France']], [/british|pub\b/i, ['England', 'Wales', 'UK', 'United Kingdom']]];
+  const homeDef = v.home || (() => { const hit = CUISINES.find(([re]) => re.test(v.style || '')); return hit ? { countries: hit[1] } : null; })();
+  const home = homeDef ? wines.filter((w) => (homeDef.countries || []).includes(w.country) || (homeDef.regions && new RegExp(homeDef.regions, 'i').test(`${w.region} ${w.section}`))) : [];
+  const single = (() => { const n = {}; wines.forEach((w) => (w.grapes || []).forEach((g) => { n[g] = (n[g] || 0) + 1; })); return Object.values(n).filter((x) => x === 1).length; })();
+  if (home.length >= 8 && home.length <= wines.length * 0.6 && home.filter((w) => !glassOf(w)).length >= home.length / 2) {
+    const places = [...new Set(home.map((w) => w.country))].slice(0, 4), hm = median(home.map(std)), cheaper = hm && hm < medAll;
+    facts.push({ w: 10, big: String(home.length), title: homeDef.title || 'Wines from where your food is from', text: `${homeDef.label || places.join(', ')}: ${home.filter((w) => !glassOf(w)).length} of the ${home.length} are bottle only${cheaper ? `, at a median ${money(hm)} against your list's ${money(medAll)}` : ''}. They're the match for your kitchen and the bottles a guest won't pick unprompted${cheaper ? ', at the friendlier end of the list' : ''}.` });
+  }
+
+  // The standing facts, weighted so what is particular to this list comes first; the page shows six (or three when the list gives fewer).
+  if (figures.bottleOnly) facts.push({ w: 11, big: figures.bottleOnly > figures.wines / 2 ? `${pct(figures.bottleOnly, figures.wines)}%` : String(figures.bottleOnly), title: 'Bottle only',
+    text: `${figures.bottleOnly} of your ${figures.wines} wines aren't poured by the glass. Nobody tastes their way into them; they sell when someone on the floor can say why.` });
+  if (upReal) facts.push({ w: 10, big: money(medBottleOnly), title: 'Your median bottle-only wine', text: `The wines you pour by the glass have a median bottle of ${money(medGlassList)}. A table that moves from one list to the other is worth about ${money(upStep)} more.` });
+  if (figures.firstBottleOnly >= 3) { const seen = new Set(), egs = firstBottleOnly.slice().sort((a, b) => num(b.price) - num(a.price)).filter((d) => { const id = pairings[d.id].best[0].id; if (seen.has(id)) return false; seen.add(id); return true; }).slice(0, 2);
+    const eg = egs.map((d) => `the ${short(d)} with the ${plain(byId[pairings[d.id].best[0].id])}`).join(', ');
+    facts.push({ w: 9, big: `${figures.firstBottleOnly}`, title: 'Dishes best with a bottle-only wine', text: `For ${figures.firstBottleOnly} of your ${figures.paired} dishes, the best match on your list isn't sold by the glass: ${eg}.` }); }
+  if (figures.grapes >= 8) facts.push({ w: single >= 20 ? 7.5 : 7, big: String(figures.grapes), title: 'Grape varieties', text: `From ${figures.producers} producers in ${figures.countries} countries${single >= 20 ? `, and ${single} of those grapes appear on one wine only` : ''}. A lot for a new starter to hold.` });
+  if (top && figures.overTop >= 3) facts.push({ w: 5, big: String(figures.overTop), title: `Bottles at ${money(topAt)} or more`, text: `Up to the ${label(top)} at ${money(bottleOf(top))}. The bottles a confident recommendation sells.` });
+  if (larger.length >= 4) facts.push({ w: 6.5, big: String(larger.length), title: 'Wines in two pours', text: `${say(larger.length, true)} wines come in a smaller and a larger glass. The larger pour is ${money(median(larger.map((x) => x.step)))} more at the median, and it's one question at the table.` });
+  if (sweet.length >= 2) { const ps = sweet.map(glassOf).sort((a, b) => a - b); facts.push({ w: 4, big: String(sweet.length), title: 'Sweet and fortified by the glass', text: `From ${money(ps[0])} to ${money(ps[ps.length - 1])} a glass. They're rarely ordered unless someone offers.` }); }
+  if (figures.cocktails) facts.push({ w: 3, big: String(figures.cocktails), title: 'Cocktails', text: `The floor needs to know what's in each one and what it suits. Vinterest Teams trains on cocktails as it does on wine, with a higher minimum for whoever is behind the bar.` });
+  if (fizz.length >= 2) facts.push({ w: 2, big: String(fizz.length), title: 'Sparkling wines by the glass', text: `From ${named(fizz)}, starting at ${money(glassOf(fizz[0]))}. The easiest glass to offer before the menus are open.` });
+  facts.sort((x, y) => y.w - x.w);
+
+  // Four dishes: mains cut for the table with the bottle to say (where the list has them), then two whose best wine is
+  // bottle only (the dearest dishes first), one poured by the glass, one dessert.
+  const row = (d, w) => { const p = pairings[d.id]; w = w || byId[p.best[0].id]; const c = cards[w.id] || {}, why = (p.best.find((x) => x.id === w.id) || p.best[0]).why; return { dish: d.name, section: d.section, price: d.price, wine: label(w), where: [w.region].filter(Boolean).join(''), glass: w.glass || '', bottle: w.bottle || '', bottleOnly: !glassOf(w), line: c.pitch || why, id: w.id }; };
+  const dear = (a, b) => priceOf(b) - priceOf(a), dessert = (d) => /dessert|pudding|sweet|dolci/i.test(d.section || '');
+  const picks = [], used = new Set(), take = (xs, n, wineOf) => { for (const d of xs) { if (n <= 0) break; const r = row(d, wineOf && wineOf(d)); if (used.has(r.id) || picks.some((x) => x.dish === r.dish)) continue; used.add(r.id); picks.push(r); n--; } };
+  if (moves.some((m) => m.k === 'share')) take(sharing.slice().sort(dear), 2, tableWine);
+  take(firstBottleOnly.filter((d) => !dessert(d)).sort(dear), 2 - picks.length);
   take(paired.filter((d) => !dessert(d) && glassOf(byId[pairings[d.id].best[0].id])).sort(dear), 3 - picks.length);
   take(paired.filter(dessert).sort(dear), 1);
   take(paired.slice().sort(dear), 4 - picks.length);
-  return { name: v.name || train.venue.name, city: v.city || '', sym, figures, facts, moves, picks, pitch: train.pitch || null, source: (v.brand && v.brand.source) || '' };
+  // A menu that changes daily (venue.menu 'daily' in the list file) gets its own section: the reason to need this at all.
+  const daily_menu = /daily/i.test(v.menu || '');
+  return { name: v.name || train.venue.name, city: v.city || '', sym, figures, facts, moves, picks, dailyMenu: daily_menu, ladder, pitch: train.pitch || null, source: (v.brand && v.brand.source) || '' };
 }
 
 // An image's width over its height, to size a logo: PNG from its header, SVG from its viewBox.
@@ -101,8 +179,8 @@ function aspect(file) {
 
 export function render(a, o) {
   const { figures: f, sym } = a, facts = a.facts.slice(0, a.facts.length >= 6 ? 6 : 3), cols = [['--cr'], ['--gold'], ['--sky'], ['--plum'], ['--green'], ['--rose']];
-  const barCol = { up: '--cr', pour: '--sky', fizz: '--gold', sweet: '--green', bottle: '--plum' };
-  const day = a.moves.reduce((n, m) => n + m.n * m.price, 0);
+  const palette = ['--cr', '--sky', '--gold', '--green', '--plum'], barCol = Object.fromEntries(a.moves.map((m, i) => [m.k, palette[i % palette.length]]));
+  const day = Math.round(a.moves.reduce((n, m) => n + m.n * m.price / (m.per === 'week' ? 7 : 1), 0));
   const logoH = o.aspect ? Math.max(8, Math.min(24, Math.round(170 / o.aspect))) : 0, heroH = o.aspect ? Math.max(9, Math.min(40, Math.round(280 / o.aspect))) : 0;
   const them = o.logo ? `<img class="them" src="/img/for/${o.logo}?v=%%IMG_V%%" alt="${esc(a.name)}">` : `<b class="them-name">${esc(a.name)}</b>`;
   const priceOf = (p) => [p.glass && `${p.glass} a glass`, p.bottle && `${p.bottle} a bottle`, p.bottleOnly && 'bottle only'].filter(Boolean).join(' · ');
@@ -167,13 +245,13 @@ ${facts.map((x, i) => `      <div class="pr-fact" style="--c:var(${cols[i % 6][0
     <div>
       <div class="eyebrow">What it's worth</div>
       <h2>${say(a.moves.length, true)} small moves, at <em style="font-style:normal;color:var(--cr)">your prices.</em></h2>
-      <p class="lead">Turning glasses into the same bottle earns little: a bottle costs about what its glasses do. The money is in ${say(a.moves.length)} moves that only happen when the team knows the list.</p>
+      <p class="lead">${a.ladder ? `These come from your own list and menu: how you price a glass against a bottle, what your mains are, what you hold. Each is a move` : `Turning glasses into the same bottle earns little: a bottle costs about what its glasses do. The money is in ${say(a.moves.length)} moves`} that only happen${a.ladder ? 's' : ''} when the team knows the list.</p>
       <div class="pr-moves">
 ${a.moves.map((m) => `        <div class="pr-move"><b>${esc(m.title)}</b><i>${esc(m.each)}</i><span>${esc(m.why)}</span></div>`).join('\n')}
       </div>
     </div>
     <div class="card" id="forCalc" data-moves data-sym="${sym}">
-${a.moves.map((m) => `      <div class="fld"><label>${esc(m.label)}<small>more a day, at ${esc(m.each)} each</small></label><div class="v" data-out="${m.k}">${m.n}</div><input type="range" min="0" max="${m.max}" step="1" value="${m.n}" data-in="${m.k}" data-price="${m.price}" aria-label="${esc(m.label)} a day"></div>`).join('\n')}
+${a.moves.map((m) => `      <div class="fld"><label>${esc(m.label)}<small>more a ${m.per || 'day'}, at ${esc(m.each)} each</small></label><div class="v" data-out="${m.k}">${m.n}</div><input type="range" min="0" max="${m.max}" step="1" value="${m.n}" data-in="${m.k}" data-price="${m.price}"${m.per === 'week' ? ' data-per="week"' : ''} aria-label="${esc(m.label)} a ${m.per || 'day'}"></div>`).join('\n')}
       <div class="fld"><label>Days open a week</label><div class="v" data-out="days">7</div><input type="range" min="1" max="7" step="1" value="7" data-in="days" aria-label="Days open a week"></div>
       <div class="pr-out">
         <div><small>A day</small><b data-t="day">${sym}${day}</b></div>
@@ -188,7 +266,22 @@ ${a.moves.map((m) => `      <div class="fld"><label>${esc(m.label)}<small>more a
   </div>
 </section>
 
-<section class="band dark">
+${a.dailyMenu ? `<section class="band">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--sky)">A menu that changes daily</div>
+      <h2>Today's menu, paired before service.</h2>
+      <p class="lead">Your menu changes every day and your list holds ${f.wines} wines, so no printed pairing sheet lasts the week. Vinterest Teams is built for that.</p>
+    </div>
+    <div class="pr-facts">
+      <div class="pr-fact" style="--c:var(--sky)"><b>1</b><h3>Send today's menu</h3><p>A photo or a PDF of the day's menu. New dishes are read and paired from your own list: the three best wines for each, a pick by the glass and the one to steer away from. Dishes that carry over keep what they had.</p></div>
+      <div class="pr-fact" style="--c:var(--gold)"><b>2</b><h3>You approve it</h3><p>Nothing reaches the team until a manager has read it. Swap a wine, change the line, and confirm the kitchen's allergens for each new dish.</p></div>
+      <div class="pr-fact" style="--c:var(--green)"><b>3</b><h3>Everyone reads it before the floor</h3><p>The pre-shift briefing opens over the app: what's new, what's 86'd, what to pour with it. Each person accepts it before they start, and you see who has.</p></div>
+    </div>
+  </div>
+</section>
+
+` : ''}<section class="band dark">
   <div class="wrap">
     <div class="head">
       <div class="eyebrow">Already written for your team</div>
@@ -246,6 +339,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const source = val('source') || (a.source ? `as published on ${a.source.replace(/\s*\(.*$/, '')}` : '');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, render(a, { seed, slug, demo, source, owner: val('owner'), logo, aspect: asp }));
-  console.log(`Drafted site/teams/for/${slug}.html (/for/${slug}) for ${a.name}: ${a.figures.wines} wines, ${a.figures.bottleOnly} bottle only, ${a.facts.length} facts found, ${a.moves.length} moves worth ${a.sym}${a.moves.reduce((n, m) => n + m.n * m.price, 0)} a day at the defaults, ${a.picks.length} dishes.`);
+  console.log(`Drafted site/teams/for/${slug}.html (/for/${slug}) for ${a.name}: ${a.figures.wines} wines, ${a.figures.bottleOnly} bottle only, ${a.facts.length} facts found, ${a.moves.length} moves (${a.moves.map((m) => m.k).join(', ')}) worth ${a.sym}${Math.round(a.moves.reduce((n, m) => n + m.n * m.price / (m.per === 'week' ? 7 : 1), 0))} a day at the defaults, ${a.picks.length} dishes.`);
   console.log(`Read it and edit by hand before anyone sees it, then: npm run site:teams:build`);
 }
