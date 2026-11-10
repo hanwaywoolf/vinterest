@@ -275,7 +275,7 @@ function _CSales({open,setSection,sales,demo}){ const T=useTheme(), cr=T.lift(C.
       <_CStat label="Wine sales, 7 nights" value={_cMoney(sales.revenue)} delta={sales.delta.revenue} sub={`${sales.glasses} glasses · ${sales.bottles} bottles · ${sales.covers} covers`} testid="sales-revenue"/>
       <_CStat label="Glasses per guest" value={sales.glassesPerCover==null?'—':sales.glassesPerCover.toFixed(2)} delta={sales.delta.glassesPerCover} sub={`${sales.glasses} glasses to ${sales.covers} covers`} testid="sales-glasses"/>
       <_CStat label="Bottles per guest" value={sales.bottlesPerCover==null?'—':sales.bottlesPerCover.toFixed(2)} delta={sales.delta.bottlesPerCover} sub={`${sales.bottles} bottles · ${_cPct(sales.bottleTakings)} of wine takings`} testid="sales-bottles"/>
-      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`per shift, on one wine: ${TeamData.money(lift.known,{dp:2})} from a server who knows it, ${TeamData.money(lift.unknown,{dp:2})} from one who doesn't (${lift.wines} wines compared)`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
+      <_CStat label="Trained lift" value={lift.pct==null?'—':`${lift.pct>0?'+':''}${lift.pct}%`} up="good" sub={lift.wines?`a wine sells ${lift.x}× as much on the shifts of servers who know it (${lift.wines} wines compared)`:'needs servers who know and don\'t know the same wine'} testid="sales-lift"/>
     </div>
     <div style={two}>
       <Card>{_cLabel(T,'Wine sales by week',toggle)}<_CSpark points={m.pts} fmt={m.fmt}/>
