@@ -116,6 +116,19 @@ a demo behind it that is mostly the console, with a light drill for one member o
   id,…` picked by hand), put through the app's own question check, so those wines have an at-the-table question to show;
 - nothing else: no cocktail cards (`--cocktails`), dish notes (`--dish-notes`), drinking windows or sommelier review.
 
+It starts from the restaurant's own files: `npm run team:intake -- <restaurant> --name "…" --list wine-list.pdf --menu
+menu.pdf` (`scripts/team-intake.mjs`) reads them through the app's reader (`team_list`, `team_menu`) into
+`data/team-<restaurant>-list.json`. A PDF is cut into two-page files first (poppler's `pdfseparate`), because a reader handed
+the whole file and told which pages to read lost count; a glass reading joins its bottle (same vintage, `_same`, one of the
+two without a bottle price). Check every price against the PDF before writing from it (`pdftotext -layout` and a line count
+is enough), join by hand what the by-the-glass page spells differently, and add the seed's row.
+
+Measured on The Barbary (London, November 2026: 314 wines, 32 dishes, the list far larger than the menu, which changes
+daily): intake 9 calls, 45k tokens in and 42k out; the pitch write 70 calls, 145k in, 208k out, 1.1M read from the cache and
+396k written to it, all on Sonnet 5.5. About $4 at list prices, most of it the short cards' output. Both scripts print
+their tokens when they end. A menu that changes daily costs little to keep paired (a dish is a few cents); what it needs is
+someone to send it each day, which is the pre-shift briefing's job more than the drill's.
+
 Every call is a draft (the Worker's `TEAM_DRAFT_MODEL`). The training file carries `pitch` {featured, at}. The restaurant's
 list file should set `venue.training` to `{"tier": "essentials"}`, since only the featured wines have anything to ask above
 Essentials. On The Social Corner's list (41 wines, 62 dishes) a pitch run is 23 calls; budget a few dollars a restaurant,

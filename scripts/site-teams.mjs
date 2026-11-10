@@ -89,7 +89,8 @@ async function buildLive() {
 export function cellarOf(list, train) {
   const num = (s) => { const m = /[£$€]([\d,.]+)/.exec(s || ''); return m ? +m[1].replace(',', '') : 0; };
   const KIND = { sparkling: 's', white: 'w', 'rosé': 'p', red: 'r', dessert: 'd', fortified: 'd' };
-  const all = list.wines.map((w) => {
+  // Alcohol-free bottles aren't part of the argument (site-teams-for.mjs leaves them out of every figure too).
+  const all = list.wines.filter((w) => !/non-?\s?alc|alcohol[- ]free/i.test(`${w.section} ${w.name} ${w.type}`)).map((w) => {
     const mag = /Magnum/.test(w.other || '') && !w.bottle, bottle = num(w.bottle) || (mag ? num(w.other) : 0), c = (train.cards || {})[w.id] || {};
     const row = [(w.name.includes(w.producer) ? w.name : `${w.producer}, ${w.name}`) + (w.vintage ? ` ${w.vintage}` : ''), bottle, num(w.glass), KIND[w.type] || 'r']; if (mag) row.push(1);
     const serve = c.serve || {};

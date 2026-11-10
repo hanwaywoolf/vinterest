@@ -25,12 +25,12 @@ export function analyse(list, train) {
   const v = list.venue || {}, sym = (v.currency && v.currency.sym) || '£';
   const money = (n) => sym + (Math.round(n * 100) % 100 ? n.toFixed(2) : Math.round(n).toLocaleString('en-GB'));
   // Non-alcoholic bottles are on the list but not part of the argument, so they're left out of every figure.
-  const wines = (list.wines || []).filter((w) => !/non-?\s?alc/i.test(`${w.section} ${w.name} ${w.type}`)), dishes = list.dishes || [], cocktails = list.cocktails || [];
+  const wines = (list.wines || []).filter((w) => !/non-?\s?alc|alcohol[- ]free/i.test(`${w.section} ${w.name} ${w.type}`)), dishes = list.dishes || [], cocktails = list.cocktails || [];
   const magnum = (w) => /magnum/i.test(w.other || '') && !w.bottle;
   const bottleOf = (w) => num(w.bottle) || (magnum(w) ? num(w.other) : 0), glassOf = (w) => num(w.glass);
   const byGlass = wines.filter((w) => glassOf(w)), bottleOnly = wines.filter((w) => !glassOf(w));
   // Medians are of standard bottles: a magnum or a half bottle would skew them.
-  const std = (w) => !magnum(w) && !/37\.5|50\s?cl|half/i.test(w.bottle || '') ? bottleOf(w) : 0;
+  const std = (w) => !magnum(w) && !/37\.5|50\s?cl|half/i.test(`${w.bottle || ''} ${w.other || ''}`) ? bottleOf(w) : 0;
   const medGlassList = median(byGlass.map(std)), medBottleOnly = median(bottleOnly.map(std)), medAll = median(wines.map(std));
   const top = wines.filter((w) => !magnum(w)).sort((a, b) => bottleOf(b) - bottleOf(a))[0];
   // The round figure a "dearest" filter uses: 100 unless fewer than a tenth of the list reaches it, then 80, then 60.
@@ -73,7 +73,7 @@ export function analyse(list, train) {
   if (figures.firstBottleOnly >= 3) { const seen = new Set(), egs = firstBottleOnly.slice().sort((a, b) => num(b.price) - num(a.price)).filter((d) => { const id = pairings[d.id].best[0].id; if (seen.has(id)) return false; seen.add(id); return true; }).slice(0, 2);
     const eg = egs.map((d) => `the ${d.name.split(',')[0].replace(/^the\s+/i, '')} with the ${plain(byId[pairings[d.id].best[0].id])}`).join(', ');
     facts.push({ big: `${figures.firstBottleOnly}`, title: 'Dishes best with a bottle-only wine', text: `For ${figures.firstBottleOnly} of your ${figures.paired} dishes, the best match on your list isn't sold by the glass: ${eg}.` }); }
-  facts.push({ big: String(figures.grapes), title: 'Grape varieties', text: `From ${figures.producers} producers in ${figures.countries} countries. A lot for a new starter to hold.` });
+  if (figures.grapes >= 8) facts.push({ big: String(figures.grapes), title: 'Grape varieties', text: `From ${figures.producers} producers in ${figures.countries} countries. A lot for a new starter to hold.` });
   if (top && figures.overTop >= 3) facts.push({ big: String(figures.overTop), title: `Bottles at ${money(topAt)} or more`, text: `Up to the ${label(top)} at ${money(bottleOf(top))}. The bottles a confident recommendation sells.` });
   if (larger.length >= 4) facts.push({ big: String(larger.length), title: 'Wines in two pours', text: `${say(larger.length, true)} wines come in a smaller and a larger glass. The larger pour is ${money(median(larger.map((x) => x.step)))} more at the median, and it's one question at the table.` });
   if (sweet.length >= 2) { const ps = sweet.map(glassOf).sort((a, b) => a - b); facts.push({ big: String(sweet.length), title: 'Sweet and fortified by the glass', text: `From ${money(ps[0])} to ${money(ps[ps.length - 1])} a glass. They're rarely ordered unless someone offers.` }); }

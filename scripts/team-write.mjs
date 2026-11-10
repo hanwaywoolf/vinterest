@@ -40,6 +40,8 @@ execSync('node scripts/build.mjs', { stdio: 'ignore' });
 const port = 4198, server = spawn('node', ['scripts/serve.mjs', 'dist', String(port)], { stdio: 'ignore' });
 await new Promise((r) => setTimeout(r, 800));
 const browser = await chromium.launch();
+// What the run cost, by model: every answer carries its usage.
+const use = {};
 try {
   const page = await browser.newPage();
   // Sent with curl, which follows the machine's proxy settings (Node's own fetch doesn't).
@@ -51,6 +53,7 @@ try {
         let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', (code) => code ? rej(new Error('curl ' + code)) : res(o)); c.stdin.end(body); });
       const i = out.lastIndexOf('\n'), status = Number(out.slice(i + 1)) || 502;
       if (status !== 200) console.log(`  /claude answered ${status}: ${out.slice(0, Math.min(i, 200))}`);
+      else try { const j = JSON.parse(out.slice(0, i)), u = j.usage || {}, m = j.model || 'model'; const t = use[m] || (use[m] = { calls: 0, in: 0, out: 0, read: 0, write: 0 }); t.calls++; t.in += u.input_tokens || 0; t.out += u.output_tokens || 0; t.read += u.cache_read_input_tokens || 0; t.write += u.cache_creation_input_tokens || 0; } catch (e) {}
       await route.fulfill({ status, headers: { 'content-type': 'application/json' }, body: out.slice(0, i) });
     } catch (e) { await route.fulfill({ status: 502, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: e.message }) }); }
   });
@@ -134,4 +137,6 @@ try {
   console.log('Still to write:', JSON.stringify(draft ? { ...left, windows: 0 } : left));
   if (pitch) console.log(`Next: npm run team:audit -- ${seed} (free), then npm run site:teams:for -- ${seed} for its page.`);
   else console.log(`Next: npm run team:audit -- ${seed}${teaser ? ' (a teaser skips the sommelier review)' : `, then npm run team:review -- ${seed}`}`);
-} finally { await browser.close(); server.kill(); }
+} finally {
+  Object.keys(use).forEach((m) => { const t = use[m]; console.log(`Tokens on ${m}: ${t.calls} calls · ${t.in} in · ${t.out} out · ${t.read} cache read · ${t.write} cache write`); });
+  await browser.close(); server.kill(); }

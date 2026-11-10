@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="seed" content="barbary">
+<title>For The Barbary | Vinterest Teams</title>
+<meta name="description" content="What The Barbary's own wine list says, and what a team that knows it could be worth.">
+<link rel="stylesheet" href="/fonts/fonts.css?v=%%FONTS_V%%">
+<link rel="stylesheet" href="/site.css?v=%%CSS_V%%">
+<style>
+.pr-pair .them-name { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .pr-for b { color: #fff; font-size: 20px; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+
+<header class="pr-top">
+  <div class="wrap">
+    <div class="pr-pair"><a class="tlogo" href="https://vinterest.team" aria-label="Vinterest Teams"><div class="mark"><img src="/logo.png" alt=""></div><div class="word"><span>T</span><span>E</span><span>A</span><span>M</span><span>S</span></div></a><span class="x" aria-hidden="true">×</span><b class="them-name">The Barbary</b></div>
+    <div class="acts"><a class="btn ghost small" href="#worth">What it's worth</a><a class="btn primary small" href="https://claude-teams-site.vinterest.pages.dev/team/?seed=barbary&amp;view=console" target="_blank" rel="noopener">Open your demo</a></div>
+  </div>
+</header>
+
+<section class="pr-hero">
+  <div class="wrap">
+    <div>
+    <div class="pr-for"><span>Prepared for</span><b>The Barbary</b></div>
+    <h1>313 wines. <em>271 need a recommendation.</em></h1>
+    <p class="lead">Nine in ten of your wines are bottle only, so they sell when someone on the floor can say why. Here's what your list says, what knowing it could be worth, and a working demo built from it.</p>
+    <div class="cta"><a class="btn primary" href="https://claude-teams-site.vinterest.pages.dev/team/?seed=barbary&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
+    </div>
+    <div class="cellar" style="--cols: 22; --cols-m: 16" data-cellar="forList" data-sym="£" data-top="100" data-cards="/for/barbary.cards.json?v=%%CARDS_V%%" data-cards-demo="https://claude-teams-site.vinterest.pages.dev/team/?seed=barbary&amp;view=console"></div>
+  </div>
+</section>
+<script type="application/json" id="forList">%%LIST%%</script>
+
+<section class="band">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--plum)">Your list, in numbers</div>
+      <h2>A serious list asks a lot of the people selling it.</h2>
+      <p class="lead">From your wine list and menu your November wine list, your dinner menu of 10 November and your dessert menu.</p>
+    </div>
+    <div class="pr-facts">
+      <div class="pr-fact" style="--c:var(--cr)"><b>87%</b><h3>Bottle only</h3><p>271 of your 313 wines aren't poured by the glass. Nobody tastes their way into them; they sell when someone on the floor can say why.</p></div>
+      <div class="pr-fact" style="--c:var(--gold)"><b>£115</b><h3>Your median bottle-only wine</h3><p>The wines you pour by the glass have a median bottle of £105. A table that moves from one list to the other is worth about £10 more.</p></div>
+      <div class="pr-fact" style="--c:var(--sky)"><b>132</b><h3>Grape varieties</h3><p>From 248 producers in 23 countries. A lot for a new starter to hold.</p></div>
+      <div class="pr-fact" style="--c:var(--plum)"><b>184</b><h3>Bottles at £100 or more</h3><p>Up to the J.-F. Coche–Dury Meursault 2014 at £2,050. The bottles a confident recommendation sells.</p></div>
+      <div class="pr-fact" style="--c:var(--green)"><b>9</b><h3>Sweet and fortified by the glass</h3><p>From £8 to £43 a glass. They're rarely ordered unless someone offers.</p></div>
+      <div class="pr-fact" style="--c:var(--rose)"><b>3</b><h3>Sparkling wines by the glass</h3><p>From Hundred Hills and Billecart-Salmon, starting at £17. The easiest glass to offer before the menus are open.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="calc pr-calc" id="worth" style="--c:var(--cr)">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">What it's worth</div>
+      <h2>Three small moves, at <em style="font-style:normal;color:var(--cr)">your prices.</em></h2>
+      <p class="lead">Turning glasses into the same bottle earns little: a bottle costs about what its glasses do. The money is in three moves that only happen when the team knows the list.</p>
+      <div class="pr-moves">
+        <div class="pr-move"><b>A table trades up to a bottle-only wine</b><i>+£10</i><span>Your by-the-glass wines have a median bottle of £105; your bottle-only wines, £115.</span></div>
+        <div class="pr-move"><b>A glass of sparkling to start</b><i>+£17</i><span>Hundred Hills Preamble No. 2, Brut 2022, your least expensive sparkling glass.</span></div>
+        <div class="pr-move"><b>A sweet or fortified glass with dessert</b><i>+£20</i><span>The median of your nine sweet and fortified wines by the glass.</span></div>
+      </div>
+    </div>
+    <div class="card" id="forCalc" data-moves data-sym="£">
+      <div class="fld"><label>Tables trading up to a bottle-only wine<small>more a day, at +£10 each</small></label><div class="v" data-out="up">3</div><input type="range" min="0" max="15" step="1" value="3" data-in="up" data-price="10" aria-label="Tables trading up to a bottle-only wine a day"></div>
+      <div class="fld"><label>Glasses of sparkling to start<small>more a day, at +£17 each</small></label><div class="v" data-out="fizz">5</div><input type="range" min="0" max="30" step="1" value="5" data-in="fizz" data-price="17" aria-label="Glasses of sparkling to start a day"></div>
+      <div class="fld"><label>Glasses with dessert<small>more a day, at +£20 each</small></label><div class="v" data-out="sweet">4</div><input type="range" min="0" max="30" step="1" value="4" data-in="sweet" data-price="20" aria-label="Glasses with dessert a day"></div>
+      <div class="fld"><label>Days open a week</label><div class="v" data-out="days">7</div><input type="range" min="1" max="7" step="1" value="7" data-in="days" aria-label="Days open a week"></div>
+      <div class="pr-out">
+        <div><small>A day</small><b data-t="day">£195</b></div>
+        <div><small>A week</small><b data-t="week">£0</b></div>
+        <div><small>A month</small><b data-t="month">£0</b></div>
+        <div class="pick"><small>A year</small><b data-t="year">£0</b></div>
+      </div>
+      <div class="pr-bar" aria-hidden="true"><i data-b="up" style="--k:var(--cr)"></i><i data-b="fizz" style="--k:var(--gold)"></i><i data-b="sweet" style="--k:var(--green)"></i></div>
+      <p class="pr-sum"><span style="--k:var(--cr)">Trading up <b data-p="up"></b></span><span style="--k:var(--gold)">Sparkling <b data-p="fizz"></b></span><span style="--k:var(--green)">With dessert <b data-p="sweet"></b></span></p>
+      <p class="assume">Illustrative: extra wine revenue from the counts you set, at the prices on your list. We don't know your covers, so nothing here is a forecast. Once your sales data is in, the console measures the real change.</p>
+    </div>
+  </div>
+</section>
+
+<section class="band dark">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow">Already written for your team</div>
+      <h2>Your dishes, the wine, and the line to say.</h2>
+      <p class="lead">Every wine on your list has a card, and every dish has its wines. These are four of them, as your team would learn them. The pairings are ours, written from your list and menu; you can change any of them before anyone sees them.</p>
+    </div>
+    <div class="pr-say">
+      <div class="pr-dish"><div class="d">Snacks · £6 each</div><h3>Lamb Batbout</h3><div class="w">Oenops Xinomavro 2023, Naousa and Amyntaio · £72 a bottle · bottle only</div><blockquote>"It's a Greek red with bright red fruit, a hint of tomato leaf and olive, and a firm grip. If you like a red with real structure that loves lamb and tomatoes, you'll enjoy this."</blockquote></div>
+      <div class="pr-dish"><div class="d">Snacks · £5 each</div><h3>Aubergine Batbout</h3><div class="w">Sette Barbera, Nizza 2022, Piedmont · £98 a bottle · bottle only</div><blockquote>"It's a juicy Italian red with bright cherry and plum fruit and a lovely freshness. It's soft and easy to drink, and great with rich, fatty or tomatoey food."</blockquote></div>
+      <div class="pr-dish"><div class="d">Mains · £120 (800g)</div><h3>Hereford Côte De Boeuf</h3><div class="w">Château des Graviers, Margaux 2021, Bordeaux · £28 a glass · £130 a bottle</div><blockquote>"It's a classic dry red with blackcurrant and cedar, firm but smooth once it has a little air. It's made for rich, fire-cooked meat, which softens that grip."</blockquote></div>
+      <div class="pr-dish"><div class="d">Dessert · £11</div><h3>Chocolate Crémeux</h3><div class="w">Graham 20 Y.O Tawny Port, Douro · £20 a glass</div><blockquote>"It's smooth and sweet, tasting of toffee, roasted nuts and dried fruit. Lovely with chocolate, or just on its own after dinner."</blockquote></div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <div class="head">
+      <div class="eyebrow" style="--c:var(--green)">Your demo</div>
+      <h2>The Barbary, ready to try.</h2>
+      <p class="lead">Your list and menu are loaded into a working demo: the console your managers would run it from, and the app your team would train on. It's a preview: every wine has its card, and eight of them carry the full training with questions. The team and the sales figures in it are invented, and labelled as demo data.</p>
+    </div>
+    <div class="pr-in">
+      <div><b>313</b><span>wine cards, each with what to say to a guest</span></div>
+      <div><b>32</b><span>dishes paired from your own list</span></div>
+      <div><b>8</b><span>wines with the full training, questions and all, to try</span></div>
+      <div><b>313</b><span>wines on the list your managers see in the console</span></div>
+    </div>
+    <div class="cta" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px"><a class="btn primary" href="https://claude-teams-site.vinterest.pages.dev/team/?seed=barbary&amp;view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="mailto:hello@vinterest.app?subject=The%20Barbary%20and%20Vinterest%20Teams">Book a 20-minute walkthrough</a><a class="btn ghost" href="https://vinterest.team/mise-en-place">How we'd launch with you</a></div>
+  </div>
+</section>
+
+<footer class="pr-foot">
+  <div class="wrap">
+    <p>Prepared by Vinterest Teams for The Barbary, London. This page is private: it isn't linked from our site or listed in search.</p>
+    <p>Wines, dishes and prices are from your lists your November wine list, your dinner menu of 10 November and your dessert menu; if anything has changed since, the demo updates from a new copy. Pairings and staff lines are Vinterest's own, written from those lists. Vinterest is independent of The Barbary. <a href="https://vinterest.team/privacy">Privacy</a> · <a href="mailto:hello@vinterest.app">hello@vinterest.app</a></p>
+  </div>
+</footer>
+
+<script src="/site.js?v=%%JS_V%%" defer></script>
+%%ANALYTICS%%
+</body>
+</html>
