@@ -265,3 +265,21 @@ test('the hero phone runs the real drill', async ({ page }) => {
   expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => /^(vbiz|vinterest)_/.test(k)))).toEqual([]); // nothing left on the visitor's device
   expect(errors).toEqual([]);
 });
+
+// On a phone the hero has no phone, so the drill in "On the floor" is the live one, loaded as the section nears.
+test('on a phone the floor carousel runs the real drill', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.addInitScript(() => { window.TEAMS_LIVE_SPEED = 6; });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(BASE + '/');
+  await expect(page.locator('#pstage .live-app')).toHaveCount(0);
+  await page.locator('#orbit').scrollIntoViewIfNeeded();
+  await expect(page.locator('#ftitle')).toHaveText('The drill');
+  const app = page.locator('#fstage .live-app');
+  await expect(app.locator('[data-testid=drill-result]')).toBeVisible({ timeout: 30000 });
+  await expect(app.locator('[data-testid=drill-done]')).toBeVisible({ timeout: 40000 });
+  await expect(page.locator('#ftitle')).toHaveText('The card', { timeout: 15000 }); // one run, then the carousel turns
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});

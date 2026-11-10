@@ -7,7 +7,8 @@
    here is a picture: a change to the drill in the app is a change on the website at the next build.
 
    The answers come from the app itself: TeamLearn.deal is watched for the questions a drill deals, so the right
-   option is the one the app will mark right. It pauses while off screen; taps show as a dot. No network: the
+   option is the one the app will mark right. It pauses while off screen (or while opts.active() is false, for a
+   phone in a carousel; opts.onLoop is called as each run ends). One phone a page: they share one restaurant; taps show as a dot. No network: the
    drill marks its own answers, and the demo restaurant's training ships in the bundle. */
 const TeamsLive = (() => {
   const W = 390, H = 844;
@@ -30,13 +31,14 @@ const TeamsLive = (() => {
     const stage = document.createElement('div'); stage.className = 'live-app'; stage.inert = true; stage.setAttribute('aria-hidden', 'true');
     stage.style.cssText = `position:absolute;left:0;top:0;width:${W}px;height:${H}px;transform-origin:0 0;pointer-events:none;transition:opacity .45s ease;opacity:0`;
     el.appendChild(stage);
+    stage.addEventListener('click', (e) => e.stopPropagation()); // the app's own taps are not taps on the page around it
     const fit = () => { const k = el.clientWidth / W; if (!k) return; stage.style.transform = `scale(${k})`; stage.style.height = Math.round(el.clientHeight / k) + 'px'; };
     fit(); const ro = new ResizeObserver(fit); ro.observe(el);
     const io = new IntersectionObserver((es) => { seen = es[0].isIntersecting; }, { threshold: 0.2 }); io.observe(el);
 
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms / speed));
     // Time that only passes while the phone is on screen.
-    const wait = async (ms) => { let left = ms; while (alive && left > 0) { await sleep(100); if (seen) left -= 100; } if (!alive) throw new Error('stopped'); };
+    const wait = async (ms) => { let left = ms; while (alive && left > 0) { await sleep(100); if (seen && (!opts.active || opts.active())) left -= 100; } if (!alive) throw new Error('stopped'); };
     const until = async (fn, ms = 6000) => { const t0 = Date.now(); for (;;) { const v = fn(); if (v) return v; if (!alive) throw new Error('stopped'); if (Date.now() - t0 > ms) return null; await sleep(60); } };
     const $ = (sel) => stage.querySelector(sel), $$ = (sel) => Array.from(stage.querySelectorAll(sel));
     const byText = (re) => $$('button,[role=button],div').filter((b) => re.test((b.textContent || '').trim()) && b.offsetParent !== null).pop();
@@ -93,6 +95,7 @@ const TeamsLive = (() => {
           await wait(3200); const sc = scroller(); if (sc) await glide(sc.scrollHeight, 2600); await wait(2200);
           await tap(byText(/^Done$/)); await wait(3400);
         }
+        if (opts.onLoop) opts.onLoop();
         stage.style.opacity = '0'; await wait(500);
       }
     }

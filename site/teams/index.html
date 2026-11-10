@@ -136,10 +136,11 @@
       <div class="ftext">
         <div class="eyebrow" style="--c:var(--rose)">On the floor</div>
         <h2 style="font-size:clamp(26px,3vw,36px)">Everything a server needs, in their pocket.</h2>
-        <div class="fcap" id="fcap" aria-live="polite"><h3 id="ftitle">The card</h3><p id="fdesc">The price as the guest hears it, how to say the name, the line to say at the table, and the dishes it suits.</p></div>
+        <div class="fcap" id="fcap" aria-live="polite"><h3 id="ftitle">The drill</h3><p id="fdesc">Five questions before service, on your wines and your dishes. A wrong answer is where it teaches, and readiness moves with every one.</p></div>
         <div class="fnav"><button class="arrow" id="fprev" aria-label="Previous screen">←</button><div class="fdots" id="fdots"></div><button class="arrow" id="fnext" aria-label="Next screen">→</button></div>
       </div>
       <div class="orbit" id="orbit">
+        <div class="slot" data-title="The drill" data-desc="Five questions before service, on your wines and your dishes. A wrong answer is where it teaches, and readiness moves with every one."><div class="phone"><div class="scr"><div class="lstage" id="fstage"><img src="img/phone-drill.jpg" alt="A drill question on one of the restaurant's wines"></div></div></div></div>
         <div class="slot" data-title="The card" data-desc="The price as the guest hears it, how to say the name, the line to say at the table, and the dishes it suits."><div class="phone"><div class="scr"><img src="img/phone-card.jpg" alt="A wine's card"></div></div></div>
         <div class="slot" data-title="The dish" data-desc="What it is in a sentence, what the kitchen can change, its confirmed allergens, and the wines to pour with it."><div class="phone"><div class="scr"><img src="img/phone-dish.jpg" alt="A dish's pairings"></div></div></div>
         <div class="slot" data-title="Today" data-desc="Tonight's 86'd and feature wines, where they stand for their role, and the plan for someone new."><div class="phone"><div class="scr"><img src="img/phone-today-staff.jpg" alt="Today"></div></div></div>
@@ -373,11 +374,22 @@ function fgo(i) {
   document.getElementById('ftitle').textContent = slots[fi].dataset.title; document.getElementById('fdesc').textContent = slots[fi].dataset.desc;
   Array.from(fdots.children).forEach((d, k) => d.setAttribute('aria-current', k === fi ? 'true' : 'false'));
 }
-function fturn() { clearInterval(ftimer); if (reduced) return; ftimer = setInterval(() => fgo(fi + 1), 7000); }
-function fhold() { clearInterval(ftimer); }
+let flive = false; // the drill's phone is running the real app: the carousel waits on it for one run, then turns
+function fturn() { clearInterval(ftimer); if (reduced) return; ftimer = setInterval(() => { if (!(flive && fi === 0)) fgo(fi + 1); }, 7000); }
+function fhold() { clearInterval(ftimer); ftimer = 0; }
 document.getElementById('fprev').addEventListener('click', () => { fgo(fi - 1); fhold(); });
 document.getElementById('fnext').addEventListener('click', () => { fgo(fi + 1); fhold(); });
 slots.forEach((sl, i) => sl.addEventListener('click', () => { fgo(i); fhold(); }));
+// Where the hero has no phone (a narrow screen), the drill's phone here is the real app (live.js, as the hero's is
+// on a wide one), loaded as the section comes near. One phone a page runs it: they'd share one restaurant.
+const fstage = document.getElementById('fstage'), fconn = navigator.connection || {};
+if (fstage && !(pstage && pstage.clientWidth) && !reduced && !fconn.saveData && !/(^|-)2g$/.test(fconn.effectiveType || '') && !/[?&]live=off/.test(location.search)) {
+  const near = new IntersectionObserver((es) => { if (!es.some((e) => e.isIntersecting)) return; near.disconnect();
+    const sc = document.createElement('script'); sc.src = '/live.js?v=%%LIVE_V%%'; sc.async = true;
+    sc.onload = () => { try { window.TeamsLive.mount(fstage, { who: 'Dani', active: () => fi === 0, onReady: () => { flive = true; }, onLoop: () => { if (fi === 0 && ftimer) fgo(1); }, onFail: () => { flive = false; } }); } catch (e) {} };
+    document.head.appendChild(sc); }, { rootMargin: '800px 0px' });
+  near.observe(orbit);
+}
 fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) fturn(); else clearInterval(ftimer); })).observe(orbit);
 
 // Vinny: each item shows its screens in turn (an answer; the test then its first question; a guest
