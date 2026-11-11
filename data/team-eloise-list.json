@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-11-eloise-console",
+ "rev": "2026-11-11-eloise-cam",
  "venue": {
   "name": "Eloise",
   "city": "Toronto",
@@ -1825,9 +1825,9 @@
  ],
  "staff": [
   {
-   "name": "Elena Ruiz",
+   "name": "Cam Dryburgh",
    "role": "manager",
-   "photo": "faces/1.png"
+   "photo": "brand/eloise/cam-dryburgh.jpg"
   },
   {
    "name": "Claire Whitfield",

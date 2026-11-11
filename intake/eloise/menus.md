@@ -33,6 +33,6 @@ Eloise, Toronto (eloiserestaurant.ca). Prices are in Canadian dollars, as printe
 
 **Cocktails (10).** The four House Cocktails, four Classics and two Zero-Proof drinks, ingredients and pour sizes as printed. Beer, spirits, coffee and tea are left out. Half-price cocktails (Monday to Saturday, 5pm to 7pm) and the $50 corkage are in `venue.about`.
 
-**Demo team and sales.** The same invented team as The Social Corner (the Larkspur's people and photos) and eight weeks of invented sales in dollars, labelled Demo data. The POS item the list doesn't carry is "House Prosecco (Events)" (`venue.offList`), invented.
+**Demo team and sales.** The manager is Cam Dryburgh, the Esplanade Group's head of food and beverage, whom the demo is shown to, with the photo Carey supplied (`brand/cam-dryburgh.jpg`, cropped to `team/brand/eloise/cam-dryburgh.jpg`); his progress is invented like everyone else's. The rest is the same invented team as The Social Corner (the Larkspur's people and photos) and eight weeks of invented sales in dollars, labelled Demo data. The POS item the list doesn't carry is "House Prosecco (Events)" (`venue.offList`), invented.
 
 **Branding.** The wordmark Carey supplied, filled white for the app's dark header (`team/brand/eloise/wordmark-white.svg`, `venue.brand.logo`) and for the page written for them (`site/teams/img/for/eloise.svg`). No mark or accent colour: the header keeps the Vinterest mark.

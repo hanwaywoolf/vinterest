@@ -708,7 +708,8 @@ const TeamDemo = {
     const PLAN={Claire:{to:100,checks:[14,0.93]},Elena:{to:76,checks:[8,0.88]},David:{to:100,checks:[9,0.89]},Dani:{to:82,checks:[7,0.86]},
       Marco:{to:62,stale:0.35,wasReady:20,checks:[6,0.5]},Priya:{to:36,overdue:true,checks:[3,0.67]},Amara:{to:18,newbie:true}};
     const pct=pid=>TeamLearn.readiness(pid).pct;
-    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||{to:60}, days=plan.newbie?4:40, steps=plan.newbie?1:3;
+    // A manager under another name (an install shown to its own manager, as Eloise's is) takes the manager's place in the plan.
+    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||(p.role==='manager'?PLAN.Elena:{to:60}), days=plan.newbie?4:40, steps=plan.newbie?1:3;
       dishes(p.id,menu.slice(0,Math.round(menu.length*Math.min(1,plan.to/100+0.1))),now-(plan.newbie?2:5)*this.DAY);
       if(mixes.length) mixes.slice(0,Math.round(mixes.length*plan.to/100)).forEach(c=>spacedQs(p.id,qsOf(p,c.id,true),days,steps));
       // Someone meant to be ready learns until they are (a figure that rounds to 100% can still be one part short).

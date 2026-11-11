@@ -104,12 +104,18 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   await expect(page.getByTestId('team-state')).toBeVisible();
   const st = await page.evaluate(() => {
     const rows = TeamSales.get().rows;
-    return { me: TeamLearn.me().name, people: TeamLearn.people().length, cur: TeamData.currency(), venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
+    const me = TeamLearn.me(), mr = TeamLearn.readiness(me.id);
+    return { me: me.name, manager: { role: me.role, photo: me.photo, state: mr.state, pct: mr.pct }, people: TeamLearn.people().length, cur: TeamData.currency(), venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
       wines: TeamData.wines().length, cards: TeamData.wines().filter((w) => TeamData.card(w.id)).length, dishes: TeamData.dishes().length, pairings: TeamData.dishes().filter((x) => TeamData.pairing(x.id)).length,
       cocktails: TeamData.cocktails().length, mixCards: TeamData.cocktails().filter((c) => TeamData.cocktailCard(c.id)).length, glass: TeamData.wines().filter((w) => TeamData.byGlass(w)).length,
       demo: TeamSales.demo(), rows: rows.length, offList: rows.some((r) => /House Prosecco \(Events\)/.test(r.n) && !r.w) };
   });
-  expect(st.me).toBe('Elena Ruiz');
+  // The demo opens as the person it's shown to: Eloise's own head of food and beverage as its manager, with his photo,
+  // at the manager's stage of the invented team (about three quarters of the way, not yet ready).
+  expect(st.me).toBe('Cam Dryburgh');
+  expect(st.manager).toMatchObject({ role: 'manager', photo: 'brand/eloise/cam-dryburgh.jpg', state: 'not' });
+  expect(st.manager.pct).toBeGreaterThan(65);
+  expect((await page.request.get(`${BASE}/team/brand/eloise/cam-dryburgh.jpg`)).status()).toBe(200);
   expect(st.people).toBe(7);
   expect(st.cur).toMatchObject({ sym: '$', code: 'CAD' });
   expect(st.allergens).toBe('CA');
