@@ -127,6 +127,12 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   await expect(page.locator('#root')).not.toContainText('£');
   // The allergens drafted from the menu are accepted for the demo (by "Demo data"), so Menu has nothing left to confirm.
   expect(await page.evaluate(() => TeamData.dishes().every((x) => TeamData.allergensOf(x.id) != null) && TeamData.allergensOf('d-seared-scallop'))).toEqual(['shellfish']);
+  // A browser that opened an earlier copy, when the manager was Elena, starts again as Cam instead of keeping her
+  // with Cam added beside her; the same copy opened again keeps its team.
+  await page.evaluate(() => { const t = TeamLearn.team(), m = Object.values(t.people).find((p) => p.role === 'manager'); m.name = 'Elena Ruiz'; m.photo = 'faces/1.png'; TeamLearn._saveTeam(t); const d = TeamData.get(); d.venue.seeded = 'an-older-copy'; TeamData.save(d); });
+  await page.goto(`${BASE}/team/?seed=eloise`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().length, TeamLearn.people().some((p) => p.name === 'Elena Ruiz')])).toEqual(['Cam Dryburgh', 7, false]);
   // Shown to a prospect: the console's Wines section opens on their wines, without our sommelier review card
   // (venue.console.hide); the questions it held stay out of the drill, and another restaurant still shows the card.
   await page.goto(`${BASE}/team/?seed=eloise&view=console`);
@@ -141,6 +147,10 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   await page.goto(`${BASE}/team/?seed=princess&view=console`);
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toBeVisible();
+  // Admin never says what the training costs us to write: a prospect reads this screen.
+  await page.getByTestId('console-nav-admin').click();
+  await expect(page.getByText('Accounts and billing')).toBeVisible();
+  await expect(page.locator('#root')).not.toContainText(/Writing is the only cost|about 3p|under a penny/);
   expect(errors).toEqual([]);
 });
 

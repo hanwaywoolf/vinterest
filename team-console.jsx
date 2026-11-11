@@ -603,7 +603,6 @@ function _CAdmin({refresh}){ const T=useTheme(), d=TeamData.get(), [name,setName
         <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10}}><Btn small onClick={()=>TeamData.exportFile()}>Export as a file</Btn>
           <Btn small onClick={()=>{ if(confirm('Start again? This clears the restaurant, everyone\'s training and sales on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); refresh&&refresh(); } }}>Start again</Btn></div></Card>
       <Card>{_cLabel(T,'Accounts and billing')}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>Next: an account per restaurant with sites and members, each person on their own phone, and billing per site through Stripe. The console then runs on the web with the same screens.</div></Card>
-      <Card>{_cLabel(T,'Cost')}<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>Writing is the only cost: a staff card with its questions about 3p, a 250-wine list from scratch about £6, a menu's pairings about £1, a marked answer under a penny. Reading the dashboard costs nothing.</div></Card>
     </div>
   </div>; }
 

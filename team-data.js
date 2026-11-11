@@ -588,7 +588,13 @@ const TeamSample = {
     // and question id, which a new copy keeps, so testing carries on where it was instead of starting again.
     // The Larkspur is invented from end to end, so an older copy of it is replaced whole (its team, progress and
     // sales seeded again): a visitor from the website always meets the demo as it now is.
-    const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
+    // Unless the invented manager it was seeded with (Elena, the Larkspur's) is no longer in the new copy's team, as at
+    // Eloise, whose manager became the person the demo is shown to: the device would go on opening as her with the new
+    // manager added beside her, so it starts again like a first visit. Someone who set themselves up is always kept.
+    const newStaff=s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[]), lower=x=>String(x||'').toLowerCase(), inNew=new Set(newStaff.map(p=>lower(p.name)));
+    const invented=new Set(this.DEMO_STAFF.filter(p=>p.role==='manager').map(p=>lower(p.name)));
+    const sameMgr=!newStaff.length||!TeamLearn.people().some(p=>p.role==='manager'&&invented.has(lower(p.name))&&!inNew.has(lower(p.name)));
+    const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0&&sameMgr;
     // A changed demo story (TeamDemo.STORY) re-invents a kept restaurant's sales, which are demo data too; its team's progress stays.
     const story=s=>(String(s||'').match(/\|story(\d+)$/)||[])[1]||null, newStory=keep&&story((TeamData.get().venue||{}).seeded)!==String(TeamDemo.STORY);
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
