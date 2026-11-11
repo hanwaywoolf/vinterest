@@ -143,10 +143,12 @@ filled white (`team/brand/eloise/wordmark-white.svg`). It carries the same inven
 sales, labelled Demo data, with its own `offList` POS item ("House Prosecco (Events)"). Its training
 (`data/team-eloise.json`) was written through the production Worker by `npm run team:write -- eloise`, then put
 through `npm run team:audit` (nothing flagged) and `npm run team:review -- eloise`, then `--held` once more: 695
-questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its demo address is eloise.vinterest.team
-(`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), which needs adding as a custom domain on the vinterest Pages project.
-The page written for the restaurant is `site/teams/for/eloise.html` (vinterest.team/for/eloise, private), its list and
-cards made from the seed's two files with `cellarOf`.
+questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its address is eloise.vinterest.team, a custom domain on the vinterest Pages project, and it opens differently from the
+other restaurants' (`VENUE_PAGES` in `_worker.js`): the root is the page written for the restaurant
+(`site/teams/for/eloise.html`, private, its list and cards made from the seed's two files with `cellarOf`; the Worker
+fetches it and its files from the Teams site, `TEAMS_SITE_ORIGIN`, default vinterest.team, where it is also
+vinterest.team/for/eloise), and the demo is at eloise.vinterest.team/demo/ (the staff app's files; `TeamSample.HOSTS`
+opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`.
 
 ## How staff learn
 

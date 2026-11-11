@@ -639,7 +639,8 @@ const TeamSample = {
     TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); return true; },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
-     Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
+     Worker's VENUE_HOSTS sends that address's root to /team/; eloise.vinterest.team is in its VENUE_PAGES instead: the page
+     written for Eloise at the root, this app at /demo/. Null anywhere else. */
   HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','eloise.vinterest.team':'eloise','demo.vinterest.team':'demo'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */

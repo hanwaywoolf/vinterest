@@ -172,7 +172,34 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal", "eloise.vinterest.team": "eloise" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
+
+// A restaurant's address that opens the page written for it, with its demo beside it (eloise.vinterest.team): the root
+// is the Teams site's private page (site/teams/for/<name>.html, fetched from TEAMS_SITE_ORIGIN, default vinterest.team,
+// with the stylesheet, script, images and cards it asks for by path; fonts and the logo are this project's own, the same
+// files), and /demo/ is the staff app (dist/team/), which opens that restaurant from the address (TeamSample.HOSTS).
+// The API routes answer as on any other address.
+const VENUE_PAGES = { "eloise.vinterest.team": "eloise" };
+const VENUE_PAGE_FILE = /^\/(site\.css$|site\.js$|for\/|img\/)/;
+async function serveVenuePage(request, url, env) {
+  const name = VENUE_PAGES[url.hostname], site = (env.TEAMS_SITE_ORIGIN || "https://vinterest.team").replace(/\/+$/, ""), p = url.pathname;
+  if (p === "/demo" || p === "/team" || p.startsWith("/team/")) return Response.redirect(`${url.origin}/demo/${p.startsWith("/team/") ? p.slice(6) : ""}${url.search}`, 302);
+  if (p.startsWith("/demo/")) {
+    const res = await env.ASSETS.fetch(new Request(new URL("/team/" + p.slice(6) + url.search, url.origin), request));
+    if (p !== "/demo/") return res;
+    const headers = new Headers(res.headers);
+    headers.set("Cache-Control", "no-cache, must-revalidate");
+    return new Response(res.body, { status: res.status, headers });
+  }
+  const page = p === "/" || p === "/index.html";
+  if (!page && !VENUE_PAGE_FILE.test(p)) return null; // /claude, /tts, /config, fonts, the logo: as on any address
+  if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
+  const res = await fetch(site + (page ? `/for/${name}` : p + url.search), { headers: { accept: request.headers.get("accept") || "*/*" } });
+  const headers = new Headers(res.headers);
+  headers.set("x-robots-tag", "noindex, nofollow"); // written for one prospect: never in search
+  if (page) headers.set("Cache-Control", "no-cache, must-revalidate");
+  return new Response(res.body, { status: res.status, headers });
+}
 
 // The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
 // app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
@@ -205,6 +232,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // A restaurant's demo address opens its staff app, not the consumer app.
+    if (VENUE_PAGES[url.hostname]) { const res = await serveVenuePage(request, url, env); if (res) return res; }
     if (VENUE_HOSTS[url.hostname] && (url.pathname === "/" || url.pathname === "/index.html")) {
       return Response.redirect(new URL("/team/" + url.search, url).toString(), 302);
     }

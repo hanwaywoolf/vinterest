@@ -301,7 +301,7 @@ test("Eloise's private page is hidden from search and adds up in dollars", async
   await expect(card).toBeHidden();
   await expect(page.locator('.pr-foot')).toContainText('Vinterest is independent of Eloise');
   await expect(page.locator('body')).not.toContainText('£');
-  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=eloise/);
+  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', 'https://eloise.vinterest.team/demo/?view=console'); // their own address: the page at its root, the demo beside it
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
