@@ -130,6 +130,29 @@ through `npm run team:audit` and `npm run team:review -- princess-royal`. Its de
 princessroyal.vinterest.team (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), a custom domain on the vinterest Pages
 project.
 
+## The Eloise install
+
+`/team/?seed=eloise` opens Eloise, a restaurant and bar in Toronto, built for a sales pitch the same way: from the
+Beverage Menu and the site's menu captures Carey supplied (`intake/eloise/`: the PDFs, the wordmark, and `menus.md`,
+which says what went in, where the two sources disagree, what was corrected and what should be checked with the
+restaurant). `data/team-eloise-list.json` holds its 76 wines (by the glass and by the bottle as one wine; glasses are
+5oz with the 8oz price in `other`, the Sauternes a 2oz glass, two wines only as 1.5L magnums, one `orange`), 17 dishes
+(dinner's appetizers, pastas and mains and the site's three desserts) and 10 cocktails, in Canadian dollars
+(`venue.currency` CAD, `venue.country` CA, so Canada's priority allergens). Its logo is the wordmark Carey supplied,
+filled white (`team/brand/eloise/wordmark-white.svg`). It carries the same invented team and eight weeks of invented
+sales, labelled Demo data, with its own `offList` POS item ("House Prosecco (Events)"). Its training
+(`data/team-eloise.json`) was written through the production Worker by `npm run team:write -- eloise`, then put
+through `npm run team:audit` (nothing flagged) and `npm run team:review -- eloise`, then `--held` once more: 695
+questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its address is eloise.vinterest.team, a custom domain on the vinterest Pages project, and it opens differently from the
+other restaurants' (`VENUE_PAGES` in `_worker.js`): the root is the page written for the restaurant
+(`site/teams/for/eloise.html`, private, its list and cards made from the seed's two files with `cellarOf`; the Worker
+fetches it and its files from the Teams site, `TEAMS_SITE_ORIGIN`, default vinterest.team, where it is also
+vinterest.team/for/eloise), and the demo is at eloise.vinterest.team/demo/ (the staff app's files; `TeamSample.HOSTS`
+opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`. Its list file also sets
+`venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
+(our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
+training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the

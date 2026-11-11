@@ -565,15 +565,16 @@ const TeamSample = {
      website (intake/perse/): its list and menu (data/team-social-list.json), its branding and currency, and
      its training once written and exported (data/team-social.json). No invented staff: whoever opens it
      sets themselves up as its manager (TeamSetup). `princess-royal`: The Princess Royal, Notting Hill (Cubitt House), the
-     same kind of install from the menus and wine list on its site (intake/princess-royal/), in pounds, for a sales pitch. */
+     same kind of install from the menus and wine list on its site (intake/princess-royal/), in pounds, for a sales pitch.
+     `eloise`: Eloise, Toronto, the same again from its site's menus and drink menu (intake/eloise/), in Canadian dollars. */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
      paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'}},
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'},eloise:{kind:'social',label:'Eloise'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):which==='eloise'?_loadJSON('data/team-eloise.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):null; },
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):which==='eloise'?_loadJSON('data/team-eloise-list.json'):null; },
   // ?seed=perse was The Social Corner's first name on another branch; ?seed=princess is The Princess Royal's short address.
   ALIAS:{perse:'social',princess:'princess-royal'},
   load(which='sample'){ which=this.ALIAS[which]||which;
@@ -638,8 +639,9 @@ const TeamSample = {
     TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); return true; },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
-     Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','demo.vinterest.team':'demo'},
+     Worker's VENUE_HOSTS sends that address's root to /team/; eloise.vinterest.team is in its VENUE_PAGES instead: the page
+     written for Eloise at the root, this app at /demo/. Null anywhere else. */
+  HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','eloise.vinterest.team':'eloise','demo.vinterest.team':'demo'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ which=this.ALIAS[which]||which; const v=TeamData.get().venue||{}; if(v.sample!==which) return false;
@@ -706,7 +708,8 @@ const TeamDemo = {
     const PLAN={Claire:{to:100,checks:[14,0.93]},Elena:{to:76,checks:[8,0.88]},David:{to:100,checks:[9,0.89]},Dani:{to:82,checks:[7,0.86]},
       Marco:{to:62,stale:0.35,wasReady:20,checks:[6,0.5]},Priya:{to:36,overdue:true,checks:[3,0.67]},Amara:{to:18,newbie:true}};
     const pct=pid=>TeamLearn.readiness(pid).pct;
-    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||{to:60}, days=plan.newbie?4:40, steps=plan.newbie?1:3;
+    // A manager under another name (an install shown to its own manager, as Eloise's is) takes the manager's place in the plan.
+    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||(p.role==='manager'?PLAN.Elena:{to:60}), days=plan.newbie?4:40, steps=plan.newbie?1:3;
       dishes(p.id,menu.slice(0,Math.round(menu.length*Math.min(1,plan.to/100+0.1))),now-(plan.newbie?2:5)*this.DAY);
       if(mixes.length) mixes.slice(0,Math.round(mixes.length*plan.to/100)).forEach(c=>spacedQs(p.id,qsOf(p,c.id,true),days,steps));
       // Someone meant to be ready learns until they are (a figure that rounds to 100% can still be one part short).

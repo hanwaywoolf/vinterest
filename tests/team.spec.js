@@ -94,6 +94,56 @@ test('The Princess Royal opens from ?seed=princess on its own team, pounds and i
   expect(errors).toEqual([]);
 });
 
+// Eloise (Toronto), installed from its site's menus and Beverage Menu (intake/eloise/): ?seed=eloise opens it in
+// Canadian dollars with Canada's allergens, on the same invented team and sales, with the wordmark Carey supplied.
+test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and invented sales', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=eloise`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  const st = await page.evaluate(() => {
+    const rows = TeamSales.get().rows;
+    const me = TeamLearn.me(), mr = TeamLearn.readiness(me.id);
+    return { me: me.name, manager: { role: me.role, photo: me.photo, state: mr.state, pct: mr.pct }, people: TeamLearn.people().length, cur: TeamData.currency(), venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
+      wines: TeamData.wines().length, cards: TeamData.wines().filter((w) => TeamData.card(w.id)).length, dishes: TeamData.dishes().length, pairings: TeamData.dishes().filter((x) => TeamData.pairing(x.id)).length,
+      cocktails: TeamData.cocktails().length, mixCards: TeamData.cocktails().filter((c) => TeamData.cocktailCard(c.id)).length, glass: TeamData.wines().filter((w) => TeamData.byGlass(w)).length,
+      demo: TeamSales.demo(), rows: rows.length, offList: rows.some((r) => /House Prosecco \(Events\)/.test(r.n) && !r.w) };
+  });
+  // The demo opens as the person it's shown to: Eloise's own head of food and beverage as its manager, with his photo,
+  // at the manager's stage of the invented team (about three quarters of the way, not yet ready).
+  expect(st.me).toBe('Cam Dryburgh');
+  expect(st.manager).toMatchObject({ role: 'manager', photo: 'brand/eloise/cam-dryburgh.jpg', state: 'not' });
+  expect(st.manager.pct).toBeGreaterThan(65);
+  expect((await page.request.get(`${BASE}/team/brand/eloise/cam-dryburgh.jpg`)).status()).toBe(200);
+  expect(st.people).toBe(7);
+  expect(st.cur).toMatchObject({ sym: '$', code: 'CAD' });
+  expect(st.allergens).toBe('CA');
+  expect(st.venue).toMatchObject({ name: 'Eloise', city: 'Toronto', sample: 'eloise' });
+  await expect(page.getByTestId('team-venue-logo')).toHaveAttribute('src', /^brand\/eloise\/wordmark-white\.svg(\?v=|$)/);
+  expect((await page.request.get(`${BASE}/team/brand/eloise/wordmark-white.svg`)).status()).toBe(200);
+  expect(st).toMatchObject({ wines: 76, cards: 76, dishes: 17, pairings: 17, cocktails: 10, mixCards: 10, glass: 12, demo: true, offList: true });
+  expect(st.rows).toBeGreaterThan(1000);
+  await expect(page.locator('#root')).not.toContainText('£');
+  // The allergens drafted from the menu are accepted for the demo (by "Demo data"), so Menu has nothing left to confirm.
+  expect(await page.evaluate(() => TeamData.dishes().every((x) => TeamData.allergensOf(x.id) != null) && TeamData.allergensOf('d-seared-scallop'))).toEqual(['shellfish']);
+  // Shown to a prospect: the console's Wines section opens on their wines, without our sommelier review card
+  // (venue.console.hide); the questions it held stay out of the drill, and another restaurant still shows the card.
+  await page.goto(`${BASE}/team/?seed=eloise&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-wines')).toBeVisible();
+  await expect(page.getByTestId('console-sommelier')).toHaveCount(0);
+  await page.getByTestId('console-nav-menu').click();
+  await expect(page.getByTestId('menu-allergens').first()).toBeVisible();
+  await expect(page.getByTestId('menu-allergen-todo')).toHaveCount(0);
+  await page.getByTestId('console-nav-wines').click();
+  expect(await page.evaluate(() => TeamData.reviewed().held.length)).toBeGreaterThan(0);
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-sommelier')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 // A device that opened The Social Corner from an older build (here: before its team and sales, set up by whoever
 // opened it) reloads it from ?seed=social once the list file has moved on, though the training file is the same.
 test('a device holding an older Social Corner takes the new one, with or without ?seed=social, keeping who was there and their progress', async ({ context, page }) => {
@@ -620,7 +670,7 @@ test('the demo seeds staff at different stages of training', async ({ context, p
   await page.getByTestId('team-tab-team').click();
   await expect(page.locator('#root')).toContainText('2 ready, 1 slipping');
   // The same team on every restaurant, whatever the size of its list.
-  for (const seed of ['social', 'princess-royal']) {
+  for (const seed of ['social', 'princess-royal', 'eloise']) {
     await page.goto(`${BASE}/team/?seed=${seed}`);
     await expect(page.getByTestId('team-state')).toBeVisible();
     const st = await page.evaluate(() => TeamLearn.people().map((p) => { const r = TeamLearn.readiness(p.id); return { n: p.name.split(' ')[0], state: r.state, pct: r.pct }; }));
@@ -1677,7 +1727,7 @@ test('table questions: the choice first, wrong answers that are believable and c
       return out;
     });
   };
-  for (const seed of ['demo', 'social', 'princess-royal']) {
+  for (const seed of ['demo', 'social', 'princess-royal', 'eloise']) {
     const r = await check(seed);
     expect(r.tooFew).toEqual([]); // no choice of one or two
     expect(r.lengthCue).toEqual([]);
@@ -1726,7 +1776,7 @@ test('the names check plays each name through the guest voice, numbered like the
 
 test('a restaurant demo address names its restaurant, and nowhere else does', async ({ context, page }) => {
   await asMarco(context, page);
-  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', 'princess-royal', null, null, 'demo']);
+  expect(await page.evaluate(() => [TeamSample.hostSeed('socialcorner.vinterest.team'), TeamSample.hostSeed('SocialCorner.vinterest.team'), TeamSample.hostSeed('princessroyal.vinterest.team'), TeamSample.hostSeed('eloise.vinterest.team'), TeamSample.hostSeed('vinterest.pages.dev'), TeamSample.hostSeed(), TeamSample.hostSeed('demo.vinterest.team')])).toEqual(['social', 'social', 'princess-royal', 'eloise', null, null, 'demo']);
 });
 
 // Android Chrome sends every result as the whole utterance so far and repeats finals; the reply must come out once.
@@ -1867,7 +1917,7 @@ test('the sommelier runs the wine programme too: the console on a wide screen, U
 test('both restaurants: the drill answers in the same phases and at the same text sizes', async ({ context, page }) => {
   await stubNetwork(context);
   const seen = {};
-  for (const seed of ['demo', 'social', 'princess-royal']) {
+  for (const seed of ['demo', 'social', 'princess-royal', 'eloise']) {
     await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
     await expect(page.getByTestId('team-state')).toBeVisible();
     await page.getByText(/Start today's drill|Do another 5 questions/).first().click();
@@ -1884,7 +1934,7 @@ test('both restaurants: the drill answers in the same phases and at the same tex
   }
   expect(seen.social.venue).toBe('social');
   expect(seen['princess-royal'].venue).toBe('princess-royal');
-  for (const seed of ['social', 'princess-royal']) { expect(seen[seed].q).toBe(seen.demo.q); expect(seen[seed].opt).toBe(seen.demo.opt); }
+  for (const seed of ['social', 'princess-royal', 'eloise']) { expect(seen[seed].q).toBe(seen.demo.q); expect(seen[seed].opt).toBe(seen.demo.opt); }
   expect(seen.demo.opt).toBeGreaterThanOrEqual(15);
 });
 
@@ -2145,9 +2195,9 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
 // it, against the faults found by hand: a wrong answer about another dish, answers of mixed kinds, a table request that
 // gives the answer away, an answer screen that repeats the answer or runs long, duplicates, length cues, giveaway words.
 test('the review finds nothing to fix on any restaurant in the build', async ({ context, page }) => {
-  test.setTimeout(240000); // the whole review of four restaurants, twice over
+  test.setTimeout(300000); // the whole review of five restaurants, twice over
   await stubNetwork(context);
-  for (const seed of ['demo', 'sample', 'princess-royal', 'social']) { // The Social Corner last: the checks below are on it
+  for (const seed of ['demo', 'sample', 'princess-royal', 'eloise', 'social']) { // The Social Corner last: the checks below are on it
     await page.goto(`${BASE}/team/?seed=${seed}`);
     await page.waitForFunction(() => window.TeamLearn && TeamData.wines().length > 0);
     const flags = await page.evaluate(() => TeamLearn.review().map((f) => `[${f.code}] ${f.q.q.slice(0, 80)}: ${f.note}`));
