@@ -102,8 +102,15 @@ function _CState({r}){ const st=_tState[r.state]; return <span style={{display:'
 const _cInput=(T,extra)=>({padding:'8px 10px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:15,outline:'none',minWidth:0,...extra});
 
 /* ── The shell ── */
-function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), narrow=size==='phone';
+function TeamConsole({me,onPhone,refresh,section,setSection,open,tour}){ const T=useTheme(), cr=T.lift(C.cr), size=useLayoutSize(), narrow=size==='phone';
   const [panel,setPanel]=React.useState(null); // {view:'wine'|'dish'|'person', id}
+  // The first-use tour: by itself the first time this person opens the console here (the app's shell asks for it with
+  // `tour`; a console mounted any other way never starts one), and again from the sidebar's foot.
+  const [touring,setTouring]=React.useState(()=>!!tour&&TeamTour.due(me&&me.id));
+  const endTour=()=>{ TeamTour.done(me&&me.id); setTouring(false); };
+  // A link that opens another restaurant swaps it in after the console has mounted: ask again for the person now here.
+  const who=TeamTour._key(me&&me.id), whoRef=React.useRef(who);
+  React.useEffect(()=>{ if(whoRef.current===who) return; whoRef.current=who; setTouring(!!tour&&TeamTour.due(me&&me.id)); },[who]);
   const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   const venue=TeamData.get().venue;
   const side=<div style={narrow?{display:'flex',gap:6,overflowX:'auto',padding:'8px 12px',borderBottom:`1px solid ${T.line}`}:{width:220,flexShrink:0,borderRight:`1px solid ${T.line}`,padding:'18px 12px',display:'flex',flexDirection:'column',gap:4}}>
@@ -112,10 +119,12 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
       :<div style={{padding:'0 8px 18px'}}><TeamLogo/><div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,marginTop:14,lineHeight:1.2}}>{venue.name||'Your restaurant'}</div></div>)}
     {narrow&&<_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})} compact/>}
     {CONSOLE_SECTIONS.filter(s=>!s.only||s.only()).map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{display:'flex',alignItems:'center',gap:10,padding:narrow?'6px 12px':'9px 10px',borderRadius:10,background:on?T.soft:'transparent',border:narrow?`1px solid ${on?cr:T.line}`:'none',color:on?T.ink:T.mid,fontSize:14,fontWeight:on?700:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}><Icon n={s.icon} sz={16} col={on?cr:T.mid}/>{s.label}</div>; })}
+    {narrow&&<div role="button" data-testid="console-tour-start" onClick={()=>{ setPanel(null); setTouring(true); }} style={{display:'flex',alignItems:'center',padding:'6px 12px',borderRadius:10,border:`1px dashed ${T.line}`,color:T.mid,fontSize:14,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>Take the tour</div>}
     {!narrow&&<div style={{flex:1}}/>}
     {!narrow&&<div style={{padding:'0 8px'}}>
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
+      <div role="button" data-testid="console-tour-start" onClick={()=>{ setPanel(null); setTouring(true); }} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Take the tour</div>
       {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
 </div>}
   </div>;
@@ -128,6 +137,46 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open}){ const T=useT
     {side}
     <div ref={pageRef} data-scroll style={{flex:1,minWidth:0,overflowY:'auto',padding:narrow?'14px 14px 40px':'22px 28px 60px'}}><div style={{maxWidth:1100,margin:'0 auto'}}><TeamJobChip onOpen={()=>setSection('upload')}/><ScreenErrorBoundary>{page}</ScreenErrorBoundary></div></div>
     {panel&&<_CPanel key={panel.view+':'+panel.id} panel={panel} me={me} open={go} close={()=>setPanel(null)} narrow={narrow}/>}
+    {touring&&<_CTour narrow={narrow} setSection={k=>{ setSection(k); setPanel(null); }} onEnd={endTour}/>}
+  </div>; }
+/* The first-use tour (TeamTour in team-data.js holds its steps and who has seen it). Each step opens its section and
+   lights that section's place in the sidebar, the rest of the screen dimmed, with a card beside it: what the section is
+   for, where they are in the tour, Back, Next and Skip. Nothing under it takes a click while it's up; Escape skips, the
+   arrow keys step. On a narrow window the card sits at the foot of the screen. Reduced motion: no slide between steps. */
+function _CTour({narrow,setSection,onEnd}){ const T=useTheme(), cr=T.lift(C.cr);
+  const steps=React.useMemo(()=>TeamTour.steps(),[]), [i,setI]=React.useState(0), step=steps[i], last=i===steps.length-1;
+  const [rect,setRect]=React.useState(null), cardRef=React.useRef(null), [cardH,setCardH]=React.useState(220);
+  const still=typeof window!=='undefined'&&window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const measure=React.useCallback(()=>{ const id=step.target||(step.k?'console-nav-'+step.k:null), el=id&&document.querySelector(`[data-testid="${id}"]`);
+    if(!el){ setRect(null); return; } if(el.scrollIntoView) try{ el.scrollIntoView({block:'nearest',inline:'nearest'}); }catch(e){}
+    const r=el.getBoundingClientRect(); setRect({x:r.left,y:r.top,w:r.width,h:r.height}); },[step]);
+  React.useLayoutEffect(()=>{ if(step.k) setSection(step.k); measure(); },[i]);
+  React.useLayoutEffect(()=>{ if(cardRef.current) setCardH(cardRef.current.offsetHeight||220); },[i,rect&&rect.y]);
+  React.useEffect(()=>{ const h=()=>measure(); window.addEventListener('resize',h);
+    const key=e=>{ if(e.key==='Escape') onEnd(); else if(e.key==='ArrowRight'||e.key==='Enter') (last?onEnd():setI(n=>n+1)); else if(e.key==='ArrowLeft') setI(n=>Math.max(0,n-1)); };
+    window.addEventListener('keydown',key); return ()=>{ window.removeEventListener('resize',h); window.removeEventListener('keydown',key); }; },[measure,last]);
+  const vw=typeof window!=='undefined'?window.innerWidth:1200, vh=typeof window!=='undefined'?window.innerHeight:800, pad=6;
+  // Beside the lit control where there's room (a sidebar), under it otherwise (the row of chips on a narrow window).
+  const W=Math.min(360,vw-24);
+  const pos=!rect?{left:Math.max(12,(vw-W)/2),top:Math.max(12,(vh-cardH)/2)}
+    :narrow?{left:12,bottom:12}
+    :{left:Math.min(vw-W-12,rect.x+rect.w+18),top:Math.max(12,Math.min(vh-cardH-12,rect.y-10))};
+  const btn=(label,click,primary,testid)=><div role="button" data-testid={testid} onClick={click} style={{padding:'9px 16px',borderRadius:10,background:primary?C.cr:'transparent',border:`1px solid ${primary?C.cr:T.line}`,color:primary?'#fff':T.ink2,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</div>;
+  return <div data-testid="console-tour" role="dialog" aria-modal="true" aria-label="A tour of the console" style={{position:'fixed',inset:0,zIndex:60}}>
+    {/* Takes every click meant for the page behind; the dimming is the lit control's own shadow, or this layer's when nothing is lit. */}
+    <div style={{position:'absolute',inset:0,background:rect?'transparent':'rgba(0,0,0,0.62)'}}/>
+    {rect&&<div data-testid="console-tour-light" style={{position:'absolute',left:rect.x-pad,top:rect.y-pad,width:rect.w+pad*2,height:rect.h+pad*2,borderRadius:14,boxShadow:`0 0 0 2px ${cr}, 0 0 0 9999px rgba(0,0,0,0.62)`,pointerEvents:'none',transition:still?'none':'left .25s ease, top .25s ease, width .25s ease, height .25s ease'}}/>}
+    <div ref={cardRef} data-testid="console-tour-card" data-step={step.id} style={{position:'absolute',width:narrow&&rect?'auto':W,right:narrow&&rect?12:'auto',...pos,background:'#1B1B1D',border:`1px solid ${T.line}`,borderRadius:16,padding:'18px 18px 16px',boxShadow:'0 18px 50px rgba(0,0,0,0.55)',transition:still?'none':'top .25s ease, left .25s ease'}}>
+      <div style={{fontSize:12,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:cr,fontFamily:C.P}}>{i===0?'A quick tour':`${i} of ${steps.length-1}`}</div>
+      <div style={{fontSize:19,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.25,marginTop:6}}>{step.title}</div>
+      <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>{step.text}</div>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginTop:16}}>
+        {!last&&<div role="button" data-testid="console-tour-skip" onClick={onEnd} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Skip the tour</div>}
+        <div style={{flex:1}}/>
+        {i>0&&btn('Back',()=>setI(i-1),false,'console-tour-back')}
+        {btn(i===0?'Show me round':last?'Done':'Next',()=>last?onEnd():setI(i+1),true,'console-tour-next')}
+      </div>
+    </div>
   </div>; }
 /* The logo with TEAMS set under it as one mark. logo.png has clear padding round the drawing (the mark
    fills x 41–1039 of 1086 and y 41–183 of 224), so the image is scaled and cropped to the mark itself and

@@ -2493,3 +2493,66 @@ test('the pre-shift briefing: a special read, paired and approved, a gate everyo
   expect(r.live).not.toContain('Halibut'); expect(r.past).toContain('Halibut'); expect(r.gate).toBe(false); expect(r.far).toBe(0);
   expect(errors).toEqual([]);
 });
+
+// The console's first-use tour: by itself on a person's first visit, a spotlight down the sidebar with a card at each
+// stop, each stop opening its section; nothing under it takes a click; Done (or Skip) is remembered for that person on the
+// device, and "Take the tour" at the sidebar's foot brings it back.
+test('the console tour: first visit only, each stop opens its section, skippable, and it comes back when asked', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await context.addInitScript(() => { window.VINTEREST_TOUR = 'real'; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/team/?seed=eloise&view=console`);
+  const card = page.getByTestId('console-tour-card');
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  await expect(card).toContainText("Welcome to Eloise's console");
+  await expect(page.getByTestId('console-tour-light')).toHaveCount(0);
+  const steps = await page.evaluate(() => TeamTour.steps().map((s) => s.id));
+  expect(steps).toEqual(['welcome', 'dash', 'sales', 'team', 'wines', 'cocktails', 'menu', 'upload', 'phone']);
+  await page.getByTestId('console-tour-next').click();
+  // each section's stop lights its place in the sidebar and opens the section behind the dimming
+  for (const [id, testid] of [['dash', 'console-dash'], ['sales', null], ['team', null], ['wines', 'console-wines']]) {
+    await expect(card).toHaveAttribute('data-step', id);
+    const nav = await page.getByTestId('console-nav-' + id).boundingBox();
+    await expect.poll(async () => { const light = await page.getByTestId('console-tour-light').boundingBox(); return Math.abs(light.y + light.height / 2 - (nav.y + nav.height / 2)); }).toBeLessThan(3); // once it has slid there
+    if (testid) await expect(page.getByTestId(testid)).toBeVisible();
+    // the card stays on screen and clear of the lit control
+    const box = await card.boundingBox();
+    expect(box.x).toBeGreaterThan(nav.x + nav.width); expect(box.y + box.height).toBeLessThanOrEqual(800);
+    if (id !== 'wines') await page.getByTestId('console-tour-next').click();
+  }
+  await expect(card).toContainText('4 of 8');
+  // a click meant for the page behind does nothing while the tour is up
+  await page.mouse.click(120, 400);
+  await expect(card).toHaveAttribute('data-step', 'wines');
+  await page.getByTestId('console-tour-back').click();
+  await expect(card).toHaveAttribute('data-step', 'team');
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
+  await expect(card).toHaveAttribute('data-step', 'upload');
+  await page.getByTestId('console-tour-next').click();
+  await expect(card).toHaveAttribute('data-step', 'phone');
+  await expect(page.getByTestId('console-tour-skip')).toHaveCount(0);
+  await expect(page.getByTestId('console-tour-next')).toHaveText('Done');
+  await page.getByTestId('console-tour-next').click();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  await page.reload(); // seen: it doesn't come back by itself
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  await page.getByTestId('console-tour-start').click(); // until asked
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  await page.getByTestId('console-tour-skip').click();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  // a restaurant with no cocktails has no cocktail stop; on a narrow window the card sits at the foot
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  expect(await page.evaluate(() => TeamTour.steps().some((s) => s.id === 'cocktails'))).toBe(false);
+  await page.getByTestId('console-tour-next').click();
+  await expect(card).toHaveAttribute('data-step', 'dash');
+  const foot = await card.boundingBox();
+  expect(foot.y + foot.height).toBeGreaterThan(760); expect(foot.x + foot.width).toBeLessThanOrEqual(390);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

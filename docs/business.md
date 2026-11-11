@@ -153,6 +153,17 @@ opens Eloise from the address). A new prospect who should get the same is a row 
 (our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
 training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
 
+## The console's first-use tour (built)
+
+The first time a person opens the console on a device, a tour walks them through it (`_CTour` in `team-console.jsx`,
+steps and who has seen it in `TeamTour`, `team-data.js`, `vbiz_tour_v1`, per restaurant and person, never synced): a
+welcome card, then a spotlight down the sidebar, one section at a time (Dashboard, Sales Insights, Team, Wines,
+Cocktails where there are any, Menu, Upload), each stop opening its section behind the dimming with a card saying what
+it's for, and last the switch to the phone view. Back, Next, Skip the tour; Escape skips and the arrow keys step;
+nothing under it takes a click. On a narrow window the card sits at the foot. "Take the tour" at the sidebar's foot
+brings it back. The app's shell asks for it (`tour` on `TeamConsole`); tests turn it off (`window.VINTEREST_TOUR =
+'off'`, `helpers.stubNetwork`) except the one that tests it.
+
 ## How staff learn
 
 Built for retention rather than points. No XP or streaks: the motivation is being able to sell the

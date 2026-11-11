@@ -779,6 +779,35 @@ const TeamBrand = {
 };
 Object.assign(window,{TeamBrand});
 
+/* The console's first-use tour (team-console.jsx, _CTour): a spotlight that steps down the sidebar, one section at a
+   time, saying what each is for. It starts by itself the first time a person opens the console on a device and comes
+   back from "Take the tour" at the sidebar's foot. Who has seen it is kept per person on the device (vbiz_tour_v1,
+   never synced). The steps are data here so the screen only draws them: `k` is the section a step opens and lights,
+   `target` another control to light instead (the view switch); a step with neither is a card on its own. */
+const TeamTour = {
+  KEY:'vbiz_tour_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  // People are numbered afresh in every restaurant, so who has seen it is kept per restaurant and person.
+  _key(pid){ const v=TeamData.get().venue||{}; return `${v.sample||v.name||''}:${pid}`; },
+  seen(pid){ return !!this._all()[this._key(pid)]; },
+  done(pid){ if(!pid) return; const a=this._all(); a[this._key(pid)]=Date.now(); Store.setJSON(this.KEY,a); },
+  /* Whether it should open unasked: never in tests or wherever the page turns it off (window.VINTEREST_TOUR = 'off'). */
+  due(pid){ try{ if(typeof window!=='undefined'&&window.VINTEREST_TOUR==='off') return false; }catch(e){} return !!pid&&!this.seen(pid); },
+  steps(){ const v=TeamData.get().venue||{}, name=v.name||'your restaurant', mixes=TeamData.cocktails().length>0;
+    const demoSales=typeof TeamSales!=='undefined'&&TeamSales.demo&&TeamSales.demo();
+    return [
+      {id:'welcome',title:`Welcome to ${name}'s console`,text:`This is where you run wine training for ${name}: who knows what, what sells, and what the team learns next. A quick tour of each section takes about a minute.`},
+      {id:'dash',k:'dash',title:'Start here each day',text:'What needs attention, who is ready for the floor and what the team should learn first. Every figure opens the people or wines behind it.'},
+      {id:'sales',k:'sales',title:'What your sales say',text:'The week in a few lines: what sold, and whether the people selling it know it.'+(demoSales?' These figures are demo data until your POS is connected.':'')},
+      {id:'team',k:'team',title:'Who is ready',text:'Each person against the minimum for their role, and how deep the training goes for servers, bartenders and sommeliers. Add people here.'},
+      {id:'wines',k:'wines',title:'Your list, wine by wine',text:'Open any wine for the card your team learns from: what to say at the table, how it tastes, what to pour it with and how to say its name.'},
+      ...(mixes?[{id:'cocktails',k:'cocktails',title:'Your cocktails',text:'What goes into each one, how it tastes and what guests ask about it.'}]:[]),
+      {id:'menu',k:'menu',title:'Your dishes and their wines',text:'Each dish with the wines to pour and a pick by the glass. Allergens are confirmed here before anyone is asked about them.'},
+      {id:'upload',k:'upload',title:'Keeping it current',text:'A new list, a new menu or a photo of a label becomes a draft. Nothing reaches the team until you publish it.'},
+      {id:'phone',target:'console-view-toggle',title:'See what your team sees',text:'Switch to the phone view to try the daily drill, open a wine card and practise with a guest at the table. You can take this tour again any time.'},
+    ]; },
+};
+Object.assign(window,{TeamTour});
 /* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
    synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
    stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */
