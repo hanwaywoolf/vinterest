@@ -150,7 +150,8 @@ fetches it and its files from the Teams site, `TEAMS_SITE_ORIGIN`, default vinte
 vinterest.team/for/eloise), and the demo is at eloise.vinterest.team/demo/ (the staff app's files; `TeamSample.HOSTS`
 opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`. Its list file also sets
 `venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
-(our own check, whose held questions stay held); any install can set it.
+(our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
+training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
 
 ## How staff learn
 

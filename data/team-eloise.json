@@ -15022,7 +15022,11 @@
      }
     ],
     "note": "Check whether butter or any other dairy is used to sear the scallop or finish the beans, and whether the bean liquor contains wine (sulphites) or stock with other allergens.",
-    "confirmed": null
+    "confirmed": [
+     "shellfish"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15076,7 +15080,13 @@
      }
     ],
     "note": "Confirm whether the parfait contains egg, cream or butter, or wine or brandy, whether the pickling vinegar has sulphites, and whether it's set with gelatine (vegetarian check).",
-    "confirmed": null
+    "confirmed": [
+     "wheat",
+     "milk",
+     "sulphite"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15134,7 +15144,14 @@
      }
     ],
     "note": "Check whether the ponzu uses bonito or mirin, and whether the soy sauce and miso contain wheat or barley; check for any sesame garnish on the aubergine miso.",
-    "confirmed": null
+    "confirmed": [
+     "fish",
+     "soy",
+     "wheat",
+     "sulphite"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15188,7 +15205,13 @@
      }
     ],
     "note": "Check the chilli oil recipe for sesame, peanut or soy, and confirm the rennet in the burrata if a guest asks about vegetarian.",
-    "confirmed": null
+    "confirmed": [
+     "milk",
+     "treenut",
+     "wheat"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15234,7 +15257,11 @@
      }
     ],
     "note": "No dressing is printed. Confirm whether there is one and whether it contains egg, mustard or sulphites. Check olives and peppers for sulphites.",
-    "confirmed": null
+    "confirmed": [
+     "milk"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15292,7 +15319,14 @@
      }
     ],
     "note": "Confirm the dressing: anchovy, raw egg, and whether it contains mustard or Worcestershire sauce, which may add sulphites, fish or gluten.",
-    "confirmed": null
+    "confirmed": [
+     "milk",
+     "wheat",
+     "fish",
+     "egg"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15342,7 +15376,12 @@
      }
     ],
     "note": "Check whether the linguine is fresh egg pasta, whether butter or wine goes in the sauce, and whether the 'nduja contains sulphites.",
-    "confirmed": null
+    "confirmed": [
+     "shellfish",
+     "wheat"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15396,7 +15435,13 @@
      }
     ],
     "note": "Pappardelle is usually egg pasta, so confirm. Check whether the beef is braised in wine (sulphites) and whether the braise contains any mustard.",
-    "confirmed": null
+    "confirmed": [
+     "wheat",
+     "milk",
+     "egg"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15450,7 +15495,13 @@
      }
     ],
     "note": "Check the filling for cheese (and whether that cheese is vegetarian) and for any nuts or amaretti; the pumpkin seeds are seeds, not tree nuts.",
-    "confirmed": null
+    "confirmed": [
+     "milk",
+     "wheat",
+     "egg"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15500,7 +15551,12 @@
      }
     ],
     "note": "Confirm what's in the peppercorn sauce (cream, butter, brandy or wine, any mustard or flour) and whether the fryer is shared with battered or breaded items.",
-    "confirmed": null
+    "confirmed": [
+     "milk",
+     "sulphite"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15546,7 +15602,11 @@
      }
     ],
     "note": "Check the chilli oil for sesame, peanut or soy, whether the crispy chickpeas are coated in flour, and any shared fryer.",
-    "confirmed": null
+    "confirmed": [
+     "milk"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15587,7 +15647,9 @@
    "allergens": {
     "draft": [],
     "note": "No allergens printed; confirm how the guajillo is used (sauce or glaze) and check it for butter or cream, nuts, seeds, sesame, wine or vinegar, and check any butter used on the kale or mushrooms.",
-    "confirmed": null
+    "confirmed": [],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15637,7 +15699,12 @@
      }
     ],
     "note": "Confirm whether the jus is finished with butter (milk) or thickened with flour (wheat) before declaring it dairy-free or gluten-free.",
-    "confirmed": null
+    "confirmed": [
+     "mustard",
+     "sulphite"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15683,7 +15750,11 @@
      }
     ],
     "note": "Check whether the trout is cooked or finished in butter (milk), and whether the piquillo peppers are jarred with preservatives (sulphites).",
-    "confirmed": null
+    "confirmed": [
+     "fish"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15733,7 +15804,12 @@
      }
     ],
     "note": "Confirm the parfait base (cream or not) and whether the jelly is set with gelatine, which matters for vegetarians.",
-    "confirmed": null
+    "confirmed": [
+     "egg",
+     "milk"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15787,7 +15863,13 @@
      }
     ],
     "note": "Check the chocolate for soy lecithin and the pastry section for nut cross-contact, as walnuts are used in another dessert.",
-    "confirmed": null
+    "confirmed": [
+     "wheat",
+     "milk",
+     "egg"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15845,7 +15927,14 @@
      }
     ],
     "note": "Check whether the walnut is only on top or also in the pudding itself, whether there are dates or dried fruit (sulphites), and what is in the coffee caramel.",
-    "confirmed": null
+    "confirmed": [
+     "treenut",
+     "milk",
+     "wheat",
+     "egg"
+    ],
+    "confirmedAt": 1794431052934,
+    "by": "Demo data"
    },
    "mods": [
     {
@@ -15882,7 +15971,7 @@
    "at": 1794332013282
   }
  },
- "exported": "2026-11-10T18:40:17.391Z",
+ "exported": "2026-11-11T21:04:12.935Z",
  "reviewed": {
   "at": 1794336015887,
   "asked": 695,
