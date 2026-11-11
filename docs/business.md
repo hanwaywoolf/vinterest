@@ -635,6 +635,77 @@ counts.
 - Does any venue in reach count stock in Square or a beverage-inventory tool, or is stock a manual
   count for now?
 
+## Wine shops (concept, November 2026: nothing built)
+
+A wine shop needs the same thing a restaurant does, someone who can sell the wine, and has already done the
+expensive part: its stock is priced and structured. This is the same product with a second kind of venue,
+never a separate build. The thinking so far, kept here until there is a shop to test it on.
+
+**What carries over as it is.** Ingestion (a list, a label, cards with the pitch, the taste, what to say,
+drinking windows, "if they want something else"); Ask Vinny; the guest at the table, who becomes a customer at
+the counter; the drill, readiness, the console and sales import; Tonight and the briefing, which become "this
+week": what's out of stock (the shop's 86), what we're pushing, new arrivals.
+
+**What changes.**
+
+- Pairing flips from lookup to recommendation. A restaurant has a menu, so dish to wines is written ahead. A
+  shop has occasions without end ("a roast dinner for eight, good reds, about £120"), so Vinny works at the
+  moment of asking. The rule that keeps it honest is the one the app already follows: code filters first
+  (budget, colour, in stock, ready to drink), then Claude only chooses among what's left and says why. Three
+  picks every time: the safe one, the step up, the one they wouldn't have found. A card carries the foods the
+  wine suits as general kinds (roast beef, spicy food, oily fish) in place of named dishes.
+- Scale. A restaurant is 30 to 130 wines; a shop is 300 to 3,000 that turn over weekly. Full cards for the top
+  sellers and staff picks, light cards for the rest (the teaser-install path, written cheaply).
+- What staff learn. Restaurant staff must know our list. Shop staff must know wine and find their way around
+  the stock, so the consumer app's regions, grapes and quizzes have a place in Teams here. Nobody drills 2,000
+  bottles: the top sellers, then by region, grape and price band.
+- Stock is live. A PDF won't do; it needs the shop's POS or online store (Shopify, WooCommerce, Lightspeed,
+  Square), so the connector is day-one work. Shop data is cleaner than a restaurant's: SKU, vintage, price and
+  stock count are already there. A bottle recommended an hour after it sold out is worse than no
+  recommendation.
+- Quantity. Dinner for eight is four or five bottles, a budget for the lot, perhaps a case discount, and "a
+  white for the starter?".
+- Margin. Owners will want Vinny to lean to overstock and better-margin bottles. In a staff tool that's fair,
+  but only to choose between equally good fits, and the staff member is shown that it did.
+
+**Three surfaces on one engine.**
+
+1. Staff at the counter: Ask Vinny and the training, closest to what's built.
+2. Vinny on the shop's website, for a shop with an online store: the customer says what they need and gets
+   three bottles as product cards with the reason for each and Add to basket.
+3. Later, in the shop itself: a tablet or a QR code on the shelf.
+
+**Why the website may come first.** The online store already is the live stock, so the hard part is free.
+The result has a number on it: conversion and basket size for visits that used Vinny against those that
+didn't, a cleaner sales case than a restaurant's. It installs as a script or a store app, with no staff
+rollout. And an owner who sees Vinny answer customers well asks why the Saturday staff can't.
+
+**What the website needs that Teams doesn't.**
+
+- Vinny's mistakes land on the customer, with nobody in between: never a bottle that isn't in the feed, and
+  "nothing like that under £15" said plainly. Its own review pass, like the sommelier review.
+- Alcohol rules: an age gate, nothing that encourages quantity, and each market's rules on recommending
+  alcohol, checked before a pilot.
+- Cost per conversation: thousands of anonymous chats a month, so caching, a short model for most turns and
+  limits per visitor. Pricing probably wants a usage part or a share of the sales Vinny helped.
+- Abuse: it talks about wine and this shop's stock, nothing else.
+- Brand: "Vinny, powered by Vinterest" in the shop's colours, as a venue's logo is in Teams now.
+
+**The link to the consumer app.** A shopper signed in to Vinterest can be shown the bottles in this shop that
+match their WineDNA, with the match beside each; a shopper who isn't meets Vinny on a shop's site first. It
+sits beside the partner shops the consumer app already links to (docs/affiliates.md): a shop running Vinny is
+one whose stock we already hold.
+
+**Who buys it.** Not the owner who is the expert and on the floor every day. A shop with part-time or
+Christmas staff, a small chain, a deli with a wine wall, and above all one with an online store. A shop has
+three staff, so the price is per shop, not per person.
+
+**The test, before anything is built.** One friendly shop's product export (name, producer, vintage, price,
+stock, category) of 200 or so bottles, and twenty questions its customers have really asked. Write the light
+cards, run the questions through Vinny by hand, and ask the owner whether they'd stand behind the picks. If
+they would, the website widget is the first thing worth building, because it's the one with a number attached.
+No shop is lined up yet.
+
 ## Next
 
 1. Accounts for restaurants: organisations, sites and members with roles in Supabase, row security
