@@ -748,6 +748,16 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
 @media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
 @media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
+/* A long list (over 60 wines): the copy first with its headline on one line, then the bottles across the whole width,
+   small enough that the list sits in a few rows (--cols and --cols-m are set per page from the wine count). */
+.pr-hero.stack .wrap { grid-template-columns: 1fr; gap: 44px; align-items: start; }
+.pr-hero.stack h1 { max-width: none; font-size: clamp(30px, 4vw, 50px); }
+@media (min-width: 980px) { .pr-hero.stack h1 { white-space: nowrap; } }
+.pr-hero.stack .cellar { max-width: none; justify-self: stretch; }
+.pr-hero.stack .cellar-grid { gap: 8px 4px; }
+.pr-hero.stack .cellar-cap { height: auto; min-height: 1.4em; -webkit-line-clamp: 1; }
+.pr-hero.stack .cellar-pick { height: 1.5em; -webkit-line-clamp: 1; }
+@media (max-width: 620px) { .pr-hero.stack .cellar-grid { gap: 5px 3px; } .pr-hero.stack .cellar-cap { -webkit-line-clamp: 2; min-height: 2.8em; } .pr-hero.stack .cellar-pick { height: 3em; -webkit-line-clamp: 2; } }
 .pr-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-2); margin-top: 16px; gap: 2px; }
 .pr-bar i { display: block; background: var(--k); flex: 0 0 0%; transition: flex-basis .45s cubic-bezier(.2, .8, .2, 1); min-width: 0; }
 .pr-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; }

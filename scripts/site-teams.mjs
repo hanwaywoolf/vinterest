@@ -88,7 +88,7 @@ async function buildLive() {
 // same order. Made at build time from the demo restaurant's own files, so the site's list is the app's.
 export function cellarOf(list, train) {
   const num = (s) => { const m = /[£$€]([\d,.]+)/.exec(s || ''); return m ? +m[1].replace(',', '') : 0; };
-  const KIND = { sparkling: 's', white: 'w', 'rosé': 'p', red: 'r', dessert: 'd', fortified: 'd' };
+  const KIND = { sparkling: 's', white: 'w', orange: 'w', 'rosé': 'p', red: 'r', dessert: 'd', fortified: 'd' };
   // A bottle under an Alcohol Free heading isn't part of the argument (site-teams-for.mjs leaves it out of every figure).
   const all = list.wines.filter((w) => !/alcohol[- ]free/i.test(`${w.section} ${w.name}`)).map((w) => {
     const mag = /Magnum/.test(w.other || '') && !w.bottle, bottle = num(w.bottle) || (mag ? num(w.other) : 0), c = (train.cards || {})[w.id] || {};

@@ -817,9 +817,10 @@ const TeamLearn = {
       if(!need[k]) return;
       if(k==='cocktails'&&!sc.cocktails.length) return; // no cocktail list, no cocktail part
       if(k==='allergens'&&!(sc.allergens||[]).length) return; // nothing confirmed by the kitchen yet, no allergen part
-      // A wine or cocktail with nothing to ask at this role's level (every question held by the review, or above the level)
-      // can't be learnt, so it isn't counted against anyone: at The Princess Royal one spritz once kept a whole team off Ready.
-      const list=k==='glass'||k==='bottle'||k==='cocktails'?sc[k].filter(x=>this.qsFor(role,x.id).length):sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
+      // A wine, cocktail or dish with nothing to ask at this role's level (every question held by the review, or above the level)
+      // can't be learnt, so it isn't counted against anyone: at The Princess Royal one spritz once kept a whole team off Ready,
+      // and at Eloise the Shrimp Linguine, every question of which the sommelier review held, did the same.
+      const list=k==='glass'||k==='bottle'||k==='cocktails'?sc[k].filter(x=>this.qsFor(role,x.id).length):k==='dishes'?sc[k].filter(x=>this.dishQsFor(role,x.id,{allergen:false}).length):sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
       // partial: every answer they hold counts, so the figure moves with each drill; a wine is known (for the minimum) only whole.
       const partial=k==='allergens'?known:list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:k==='dishes'}); return a+(pr.total?pr.known/pr.total:0); },0);
       parts[k]={known,total:list.length,need:need[k],share:list.length?known/list.length:1,partial:list.length?partial/list.length:1};

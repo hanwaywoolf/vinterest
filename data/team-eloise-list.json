@@ -1,0 +1,1858 @@
+{
+ "rev": "2026-11-10-eloise",
+ "venue": {
+  "name": "Eloise",
+  "city": "Toronto",
+  "country": "CA",
+  "style": "Contemporary restaurant and bar",
+  "currency": {
+   "sym": "$",
+   "code": "CAD"
+  },
+  "brand": {
+   "logo": "brand/eloise/wordmark-white.svg",
+   "source": "eloiserestaurant.ca (supplied by Carey)"
+  },
+  "about": "Eloise is a restaurant and bar in Toronto (eloiserestaurant.ca) serving lunch and dinner from one short menu: appetizers (seared scallop, mushroom parfait, tuna carpaccio, burrata, a wedge and a Caesar), three pastas, and mains built around the grill and the roast (a 10oz steak frites, a 42oz côte de boeuf to share, charcoal roasted chicken, seared rainbow trout, roasted cauliflower), with desserts that serve two. The bar pours four house cocktails, four classics and two zero-proof drinks; cocktails are half price Monday to Saturday, 5pm to 7pm. The wine list leans to Italy and France (Piedmont, Tuscany, Bordeaux, Burgundy, the Rhône and Champagne) with Spain, Ontario's Niagara and a few bottles from the United States, New Zealand, Australia and Argentina. Eleven wines are poured by the glass in two sizes, 5oz and 8oz (the Prosecco 5oz only); the Sauternes is a 2oz glass. Three wines come as 1.5L magnums. Corkage is $50. Staff are in Ontario, Canada: write in Canadian English, and give prices in Canadian dollars exactly as the list prints them.",
+  "offList": {
+   "name": "House Prosecco (Events)",
+   "size": "glass",
+   "price": 14
+  },
+  "training": {
+   "tier": "essentials",
+   "roleTiers": {
+    "sommelier": "master"
+   }
+  }
+ },
+ "wines": [
+  {
+   "section": "Sparkling",
+   "producer": "Tarlant",
+   "name": "Brut Réserve",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Noir",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-tarlant-brut-reserve"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "André Chemin",
+   "name": "Brut Premier Cru",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$140",
+   "other": "",
+   "bin": "",
+   "id": "w-andre-chemin-brut-premier-cru"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Bollinger",
+   "name": "Special Cuvée",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay",
+    "Pinot Meunier"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$215",
+   "other": "Magnum (1.5L) $460",
+   "bin": "",
+   "id": "w-bollinger-special-cuvee"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "André Chemin",
+   "name": "Brut Rosé",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Champagne",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir",
+    "Chardonnay"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$142",
+   "other": "",
+   "bin": "",
+   "id": "w-andre-chemin-brut-rose"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Serenissima",
+   "name": "Prosecco Millesimato",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Glera"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-serenissima-prosecco-millesimato"
+  },
+  {
+   "section": "Sparkling",
+   "producer": "Ca' del Bosco",
+   "name": "Franciacorta Cuvée Prestige Brut",
+   "vintage": null,
+   "type": "sparkling",
+   "region": "Franciacorta, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Chardonnay",
+    "Pinot Nero",
+    "Pinot Bianco"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "$126",
+   "other": "",
+   "bin": "",
+   "id": "w-ca-del-bosco-franciacorta-cuvee-prestige-brut"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Domaine Montirius",
+   "name": "La Muse Papilles, Côtes du Rhône Rosé",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-montirius-la-muse-papilles-cotes-du-rhone-rose"
+  },
+  {
+   "section": "Rosé",
+   "producer": "St. John",
+   "name": "Beausoleil Rosé, Côtes de Thau IGP",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Languedoc",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Cinsault",
+    "Syrah"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-st-john-beausoleil-rose-cotes-de-thau-igp"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Feudi di San Gregorio",
+   "name": "Ros'Aura",
+   "vintage": 2024,
+   "type": "rosé",
+   "region": "Campania",
+   "country": "Italy",
+   "grapes": [
+    "Aglianico"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-feudi-di-san-gregorio-ros-aura"
+  },
+  {
+   "section": "Rosé",
+   "producer": "Two Sisters",
+   "name": "Margo Rosé",
+   "vintage": 2023,
+   "type": "rosé",
+   "region": "Niagara-on-the-Lake VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Merlot"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-margo-rose"
+  },
+  {
+   "section": "Orange (Skin Contact)",
+   "producer": "Antonutti",
+   "name": "Pinot Grigio Ramato",
+   "vintage": 2024,
+   "type": "orange",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$75",
+   "other": "",
+   "bin": "",
+   "id": "w-antonutti-pinot-grigio-ramato"
+  },
+  {
+   "section": "White",
+   "producer": "Domaine Huet",
+   "name": "Vouvray Le Haut-Lieu Sec",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Vouvray, Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Chenin Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$152",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-huet-vouvray-le-haut-lieu-sec"
+  },
+  {
+   "section": "White",
+   "producer": "Pascal Jolivet",
+   "name": "Sancerre",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Sancerre, Loire Valley",
+   "country": "France",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-pascal-jolivet-sancerre"
+  },
+  {
+   "section": "White",
+   "producer": "Domaine des Hâtes",
+   "name": "Chablis",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Chablis, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$23",
+   "bottle": "$110",
+   "other": "8oz $38",
+   "bin": "",
+   "id": "w-domaine-des-hates-chablis"
+  },
+  {
+   "section": "White",
+   "producer": "Olivier Leflaive",
+   "name": "Bourgogne Les Sétilles",
+   "vintage": 2022,
+   "type": "white",
+   "region": "Burgundy",
+   "country": "France",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$150",
+   "other": "",
+   "bin": "",
+   "id": "w-olivier-leflaive-bourgogne-les-setilles"
+  },
+  {
+   "section": "White",
+   "producer": "Jean-Luc Colombo",
+   "name": "La Belle de Mai, Saint-Péray",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Saint-Péray, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Roussanne"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$148",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-luc-colombo-la-belle-de-mai-saint-peray"
+  },
+  {
+   "section": "White",
+   "producer": "Tiefenbrunner",
+   "name": "Pinot Grigio",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Alto Adige",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Grigio"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15",
+   "bottle": "$75",
+   "other": "8oz $23",
+   "bin": "",
+   "id": "w-tiefenbrunner-pinot-grigio"
+  },
+  {
+   "section": "White",
+   "producer": "Manni Nössing",
+   "name": "Grüner Veltliner",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Alto Adige",
+   "country": "Italy",
+   "grapes": [
+    "Grüner Veltliner"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$131",
+   "other": "",
+   "bin": "",
+   "id": "w-manni-nossing-gruner-veltliner"
+  },
+  {
+   "section": "White",
+   "producer": "Antonutti",
+   "name": "Sauvignon Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Friuli-Venezia Giulia",
+   "country": "Italy",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$80",
+   "other": "",
+   "bin": "",
+   "id": "w-antonutti-sauvignon-blanc"
+  },
+  {
+   "section": "White",
+   "producer": "Lis Neris",
+   "name": "Jurosa Chardonnay",
+   "vintage": 2021,
+   "type": "white",
+   "region": "Friuli-Venezia Giulia",
+   "country": "Italy",
+   "grapes": [
+    "Chardonnay"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$169",
+   "other": "",
+   "bin": "",
+   "id": "w-lis-neris-jurosa-chardonnay"
+  },
+  {
+   "section": "White",
+   "producer": "Ottella",
+   "name": "Lugana Le Creete",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Lugana, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Turbiana"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-ottella-lugana-le-creete"
+  },
+  {
+   "section": "White",
+   "producer": "Tessari",
+   "name": "Grisela, Soave Classico",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Soave, Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Garganega"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-tessari-grisela-soave-classico"
+  },
+  {
+   "section": "White",
+   "producer": "Tenuta Santomè",
+   "name": "Tai Bianco Parcel #368",
+   "vintage": 2017,
+   "type": "white",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Tai (Friulano)"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$110",
+   "other": "",
+   "bin": "",
+   "id": "w-tenuta-santome-tai-bianco-parcel-368"
+  },
+  {
+   "section": "White",
+   "producer": "Maria Donata Bianchi",
+   "name": "Pigato",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Liguria",
+   "country": "Italy",
+   "grapes": [
+    "Pigato"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$157",
+   "other": "",
+   "bin": "",
+   "id": "w-maria-donata-bianchi-pigato"
+  },
+  {
+   "section": "White",
+   "producer": "Tiberio",
+   "name": "Trebbiano d'Abruzzo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Abruzzo",
+   "country": "Italy",
+   "grapes": [
+    "Trebbiano Abruzzese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$83",
+   "other": "",
+   "bin": "",
+   "id": "w-tiberio-trebbiano-d-abruzzo"
+  },
+  {
+   "section": "White",
+   "producer": "Feudi di San Gregorio",
+   "name": "Greco di Tufo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Campania",
+   "country": "Italy",
+   "grapes": [
+    "Greco"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$80",
+   "other": "",
+   "bin": "",
+   "id": "w-feudi-di-san-gregorio-greco-di-tufo"
+  },
+  {
+   "section": "White",
+   "producer": "Antonella Corda",
+   "name": "Vermentino di Sardegna",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Sardinia",
+   "country": "Italy",
+   "grapes": [
+    "Vermentino"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$98",
+   "other": "",
+   "bin": "",
+   "id": "w-antonella-corda-vermentino-di-sardegna"
+  },
+  {
+   "section": "White",
+   "producer": "Vietti",
+   "name": "Roero Arneis",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Roero, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Arneis"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$104",
+   "other": "",
+   "bin": "",
+   "id": "w-vietti-roero-arneis"
+  },
+  {
+   "section": "White",
+   "producer": "Pardevalles",
+   "name": "Albarín Blanco",
+   "vintage": 2025,
+   "type": "white",
+   "region": "Tierra de León",
+   "country": "Spain",
+   "grapes": [
+    "Albarín Blanco"
+   ],
+   "grapes_basis": "label",
+   "glass": "$18",
+   "bottle": "$94",
+   "other": "8oz $29",
+   "bin": "",
+   "id": "w-pardevalles-albarin-blanco"
+  },
+  {
+   "section": "White",
+   "producer": "Serra & Barceló",
+   "name": "Aucalà, Terra Alta",
+   "vintage": 2021,
+   "type": "white",
+   "region": "Terra Alta, Catalonia",
+   "country": "Spain",
+   "grapes": [
+    "Garnacha Blanca"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$100",
+   "other": "",
+   "bin": "",
+   "id": "w-serra-barcelo-aucala-terra-alta"
+  },
+  {
+   "section": "White",
+   "producer": "Pardas",
+   "name": "Rupestris Xarel-lo",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Penedès, Catalonia",
+   "country": "Spain",
+   "grapes": [
+    "Xarel-lo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$109",
+   "other": "",
+   "bin": "",
+   "id": "w-pardas-rupestris-xarel-lo"
+  },
+  {
+   "section": "White",
+   "producer": "Two Sisters",
+   "name": "Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$79",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-riesling"
+  },
+  {
+   "section": "White",
+   "producer": "Nautilus",
+   "name": "Sauvignon Blanc",
+   "vintage": 2024,
+   "type": "white",
+   "region": "Marlborough",
+   "country": "New Zealand",
+   "grapes": [
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "label",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-nautilus-sauvignon-blanc"
+  },
+  {
+   "section": "White",
+   "producer": "Pewsey Vale",
+   "name": "Riesling",
+   "vintage": 2023,
+   "type": "white",
+   "region": "Eden Valley",
+   "country": "Australia",
+   "grapes": [
+    "Riesling"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$109",
+   "other": "",
+   "bin": "",
+   "id": "w-pewsey-vale-riesling"
+  },
+  {
+   "section": "Red",
+   "producer": "Violot-Guillemard",
+   "name": "Pommard",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Pommard, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$263",
+   "other": "",
+   "bin": "",
+   "id": "w-violot-guillemard-pommard"
+  },
+  {
+   "section": "Red",
+   "producer": "Olivier Leflaive",
+   "name": "Volnay Premier Cru Clos des Angles",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Volnay, Burgundy",
+   "country": "France",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$322",
+   "other": "",
+   "bin": "",
+   "id": "w-olivier-leflaive-volnay-premier-cru-clos-des-angles"
+  },
+  {
+   "section": "Red",
+   "producer": "Domaine M & C Lapierre",
+   "name": "Château Cambon",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Beaujolais",
+   "country": "France",
+   "grapes": [
+    "Gamay"
+   ],
+   "grapes_basis": "label",
+   "glass": "$23",
+   "bottle": "$120",
+   "other": "8oz $37",
+   "bin": "",
+   "id": "w-domaine-m-c-lapierre-chateau-cambon"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Camino Salva",
+   "name": "Haut-Médoc",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Haut-Médoc, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "$84",
+   "other": "8oz $26",
+   "bin": "",
+   "id": "w-chateau-camino-salva-haut-medoc"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Tour Sieujean",
+   "name": "Pauillac",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Pauillac, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$174",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-tour-sieujean-pauillac"
+  },
+  {
+   "section": "Red",
+   "producer": "Château La Haye",
+   "name": "Fief de la Haye",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Saint-Estèphe, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$178",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-la-haye-fief-de-la-haye"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Le Crock",
+   "name": "Saint-Estèphe",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Saint-Estèphe, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$180",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-le-crock-saint-estephe"
+  },
+  {
+   "section": "Red",
+   "producer": "Château Grand-Puy Ducasse",
+   "name": "Pauillac",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Pauillac, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Cabernet Sauvignon",
+    "Merlot"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$257",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-grand-puy-ducasse-pauillac"
+  },
+  {
+   "section": "Red",
+   "producer": "Château La Fleur Pourret",
+   "name": "Saint-Émilion Grand Cru",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Saint-Émilion, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$217",
+   "other": "",
+   "bin": "",
+   "id": "w-chateau-la-fleur-pourret-saint-emilion-grand-cru"
+  },
+  {
+   "section": "Red",
+   "producer": "Jean-Luc Colombo",
+   "name": "Cornas Terres Brûlées",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Cornas, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$218",
+   "other": "",
+   "bin": "",
+   "id": "w-jean-luc-colombo-cornas-terres-brulees"
+  },
+  {
+   "section": "Red",
+   "producer": "Domaine Roger Perrin",
+   "name": "Châteauneuf-du-Pape",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Châteauneuf-du-Pape, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Grenache",
+    "Syrah",
+    "Mourvèdre"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-domaine-roger-perrin-chateauneuf-du-pape"
+  },
+  {
+   "section": "Large Format",
+   "producer": "Paul Jaboulet Aîné",
+   "name": "Hermitage La Chapelle",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Hermitage, Rhône Valley",
+   "country": "France",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (1.5L) only, $1,187",
+   "bin": "",
+   "id": "w-paul-jaboulet-aine-hermitage-la-chapelle"
+  },
+  {
+   "section": "Large Format",
+   "producer": "Fontodi",
+   "name": "Flaccianello della Pieve",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "known",
+   "glass": "",
+   "bottle": "",
+   "other": "Magnum (1.5L) only, $737",
+   "bin": "",
+   "id": "w-fontodi-flaccianello-della-pieve"
+  },
+  {
+   "section": "Red",
+   "producer": "Frecciarossa",
+   "name": "Giorgio Odero Pinot Nero",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Oltrepò Pavese, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Nero"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$163",
+   "other": "",
+   "bin": "",
+   "id": "w-frecciarossa-giorgio-odero-pinot-nero"
+  },
+  {
+   "section": "Red",
+   "producer": "Giorgi",
+   "name": "Buttafuoco Storico",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Oltrepò Pavese, Lombardy",
+   "country": "Italy",
+   "grapes": [
+    "Barbera",
+    "Croatina",
+    "Uva Rara"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$181",
+   "other": "",
+   "bin": "",
+   "id": "w-giorgi-buttafuoco-storico"
+  },
+  {
+   "section": "Red",
+   "producer": "Dissegna",
+   "name": "Pinot Nero",
+   "vintage": 2025,
+   "type": "red",
+   "region": "Veneto",
+   "country": "Italy",
+   "grapes": [
+    "Pinot Nero"
+   ],
+   "grapes_basis": "label",
+   "glass": "$15",
+   "bottle": "$75",
+   "other": "8oz $23",
+   "bin": "",
+   "id": "w-dissegna-pinot-nero"
+  },
+  {
+   "section": "Red",
+   "producer": "Scarpetta",
+   "name": "Barbera del Monferrato",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Monferrato, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Barbera"
+   ],
+   "grapes_basis": "label",
+   "glass": "$17",
+   "bottle": "$91",
+   "other": "8oz $28",
+   "bin": "",
+   "id": "w-scarpetta-barbera-del-monferrato"
+  },
+  {
+   "section": "Red",
+   "producer": "Produttori del Barbaresco",
+   "name": "Barbaresco",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Barbaresco, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$145",
+   "other": "",
+   "bin": "",
+   "id": "w-produttori-del-barbaresco-barbaresco"
+  },
+  {
+   "section": "Red",
+   "producer": "Borgogno",
+   "name": "No Name",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$174",
+   "other": "",
+   "bin": "",
+   "id": "w-borgogno-no-name"
+  },
+  {
+   "section": "Red",
+   "producer": "Pio Cesare",
+   "name": "Barolo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$230",
+   "other": "",
+   "bin": "",
+   "id": "w-pio-cesare-barolo"
+  },
+  {
+   "section": "Red",
+   "producer": "Serradenari",
+   "name": "Barolo",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$287",
+   "other": "",
+   "bin": "",
+   "id": "w-serradenari-barolo"
+  },
+  {
+   "section": "Red",
+   "producer": "Vietti",
+   "name": "Barolo Monvigliero",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Barolo, Piedmont",
+   "country": "Italy",
+   "grapes": [
+    "Nebbiolo"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$620",
+   "other": "",
+   "bin": "",
+   "id": "w-vietti-barolo-monvigliero"
+  },
+  {
+   "section": "Red",
+   "producer": "Travignoli",
+   "name": "Chianti Rùfina",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Chianti Rùfina, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-travignoli-chianti-rufina"
+  },
+  {
+   "section": "Red",
+   "producer": "Fontodi",
+   "name": "Chianti Classico",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Chianti Classico, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$150",
+   "other": "",
+   "bin": "",
+   "id": "w-fontodi-chianti-classico"
+  },
+  {
+   "section": "Red",
+   "producer": "Cordella",
+   "name": "Rosso di Montalcino",
+   "vintage": 2024,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$95",
+   "other": "",
+   "bin": "",
+   "id": "w-cordella-rosso-di-montalcino"
+  },
+  {
+   "section": "Red",
+   "producer": "Cordella",
+   "name": "Brunello di Montalcino",
+   "vintage": 2018,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$181",
+   "other": "",
+   "bin": "",
+   "id": "w-cordella-brunello-di-montalcino"
+  },
+  {
+   "section": "Red",
+   "producer": "Valdicava",
+   "name": "Brunello di Montalcino Riserva Madonna del Piano",
+   "vintage": 2010,
+   "type": "red",
+   "region": "Montalcino, Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$820",
+   "other": "",
+   "bin": "",
+   "id": "w-valdicava-brunello-di-montalcino-riserva-madonna-del-piano"
+  },
+  {
+   "section": "Red",
+   "producer": "Sette Ponti",
+   "name": "Rosso di Orma",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Tuscany",
+   "country": "Italy",
+   "grapes": [
+    "Sangiovese",
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$87",
+   "other": "",
+   "bin": "",
+   "id": "w-sette-ponti-rosso-di-orma"
+  },
+  {
+   "section": "Red",
+   "producer": "Cocci Grifoni",
+   "name": "Rosso Piceno",
+   "vintage": 2023,
+   "type": "red",
+   "region": "Marche",
+   "country": "Italy",
+   "grapes": [
+    "Montepulciano",
+    "Sangiovese"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-cocci-grifoni-rosso-piceno"
+  },
+  {
+   "section": "Red",
+   "producer": "Masciarelli",
+   "name": "Marina Cvetic Montepulciano d'Abruzzo",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Abruzzo",
+   "country": "Italy",
+   "grapes": [
+    "Montepulciano"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$160",
+   "other": "",
+   "bin": "",
+   "id": "w-masciarelli-marina-cvetic-montepulciano-d-abruzzo"
+  },
+  {
+   "section": "Red",
+   "producer": "Antonella Corda",
+   "name": "Cannonau di Sardegna",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Sardinia",
+   "country": "Italy",
+   "grapes": [
+    "Grenache (Cannonau)"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$98",
+   "other": "",
+   "bin": "",
+   "id": "w-antonella-corda-cannonau-di-sardegna"
+  },
+  {
+   "section": "Red",
+   "producer": "Fedellos do Couto",
+   "name": "As Xaras",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Ribeira Sacra",
+   "country": "Spain",
+   "grapes": [
+    "Mencía"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$153",
+   "other": "",
+   "bin": "",
+   "id": "w-fedellos-do-couto-as-xaras"
+  },
+  {
+   "section": "Red",
+   "producer": "Envínate",
+   "name": "Lousas Viña de Aldea",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Ribeira Sacra",
+   "country": "Spain",
+   "grapes": [
+    "Mencía"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$173",
+   "other": "",
+   "bin": "",
+   "id": "w-envinate-lousas-vina-de-aldea"
+  },
+  {
+   "section": "Red",
+   "producer": "Envínate",
+   "name": "La Santa de Úrsula",
+   "vintage": 2022,
+   "type": "red",
+   "region": "Canary Islands",
+   "country": "Spain",
+   "grapes": [
+    "Listán Negro",
+    "Negramoll"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$196",
+   "other": "",
+   "bin": "",
+   "id": "w-envinate-la-santa-de-ursula"
+  },
+  {
+   "section": "Red",
+   "producer": "Sokol Blosser",
+   "name": "Orchard Block Pinot Noir",
+   "vintage": 2021,
+   "type": "red",
+   "region": "Dundee Hills, Oregon",
+   "country": "United States",
+   "grapes": [
+    "Pinot Noir"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$249",
+   "other": "",
+   "bin": "",
+   "id": "w-sokol-blosser-orchard-block-pinot-noir"
+  },
+  {
+   "section": "Red",
+   "producer": "Crown Point",
+   "name": "Cabernet Sauvignon",
+   "vintage": 2016,
+   "type": "red",
+   "region": "Happy Canyon of Santa Barbara, California",
+   "country": "United States",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$460",
+   "other": "",
+   "bin": "",
+   "id": "w-crown-point-cabernet-sauvignon"
+  },
+  {
+   "section": "Red",
+   "producer": "Staglin Family",
+   "name": "Cabernet Sauvignon",
+   "vintage": 2014,
+   "type": "red",
+   "region": "Napa Valley, California",
+   "country": "United States",
+   "grapes": [
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$930",
+   "other": "",
+   "bin": "",
+   "id": "w-staglin-family-cabernet-sauvignon"
+  },
+  {
+   "section": "Red",
+   "producer": "Two Sisters",
+   "name": "Eleventh Post",
+   "vintage": 2019,
+   "type": "red",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Merlot",
+    "Cabernet Franc",
+    "Cabernet Sauvignon"
+   ],
+   "grapes_basis": "typical",
+   "glass": "",
+   "bottle": "$103",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-eleventh-post"
+  },
+  {
+   "section": "Red",
+   "producer": "Two Sisters",
+   "name": "Cabernet Franc",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Niagara River VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Cabernet Franc"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$125",
+   "other": "",
+   "bin": "",
+   "id": "w-two-sisters-cabernet-franc"
+  },
+  {
+   "section": "Red",
+   "producer": "Stratus",
+   "name": "Syrah",
+   "vintage": 2020,
+   "type": "red",
+   "region": "Niagara-on-the-Lake VQA, Ontario",
+   "country": "Canada",
+   "grapes": [
+    "Syrah"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$134",
+   "other": "",
+   "bin": "",
+   "id": "w-stratus-syrah"
+  },
+  {
+   "section": "Red",
+   "producer": "Piattelli Vineyards",
+   "name": "Alto Molino Malbec",
+   "vintage": 2025,
+   "type": "red",
+   "region": "Mendoza",
+   "country": "Argentina",
+   "grapes": [
+    "Malbec"
+   ],
+   "grapes_basis": "label",
+   "glass": "",
+   "bottle": "$70",
+   "other": "",
+   "bin": "",
+   "id": "w-piattelli-vineyards-alto-molino-malbec"
+  },
+  {
+   "section": "Dessert Wine",
+   "producer": "Château Nairac",
+   "name": "Esquisse de Nairac, Sauternes",
+   "vintage": 2006,
+   "type": "dessert",
+   "region": "Sauternes, Bordeaux",
+   "country": "France",
+   "grapes": [
+    "Sémillon",
+    "Sauvignon Blanc"
+   ],
+   "grapes_basis": "typical",
+   "glass": "$16",
+   "bottle": "",
+   "other": "2oz glass",
+   "bin": "",
+   "id": "w-chateau-nairac-esquisse-de-nairac-sauternes"
+  }
+ ],
+ "dishes": [
+  {
+   "id": "d-seared-scallop",
+   "section": "Appetizers",
+   "name": "Seared Scallop",
+   "desc": "Crispy pancetta, butter bean, parsley",
+   "price": "$29",
+   "main": "scallop",
+   "cook": "seared",
+   "flav": [
+    "delicate",
+    "salty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-mushroom-parfait",
+   "section": "Appetizers",
+   "name": "Mushroom Parfait",
+   "desc": "Pickled shallot, sourdough",
+   "price": "$23",
+   "main": "mushroom",
+   "cook": "",
+   "flav": [
+    "earthy",
+    "creamy",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-tuna-carpaccio",
+   "section": "Appetizers",
+   "name": "Tuna Carpaccio",
+   "desc": "Ponzu, caper, eggplant miso",
+   "price": "$27",
+   "main": "tuna",
+   "cook": "raw",
+   "flav": [
+    "delicate",
+    "acidic",
+    "salty"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-burrata-tomato",
+   "section": "Appetizers",
+   "name": "Burrata & Tomato",
+   "desc": "Tomato, chili oil, pistachio, sourdough",
+   "price": "$28",
+   "main": "burrata",
+   "cook": "",
+   "flav": [
+    "creamy",
+    "fresh",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-eloise-wedge-salad",
+   "section": "Appetizers",
+   "name": "Eloise Wedge Salad",
+   "desc": "Gorgonzola, kalamata olive, roasted pepper",
+   "price": "$23",
+   "main": "lettuce",
+   "cook": "",
+   "flav": [
+    "fresh",
+    "salty",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-caesar-salad",
+   "section": "Appetizers",
+   "name": "Caesar Salad",
+   "desc": "Garlic crouton, parmigiano",
+   "price": "$21",
+   "main": "lettuce",
+   "cook": "",
+   "flav": [
+    "fresh",
+    "salty",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-shrimp-linguine",
+   "section": "Pasta",
+   "name": "Shrimp Linguine",
+   "desc": "Caper, tomato, lemon, 'nduja",
+   "price": "$32",
+   "main": "shrimp",
+   "cook": "",
+   "flav": [
+    "spicy",
+    "acidic",
+    "savoury"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-beef-cheek-pappardelle",
+   "section": "Pasta",
+   "name": "Beef Cheek Pappardelle",
+   "desc": "Rosemary, parmigiano, pangrattato",
+   "price": "$36",
+   "main": "beef",
+   "cook": "braised",
+   "flav": [
+    "rich",
+    "savoury",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-squash-ravioli",
+   "section": "Pasta",
+   "name": "Squash Ravioli",
+   "desc": "Brown butter, crispy sage, toasted pumpkin seed",
+   "price": "$32",
+   "main": "squash",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "nutty",
+    "rich"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-10oz-steak-frites",
+   "section": "Mains",
+   "name": "10oz Steak Frites",
+   "desc": "Peppercorn sauce",
+   "price": "$58",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "spicy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-roasted-cauliflower",
+   "section": "Mains",
+   "name": "Roasted Cauliflower",
+   "desc": "Crispy chickpea, pomegranate, chili oil, labneh",
+   "price": "$28",
+   "main": "cauliflower",
+   "cook": "roasted",
+   "flav": [
+    "earthy",
+    "spicy",
+    "creamy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-charcoal-roasted-chicken",
+   "section": "Mains",
+   "name": "Charcoal Roasted Chicken",
+   "desc": "Black kale, oyster mushroom, guajillo",
+   "price": "$40",
+   "main": "chicken",
+   "cook": "roasted",
+   "flav": [
+    "smoky",
+    "savoury",
+    "earthy"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-42oz-cote-de-boeuf",
+   "section": "Mains",
+   "name": "42oz Côte de Boeuf",
+   "desc": "Red wine and mustard jus",
+   "price": "$185",
+   "main": "beef",
+   "cook": "grilled",
+   "flav": [
+    "rich",
+    "savoury",
+    "smoky"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-seared-rainbow-trout",
+   "section": "Mains",
+   "name": "Seared Rainbow Trout",
+   "desc": "Piquillo pepper, kalamata olive, basil",
+   "price": "$46",
+   "main": "trout",
+   "cook": "seared",
+   "flav": [
+    "delicate",
+    "salty",
+    "herbal"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-citrus-parfait",
+   "section": "Desserts",
+   "name": "Citrus Parfait",
+   "desc": "Orange, meringue, Earl Grey jelly. Serves 2",
+   "price": "$14",
+   "main": "citrus",
+   "cook": "",
+   "flav": [
+    "sweet",
+    "acidic",
+    "fresh"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-chocolate-tart",
+   "section": "Desserts",
+   "name": "Chocolate Tart",
+   "desc": "Crème anglaise, fleur de sel. Serves 2",
+   "price": "$14",
+   "main": "chocolate",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "rich",
+    "bitter"
+   ],
+   "diet": []
+  },
+  {
+   "id": "d-sticky-coffee-pudding",
+   "section": "Desserts",
+   "name": "Sticky Coffee Pudding",
+   "desc": "Walnut, vanilla ice cream, coffee caramel. Serves 2",
+   "price": "$14",
+   "main": "coffee",
+   "cook": "baked",
+   "flav": [
+    "sweet",
+    "rich",
+    "nutty"
+   ],
+   "diet": []
+  }
+ ],
+ "cocktails": [
+  {
+   "id": "c-espresso-ghost",
+   "section": "House Cocktails",
+   "name": "Espresso Ghost",
+   "price": "$25",
+   "ingredients": [
+    "brown butter-washed Absolut Vodka",
+    "coffee distillate",
+    "hazelnut",
+    "chocolate"
+   ],
+   "by": "",
+   "note": "2.5oz"
+  },
+  {
+   "id": "c-melon-highball",
+   "section": "House Cocktails",
+   "name": "Melon Highball",
+   "price": "$23",
+   "ingredients": [
+    "Beefeater Gin",
+    "Tio Pepe Fino Sherry",
+    "melon",
+    "lime",
+    "seltzer"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-fresh-peach",
+   "section": "House Cocktails",
+   "name": "Fresh Peach",
+   "price": "$23",
+   "ingredients": [
+    "Planteray 3 Stars rum",
+    "acid-adjusted peach cordial",
+    "vanilla"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-pineapple-negroni",
+   "section": "House Cocktails",
+   "name": "Pineapple Negroni",
+   "price": "$22",
+   "ingredients": [
+    "Planteray Stiggins' Fancy rum",
+    "toasted coconut",
+    "Luxardo Bitter Bianco",
+    "Cocchi Vermouth di Torino"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-margarita",
+   "section": "Classics",
+   "name": "Margarita",
+   "price": "$20",
+   "ingredients": [
+    "Altos Blanco Tequila",
+    "orange liqueur",
+    "agave",
+    "lime"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-french-75",
+   "section": "Classics",
+   "name": "French 75",
+   "price": "$20",
+   "ingredients": [
+    "Beefeater London Dry Gin",
+    "lemon",
+    "prosecco"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-paloma",
+   "section": "Classics",
+   "name": "Paloma",
+   "price": "$19",
+   "ingredients": [
+    "Altos Blanco Tequila",
+    "grapefruit",
+    "lime",
+    "seltzer"
+   ],
+   "by": "",
+   "note": "2oz"
+  },
+  {
+   "id": "c-classic-martini",
+   "section": "Classics",
+   "name": "Classic Martini",
+   "price": "$20",
+   "ingredients": [
+    "gin or vodka (guest's choice)",
+    "vermouth"
+   ],
+   "by": "",
+   "note": "3oz"
+  },
+  {
+   "id": "c-cucumber-garden-fizz",
+   "section": "Zero-Proof",
+   "name": "Cucumber Garden Fizz",
+   "price": "$18",
+   "ingredients": [
+    "Noa Garden Gin (non-alcoholic)",
+    "elderflower cordial",
+    "lemon",
+    "cucumber tonic"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  },
+  {
+   "id": "c-miss-fire",
+   "section": "Zero-Proof",
+   "name": "Miss Fire",
+   "price": "$15",
+   "ingredients": [
+    "Lyre's Aperitivo (non-alcoholic)",
+    "pomegranate",
+    "lemon"
+   ],
+   "by": "",
+   "note": "Non-alcoholic"
+  }
+ ],
+ "staff": [
+  {
+   "name": "Elena Ruiz",
+   "role": "manager",
+   "photo": "faces/1.png"
+  },
+  {
+   "name": "Claire Whitfield",
+   "role": "sommelier",
+   "photo": "faces/3.png"
+  },
+  {
+   "name": "Marco Delgado",
+   "role": "bartender",
+   "photo": "faces/5.png"
+  },
+  {
+   "name": "Dani Haddad",
+   "role": "server",
+   "photo": "faces/2.png"
+  },
+  {
+   "name": "Priya Nair",
+   "role": "server",
+   "photo": "faces/7.png"
+  },
+  {
+   "name": "Amara Okafor",
+   "role": "server",
+   "photo": "faces/4.png"
+  },
+  {
+   "name": "David Chen",
+   "role": "server",
+   "photo": "faces/6.png"
+  }
+ ]
+}
