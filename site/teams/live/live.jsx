@@ -39,8 +39,14 @@ const TeamsLive = (() => {
     const box = document.createElement('div'); box.className = 'live-full'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'The demo restaurant, to try yourself');
     box.innerHTML = '<div class="live-full-in"><div class="live-full-bar"><span>The Larkspur · a demo restaurant</span><button type="button" data-live-close>Close ✕</button></div><div class="live-full-app"></div></div>';
     document.body.appendChild(box); document.documentElement.classList.add('dlg-open');
+    // On a desktop the app is drawn at a phone's own size and scaled to the window, so the whole phone is in view
+    // whatever the window's height (a short laptop window once showed a third of Today). A phone gets the full screen.
+    const inner = box.querySelector('.live-full-in'), fitFull = () => { if (innerWidth < 620) { inner.style.cssText = ''; return; }
+      const bar = box.querySelector('.live-full-bar').offsetHeight || 44, k = Math.min(1.15, (innerHeight - 32) / (H + bar), (innerWidth - 32) / W);
+      inner.style.cssText = `width:${W}px;height:${H + bar}px;max-width:none;max-height:none;flex:none;transform:scale(${k});transform-origin:center center`; };
+    fitFull(); addEventListener('resize', fitFull);
     const root = ReactDOM.createRoot(box.querySelector('.live-full-app')); root.render(<TeamApp />);
-    const close = (popped) => { if (!full) return; full = null; removeEventListener('keydown', key); removeEventListener('popstate', pop);
+    const close = (popped) => { if (!full) return; full = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); removeEventListener('resize', fitFull);
       try { root.unmount(); } catch (e) {} if (box.parentNode) box.parentNode.removeChild(box); document.documentElement.classList.remove('dlg-open');
       if (!popped && history.state && history.state.teamsLive) history.back();
       if (from && from.focus) try { from.focus(); } catch (e) {}
