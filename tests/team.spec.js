@@ -141,6 +141,10 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   await page.goto(`${BASE}/team/?seed=princess&view=console`);
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toBeVisible();
+  // Admin never says what the training costs us to write: a prospect reads this screen.
+  await page.getByTestId('console-nav-admin').click();
+  await expect(page.getByText('Accounts and billing')).toBeVisible();
+  await expect(page.locator('#root')).not.toContainText(/Writing is the only cost|about 3p|under a penny/);
   expect(errors).toEqual([]);
 });
 
