@@ -117,10 +117,6 @@ export async function build() {
       : '',
   };
   vars.DEMO_PHONE_URL = demo.replace('view=console', 'view=phone').replace(/&/g, '&amp;'); // the same demo as the staff see it, to try by hand
-  const lark = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, 'data/team-demo-list.json'), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, 'data/team-demo.json'), 'utf8')));
-  vars.LARKSPUR_LIST = JSON.stringify(lark.rows).replace(/</g, '\\u003c');
-  fs.writeFileSync(path.join(OUT, 'larkspur.cards.json'), JSON.stringify(lark.cards));
-  vars.LARKSPUR_V = hash(JSON.stringify(lark.cards));
   const live = await buildLive();
   fs.writeFileSync(path.join(OUT, 'live.js'), live);
   vars.LIVE_V = hash(live);

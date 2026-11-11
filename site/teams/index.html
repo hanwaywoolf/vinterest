@@ -77,10 +77,6 @@
         <div>A poor bottle choice by the diner is corrected by suggesting an alternative that suits the mains.</div>
         <div>A pairing printed beside the dish gets sold by someone who can explain it.</div>
       </div>
-      <div class="listcard">
-        <div class="lk">The Larkspur, our demo restaurant</div>
-        <div class="cellar" data-cellar="larkList" data-sym="£" data-top="80" data-whose="The Larkspur's list" data-cards="/larkspur.cards.json?v=%%LARKSPUR_V%%" data-cards-note="The card The Larkspur's team learn from." data-cards-demo="%%DEMO_URL%%"></div>
-      </div>
     </div>
     <div class="card" id="calcCard">
       <div class="own lead"><span>Your guess at the lift</span><input type="range" min="0" max="30" step="1" value="5" data-in="lift" aria-label="Your lift" id="liftIn"><b data-out="lift">5%</b></div>
@@ -490,7 +486,6 @@ function calc() {
 card.addEventListener('input', calc); calc();
 
 </script>
-<script type="application/json" id="larkList">%%LARKSPUR_LIST%%</script>
 <script src="/site.js?v=%%JS_V%%" defer></script>
 </body>
 </html>
