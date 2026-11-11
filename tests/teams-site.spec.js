@@ -449,7 +449,7 @@ test('the page generator reads a seed and drafts a page the build accepts', asyn
   expect(c.picks[0]).toMatchObject({ dish: 'Hereford Côte De Boeuf' });
   const page = render(c, { seed: 'barbary', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
   expect(page).toContain('48 questions (about 1,880 across all 313 in a full install)');       // eight wines trained in full, six questions each
-  // Over 60 wines the bottles go under the copy, across the page: 313 in six rows of 53, 30 across on a phone.
+  // Over 80 wines the bottles go under the copy, across the page, with the buttons after them: 313 in six rows of 53, 30 across on a phone.
   expect(page).toContain('<section class="pr-hero stack">'); expect(page).toContain('--cols: 53; --cols-m: 30');
   expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).toContain('<section class="pr-hero">');
   expect(page).toContain('data-per="week"'); expect(page).toContain("Today's menu, paired before service."); expect(page).not.toMatch(/undefined|NaN/);

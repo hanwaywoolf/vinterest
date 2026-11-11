@@ -748,9 +748,13 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
 @media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
 @media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
-/* A long list (over 60 wines): the copy first with its headline on one line, then the bottles across the whole width,
+/* A long list (over 80 wines): the copy first with its headline on one line, then the bottles across the whole width,
    small enough that the list sits in a few rows (--cols and --cols-m are set per page from the wine count). */
-.pr-hero.stack .wrap { grid-template-columns: 1fr; gap: 44px; align-items: start; }
+/* The copy's own box is dissolved so its buttons can sit after the bottles: copy, bottles, then the calls to action. */
+.pr-hero.stack .wrap { grid-template-columns: 1fr; gap: 0; align-items: start; }
+.pr-hero.stack .wrap > div:first-child { display: contents; }
+.pr-hero.stack .cellar { order: 1; margin-top: 36px; }
+.pr-hero.stack .cta { order: 2; margin-top: 32px; }
 .pr-hero.stack h1 { max-width: none; font-size: clamp(30px, 4vw, 50px); }
 @media (min-width: 980px) { .pr-hero.stack h1 { white-space: nowrap; } }
 .pr-hero.stack .cellar { max-width: none; justify-self: stretch; }

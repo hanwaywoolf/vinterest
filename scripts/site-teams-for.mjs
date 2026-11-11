@@ -184,9 +184,9 @@ export function render(a, o) {
   const logoH = o.aspect ? Math.max(8, Math.min(24, Math.round(170 / o.aspect))) : 0, heroH = o.aspect ? Math.max(9, Math.min(40, Math.round(280 / o.aspect))) : 0;
   const them = o.logo ? `<img class="them" src="/img/for/${o.logo}?v=%%IMG_V%%" alt="${esc(a.name)}">` : `<b class="them-name">${esc(a.name)}</b>`;
   const priceOf = (p) => [p.glass && `${p.glass} a glass`, p.bottle && `${p.bottle} a bottle`, p.bottleOnly && 'bottle only'].filter(Boolean).join(' · ');
-  // Over 60 wines the bottles go under the copy, across the page, in a few rows: two up to 110 wines, three to 200, six
+  // Over 80 wines the bottles go under the copy (and the buttons under the bottles), across the page, in a few rows: two up to 110 wines, three to 200, six
   // to 330, then about 55 a row; on a phone 22 across, 30 for a very long list.
-  const stack = f.wines > 60, rows = f.wines <= 110 ? 2 : f.wines <= 200 ? 3 : f.wines <= 330 ? 6 : Math.ceil(f.wines / 55);
+  const stack = f.wines > 80, rows = f.wines <= 110 ? 2 : f.wines <= 200 ? 3 : f.wines <= 330 ? 6 : Math.ceil(f.wines / 55);
   const cols14 = stack ? Math.ceil(f.wines / rows) : f.wines <= 48 ? Math.ceil(f.wines / 3) : 22, colsM = stack ? (f.wines > 200 ? 30 : 22) : f.wines <= 48 ? Math.ceil(f.wines / 4) : 16;
   // A preview trains a few wines in full. What the whole list would hold is estimated from those: the questions written
   // per wine here (six where none are), times the list, to the nearest ten. An estimate, and the page says about.
