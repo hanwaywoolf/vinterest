@@ -566,6 +566,33 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .live-full-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(env(safe-area-inset-top) + 8px) 12px 8px 16px; background: #1b1b1b; border-bottom: 1px solid rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .7); font-size: 13px; font-weight: 600; }
 .live-full-bar button { font: 700 13px/1 var(--sans); color: #fff; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .22); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
 .live-full-app { position: relative; flex: 1; min-height: 0; }
+.live-full-acts { display: flex; gap: 8px; }
+.live-guide { position: absolute; z-index: 3; color: #fff; }
+.live-guide h2 { font-size: 22px; line-height: 1.2; color: #fff; }
+.live-guide .lg-who { margin-top: 8px; font-size: 14px; color: rgba(255, 255, 255, .66); }
+.live-guide ol { list-style: none; counter-reset: lg; margin: 18px 0 0; padding: 0; display: grid; gap: 14px; }
+.live-guide li { counter-increment: lg; position: relative; padding-left: 38px; }
+.live-guide li::before { content: counter(lg); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; background: var(--cr); color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+.live-guide li b { display: block; font-size: 15px; color: #fff; }
+.live-guide li span { display: block; font-size: 13.5px; line-height: 1.45; color: rgba(255, 255, 255, .7); margin-top: 2px; }
+.live-guide .lg-more { margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .14); font-size: 13.5px; color: rgba(255, 255, 255, .66); }
+.live-guide .lg-more a { color: #fff; font-weight: 700; white-space: nowrap; }
+.live-guide .lg-go { margin-top: 18px; width: 100%; font: 700 15px/1 var(--sans); color: #fff; background: var(--cr); border: 0; border-radius: 999px; padding: 14px; cursor: pointer; }
+/* Beside the phone: always there, so no button for it and nothing to dismiss. */
+.live-full.guide-side .live-guide { top: 50%; transform: translateY(-50%); }
+.live-full.guide-side { background: rgba(8, 8, 8, .97); }
+.live-full.guide-side .lg-go, .live-full.guide-side [data-live-guide] { display: none; }
+/* Otherwise a sheet over the phone, opened on arrival and from the bar. */
+.live-full:not(.guide-side) .live-guide { display: none; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100% - 32px)); max-height: calc(100% - 96px); overflow: auto; background: #1b1b1b; border: 1px solid rgba(255, 255, 255, .18); border-radius: 22px; padding: 22px; box-shadow: 0 24px 80px rgba(0, 0, 0, .6); }
+.live-full:not(.guide-side).guide-open .live-guide { display: block; }
+.live-full:not(.guide-side) .live-guide { padding: 20px 20px 0; max-height: calc(100% - 80px); }
+.live-full:not(.guide-side) .live-guide h2 { font-size: 19px; }
+.live-full:not(.guide-side) .live-guide ol { gap: 10px; margin-top: 14px; }
+.live-full:not(.guide-side) .live-guide li span { font-size: 13px; line-height: 1.38; }
+.live-full:not(.guide-side) .live-guide .lg-go { position: sticky; bottom: 0; margin: 14px -20px 0; width: calc(100% + 40px); border-radius: 0 0 22px 22px; padding: 16px; }
+.live-full-bar > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-full-bar button { white-space: nowrap; flex: none; }
+.live-full:not(.guide-side).guide-open .live-full-app { opacity: .25; pointer-events: none; }
 .live-full-app img { max-width: none; }
 @media (min-width: 620px) { .live-full-in { border-radius: 28px; border: 1px solid rgba(255, 255, 255, .16); height: calc(100% - 48px); } }
 /* A wine's card, opened from its bottle in the list (data-cards on the cellar): what the team would learn of it. */

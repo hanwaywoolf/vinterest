@@ -309,6 +309,13 @@ test('on a phone the floor carousel runs the real drill', async ({ page }) => {
   const full = page.locator('.live-full');
   await expect(full.getByText('Hi Dani')).toBeVisible();
   await expect(page.locator('#fstage .live-app')).toHaveCount(0);                   // the playing phone has stopped
+  // It opens on what to try (a sheet on a phone), which names only what runs here and sends the rest to the full demo.
+  const guide = full.locator('.live-guide');
+  await expect(guide).toBeVisible(); await expect(guide.locator('li')).toHaveCount(5);
+  await expect(guide.locator('.lg-more a')).toHaveAttribute('href', /demo\.vinterest\.team/);
+  await guide.locator('[data-live-guide-close]').click(); await expect(guide).toBeHidden();
+  await full.locator('[data-live-guide]').click(); await expect(guide).toBeVisible();   // and comes back from the bar
+  await guide.locator('[data-live-guide-close]').click();
   await full.getByText(/Start today's drill|Practise · 5/).first().click();
   await full.locator('[data-testid=drill-opt]').first().click();
   await full.getByText('Check', { exact: true }).click();

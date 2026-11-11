@@ -32,19 +32,38 @@ const TeamsLive = (() => {
   /* The same app, full screen and theirs to use: the playing phone stops, the restaurant is put back as seeded
      for the same person, and the app is drawn at its real size under a bar with Close. Closing (the button, Esc
      or the phone's Back) starts the page's phone playing again. */
+  /* What to explore, beside the phone on a wide screen and as a sheet over it on a narrow one (opened once on arrival,
+     then from "What to try" in the bar). Only what runs here: Ask Vinny and the guest at the table need the server,
+     which the website's own address can't call, so the guide sends people to the full demo for those. */
+  const GUIDE = '<aside class="live-guide" aria-label="What to try"><h2>This is the real app. Tap around.</h2><p class="lg-who">You\'re Dani, a server at The Larkspur, a demo restaurant. Nothing you do here is saved.</p><ol>'
+    + '<li><b>Do today\'s drill</b><span>Scroll Today and start it: five questions on the list. Get one wrong on purpose to see how it teaches.</span></li>'
+    + '<li><b>Open a wine</b><span>Wines, then any bottle: what to say to a guest, how it tastes, and what to pour it with.</span></li>'
+    + '<li><b>Look up a dish</b><span>Menu, then a dish: its wines, its allergens and what the kitchen can change.</span></li>'
+    + '<li><b>Take Vinny\'s test</b><span>Vinny, then the test: ten questions aimed at what Dani knows least.</span></li>'
+    + '<li><b>Be someone else</b><span>Tap the photo at the top right and pick Elena, the manager, to see the team\'s figures.</span></li>'
+    + '</ol><p class="lg-more">Ask Vinny, the guest at the table and the manager\'s console are in the full demo. <a href="https://demo.vinterest.team/?seed=demo&amp;view=console" target="_blank" rel="noopener">Open the full demo →</a></p><button type="button" class="lg-go" data-live-guide-close>Start exploring</button></aside>';
+
   function open(o = {}) {
     if (full) return; const who = o.who || (last && last.opts.who) || 'Dani', from = document.activeElement;
     if (last && last.handle) { last.handle.stop(); last.handle = null; }
     seed(who);
     const box = document.createElement('div'); box.className = 'live-full'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'The demo restaurant, to try yourself');
-    box.innerHTML = '<div class="live-full-in"><div class="live-full-bar"><span>The Larkspur · a demo restaurant</span><button type="button" data-live-close>Close ✕</button></div><div class="live-full-app"></div></div>';
+    box.innerHTML = '<div class="live-full-in"><div class="live-full-bar"><span>The Larkspur · a demo restaurant</span><span class="live-full-acts"><button type="button" data-live-guide aria-expanded="false">What to try</button><button type="button" data-live-close>Close ✕</button></span></div><div class="live-full-app"></div></div>' + GUIDE;
     document.body.appendChild(box); document.documentElement.classList.add('dlg-open');
     // On a desktop the app is drawn at a phone's own size and scaled to the window, so the whole phone is in view
     // whatever the window's height (a short laptop window once showed a third of Today). A phone gets the full screen.
-    const inner = box.querySelector('.live-full-in'), fitFull = () => { if (innerWidth < 620) { inner.style.cssText = ''; return; }
+    const inner = box.querySelector('.live-full-in'), fitFull = () => { if (innerWidth < 620) { inner.style.cssText = ''; box.classList.remove('guide-side'); guide.style.cssText = ''; return; }
       // A large phone's width, and the bar counted inside its height, so the frame keeps a phone's proportions.
       const FW = 430, FH = 880, k = Math.min(1.15, (innerHeight - 32) / FH, (innerWidth - 32) / FW);
-      inner.style.cssText = `width:${FW}px;height:${FH}px;max-width:none;max-height:none;flex:none;transform:scale(${k});transform-origin:center center`; };
+      inner.style.cssText = `width:${FW}px;height:${FH}px;max-width:none;max-height:none;flex:none;transform:scale(${k});transform-origin:center center`;
+      // Beside the phone where there's room for it; otherwise it stays a sheet.
+      const room = (innerWidth - FW * k) / 2 - 48, side = room >= 250; box.classList.toggle('guide-side', side);
+      guide.style.cssText = side ? `right:calc(50% + ${Math.round(FW * k / 2 + 28)}px);width:${Math.min(340, Math.round(room))}px` : ''; };
+    const guide = box.querySelector('.live-guide'), gbtn = box.querySelector('[data-live-guide]');
+    const showGuide = (on) => { box.classList.toggle('guide-open', on); gbtn.setAttribute('aria-expanded', on ? 'true' : 'false'); };
+    gbtn.addEventListener('click', () => showGuide(!box.classList.contains('guide-open')));
+    box.querySelector('[data-live-guide-close]').addEventListener('click', () => showGuide(false));
+    showGuide(true);
     fitFull(); addEventListener('resize', fitFull);
     const root = ReactDOM.createRoot(box.querySelector('.live-full-app')); root.render(<TeamApp />);
     const close = (popped) => { if (!full) return; full = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); removeEventListener('resize', fitFull);
