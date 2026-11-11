@@ -42,8 +42,9 @@ const TeamsLive = (() => {
     // On a desktop the app is drawn at a phone's own size and scaled to the window, so the whole phone is in view
     // whatever the window's height (a short laptop window once showed a third of Today). A phone gets the full screen.
     const inner = box.querySelector('.live-full-in'), fitFull = () => { if (innerWidth < 620) { inner.style.cssText = ''; return; }
-      const bar = box.querySelector('.live-full-bar').offsetHeight || 44, k = Math.min(1.15, (innerHeight - 32) / (H + bar), (innerWidth - 32) / W);
-      inner.style.cssText = `width:${W}px;height:${H + bar}px;max-width:none;max-height:none;flex:none;transform:scale(${k});transform-origin:center center`; };
+      // A large phone's width, and the bar counted inside its height, so the frame keeps a phone's proportions.
+      const FW = 430, FH = 880, k = Math.min(1.15, (innerHeight - 32) / FH, (innerWidth - 32) / FW);
+      inner.style.cssText = `width:${FW}px;height:${FH}px;max-width:none;max-height:none;flex:none;transform:scale(${k});transform-origin:center center`; };
     fitFull(); addEventListener('resize', fitFull);
     const root = ReactDOM.createRoot(box.querySelector('.live-full-app')); root.render(<TeamApp />);
     const close = (popped) => { if (!full) return; full = null; removeEventListener('keydown', key); removeEventListener('popstate', pop); removeEventListener('resize', fitFull);
