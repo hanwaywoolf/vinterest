@@ -119,6 +119,16 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   expect(st).toMatchObject({ wines: 76, cards: 76, dishes: 17, pairings: 17, cocktails: 10, mixCards: 10, glass: 12, demo: true, offList: true });
   expect(st.rows).toBeGreaterThan(1000);
   await expect(page.locator('#root')).not.toContainText('£');
+  // Shown to a prospect: the console's Wines section opens on their wines, without our sommelier review card
+  // (venue.console.hide); the questions it held stay out of the drill, and another restaurant still shows the card.
+  await page.goto(`${BASE}/team/?seed=eloise&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-wines')).toBeVisible();
+  await expect(page.getByTestId('console-sommelier')).toHaveCount(0);
+  expect(await page.evaluate(() => TeamData.reviewed().held.length)).toBeGreaterThan(0);
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-sommelier')).toBeVisible();
   expect(errors).toEqual([]);
 });
 

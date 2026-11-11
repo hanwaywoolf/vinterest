@@ -472,7 +472,11 @@ function _CWines({open,goUpload}){ const T=useTheme(), cr=T.lift(C.cr), ws=TeamD
   const groups=[]; ws.forEach(w=>{ const s=w.section||'The list'; let g=groups.find(x=>x.s===s); if(!g) groups.push(g={s,ws:[]}); g.ws.push(w); });
   return <div data-testid="console-wines">{_cH(T,'Wines',`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass · ${cov.glass.covered+cov.bottle.covered} covered by the floor`,<Btn small onClick={goUpload}>Upload a new list</Btn>)}
     {!ws.length&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>No list yet. Upload one and it appears here with who knows what.</div></Card>}
-    {(()=>{ const r=TeamData.reviewed(); if(!r) return null; const qs=TeamLearn.allQs ? [...TeamData.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...TeamData.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...TeamData.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))] : [];
+    {(()=>{ const r=TeamData.reviewed(); if(!r) return null;
+      // An install shown to a prospect can leave this card out (venue.console.hide in its list file, as Eloise's does): it's our
+      // own check of the questions, and its list of held ones stood between them and their wines. The held questions stay held.
+      if((((TeamData.get().venue||{}).console||{}).hide||[]).includes('sommelier')) return null;
+      const qs=TeamLearn.allQs ? [...TeamData.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...TeamData.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...TeamData.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))] : [];
       // The sommelier's read before handover: how many questions, how many rewritten, and what's held out of the drill and why.
       return <Card style={{marginBottom:14}}><div data-testid="console-sommelier">{_cLabel(T,'Sommelier review',<span style={{fontSize:11,color:T.mid,fontFamily:C.P,textTransform:'none',letterSpacing:0,fontWeight:500}}>{new Date(r.at).toLocaleDateString(undefined,{day:'numeric',month:'short'})}</span>)}
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>{r.asked} questions read as a server sees them · {r.fixed} rewritten · {r.held.length?<b style={{color:T.amber}}>{r.held.length} held out of the drill</b>:'nothing held'}</div>

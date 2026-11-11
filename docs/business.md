@@ -148,7 +148,9 @@ other restaurants' (`VENUE_PAGES` in `_worker.js`): the root is the page written
 (`site/teams/for/eloise.html`, private, its list and cards made from the seed's two files with `cellarOf`; the Worker
 fetches it and its files from the Teams site, `TEAMS_SITE_ORIGIN`, default vinterest.team, where it is also
 vinterest.team/for/eloise), and the demo is at eloise.vinterest.team/demo/ (the staff app's files; `TeamSample.HOSTS`
-opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`.
+opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`. Its list file also sets
+`venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
+(our own check, whose held questions stay held); any install can set it.
 
 ## How staff learn
 

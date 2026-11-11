@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-10-eloise",
+ "rev": "2026-11-11-eloise-console",
  "venue": {
   "name": "Eloise",
   "city": "Toronto",
@@ -24,6 +24,11 @@
    "roleTiers": {
     "sommelier": "master"
    }
+  },
+  "console": {
+   "hide": [
+    "sommelier"
+   ]
   }
  },
  "wines": [
