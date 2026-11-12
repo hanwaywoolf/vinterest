@@ -306,6 +306,65 @@ test("Eloise's private page is hidden from search and adds up in dollars", async
   expect(errors).toEqual([]);
 });
 
+// A prospect page plays its own list: the headline's first line, the bottles arriving one at a time and faster as they
+// go, then the second line, then the bottle-only wines lit. The facts count up and each dish's line types itself.
+for (const [slug, total, only] of [['eloise', 76, 64], ['princess-royal', 132, 94]]) {
+  test(`${slug}: the bottles pour in, then the headline's second line`, async ({ page }) => {
+    const errors = []; page.on('pageerror', (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${BASE}/for/${slug}`);
+    const hero = page.locator('.pr-hero'), em = page.locator('.pr-hero h1 em');
+    await expect(hero).toHaveClass(/pour-wait/);
+    expect(+(await em.evaluate((e) => getComputedStyle(e).opacity))).toBeLessThan(0.5);
+    await expect(page.locator('.cellar.pouring')).toHaveCount(1);
+    const gaps = await page.evaluate(() => [...document.querySelectorAll('.cellar-grid i')].map((b) => parseFloat(b.style.getPropertyValue('--d'))));
+    expect(gaps.length).toBe(total);
+    expect(gaps[1] - gaps[0]).toBeGreaterThan(200);                                   // slow to start
+    expect(gaps[total - 1] - gaps[total - 2]).toBeLessThan(30);                       // a patter by the end
+    await expect(page.locator('.cellar-cap')).toHaveText(/^\d+ wines?$/);             // counted in
+    await expect(hero).not.toHaveClass(/pour-wait/, { timeout: 12000 });
+    await expect(em).toHaveCSS('opacity', '1');
+    await expect(page.locator('.cellar')).toHaveAttribute('data-mode', 'bottle', { timeout: 8000 });
+    await expect(page.locator('.cellar-cap')).toContainText(`${only} are bottle only`);
+    await expect(page.locator('.cellar-grid i.pick')).toHaveCount(1, { timeout: 8000 });   // the dearest bottle-only wine names itself
+    await expect(page.locator('.cellar-pick')).toContainText('bottle only');
+    const fact = page.locator('.pr-fact b').first(), want = await page.evaluate(() => document.querySelector('.pr-fact b').textContent);
+    await page.locator('.pr-facts').scrollIntoViewIfNeeded();
+    await page.locator('.pr-fact').last().scrollIntoViewIfNeeded();
+    await expect(page.locator('.pr-fact.on')).toHaveCount(6);
+    await expect(fact).toHaveText(want);
+    const quote = page.locator('.pr-dish blockquote').first();
+    await quote.scrollIntoViewIfNeeded();
+    await expect.poll(() => quote.evaluate((q) => q.textContent === q.dataset.full && q.getAttribute('aria-label') === q.dataset.full), { timeout: 15000 }).toBe(true);
+    expect(errors).toEqual([]);
+  });
+}
+
+test('on a phone the headline does not wait for a scroll to the bottles', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto(BASE + '/for/eloise');
+  await expect(page.locator('.pr-hero')).not.toHaveClass(/pour-wait/);
+  await expect(page.locator('.pr-hero h1 em')).toHaveCSS('opacity', '1');
+  // One column: headline, lead, the bottles, then the buttons; the headline a touch larger than the desktop minimum.
+  const ys = await page.evaluate(() => ['.pr-hero .lead', '.pr-hero .cellar', '.pr-hero .cta'].map((q) => document.querySelector(q).getBoundingClientRect().top));
+  expect(ys[0]).toBeLessThan(ys[1]); expect(ys[1]).toBeLessThan(ys[2]);
+  expect(parseFloat(await page.locator('.pr-hero h1').evaluate((h) => getComputedStyle(h).fontSize))).toBeGreaterThan(35);
+  expect(await page.locator('.pr-hero h1 em').evaluate((e) => e.getBoundingClientRect().right <= innerWidth - 16)).toBe(true);
+  await page.locator('.cellar-grid').scrollIntoViewIfNeeded();
+  await expect(page.locator('.cellar')).toHaveAttribute('data-mode', 'bottle', { timeout: 15000 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('a prospect page with reduced motion shows everything at once', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(BASE + '/for/eloise');
+  await expect(page.locator('.pr-hero')).not.toHaveClass(/pour-wait/);
+  await expect(page.locator('.pr-hero h1 em')).toHaveCSS('opacity', '1');
+  await expect(page.locator('.cellar')).toHaveAttribute('data-mode', 'bottle');
+  await expect(page.locator('.rv')).toHaveCount(0);
+  await expect(page.locator('.pr-dish blockquote').first()).toContainText('special-occasion bottle');
+});
+
 // The hero's phone is the Teams app itself (live.js, the app's sources): it opens on Today, starts the day's
 // drill and answers it, so the site can't show a drill the app no longer has.
 test('the hero phone runs the real drill', async ({ page }) => {

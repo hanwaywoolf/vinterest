@@ -546,7 +546,17 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .cellar[data-cards] .cellar-grid i { cursor: pointer; }
 .cellar-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, .55); }
 .cellar-key span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
-@media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } }
+.cellar.pouring.in .cellar-grid i { transition-delay: var(--d, 0ms); transition-duration: .34s; }
+.cellar.pouring .cellar-cap { font-variant-numeric: tabular-nums; }
+/* The headline's second line waits for the bottles (see data-pour in site.js). */
+.pour-wait h1 em { opacity: 0; transform: translateY(.3em); }
+.pr-hero h1 em { display: inline-block; transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .2, 1); }
+/* Tiles that rise in as they're scrolled to, and a caret while a line types (site.js adds the classes). */
+.rv { opacity: 0; transform: translateY(14px); transition: opacity .6s ease var(--rv, 0ms), transform .6s cubic-bezier(.2, .8, .2, 1) var(--rv, 0ms); }
+.rv.on { opacity: 1; transform: none; }
+blockquote.typing::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -.12em; background: var(--neon); animation: caret .8s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } .pour-wait h1 em { opacity: 1; transform: none; } .pr-hero h1 em, .rv { transition: none; } }
 
 /* The live phone (live.js, site/teams/live/): the real app drawn over a phone's stage, with a dot where it taps.
    The pictures it replaces go once it is up. */
@@ -674,3 +684,5 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .calc .listcard .cellar { --cols: 15; --cols-m: 15; }
 .calc .listcard .cellar-grid { gap: 8px 6px; }
 .calc .listcard .cellar-cap { font-size: 15px; }
+/* On a phone the bottle caption runs to three lines rather than being cut short. */
+@media (max-width: 620px) { .cellar-cap { height: 4.2em; -webkit-line-clamp: 3; } }

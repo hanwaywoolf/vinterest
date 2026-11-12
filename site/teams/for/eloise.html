@@ -60,13 +60,15 @@
 .pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
 .pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
 @media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
-@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
+/* One column: the bottles sit between the lead and the buttons, and the headline is a little larger. */
+@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 0; } .pr-hero .wrap > div:first-child { display: contents; } .pr-hero .cellar { justify-self: start; order: 1; margin-top: 28px; } .pr-hero .cta { order: 2; } .pr-hero h1 { font-size: clamp(28px, 9.4vw, 52px); } }
 .pr-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-2); margin-top: 16px; gap: 2px; }
 .pr-bar i { display: block; background: var(--k); flex: 0 0 0%; transition: flex-basis .45s cubic-bezier(.2, .8, .2, 1); min-width: 0; }
 .pr-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .pr-sum span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
 @media (prefers-reduced-motion: reduce) { .pr-bar i { transition: none; } }
 </style>
+<noscript><style>.pour-wait h1 em { opacity: 1; transform: none; }</style></noscript>
 </head>
 <body>
 
@@ -77,7 +79,7 @@
   </div>
 </header>
 
-<section class="pr-hero">
+<section class="pr-hero pour-wait">
   <div class="wrap">
     <div>
     <div class="pr-for"><span>Prepared for</span><img src="/img/for/eloise.svg?v=%%IMG_V%%" alt="Eloise, Toronto"></div>
@@ -85,7 +87,7 @@
     <p class="lead">More than eight in ten of your wines are bottle only, so they sell when someone on the floor can say why. Here's what your list says, what knowing it could be worth, and a working demo built from it.</p>
     <div class="cta"><a class="btn primary" data-demo href="https://eloise.vinterest.team/demo/?view=console" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
     </div>
-    <div class="cellar" data-cellar="elList" data-sym="$" data-top="150" data-cards="/for/eloise.cards.json?v=%%IMG_V%%" data-cards-demo="https://eloise.vinterest.team/demo/?view=console"></div>
+    <div class="cellar" data-pour data-cellar="elList" data-sym="$" data-top="150" data-cards="/for/eloise.cards.json?v=%%IMG_V%%" data-cards-demo="https://eloise.vinterest.team/demo/?view=console"></div>
   </div>
 </section>
 <script type="application/json" id="elList">[["Feudi di San Gregorio, Ros'Aura 2024",70,0,"p"],["Travignoli, Chianti Rùfina 2023",70,0,"r"],["Cocci Grifoni, Rosso Piceno 2023",70,0,"r"],["Piattelli Vineyards, Alto Molino Malbec 2025",70,0,"r"],["Serenissima, Prosecco Millesimato",75,16,"s"],["Domaine Montirius, La Muse Papilles, Côtes du Rhône Rosé 2023",75,0,"p"],["Two Sisters, Margo Rosé 2023",75,0,"p"],["Antonutti, Pinot Grigio Ramato 2024",75,0,"w"],["Tiefenbrunner, Pinot Grigio 2025",75,15,"w"],["Dissegna, Pinot Nero 2025",75,15,"r"],["Two Sisters, Riesling 2023",79,0,"w"],["Antonutti, Sauvignon Blanc 2024",80,0,"w"],["Feudi di San Gregorio, Greco di Tufo 2023",80,0,"w"],["Tiberio, Trebbiano d'Abruzzo 2023",83,0,"w"],["St. John, Beausoleil Rosé, Côtes de Thau IGP 2024",84,16,"p"],["Tessari, Grisela, Soave Classico 2023",84,16,"w"],["Nautilus, Sauvignon Blanc 2024",84,16,"w"],["Château Camino Salva, Haut-Médoc 2020",84,16,"r"],["Sette Ponti, Rosso di Orma 2023",87,0,"r"],["Scarpetta, Barbera del Monferrato 2023",91,17,"r"],["Pardevalles, Albarín Blanco 2025",94,18,"w"],["Cordella, Rosso di Montalcino 2024",95,0,"r"],["Antonella Corda, Vermentino di Sardegna 2024",98,0,"w"],["Antonella Corda, Cannonau di Sardegna 2022",98,0,"r"],["Serra & Barceló, Aucalà, Terra Alta 2021",100,0,"w"],["Two Sisters, Eleventh Post 2019",103,0,"r"],["Vietti, Roero Arneis 2024",104,0,"w"],["Pardas, Rupestris Xarel-lo 2023",109,0,"w"],["Pewsey Vale, Riesling 2023",109,0,"w"],["Domaine des Hâtes, Chablis 2024",110,23,"w"],["Tenuta Santomè, Tai Bianco Parcel #368 2017",110,0,"w"],["Domaine M & C Lapierre, Château Cambon 2023",120,23,"r"],["Château Nairac, Esquisse de Nairac, Sauternes 2006",0,16,"d"],["Tarlant, Brut Réserve",125,0,"s"],["Ottella, Lugana Le Creete 2023",125,0,"w"],["Two Sisters, Cabernet Franc 2020",125,0,"r"],["Ca' del Bosco, Franciacorta Cuvée Prestige Brut",126,0,"s"],["Manni Nössing, Grüner Veltliner 2023",131,0,"w"],["Stratus, Syrah 2020",134,0,"r"],["André Chemin, Brut Premier Cru",140,0,"s"],["André Chemin, Brut Rosé",142,0,"s"],["Produttori del Barbaresco, Barbaresco 2022",145,0,"r"],["Jean-Luc Colombo, La Belle de Mai, Saint-Péray 2023",148,0,"w"],["Olivier Leflaive, Bourgogne Les Sétilles 2022",150,0,"w"],["Fontodi, Chianti Classico 2022",150,0,"r"],["Domaine Huet, Vouvray Le Haut-Lieu Sec 2023",152,0,"w"],["Fedellos do Couto, As Xaras 2022",153,0,"r"],["Maria Donata Bianchi, Pigato 2023",157,0,"w"],["Masciarelli, Marina Cvetic Montepulciano d'Abruzzo 2021",160,0,"r"],["Pascal Jolivet, Sancerre 2024",163,0,"w"],["Domaine Roger Perrin, Châteauneuf-du-Pape 2022",163,0,"r"],["Frecciarossa, Giorgio Odero Pinot Nero 2016",163,0,"r"],["Lis Neris, Jurosa Chardonnay 2021",169,0,"w"],["Envínate, Lousas Viña de Aldea 2022",173,0,"r"],["Château Tour Sieujean, Pauillac 2018",174,0,"r"],["Borgogno, No Name 2023",174,0,"r"],["Château La Haye, Fief de la Haye 2020",178,0,"r"],["Château Le Crock, Saint-Estèphe 2019",180,0,"r"],["Giorgi, Buttafuoco Storico 2018",181,0,"r"],["Cordella, Brunello di Montalcino 2018",181,0,"r"],["Envínate, La Santa de Úrsula 2022",196,0,"r"],["Bollinger, Special Cuvée",215,0,"s"],["Château La Fleur Pourret, Saint-Émilion Grand Cru 2018",217,0,"r"],["Jean-Luc Colombo, Cornas Terres Brûlées 2019",218,0,"r"],["Pio Cesare, Barolo 2021",230,0,"r"],["Sokol Blosser, Orchard Block Pinot Noir 2021",249,0,"r"],["Château Grand-Puy Ducasse, Pauillac 2020",257,0,"r"],["Violot-Guillemard, Pommard 2023",263,0,"r"],["Serradenari, Barolo 2020",287,0,"r"],["Olivier Leflaive, Volnay Premier Cru Clos des Angles 2018",322,0,"r"],["Crown Point, Cabernet Sauvignon 2016",460,0,"r"],["Vietti, Barolo Monvigliero 2020",620,0,"r"],["Fontodi, Flaccianello della Pieve 2021",737,0,"r",1],["Valdicava, Brunello di Montalcino Riserva Madonna del Piano 2010",820,0,"r"],["Staglin Family, Cabernet Sauvignon 2014",930,0,"r"],["Paul Jaboulet Aîné, Hermitage La Chapelle 2018",1187,0,"r",1]]</script>
