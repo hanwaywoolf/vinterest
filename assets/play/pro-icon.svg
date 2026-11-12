@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<defs>
+ <radialGradient id="grape" cx="0.36" cy="0.34" r="0.7"><stop offset="0" stop-color="#DA93A3"/><stop offset="0.45" stop-color="#C85E77"/><stop offset="1" stop-color="#BD4E68"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9B5E00"/><stop offset="1" stop-color="#D9A03A"/></linearGradient>
+ <style>@font-face{font-family:P;src:local('Poppins ExtraBold') format('woff2');font-weight:800}</style>
+</defs>
+<rect width="512" height="512" fill="#8B1A2F"/>
+<g transform="translate(256 205) scale(0.8) translate(-255.5 -255)">
+ <path d="M114 113 H212 L255.5 298 L299.5 113 H397.5 L255.5 397 Z" fill="#FFFFFF"/>
+ <circle cx="255.5" cy="137.5" r="37.5" fill="url(#grape)"/><circle cx="210" cy="225" r="37" fill="url(#grape)"/><circle cx="301" cy="225" r="37" fill="url(#grape)"/>
+</g>
+<rect x="136" y="372" width="240" height="74" rx="37" fill="url(#gold)"/>
+<text x="256" y="425" text-anchor="middle" font-family="P" font-weight="800" font-size="46" letter-spacing="6" fill="#FFFFFF">PRO</text>
+</svg>
