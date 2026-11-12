@@ -50,15 +50,16 @@ test('every device-storage write reaches Store subscribers; session handoffs and
   expect(out.seen).toEqual(['vinterest_wines', 'vinterest_favorites', 'vinterest_xp_v3', 'vinterest_script_length',
     'vinterest_scan_count', 'vinterest_gen_article_x1_done', 'vinterest_wineDNA_unlock_seen', 'vinterest_test_cache']);
   expect(out).toMatchObject({ fav: true, handoff: true, quiz: { mode: 'practice' }, scans: 1, read: true, bad: 'fallback' });
-  // Blocked storage (a private window, a full quota) reads as empty and writes report failure
-  // instead of throwing into a screen.
+  // A full device never throws into a screen, and what wouldn't fit is kept for the visit: it reads back, Store.full()
+  // says so, and it's gone once removed (or on the next load).
   const blocked = await page.evaluate(() => {
     const real = Storage.prototype.setItem;
     Storage.prototype.setItem = () => { throw new Error('QuotaExceededError'); };
-    const r = { set: Store.set('vinterest_x', '1'), fav: (() => { try { Favorites.toggle({ name: 'Y', vintage: 1 }); return 'ok'; } catch (e) { return 'threw'; } })() };
+    const r = { set: Store.set('vinterest_x', '1'), back: Store.get('vinterest_x'), full: Store.full(), kept: localStorage.getItem('vinterest_x'), fav: (() => { try { Favorites.toggle({ name: 'Y', vintage: 1 }); return 'ok'; } catch (e) { return 'threw'; } })() };
     Storage.prototype.setItem = real;
+    Store.remove('vinterest_x'); Store.remove('vinterest_favorites'); r.after = Store.get('vinterest_x'); r.fullAfter = Store.full();
     return r;
   });
-  expect(blocked).toEqual({ set: false, fav: 'ok' });
+  expect(blocked).toEqual({ set: true, back: '1', full: true, kept: null, fav: 'ok', after: null, fullAfter: false });
   expect(errors).toEqual([]);
 });

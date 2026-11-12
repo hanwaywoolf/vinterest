@@ -67,6 +67,22 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 // The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
 // (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
 // with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
+// A browser already holding the consumer app's data has little room left on this address. The venue and team fit; the
+// sales, written last, once didn't, and Sales Insights said "No sales yet" with no word of why.
+test('a nearly full browser still opens The Princess Royal with its sales', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=sample`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  // Fill the device until about 2.2MB is left: enough for the venue and the team, not for the sales as well.
+  await page.evaluate(() => { localStorage.clear(); const chunk = 'x'.repeat(100000); let i = 0; try { for (;; i++) localStorage.setItem('vinterest_fill_' + i, chunk); } catch (e) {} for (let k = 0; k < 11; k++) localStorage.removeItem('vinterest_fill_' + (i - 1 - k)); });
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('console-nav-sales')).toBeVisible();
+  const st = await page.evaluate(() => ({ rows: (TeamSales.get().rows || []).length, held: Store.full(), wines: TeamData.wines().length, people: TeamLearn.people().length }));
+  expect(st.wines).toBeGreaterThan(100); expect(st.people).toBe(7);
+  expect(st.held).toBe(true);                                                                   // the test really did run out of room
+  expect(st.rows).toBeGreaterThan(1000);
+});
+
 test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

@@ -11,14 +11,28 @@ const Store = {
   _subs:new Set(),
   _area(session){ try{ return session?window.sessionStorage:window.localStorage; }catch(e){ return null; } },
 
-  get(key,{session=false}={}){ try{ const s=this._area(session); return s?s.getItem(key):null; }catch(e){ return null; } },
+  /* What the device had no space left for, kept for this visit: a value that wouldn't fit is read back from here, so
+     the screen that wrote it still works, and it's gone on the next load (when its owner writes it again or does
+     without). The Princess Royal's demo once opened with no sales in a browser already holding the consumer app's
+     data: its venue and team fitted, the sales, written last, didn't, and the failure was silent. */
+  _held:new Map(),
+  get(key,{session=false}={}){ if(!session&&this._held.has(key)) return this._held.get(key); try{ const s=this._area(session); return s?s.getItem(key):null; }catch(e){ return null; } },
   set(key,value,{session=false}={}){
     if(value==null) return this.remove(key,{session});
-    try{ const s=this._area(session); if(!s) return false; s.setItem(key,String(value)); }catch(e){ return false; }
+    const s=this._area(session); if(!s) return false; value=String(value);
+    try{ s.setItem(key,value); if(!session) this._held.delete(key); }
+    catch(e){
+      if(session) return false;
+      // Full: the old value goes first (it's stale now, and its space may be all the new one needs), then memory.
+      try{ s.removeItem(key); s.setItem(key,value); this._held.delete(key); }catch(e2){ this._held.set(key,value); }
+    }
     if(!session) this._emit(key);
     return true;
   },
+  /* True while a value is only in memory because the device is full. */
+  full(){ return this._held.size>0; },
   remove(key,{session=false}={}){
+    if(!session) this._held.delete(key);
     try{ const s=this._area(session); if(s) s.removeItem(key); }catch(e){ return false; }
     if(!session) this._emit(key);
     return true;
@@ -31,6 +45,7 @@ const Store = {
   /* Every device-storage key starting with `prefix`. */
   keys(prefix='',{session=false}={}){
     const out=[]; try{ const s=this._area(session); if(!s) return out; for(let i=0;i<s.length;i++){ const k=s.key(i); if(k&&k.startsWith(prefix)) out.push(k); } }catch(e){}
+    if(!session) this._held.forEach((v,k)=>{ if(k.startsWith(prefix)&&!out.includes(k)) out.push(k); });
     return out;
   },
 
