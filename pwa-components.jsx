@@ -260,7 +260,7 @@ function ProGate({feature,onClose}){
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
     'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A rating for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
     'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
-    'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Unlimited label scans, and wine list scanning','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
+    'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Wine list scanning, and more scans each week','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
   };
   const f=FEAT[feature]||FEAT['wine-list'];
@@ -297,7 +297,7 @@ function ProGate({feature,onClose}){
           <div onClick={()=>{Entitlement.startPro();onClose();}}
             style={{background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`,marginTop:2}}>
             <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
-            <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
+            <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£3.99/month · Cancel anytime</div>
           </div>}
           <div style={{display:'flex',justifyContent:'center',gap:18,paddingBottom:4}}>
             <span onClick={onClose} style={{fontSize:16,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Maybe later</span>

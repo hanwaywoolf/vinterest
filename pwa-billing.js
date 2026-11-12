@@ -65,7 +65,7 @@ const Billing = {
   },
 
   /* What's for sale, from the store (so the price is in the person's own currency):
-     [{pkg, label:'Monthly'|'Yearly'|…, price:'£4.99', per:'month'|'year'|''}], or null. */
+     [{pkg, label:'Monthly'|'Yearly'|…, price:'£3.99', per:'month'|'year'|''}], or null. */
   async offers(){
     try{
       await this._ready();
