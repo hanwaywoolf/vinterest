@@ -345,6 +345,11 @@ test('on a phone the headline does not wait for a scroll to the bottles', async 
   await page.goto(BASE + '/for/eloise');
   await expect(page.locator('.pr-hero')).not.toHaveClass(/pour-wait/);
   await expect(page.locator('.pr-hero h1 em')).toHaveCSS('opacity', '1');
+  // One column: headline, lead, the bottles, then the buttons; the headline a touch larger than the desktop minimum.
+  const ys = await page.evaluate(() => ['.pr-hero .lead', '.pr-hero .cellar', '.pr-hero .cta'].map((q) => document.querySelector(q).getBoundingClientRect().top));
+  expect(ys[0]).toBeLessThan(ys[1]); expect(ys[1]).toBeLessThan(ys[2]);
+  expect(parseFloat(await page.locator('.pr-hero h1').evaluate((h) => getComputedStyle(h).fontSize))).toBeGreaterThan(35);
+  expect(await page.locator('.pr-hero h1 em').evaluate((e) => e.getBoundingClientRect().right <= innerWidth - 16)).toBe(true);
   await page.locator('.cellar-grid').scrollIntoViewIfNeeded();
   await expect(page.locator('.cellar')).toHaveAttribute('data-mode', 'bottle', { timeout: 15000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

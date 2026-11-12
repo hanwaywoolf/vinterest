@@ -60,7 +60,8 @@
 .pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
 .pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
 @media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
-@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
+/* One column: the bottles sit between the lead and the buttons, and the headline is a little larger. */
+@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 0; } .pr-hero .wrap > div:first-child { display: contents; } .pr-hero .cellar { justify-self: start; order: 1; margin-top: 28px; } .pr-hero .cta { order: 2; } .pr-hero h1 { font-size: clamp(28px, 9.4vw, 52px); } }
 .pr-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--bg-2); margin-top: 16px; gap: 2px; }
 .pr-bar i { display: block; background: var(--k); flex: 0 0 0%; transition: flex-basis .45s cubic-bezier(.2, .8, .2, 1); min-width: 0; }
 .pr-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; }
