@@ -94,7 +94,11 @@
     bottles.forEach((b, i) => b.classList.toggle('off', !MODES[m].has(data[i])));
     cap.textContent = MODES[m].cap(count(m)); el.dataset.mode = m;
   };
-  const stop = () => { timers.forEach(clearTimeout); timers = []; };
+  // With data-pour, the bottles arrive one at a time, slowly at first and then faster, the caption counting them in,
+  // and the headline's second line (hidden by .pour-wait on an ancestor) comes up once the last has landed.
+  const pour = el.hasAttribute('data-pour'), wait = el.closest('.pour-wait');
+  const landed = () => { if (wait) wait.classList.remove('pour-wait'); el.classList.remove('pouring'); if (!held) pick.textContent = HINT; };
+  const stop = () => { timers.forEach(clearTimeout); timers = []; if (pour) { landed(); el.classList.add('ready'); } };
   const show = (b) => {
     if (held) held.classList.remove('pick'); held = b || null;
     if (!b) { pick.textContent = HINT; return; }
@@ -129,13 +133,32 @@
   if (el.dataset.cards) grid.addEventListener('click', (e) => { if (e.target.dataset.i) { stop(); card(+e.target.dataset.i); } });
   grid.addEventListener('pointerleave', () => show(null));
   set('all'); show(null);
+  let started = false;
+  // Where the bottles sit below the headline (a phone), the second line doesn't wait for a scroll.
+  if (wait) setTimeout(() => { if (!started) wait.classList.remove('pour-wait'); }, 1400);
   const play = () => {
-    el.classList.add('in');
-    if (still) { el.classList.add('ready'); set('bottle'); return; }
+    started = true;
+    if (still) { el.classList.add('in', 'ready'); landed(); set('bottle'); return; }
     const k = +el.dataset.speed || 1, after = (ms, fn) => timers.push(setTimeout(fn, ms / k));
-    setTimeout(() => el.classList.add('ready'), (data.length * 9 + 600) / k);
-    after(data.length * 9 + 1500, () => set('glass'));
-    after(data.length * 9 + 4700, () => set('bottle'));
+    if (!pour) {
+      el.classList.add('in');
+      setTimeout(() => el.classList.add('ready'), (data.length * 9 + 600) / k);
+      after(data.length * 9 + 1500, () => set('glass'));
+      after(data.length * 9 + 4700, () => set('bottle'));
+      return;
+    }
+    // Each gap is a tenth shorter than the last, down to a quick patter: 76 bottles take about three seconds.
+    let t = 700, gap = 280; const at = bottles.map(() => { const v = t; t += gap; gap = Math.max(16, gap * 0.9); return v; });
+    bottles.forEach((b, i) => b.style.setProperty('--d', `${Math.round(at[i] / k)}ms`));
+    // The headline waits only where the whole pour can be watched beside it.
+    if (wait && grid.getBoundingClientRect().bottom > window.innerHeight) wait.classList.remove('pour-wait');
+    el.classList.add('pouring', 'in'); cap.textContent = ''; pick.textContent = '';
+    at.forEach((ms, i) => after(ms, () => { cap.textContent = `${i + 1} ${i ? 'wines' : 'wine'}`; }));
+    const end = at[at.length - 1];
+    after(end + 500, () => { cap.textContent = MODES.all.cap(data.length); landed(); el.classList.add('ready'); });
+    after(end + 1700, () => set('bottle'));
+    // Then the dearest bottle nobody can taste first lifts and names itself, as a hint that each one opens.
+    after(end + 3600, () => { if (held || el.dataset.mode !== 'bottle') return; for (let i = data.length - 1; i >= 0; i--) if (!data[i][2]) { show(bottles[i]); break; } });
   };
   if (!('IntersectionObserver' in window)) { play(); return; }
   const io = new IntersectionObserver((es) => { if (es.some((x) => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.35 });
@@ -208,4 +231,54 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-li
   });
   // Scrolled away mid-table, it pauses instead of talking to nobody.
   if ('IntersectionObserver' in window) new IntersectionObserver((es) => { if (!es[0].isIntersecting && el.classList.contains('playing')) btn.click(); }, { threshold: 0 }).observe(el);
+})();
+
+// Numbers that count up as they come into view: the figure in each fact tile (.pr-fact b) and anything marked
+// data-count. Only the first number in the text moves ("14 of 17" counts to 14); a figure of 3 or less stays put.
+// The tiles themselves rise in one after another (.rv, then .on). Reduced motion, or no script, shows everything.
+(function () {
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still || !('IntersectionObserver' in window)) return;
+  const k = +document.documentElement.dataset.speed || 1;
+  const nums = Array.from(document.querySelectorAll('.pr-fact b, [data-count]')).map((b) => {
+    const m = /^(\D*?)(\d[\d,]*)(.*)$/.exec(b.textContent); if (!m) return null;
+    const to = +m[2].replace(/,/g, ''); if (!(to > 3)) return null;
+    b.style.fontVariantNumeric = 'tabular-nums';
+    return { b, pre: m[1], post: m[3], to, comma: m[2].includes(',') };
+  }).filter(Boolean);
+  const fmt = (n, c) => (c ? n.toLocaleString('en-US') : String(n));
+  const run = (x) => {
+    const t0 = performance.now(), ms = 1100 / k;
+    const step = (now) => { const p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3); x.b.textContent = x.pre + fmt(Math.round(x.to * e), x.comma) + x.post; if (p < 1) requestAnimationFrame(step); };
+    x.b.textContent = x.pre + '0' + x.post; requestAnimationFrame(step);
+  };
+  const rise = Array.from(document.querySelectorAll('.pr-fact, .pr-dish, .pr-in > div'));
+  rise.forEach((r) => { r.classList.add('rv'); r.style.setProperty('--rv', `${Array.from(r.parentNode.children).indexOf(r) * 90 / k}ms`); });
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return; io.unobserve(e.target); e.target.classList.add('on');
+    const x = nums.find((n) => e.target === n.b || e.target.contains(n.b)); if (x) setTimeout(() => run(x), parseFloat(e.target.style.getPropertyValue('--rv')) || 0);
+  }), { threshold: 0.3 });
+  rise.forEach((r) => io.observe(r));
+  nums.filter((n) => !rise.some((r) => r.contains(n.b))).forEach((n) => io.observe(n.b));
+})();
+
+// What to say at the table, typed as if it were being said: each .pr-dish quote writes itself when its card comes
+// into view, one card after another. The card keeps its full height while it types, and a screen reader gets the
+// whole line at once. Reduced motion, or no script, shows the lines as written.
+(function () {
+  const quotes = Array.from(document.querySelectorAll('.pr-dish blockquote'));
+  if (!quotes.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+  const k = +document.documentElement.dataset.speed || 1; let chain = Promise.resolve();
+  const type = (q) => new Promise((done) => {
+    const full = q.dataset.full; let n = 0; q.classList.add('typing');
+    const tick = () => { n = Math.min(full.length, n + 2); q.firstChild.textContent = full.slice(0, n); if (n < full.length) setTimeout(tick, 22 / k); else { q.classList.remove('typing'); done(); } };
+    tick();
+  });
+  quotes.forEach((q) => {
+    q.dataset.full = q.textContent; q.style.minHeight = q.getBoundingClientRect().height + 'px';
+    q.setAttribute('aria-label', q.textContent); q.textContent = ''; q.appendChild(document.createTextNode(''));
+  });
+  window.addEventListener('resize', () => quotes.forEach((q) => { q.style.minHeight = ''; }), { once: true });
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (!e.isIntersecting) return; io.unobserve(e.target); chain = chain.then(() => type(e.target)); }), { threshold: 0.6 });
+  quotes.forEach((q) => io.observe(q));
 })();
