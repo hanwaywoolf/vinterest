@@ -259,3 +259,27 @@ test('the Play upload says what is wrong when its secret is not a service accoun
   await expect(accessToken({ project_info: { project_id: 'x' }, client: [] })).rejects.toThrow(/not a service account key/);
   await expect(accessToken(null)).rejects.toThrow(/PLAY_SERVICE_ACCOUNT_JSON/);
 });
+
+// In the apps the page runs edge to edge (Android 16 enforces it), so the strip behind the status bar is
+// the shell's top padding: it carries on the screen's header (the glow on the dark stage), never the
+// shell's light background, which showed as a white bar above a dark Home.
+test('the strip behind the status bar carries on the header, dark or light', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1' });
+  await stubNetwork(context);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 40, topMax: 40 } });
+  await page.goto('http://localhost:4173/#home');
+  const strip = page.getByTestId('status-strip');
+  await expect.poll(() => strip.evaluate((s) => s.style.background)).toMatch(/^linear-gradient/);
+  expect(await strip.evaluate((s) => s.offsetHeight)).toBe(40);
+  // The middle is the glow over the dark stage (reddish, dark), the sides the stage itself.
+  const [r, g, b] = (await strip.evaluate((s) => s.style.background.match(/rgb\(([^)]*)\) 50%/)[1])).split(',').map(Number);
+  expect(r).toBeGreaterThan(g + 20); expect(r).toBeLessThan(140);
+  expect(await strip.evaluate((s) => s.style.background)).toContain('rgb(15, 15, 15))');
+  // Paper white: the strip turns light with the header.
+  await page.evaluate(() => { Settings.setTheme && Settings.setTheme('light'); });
+  await page.goto('http://localhost:4173/#learn'); await page.goto('http://localhost:4173/#home');
+  await expect.poll(() => strip.evaluate((s) => { const m = s.style.background.match(/rgb\(([^)]*)\) 50%/); return m ? Number(m[1].split(',')[0]) : 0; })).toBeGreaterThan(200);
+});
