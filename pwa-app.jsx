@@ -138,24 +138,12 @@ function App(){
       const c=at(window.innerHeight-2);
       if(c){ document.documentElement.style.backgroundColor=c; document.body.style.backgroundColor=c; }
       // In the apps the page runs edge to edge (Android 16 enforces it, and setting the status bar's own
-      // colour no longer works there), so the strip behind the clock is the shell's top padding. Paint it
-      // the colour the screen's header starts with: the header's glow laid over its background, fading
-      // to the sides as the glow does, rather than the shell's light background (a white bar over a
-      // dark screen). The status bar's icons then follow that colour.
-      const strip=stripRef.current, pad=strip?strip.offsetHeight:0;
-      let topCol='';
-      if(strip&&pad>0){
-        let paint='';
-        for(let el=document.elementFromPoint(window.innerWidth/2,pad+1);el&&el!==document.documentElement;el=el.parentElement){
-          const cs=getComputedStyle(el), bg=cs.backgroundColor, solid=bg&&bg!=='transparent'&&!/,\s*0\)$/.test(bg);
-          const glow=cs.backgroundImage&&cs.backgroundImage!=='none'?(cs.backgroundImage.match(/rgba?\([^)]*\)/)||[])[0]:'';
-          if(glow&&solid){ const mid=_stripMix(glow,bg,0.84), q=_stripMix(glow,bg,0.47), edge=_stripMix(glow,bg,0); paint=`linear-gradient(to right, ${edge}, ${q} 25%, ${mid} 50%, ${q} 75%, ${edge})`; topCol=mid; break; }
-          if(solid){ paint=bg; topCol=bg; break; }
-        }
-        strip.style.background=paint;
-      }
+      // colour no longer works there), so the strip behind the clock is the shell's top padding. It's
+      // brand crimson, as Chrome draws the web app's bar from its theme-color, never the shell's light
+      // background (a white bar over a dark screen); the status bar's icons then turn white for it.
+      const strip=stripRef.current, topCol=strip&&strip.offsetHeight>0?C.cr:'';
       // The phone's status bar takes the colour at the top of the screen, with icons to suit.
-      const top=topCol||at(2)||c; if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
+      const top=topCol?'rgb('+[1,3,5].map(k=>parseInt(topCol.slice(k,k+2),16)).join(',')+')':(at(2)||c); if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
         Platform.statusBar(hex,(0.299*r+0.587*g+0.114*b)<128); }
     }); };
     sync(); const t=setTimeout(sync,350);
@@ -188,8 +176,8 @@ function App(){
 
   return(
     <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100%',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
-      {/* The strip behind the phone's status bar: painted by the effect above to carry on the screen's header. */}
-      <div ref={stripRef} aria-hidden="true" data-testid="status-strip" style={{position:'absolute',top:0,left:0,right:0,height:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)',pointerEvents:'none'}}/>
+      {/* The strip behind the phone's status bar, in brand crimson as the web app's bar is (see the effect above). */}
+      <div ref={stripRef} aria-hidden="true" data-testid="status-strip" style={{position:'absolute',top:0,left:0,right:0,height:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)',background:C.cr,pointerEvents:'none'}}/>
       <DeckTheme.Provider value={theme}><div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}
@@ -372,12 +360,3 @@ function DiscoverScreen({nav,back}){
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-
-/* A glow colour (rgba) laid over a solid background at `k` of its strength, as an rgb() string. Along
-   a header's top edge its glow (radial-gradient(ellipse at 50% -20%, glow, transparent 70%)) measures
-   about 0.84 of its strength in the middle, 0.47 a quarter of the way in and nothing at the sides. */
-function _stripMix(glow,bg,k){
-  const g=(glow.match(/[\d.]+/g)||[]).map(Number), b=(bg.match(/[\d.]+/g)||[]).map(Number);
-  const a=(g.length>3?g[3]:1)*k;
-  return 'rgb('+[0,1,2].map(i=>Math.round((g[i]||0)*a+(b[i]||0)*(1-a))).join(',')+')';
-}
