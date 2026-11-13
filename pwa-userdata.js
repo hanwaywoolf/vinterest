@@ -33,8 +33,30 @@ const Entitlement = {
   /* The Pro sheet's "Start Pro" (no real purchases yet). Screens listening for vinterest:pro update. */
   startPro(){ Store.set(this.PRO_KEY,'1'); try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} },
   scanCount(){ return parseInt(Store.get(this.SCANS_KEY)||'0'); },
-  addScan(){ Store.set(this.SCANS_KEY,this.scanCount()+1); },
-  atScanLimit(){ return !this.isPro()&&this.scanCount()>=this.FREE_SCANS; },
+  /* The free plan's label scans: FREE_SCANS a calendar month (UTC). Signed in, the server's count
+     (/me's month, metered by the Worker's use_quota_month, which refuses the next scan with 429
+     scan_limit); signed out, this phone's own count (vinterest_scan_month, device-only). */
+  MONTH_KEY:'vinterest_scan_month',
+  _month(){ return new Date().toISOString().slice(0,7); },
+  _deviceMonth(){ const v=Store.getJSON(this.MONTH_KEY,null); return v&&v.m===this._month()?(v.n||0):0; },
+  scansThisMonth(){
+    if(typeof Account!=='undefined'&&Account.signedIn()){
+      const m=(Account.me()||{}).month;
+      return m&&m.start&&m.start.slice(0,7)===this._month()&&m.used?(m.used.label_scan||0):0;
+    }
+    return this._deviceMonth();
+  },
+  scansLeft(){ return this.isPro()?Infinity:Math.max(0,this.FREE_SCANS-this.scansThisMonth()); },
+  // The month the free scans come back, as a name ("December").
+  scansBackOn(){ const d=new Date(); return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1)).toLocaleString('en-GB',{month:'long',timeZone:'UTC'}); },
+  addScan(){
+    Store.set(this.SCANS_KEY,this.scanCount()+1);
+    Store.setJSON(this.MONTH_KEY,{m:this._month(),n:this._deviceMonth()+1});
+    if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{});
+  },
+  // The server said the month is used up (another phone, a reinstall): this phone agrees from now on.
+  noteScanLimit(){ Store.setJSON(this.MONTH_KEY,{m:this._month(),n:this.FREE_SCANS}); if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{}); },
+  atScanLimit(){ return this.scansLeft()<=0; },
   /* What wine list scanning still needs: null (go ahead), 'signin' or 'pro'. The Worker checks this
      itself (list_scan is PRO_ONLY in _worker.js) and never trusts the device flag, so with sign-in
      configured a signed-out phone needs to sign in even after "Start Pro", and a signed-in one needs

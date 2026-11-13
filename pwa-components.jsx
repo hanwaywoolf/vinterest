@@ -196,7 +196,7 @@ function SideNav({active,nav,showPro,xpBadge,onXpClick}){
   const learnActive=['learn','quiz','article','gen-article','guide','mastery-map'].includes(active);
   const profileActive=active==='profile';
   const isPro=Entitlement.isPro();
-  const atLimit=!isPro&&Entitlement.scanCount()>=10;
+  const atLimit=Entitlement.atScanLimit();
   const lv=xpBadge?XPSystem.getLevel(xpBadge.total):null;
   const items=[
     {key:'home',   icon:'home',  label:'Home',     isActive:homeActive},
@@ -255,7 +255,8 @@ function ProBadge({style:s}){
 function ProGate({feature,onClose}){
   const FEAT={
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
-    'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
+    'unlimited-scans':{icon:'📷',title:'Keep scanning',desc:`Free includes ${Entitlement.FREE_SCANS} label scans a month. Pro scans every bottle you open.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
+    'scan-limit':{icon:'📷',title:`That's your ${Entitlement.FREE_SCANS} free scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans every bottle you open, and whole wine lists too.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
     'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A rating for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},

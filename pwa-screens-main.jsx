@@ -82,6 +82,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   // Resize to keep detail without a heavy payload: 1024px on the longest side is plenty for a label,
   // but a whole wine list in 1024px leaves its small print unreadable, so lists get 1600px.
   function processSource(src,w,h){
+    // The free plan's 10 scans a month (Entitlement.scansLeft): the Pro sheet, before anything is sent.
+    if(mode!=='list'&&!onboarding&&Entitlement.atScanLimit()){ if(showPro) showPro('scan-limit'); return; }
     const maxDim=mode==='list'?1600:1024;
     const scale=Math.min(1,maxDim/Math.max(w,h));
     const canvas=document.createElement('canvas');
@@ -132,6 +134,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); ScanFlow.unlockLearning(wine); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
+      // The server counted this month's scans as used (another phone, a reinstall): say so, not "try again".
+      if(e&&e.code==='scan_limit'){ Entitlement.noteScanLimit(); if(showPro) showPro('scan-limit'); back(); return; }
       Handoff.openWine({demo:true,reason:e.message});
       nav('identified');
       return;
@@ -226,7 +230,10 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         <div onClick={back} style={{width:38,height:38,borderRadius:19,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(8px)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
           <Icon n="back" sz={18} col="#fff"/>
         </div>
-        <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+          <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
+          {!onboarding&&mode==='bottle'&&Entitlement.scansLeft()<=5&&<span data-testid="scans-left" style={{fontSize:13,color:'rgba(255,255,255,0.8)',fontFamily:C.P,marginTop:2}}>{Entitlement.scansLeft()===0?'No free scans left this month':`${Entitlement.scansLeft()} free scan${Entitlement.scansLeft()===1?'':'s'} left this month`}</span>}
+        </div>
         {onSkip
           ?<span onClick={onSkip} style={{minWidth:38,textAlign:'right',fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer'}}>Skip</span>
           :<div style={{width:38,height:38}}/>}
