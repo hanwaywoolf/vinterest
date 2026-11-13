@@ -272,13 +272,14 @@ test('the drinking window and how sure the grape is: estimates from style, Claud
 // Finish goes Home from every place it appears (the end sheet, and the deck's last card once rated
 // or saved). It once rewound one history entry too far, onto the camera, because the story's
 // history entry was still on top when the app navigated.
-async function toDeck(context, page) {
+async function toDeck(context, page, { seed = {}, before } = {}) {
   // The way someone really gets here: Home, then the Scan button (so the app rewinds by history
   // entries, rather than replacing the entry as it does for a page opened on #camera).
   await page.setViewportSize({ width: 390, height: 844 });
   await makeDeterministic(page);
-  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1' });
+  await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', ...seed });
   await stubNetwork(context, { reveal: 'real', claudeText: (b) => b.purpose === 'label_scan' ? JSON.stringify(RIOJA) : b.purpose === 'scancard' ? JSON.stringify(GEN) : '' });
+  if (before) await before();
   await page.goto(`${BASE}/?demo=1#home`);
   await page.getByText('Scan', { exact: true }).last().click();
   await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
@@ -294,6 +295,34 @@ test('Finish on the end sheet goes Home', async ({ context, page }) => {
   await expect(page).toHaveURL(/#home/);
   await expect(root).toContainText('Up next');
 });
+// The bottle at the partner shop, on the end sheet's ways out: only when the shop's feed lists it,
+// and the same for free and Pro.
+const ARDANZA_AT = { shop: { id: 'winebuyers', name: 'Winebuyers' }, vintage: 2016, exact: { id: '1', name: '2016 CVNE, Viña Real Gran Reserva, Rioja', vintage: 2016, price: 42, pack: 1, sizeMl: 750, perBottle: 42, currency: 'GBP', url: 'https://winebuyers.com/en_GB/products/vr', image: null, seller: null }, others: [] };
+ARDANZA_AT.items = [ARDANZA_AT.exact];
+for (const [what, body] of [['lists it', ARDANZA_AT], ["doesn't list it", { items: [] }]]) {
+  test(`the end sheet shows the partner's bottle only when the shop ${what}`, async ({ context, page }) => {
+    const asked = [];
+    const root = await toDeck(context, page, { seed: { vinterest_region: 'uk' }, before: () => context.route('**/shop-match', (r) => { asked.push(1); return r.fulfill({ contentType: 'application/json', body: JSON.stringify(body) }); }) });
+    await root.getByText('90', { exact: true }).click();
+    await root.getByText('Save rating').click();
+    await expect(page.getByTestId('reveal-ways')).toContainText('Finish');
+    const card = page.getByTestId('reveal-shop');
+    if (body.items.length) {
+      await expect(card).toBeVisible();
+      await expect(card).toContainText('At Winebuyers');
+      await expect(card).toContainText('£42');
+      await expect(card.getByText('Partner', { exact: true })).toBeVisible();
+      await expect(card.getByTestId('shop-disclosure')).toBeVisible();
+      await expect(card.getByText('Buy at Winebuyers', { exact: true })).toBeVisible(); // the link itself: shop-feed.spec.js
+    } else {
+      await expect.poll(() => asked.length).toBeGreaterThan(0);
+      await expect(card).toBeHidden();
+      await expect(page.getByTestId('reveal-ways')).not.toContainText('Winebuyers');
+    }
+    // One lookup, shared by the early look-up and the card.
+    expect(asked.length).toBe(1);
+  });
+}
 async function ratedOnDeck(context, page) {
   const root = await toDeck(context, page);
   await root.getByText('Just checking the match? Skip the rating', { exact: true }).click();

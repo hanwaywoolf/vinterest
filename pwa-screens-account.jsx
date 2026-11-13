@@ -404,7 +404,8 @@ function AccountCard({showPro}){ const T=useTheme(), cr=T.lift(C.cr);
       </div>
       {pro&&me&&me.expires_at&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Pro until {_proUntil(me.expires_at)}.</div>}
       {pro&&me&&me.source==='revenuecat'&&Billing.available()&&<div><span role="button" data-testid="manage-subscription" onClick={()=>Billing.manage()} style={link}>Manage subscription</span></div>}
-      {me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
+      {!pro&&me&&me.month&&<div data-testid="scans-month" style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This month: {Entitlement.scansThisMonth()} of {Entitlement.FREE_SCANS} free label scans{Entitlement.atScanLimit()?`, back on 1 ${Entitlement.scansBackOn()}`:''}.</div>}
+      {pro&&me&&me.usage&&me.caps&&me.usage.label_scan>0&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>This week: {me.usage.label_scan} of {me.caps.label_scan} label scans.</div>}
       {promoMsg&&<div data-testid="promo-done" style={{fontSize:14,fontWeight:600,color:T.lift(C.green),fontFamily:C.P}}>{promoMsg}</div>}
       {err&&!promoOpen&&!confirmDelete&&<div role="alert" style={{fontSize:14,color:T.lift(C.cr),fontFamily:C.P}}>{err}</div>}
       {!promoOpen&&!confirmDelete&&!promoMsg&&<div><span role="button" onClick={()=>{ if(Billing.offerCodes()) offer(); else { setPromoOpen(true); setErr(''); } }} style={link}>Have a promo code?</span></div>}

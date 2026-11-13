@@ -640,6 +640,12 @@ async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
   return (await entitlementOf(env, userId)).tier;
 }
+/* The free plan's label scans are counted per calendar month (UTC), not per week: FREE_MONTHLY a
+   month, through use_quota_month (0009_monthly_scans.sql), kind "<purpose>:month". Pro keeps only the
+   weekly fair-use cap. The app shows what's left from /me's `month` and says so before the camera. */
+const FREE_MONTHLY = { label_scan: 10 };
+function monthStart(d = new Date()) { return d.toISOString().slice(0, 7) + "-01"; }
+function nextMonthName(d = new Date()) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" }); }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -659,6 +665,12 @@ async function gateAccount(request, env, purpose) {
   }
   const tier = await tierOf(env, user.id);
   if (PRO_ONLY[purpose] && tier !== "pro" && !OPEN_TO_SIGNED_IN[purpose]) return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  if (tier !== "pro" && FREE_MONTHLY[purpose]) {
+    const m = await db(env, "rpc/use_quota_month", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose + ":month", p_cap: FREE_MONTHLY[purpose] }) });
+    if (m.ok && (await m.json()) === null) {
+      return { response: json(429, { error: `You've used your ${FREE_MONTHLY[purpose]} free scans this month. They come back on 1 ${nextMonthName()}, or go Pro to keep scanning.`, code: "scan_limit" }) };
+    }
+  }
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
   if (r.ok && (await r.json()) === null) {
     return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
@@ -680,7 +692,15 @@ async function handleMe(request, env) {
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
+  // The free plan's monthly scans: used so far this month against FREE_MONTHLY.
+  let month = null;
+  if (tier !== "pro") {
+    const start = monthStart(), used = {};
+    const mr = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${start}&select=kind,count`);
+    if (mr.ok) for (const u of await mr.json()) if (/:month$/.test(u.kind)) used[u.kind.replace(/:month$/, "")] = u.count;
+    month = { start, used, caps: FREE_MONTHLY };
+  }
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier], month });
 }
 
 /* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
