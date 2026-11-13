@@ -32,6 +32,8 @@ async function stubNetwork(context, { claudeRequests = [], claudeText = () => ''
     // Google Fonts: an empty stylesheet keeps the page offline without a failed-request console error.
     return route.fulfill({ contentType: url.includes('css') ? 'text/css' : 'text/plain', body: '' });
   });
+  // The partner shop's feed (Shops.match): nothing listed unless a test routes its own answer after this.
+  await context.route('**/shop-match', (route) => route.fulfill({ contentType: 'application/json', body: '{"items":[]}' }));
   await context.route('**/claude', async (route) => {
     claudeRequests.push(JSON.parse(route.request().postData() || '{}'));
     const body = JSON.parse(route.request().postData() || '{}');
