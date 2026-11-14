@@ -38,7 +38,11 @@ const TeamData = {
      window.VINTEREST_CONSOLE ('classic' or 'preview'). */
   consoleLook(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_CONSOLE; if(o==='classic'||o==='preview') return o; }catch(e){}
     const mine=Store.get('vbiz_console_look'); if(mine==='classic'||mine==='preview') return mine;
-    return (this.get().venue||{}).console==='preview'?'preview':'classic'; },
+    return this.offersNewLook()?'preview':'classic'; },
+  /* Whether this restaurant is offered the new look: its stored details say so, or its seed's list file does (a device
+     that opened the seed before the file asked for it keeps its old copy of the details until the training changes). */
+  offersNewLook(){ const v=this.get().venue||{}; if(v.console==='preview') return true;
+    try{ return !!v.sample&&((TeamSample.list(v.sample)||{}).venue||{}).console==='preview'; }catch(e){ return false; } },
   setConsoleLook(v){ Store.set('vbiz_console_look',v==='preview'?'preview':'classic'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the

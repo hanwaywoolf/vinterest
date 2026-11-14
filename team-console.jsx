@@ -125,7 +125,7 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open,tour}){ const T
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
       <div role="button" data-testid="console-tour-start" onClick={()=>{ setPanel(null); setTouring(true); }} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Take the tour</div>
-      {(TeamData.get().venue||{}).console==='preview'&&<div role="button" data-testid="console-new-look" onClick={()=>TeamData.setConsoleLook('preview')} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Try the new look</div>}
+      {TeamData.offersNewLook()&&<div role="button" data-testid="console-new-look" onClick={()=>TeamData.setConsoleLook('preview')} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Try the new look</div>}
       {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
 </div>}
   </div>;
