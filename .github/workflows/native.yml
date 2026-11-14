@@ -11,10 +11,10 @@
 # set as Actions variables (both are public); without them the apps fetch them from the live site's
 # /config when they open (Account.loadRemoteConfig).
 name: Native apps
+# On demand only (Actions → Native apps → Run workflow): releases are the web app on Cloudflare Pages,
+# and the phone apps are built when one is wanted.
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: native-${{ github.ref }}
   cancel-in-progress: true

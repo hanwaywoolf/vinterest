@@ -24,7 +24,7 @@ Runtime variables (Settings -> Variables and secrets), for the beta sign-up:
 
 ## Database
 
-Run `supabase/migrations/0004_beta_signups.sql`, `0008_beta_platform.sql` (the iPhone/Android answer) and `0009_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
+Run `supabase/migrations/0004_beta_signups.sql`, `0010_beta_platform.sql` (the iPhone/Android answer) and `0011_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
 earlier migrations in `supabase/README.md`). The table has row-level security on and no policy for
 anyone, so only the Worker (secret key) can read or write it. `npm run test:db` proves that.
 
@@ -106,3 +106,78 @@ country, iPhone or Android and the time; replying to it replies to the person. A
 nothing, like the confirmation.
 Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
 
+
+## Vinterest Teams (vinterest.team)
+
+The teams website is `site/teams/` and builds to `site-teams-dist/` with `npm run site:teams:build`
+(`scripts/site-teams.mjs`). It is its own Cloudflare Pages project, separate from the consumer
+site above and from the app, so it can carry its own domain.
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None |
+| Build command | `npm ci && npm run site:teams:build` |
+| Build output directory | `site-teams-dist` |
+| Production branch | `main` |
+| Preview branches | All non-Production branches (Settings → Build → Branch control), so a branch's changes can be seen before they're merged |
+| Custom domain | `vinterest.team` (and `www`, redirected to it) |
+
+Setup, once: Workers & Pages → Create → Pages → Connect to Git → the vinterest repository (a second
+project on the same repository is fine) → the settings above. Then Custom domains → Set up a custom
+domain → `vinterest.team`. With the domain's DNS on Cloudflare the records are added for you;
+otherwise add the CNAME it shows at the registrar. Add `www.vinterest.team` the same way, as a custom
+domain on this project and not only a DNS record (a DNS record alone gives a 522); the site's
+Worker then sends it to the apex (Cloudflare ignores `_redirects` once a site has a `_worker.js`).
+
+Pages: `index.html` (/), `restaurants.html`, `groups.html`, `wineries.html`, `pricing.html`, each
+served without `.html`. They share `site.css`, `site.js` (the pilot form) and three parts
+filled in at build time: `_nav.html`, `_pilot.html`, `_footer.html`. A new page is a new `.html` file
+in `site/teams/`: the build picks it up, adds it to the sitemap, and `tests/teams-site.spec.js`
+should list it in `PAGES`.
+
+The project is `vinterest-teams`: production at https://vinterest-teams.pages.dev, and every push of a branch deploys a preview at `https://<branch with / as ->.vinterest-teams.pages.dev` (only with preview branches switched on, as above; without it the address answers "Deployment Not Found"). The production branch is `main`, so vinterest.team changes only when something is merged.
+
+Build variables (all optional):
+
+- The restaurant demo buttons open the teams app from the same branch as the site:
+  `https://demo.vinterest.team` from `main`, `https://<branch>.vinterest.pages.dev/team/` from any
+  other branch (from `CF_PAGES_BRANCH`, which Cloudflare sets). `TEAM_DEMO_URL` overrides it. The
+  old `DEMO_ORIGIN` variable is ignored and can be deleted.
+
+  `demo.vinterest.team` is a custom domain on the **app** project (`vinterest`), not this one: Workers
+  & Pages → vinterest → Custom domains → Set up a custom domain → `demo.vinterest.team`. The app's
+  Worker (`serveTeamDemo` in `_worker.js`) serves the team app at that address's root and seeds The
+  Larkspur on a first visit; `https://vinterest.pages.dev/` stays the consumer app.
+- `CF_ANALYTICS_TOKEN`: as for the consumer site; a separate Web Analytics site for this domain.
+- `SITE_ORIGIN`: the public address for the sitemap. Default `https://vinterest.team`.
+
+### Pilot requests
+
+Every page ends on "Sign up for a pilot" (`_pilot.html`; every pilot button links to `#pilot`): name,
+work email, business, role, city, country, type of business (restaurant, fine dining, wine bar, group,
+winery, or other with a box to say what), locations, front-of-house team, POS (Square, Toast, Clover,
+Lightspeed, Zonal, Tevalis, Epos Now, Oracle Micros Simphony, NCR Aloha, other with a box, or none),
+wines on the list and notes. `site.js` posts it to `/api/pilot`, handled by `site/teams/_worker.js`
+(copied into the build), which checks it, writes a row to Supabase's `pilot_requests` with the server
+key, then sends two emails through Resend: a confirmation to the person, and the request to us with
+reply-to set to them. The same Supabase project and Resend account as the consumer site's beta list.
+
+Once:
+
+1. Run `supabase/migrations/0008_pilot_requests.sql` in the Supabase SQL editor (or `supabase db push`).
+   The table has row-level security on and no policies, so only the server key reaches it; read the
+   requests in Table editor → `pilot_requests` (a `status` column, `new` by default, is there to mark
+   them contacted, piloting or declined).
+2. In Cloudflare → Workers & Pages → vinterest-teams → Settings → Variables and secrets, for both
+   Production and Preview:
+   - `SUPABASE_URL`: the same value as on the consumer site project.
+   - `SUPABASE_SECRET_KEY` (secret): the same server key.
+   - `RESEND_API_KEY` (secret): the same Resend key. Without it the request is still saved, with no emails.
+   - `PILOT_NOTIFY`: where requests go, a comma list (default `hello@vinterest.app`).
+   - `RESEND_FROM`: optional, default `Vinterest Teams <hello@vinterest.app>`. To send from
+     `@vinterest.team`, verify that domain in Resend first (Domains → Add, then the DNS records it
+     shows, added in Cloudflare's DNS for vinterest.team).
+3. Redeploy (Deployments → the latest → Retry) so the variables take effect.
+
+Without the Supabase pair the form answers "Pilot requests aren't open just yet" with the email
+address, and nothing else breaks.

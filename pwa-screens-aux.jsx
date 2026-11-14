@@ -573,8 +573,8 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
   // A failed read shows the retry banner and no wines: made-up wines with made-up scores would mislead.
   const wines=(data.wines&&data.wines.length>0)?data.wines:[];
   const listCurrency=data.currency||Regional.current().code||Settings.currency()||'GBP';
-  const typeColors={red:'#8B1A2F',white:'#B8963E',rosé:'#C47A8A',rose:'#C47A8A',sparkling:'#5E8FA8',orange:'#C1652B',dessert:'#8A5A2B',fortified:'#5C2A1E'};
-  const colFor=t=>typeColors[(t||'red').toLowerCase().replace('é','e')]||cr;
+  // The type's own colour, lifted on the dark stage (crimson text on a crimson wash was unreadable there).
+  const colFor=t=>T.lift(_TYPE_COLORS[(t||'red').toLowerCase().replace('é','e')]||C.cr);
   const currSym=(CURRENCY_LIST.find(c=>c.code===listCurrency)||{}).sym||'';
   // Parse tiered list prices ("GLASS:16 / 1/2LTR:33 / BOTTLE:59") into clean labeled segments.
   // Markup/value badges always compare against the BOTTLE price specifically.

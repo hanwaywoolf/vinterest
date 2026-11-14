@@ -9,6 +9,10 @@
 //   CLAUDE_EFFORT       (optional)  Claude 5 models only: low | medium | high, for every purpose
 //                                   (default: PURPOSE_EFFORT, else low)
 //   CLAUDE_THINKING     (optional)  Claude Sonnet 5.5 only: "on" lets it think (slower); default off
+//   TEAM_MODEL          (optional)  model for the staff-training app's purposes only (team_*), e.g.
+//                                   claude-opus-5-5 for its cards and pairings. Everything else stays
+//                                   on CLAUDE_MODEL, so the consumer app never changes with it.
+//                                   (default: CLAUDE_MODEL)
 //   PRICE_MODEL         (optional)  model for the premium-wine price search only
 //                                   (default: claude-sonnet-4-6, whatever CLAUDE_MODEL is: the
 //                                   search tool and its timing were tuned on it)
@@ -67,7 +71,20 @@ const CLAUDE_PURPOSE_LIMITS = {
                             // as a backstop if the model ever ignores the length instruction.
   sommelier_script: 4096,  // pwa-screens-home.jsx / pwa-screens-aux.jsx / pwa-screens-wineiq.jsx
   learn_article: 4096,     // pwa-screens-learn.jsx — generated learning article body
-  winedna_summary: 4096    // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  winedna_summary: 4096,   // pwa-screens-wineiq.jsx — Wine DNA personality summary
+  // The restaurant staff-training app (team-*.js, docs/business.md), Pro only (PRO_ONLY below):
+  team_list: 16384,        // team-data.js TeamData.readList — a wine list photo or PDF -> wines with prices and sections
+  team_menu: 8192,         // team-data.js TeamData.readMenu — a menu photo or PDF -> dishes
+  team_cards: 12288,       // team-data.js TeamData.writeCards — staff cards and questions, a few wines a call
+  team_pairings: 8192,     // team-data.js TeamData.writePairings — the list's best matches for each dish
+  team_cocktails: 12288,   // team-data.js TeamData.writeCocktailCards — cocktail cards and their questions (prompts/team-cocktail-cards.txt)
+  team_grade: 600,         // team-learn.js TeamLearn.grade — marks a typed answer against its key
+  team_vinny: 500,         // team-vinny.js TeamVinny.ask — Ask Vinny, a quick answer about the list and menu (prompts/team-vinny.txt)
+  team_guest: 700,         // team-vinny.js TeamVinny.guest — Vinny plays a guest at a table and marks the server (prompts/team-guest.txt)
+  team_fix: 6144,
+  team_review: 6144,       // team-data.js TeamData.sommelierReview — a head sommelier reads every question as the drill shows it (prompts/team-review.txt)          // team-data.js TeamData.checkQuestions — rewrites the questions that failed the publish check (prompts/team-fix.txt)
+  team_special: 4096,      // team-shift.js TeamShift.read — tonight's specials from a photo of the chef's board or a typed note, each paired from the list (prompts/team-special.txt)
+  team_dishes: 12288       // team-data.js TeamData.writeDishCards — a dish in a sentence, its likely allergens for the kitchen to confirm, changes, what guests ask (prompts/team-dish-cards.txt)
 };
 
 /* Claude 5 models take settings Sonnet 4.6 didn't need. Sonnet 5.5 thinks by default, which
@@ -77,7 +94,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -87,10 +104,61 @@ function modelOptions(model, purpose, env) {
   return { body, betas };
 }
 
+/* The staff-training app (team_*) can run on its own model, TEAM_MODEL, so its cards and pairings can be
+   written by a stronger model without the consumer app's scans, articles and Vinny changing with it. */
+// Prompt caching. A prompt marks where its unchanging part ends with a line "[[cache-above]]" (the Teams prompts in
+// prompts/team-*.txt: the instructions, the restaurant, the wine list and the menu above it, the wines, dishes or
+// questions of this one call below). The text above is sent as its own block marked for Anthropic's prompt cache, so the
+// calls of one publish or review read it back at a fraction of the input price instead of paying for it every time; the
+// marker itself never reaches the model. A prompt without it is sent exactly as it came.
+const CACHE_MARK = /\n?\[\[cache-above\]\]\n?/;
+function cacheSplit(messages) {
+  const split = (text) => {
+    const m = CACHE_MARK.exec(text); if (!m) return null;
+    const above = text.slice(0, m.index), below = text.slice(m.index + m[0].length).replace(CACHE_MARK, "\n");
+    if (!above.trim()) return below.trim() ? [{ type: "text", text: below }] : null;
+    return [{ type: "text", text: above, cache_control: { type: "ephemeral" } }, ...(below.trim() ? [{ type: "text", text: below }] : [])];
+  };
+  return messages.map((msg) => {
+    if (!msg || typeof msg !== "object") return msg;
+    if (typeof msg.content === "string") { const parts = split(msg.content); return parts ? { ...msg, content: parts } : msg; }
+    if (Array.isArray(msg.content)) {
+      let changed = false;
+      const content = msg.content.flatMap((b) => { if (b && b.type === "text" && typeof b.text === "string") { const parts = split(b.text); if (parts) { changed = true; return parts; } } return [b]; });
+      return changed ? { ...msg, content } : msg;
+    }
+    return msg;
+  });
+}
+
+// A team call marked `draft` (npm run team:write -- --teaser: a quick teaser install for a prospective restaurant)
+// is written by TEAM_DRAFT_MODEL, default Claude Sonnet 5.5, whatever TEAM_MODEL says. It can only make a call
+// cheaper, so the request may ask for it; the model itself still never comes from the request.
+const TEAM_DRAFT_DEFAULT = "claude-sonnet-5-5";
+function modelFor(purpose, env, draft) {
+  if (draft && /^team_/.test(purpose)) return env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
+  if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
+  return env.CLAUDE_MODEL || "claude-sonnet-4-6";
+}
+
+/* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
+   writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
+   could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
+const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1 };
+// The short team answers (a guest's line with its choices, Ask Vinny, a marked answer) were sized for a model that
+// doesn't think: on Opus the thinking used the whole cap and the answer came back cut off mid-JSON. They get room.
+const THINKING_FLOOR = { team_vinny: 4096, team_guest: 4096, team_grade: 2048 };
+function thinkingCap(model, purpose, cap) {
+  if (!/^claude-(opus|fable)-5/.test(model)) return cap;
+  if (THINKING_DOUBLED[purpose]) return cap * 2;
+  return Math.max(cap, THINKING_FLOOR[purpose] || 0);
+}
+
 const ALLOWED_ORIGINS = [
   "https://vinterest.app",
   "https://test.vinterest.app", // the web app's test address (a custom domain on the vinterest Pages project)
   "https://vinterest.pages.dev",
+  "https://demo.vinterest.team", // the teams demo (serveTeamDemo), a custom domain on this project
   "capacitor://localhost",
   "https://localhost"
 ];
@@ -99,6 +167,58 @@ const ALLOWED_ORIGINS = [
 // docs/native-migration-spec.md section 6 depends on exercising those
 // previews, so they're allowed too.
 const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
+// A restaurant's own demo address (socialcorner.vinterest.team): a custom domain on the vinterest Pages project,
+// whose staff app calls /claude and /tts like any other page of ours.
+const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
+// Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
+// its root goes straight to the staff app.
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
+
+// A restaurant's address that opens the page written for it, with its demo beside it (eloise.vinterest.team): the root
+// is the Teams site's private page (site/teams/for/<name>.html, fetched from TEAMS_SITE_ORIGIN, default vinterest.team,
+// with the stylesheet, script, images and cards it asks for by path; fonts and the logo are this project's own, the same
+// files), and /demo/ is the staff app (dist/team/), which opens that restaurant from the address (TeamSample.HOSTS).
+// The API routes answer as on any other address.
+const VENUE_PAGES = { "eloise.vinterest.team": "eloise" };
+const VENUE_PAGE_FILE = /^\/(site\.css$|site\.js$|for\/|img\/)/;
+async function serveVenuePage(request, url, env) {
+  const name = VENUE_PAGES[url.hostname], site = (env.TEAMS_SITE_ORIGIN || "https://vinterest.team").replace(/\/+$/, ""), p = url.pathname;
+  if (p === "/demo" || p === "/team" || p.startsWith("/team/")) return Response.redirect(`${url.origin}/demo/${p.startsWith("/team/") ? p.slice(6) : ""}${url.search}`, 302);
+  if (p.startsWith("/demo/")) {
+    const res = await env.ASSETS.fetch(new Request(new URL("/team/" + p.slice(6) + url.search, url.origin), request));
+    if (p !== "/demo/") return res;
+    const headers = new Headers(res.headers);
+    headers.set("Cache-Control", "no-cache, must-revalidate");
+    return new Response(res.body, { status: res.status, headers });
+  }
+  const page = p === "/" || p === "/index.html";
+  if (!page && !VENUE_PAGE_FILE.test(p)) return null; // /claude, /tts, /config, fonts, the logo: as on any address
+  if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
+  const res = await fetch(site + (page ? `/for/${name}` : p + url.search), { headers: { accept: request.headers.get("accept") || "*/*" } });
+  const headers = new Headers(res.headers);
+  headers.set("x-robots-tag", "noindex, nofollow"); // written for one prospect: never in search
+  if (page) headers.set("Cache-Control", "no-cache, must-revalidate");
+  return new Response(res.body, { status: res.status, headers });
+}
+
+// The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
+// app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
+// are relative (team.js, faces/, labels/, brand/), so they're read from /team/; fonts and icons are the
+// site's own, from the root. The API routes above answer as on any other address.
+const TEAM_DEMO_HOSTS = ["demo.vinterest.team"];
+const TEAM_DEMO_FILE = /^\/(team\.js$|faces\/|labels\/|brand\/)/;
+async function serveTeamDemo(request, url, env) {
+  if (url.pathname === "/" && !url.search) return Response.redirect(`${url.origin}/?seed=demo`, 302);
+  if (url.pathname.startsWith("/team/")) return Response.redirect(`${url.origin}${url.pathname.slice(5)}${url.search}`, 301);
+  // A page address the demo doesn't have would fall through to the consumer app's page: send it home.
+  if (url.pathname !== "/" && !url.pathname.includes(".") && !TEAM_DEMO_FILE.test(url.pathname)) return Response.redirect(`${url.origin}/${url.search}`, 302);
+  const path = url.pathname === "/" ? "/team/" : TEAM_DEMO_FILE.test(url.pathname) ? "/team" + url.pathname : url.pathname;
+  const res = await env.ASSETS.fetch(new Request(new URL(path, url.origin), request));
+  if (path !== "/team/") return res;
+  const headers = new Headers(res.headers);
+  headers.set("Cache-Control", "no-cache, must-revalidate");
+  return new Response(res.body, { status: res.status, headers });
+}
 
 const MAX_BODY_BYTES = 6 * 1024 * 1024; // headroom above a 1024px-JPEG scan payload
 
@@ -111,6 +231,11 @@ const _rateLimitBuckets = new Map();
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // A restaurant's demo address opens its staff app, not the consumer app.
+    if (VENUE_PAGES[url.hostname]) { const res = await serveVenuePage(request, url, env); if (res) return res; }
+    if (VENUE_HOSTS[url.hostname] && (url.pathname === "/" || url.pathname === "/index.html")) {
+      return Response.redirect(new URL("/team/" + url.search, url).toString(), 302);
+    }
     if (url.pathname === "/me") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "GET") return json(405, { error: "Method not allowed" });
@@ -125,9 +250,16 @@ export default {
       // (ALL_PRO=0), not an app update.
       return json(200, {
         supabase: env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY ? { url: env.SUPABASE_URL, key: env.SUPABASE_PUBLISHABLE_KEY } : null,
+        tts: !!ttsProvider(env),
+        stt: !!env.ELEVENLABS_API_KEY,
         billing: env.REVENUECAT_IOS_KEY || env.REVENUECAT_ANDROID_KEY ? { ios: env.REVENUECAT_IOS_KEY || null, android: env.REVENUECAT_ANDROID_KEY || null } : null,
         allPro: ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0",
         push: pushOn(env),
+        // IOS_TYPED_PROMO=1 keeps the typed promo field on iPhone (Billing.offerCodes false), so beta
+        // testers on TestFlight redeem our Supabase codes: Apple's offer codes can't be made before the
+        // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
+        // App Store submission (review rule 3.1.1).
+        iosTypedPromo: env.IOS_TYPED_PROMO === "1",
       });
     }
     if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
@@ -173,11 +305,24 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleLcbo(request, env);
     }
+    if (url.pathname === "/tts") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleTts(request, env, ctx);
+    }
+    if (url.pathname === "/stt") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleStt(request, env);
+    }
     if (url.pathname === "/claude") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleClaude(request, env, ctx);
     }
+
+    // demo.vinterest.team is the teams demo on its own address, so it doesn't open on the consumer app.
+    if (TEAM_DEMO_HOSTS.includes(url.hostname)) return serveTeamDemo(request, url, env);
 
     const res = await env.ASSETS.fetch(request);
 
@@ -219,9 +364,111 @@ export default {
   }
 };
 
+/* A guest's line said aloud by a cloud voice (Vinterest Teams: Vinny at the table, team-voice.js).
+   ElevenLabs when ELEVENLABS_API_KEY is set, else OpenAI's speech model with OPENAI_API_KEY; without either
+   it answers 404 {enabled:false} and the app speaks with the browser's own voice. The key never leaves the
+   Worker; the text is short (TTS_MAX_CHARS), the same origins and per-IP limit as /claude apply, and each
+   clip is cached by its voice and words, so a line said twice is fetched once. Nothing is stored. */
+const TTS_MAX_CHARS = 600;
+const TTS_VOICES = {
+  // Four diners, so the tables don't all sound alike. ElevenLabs' premade voices; ELEVENLABS_VOICES (comma
+  // separated ids) replaces them.
+  elevenlabs: ["21m00Tcm4TlvDq8ikWAM", "pNInz6obpgDQGcFmaJgB", "EXAVITQu4vr4xnSDxMaL", "ErXwobaYiN019PkySvjV"],
+  openai: ["coral", "ash", "sage", "verse"]
+};
+function ttsProvider(env) { return env.ELEVENLABS_API_KEY ? "elevenlabs" : env.OPENAI_API_KEY ? "openai" : null; }
+/* How the voice says the names it gets wrong (data/tts-say.json, read as deployed like retailers.json, so a fix is
+   a web deploy): each "say" entry swaps a name for a spelling the voice reads right, whole words only and the
+   longest name first, before the text is sent or cached, so every guest line and every Say it says it the same way.
+   Built from the listening check (npm run tts:check). */
+let _ttsSay = null;
+async function ttsSay(env, request) {
+  if (_ttsSay && Date.now() - _ttsSay.at < 5 * 60 * 1000) return _ttsSay.rules;
+  let rules = [];
+  try {
+    const r = env && env.ASSETS ? await env.ASSETS.fetch(new Request(new URL("/data/tts-say.json", request.url))) : null;
+    if (r && r.ok) rules = ttsRules((await r.json()).say);
+  } catch (e) {}
+  _ttsSay = { at: Date.now(), rules };
+  return rules;
+}
+function ttsRules(say) {
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return Object.entries(say || {}).filter(([k, v]) => k && v).sort((a, b) => b[0].length - a[0].length)
+    .map(([k, v]) => ({ re: new RegExp("(^|[^\\p{L}])" + esc(k) + "(?![\\p{L}])", "giu"), to: String(v) }));
+}
+function ttsApply(text, rules) { return rules.reduce((t, r) => t.replace(r.re, (m, pre) => pre + r.to), text); }
+/* POST /stt: a spoken reply at a guest's table, as recorded audio (the body, audio/webm or audio/mp4), turned
+   into words by ElevenLabs' speech-to-text (Scribe, ELEVENLABS_STT_MODEL, default scribe_v1) with each word's
+   start and end, for the delivery coaching. The recording is passed straight through and never kept or cached.
+   404 without ELEVENLABS_API_KEY, and the phone's own recognition takes over. */
+const STT_MAX_BYTES = 3 * 1024 * 1024; // a couple of minutes of speech at the 32 kbps the app records
+async function handleStt(request, env) {
+  if (!env.ELEVENLABS_API_KEY) return json(404, { enabled: false, error: "Speech to text isn't set up on the server.", code: "stt_off" });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  const type = (request.headers.get("content-type") || "audio/webm").split(";")[0].trim();
+  if (!/^audio\//.test(type)) return json(400, { error: "Send the recording as audio.", code: "not_audio" });
+  const audio = await request.arrayBuffer();
+  if (!audio.byteLength) return json(400, { error: "The recording was empty.", code: "empty" });
+  if (audio.byteLength > STT_MAX_BYTES) return json(413, { error: "That recording is too long.", code: "too_long" });
+  const form = new FormData();
+  form.append("model_id", env.ELEVENLABS_STT_MODEL || "scribe_v1");
+  form.append("file", new Blob([audio], { type }), type.includes("mp4") ? "reply.mp4" : type.includes("ogg") ? "reply.ogg" : "reply.webm");
+  form.append("timestamps_granularity", "word");
+  form.append("tag_audio_events", "false");
+  if (env.ELEVENLABS_STT_LANGUAGE) form.append("language_code", env.ELEVENLABS_STT_LANGUAGE);
+  let up;
+  try { up = await fetch("https://api.elevenlabs.io/v1/speech-to-text", { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY }, body: form }); }
+  catch (e) { return json(502, { error: "The speech service couldn't be reached.", code: "stt_unreachable" }); }
+  if (!up.ok) { let detail = ""; try { detail = (await up.text()).slice(0, 300); } catch (e) {}
+    return json(502, { error: "The speech service didn't answer.", code: "stt_failed", status: up.status, detail }); }
+  let j; try { j = await up.json(); } catch (e) { return json(502, { error: "The speech service sent something unreadable.", code: "stt_bad" }); }
+  const words = (Array.isArray(j.words) ? j.words : []).filter((w) => w && w.type !== "spacing" && w.type !== "audio_event" && String(w.text || "").trim())
+    .map((w) => ({ text: String(w.text).trim(), start: Number(w.start) || 0, end: Number(w.end) || 0 }));
+  return json(200, { text: String(j.text || "").trim(), words, language: j.language_code || null });
+}
+async function handleTts(request, env, ctx) {
+  const provider = ttsProvider(env);
+  if (!provider) return json(404, { enabled: false, error: "No voice is set up on the server.", code: "tts_off" });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let body; try { body = await request.json(); } catch (e) { return json(400, { error: "Invalid JSON body.", code: "invalid_json" }); }
+  const text = String(body && body.text || "").replace(/\s+/g, " ").trim().slice(0, TTS_MAX_CHARS);
+  if (!text) return json(400, { error: "Nothing to say.", code: "empty" });
+  const spoken = ttsApply(text, await ttsSay(env, request));
+  // The voice teaches, so it's unhurried: ElevenLabs' speed (0.7 to 1.2) defaults to TTS_SPEED (0.9) for a guest's
+  // line and TTS_SLOW (0.8) for a name said on its own (Say it, the names check: pace "slow"); stability is raised a
+  // little so the delivery is even rather than rushed. Both are in the cache key.
+  const slow = body && body.pace === "slow";
+  const speed = Math.min(1.2, Math.max(0.7, Number(slow ? env.TTS_SLOW || 0.8 : env.TTS_SPEED || 0.9) || 0.9));
+  const list = provider === "elevenlabs" && env.ELEVENLABS_VOICES ? String(env.ELEVENLABS_VOICES).split(",").map(x => x.trim()).filter(Boolean) : TTS_VOICES[provider];
+  const voice = list[Math.abs(parseInt(body.voice, 10) || 0) % list.length];
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(provider + "|" + voice + "|" + (provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_v4") : "") + "|" + speed + "|" + spoken));
+  // The model is in the key, so changing ELEVENLABS_MODEL is heard at once rather than after a month of old clips.
+  const id = [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, "0")).join("");
+  const cacheKey = new Request("https://tts.cache.vinterest/" + id);
+  const cache = typeof caches !== "undefined" ? caches.default : null;
+  if (cache) { const hit = await cache.match(cacheKey); if (hit) return cors(new Response(hit.body, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": "cache" } })); }
+  let up;
+  try {
+    up = provider === "elevenlabs"
+      ? await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, { method: "POST", headers: { "xi-api-key": env.ELEVENLABS_API_KEY, "content-type": "application/json", accept: "audio/mpeg" },
+          body: JSON.stringify({ text: spoken, model_id: env.ELEVENLABS_MODEL || "eleven_v4", voice_settings: { stability: 0.6, similarity_boost: 0.75, speed } }) })
+      : await fetch("https://api.openai.com/v1/audio/speech", { method: "POST", headers: { authorization: `Bearer ${env.OPENAI_API_KEY}`, "content-type": "application/json" },
+          body: JSON.stringify({ model: env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts", voice, input: spoken, response_format: "mp3", speed, instructions: slow ? "Say this name slowly and clearly, the way a teacher models a pronunciation, then stop." : "You are a relaxed diner at a restaurant table, talking to your server. Natural, warm, conversational and unhurried, with natural pauses; not a narrator." }) });
+  } catch (e) { return json(502, { error: "The voice service couldn't be reached.", code: "tts_unreachable" }); }
+  // The provider's own reason comes back (cut short) so a wrong model id or setting can be seen and fixed.
+  if (!up.ok) { let detail = ""; try { detail = (await up.text()).slice(0, 300); } catch (e) {}
+    return json(502, { error: "The voice service didn't answer.", code: "tts_failed", status: up.status, detail }); }
+  const audio = await up.arrayBuffer();
+  if (cache && ctx && ctx.waitUntil) ctx.waitUntil(cache.put(cacheKey, new Response(audio, { headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" } })));
+  return cors(new Response(audio, { status: 200, headers: { "content-type": "audio/mpeg", "x-tts": provider, "x-tts-model": provider === "elevenlabs" ? (env.ELEVENLABS_MODEL || "eleven_v4") : (env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts") } }));
+}
+
 function originAllowed(origin) {
   if (!origin) return true; // no Origin header — native/webview clients; rate limiting is the backstop
-  return ALLOWED_ORIGINS.includes(origin) || PREVIEW_ORIGIN_RE.test(origin);
+  return ALLOWED_ORIGINS.includes(origin) || PREVIEW_ORIGIN_RE.test(origin) || VENUE_ORIGIN_RE.test(origin);
 }
 
 function clientIp(request) {
@@ -295,9 +542,10 @@ async function handleClaude(request, env, ctx) {
     return json(400, { error: "Request must include a non-empty messages[] array.", code: "invalid_messages" });
   }
 
-  // The model always comes from the environment — never from the request.
-  const model = env.CLAUDE_MODEL || "claude-sonnet-4-6";
-  const max_tokens = Math.min(Number(payload.max_tokens) || purposeCap, purposeCap);
+  // The model always comes from the environment — never from the request (a team draft only picks the cheaper one).
+  const model = modelFor(purpose, env, payload.draft === true);
+  const cap = thinkingCap(model, purpose, purposeCap);
+  const max_tokens = Math.min(Number(payload.max_tokens) || cap, cap);
 
   const opts = modelOptions(model, purpose, env);
   try {
@@ -310,7 +558,7 @@ async function handleClaude(request, env, ctx) {
         "anthropic-version": "2023-06-01",
         ...(opts.betas.length ? { "anthropic-beta": opts.betas.join(",") } : {})
       },
-      body: JSON.stringify({ model, max_tokens, messages, ...opts.body })
+      body: JSON.stringify({ model, max_tokens, messages: cacheSplit(messages), ...opts.body })
     });
     const data = await r.json();
     if (!r.ok) {
@@ -340,6 +588,10 @@ const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
   pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
 };
+/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
+   pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
+   with TEAM_PRO once restaurants have accounts. */
+const TEAM_PRO = "Vinterest Teams needs a Pro account while it's in pilot.";
 const PRO_ONLY = { list_scan: "Wine list scanning is part of Vinterest Pro.", lcbo: "LCBO stock near you is part of Vinterest Pro." };
 /* Pro-only purposes any signed-in account may use anyway (metered by FAIR_USE.free). None: list
    scanning and LCBO stock need Pro, from a subscription or a promo code. */
@@ -388,6 +640,12 @@ async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
   return (await entitlementOf(env, userId)).tier;
 }
+/* The free plan's label scans are counted per calendar month (UTC), not per week: FREE_MONTHLY a
+   month, through use_quota_month (0009_monthly_scans.sql), kind "<purpose>:month". Pro keeps only the
+   weekly fair-use cap. The app shows what's left from /me's `month` and says so before the camera. */
+const FREE_MONTHLY = { label_scan: 10 };
+function monthStart(d = new Date()) { return d.toISOString().slice(0, 7) + "-01"; }
+function nextMonthName(d = new Date()) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" }); }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -407,6 +665,12 @@ async function gateAccount(request, env, purpose) {
   }
   const tier = await tierOf(env, user.id);
   if (PRO_ONLY[purpose] && tier !== "pro" && !OPEN_TO_SIGNED_IN[purpose]) return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  if (tier !== "pro" && FREE_MONTHLY[purpose]) {
+    const m = await db(env, "rpc/use_quota_month", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose + ":month", p_cap: FREE_MONTHLY[purpose] }) });
+    if (m.ok && (await m.json()) === null) {
+      return { response: json(429, { error: `You've used your ${FREE_MONTHLY[purpose]} free scans this month. They come back on 1 ${nextMonthName()}, or go Pro to keep scanning.`, code: "scan_limit" }) };
+    }
+  }
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
   if (r.ok && (await r.json()) === null) {
     return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
@@ -428,7 +692,15 @@ async function handleMe(request, env) {
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
+  // The free plan's monthly scans: used so far this month against FREE_MONTHLY.
+  let month = null;
+  if (tier !== "pro") {
+    const start = monthStart(), used = {};
+    const mr = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${start}&select=kind,count`);
+    if (mr.ok) for (const u of await mr.json()) if (/:month$/.test(u.kind)) used[u.kind.replace(/:month$/, "")] = u.count;
+    month = { start, used, caps: FREE_MONTHLY };
+  }
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier], month });
 }
 
 /* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in

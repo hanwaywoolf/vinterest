@@ -22,7 +22,7 @@ async function stubNetwork(context, { claudeRequests = [], claudeText = () => ''
   // ({ detail: 'real' }), so tests of a section don't depend on how far the test user has learnt.
   // The post-scan reveal (ScanReveal) plays only for tests of it ({ reveal: 'real' }); the rest
   // open straight on the result, as before it existed.
-  await context.addInitScript(({ d, r }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; window.VINTEREST_QUIZ_SPEED = 8; }, { d: detail, r: reveal });
+  await context.addInitScript(({ d, r }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; window.VINTEREST_QUIZ_SPEED = 8; window.VINTEREST_TOUR = 'off'; /* the Teams console's first-use tour, which would sit over every console test (tests/team.spec.js turns it back on to test it) */ window.VINTEREST_RETRY_FAST = true; }, { d: detail, r: reveal });
   await context.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = route.request().url();
     const umd = Object.entries(UMD).find(([k]) => url.includes(k));
@@ -32,6 +32,8 @@ async function stubNetwork(context, { claudeRequests = [], claudeText = () => ''
     // Google Fonts: an empty stylesheet keeps the page offline without a failed-request console error.
     return route.fulfill({ contentType: url.includes('css') ? 'text/css' : 'text/plain', body: '' });
   });
+  // The partner shop's feed (Shops.match): nothing listed unless a test routes its own answer after this.
+  await context.route('**/shop-match', (route) => route.fulfill({ contentType: 'application/json', body: '{"items":[]}' }));
   await context.route('**/claude', async (route) => {
     claudeRequests.push(JSON.parse(route.request().postData() || '{}'));
     const body = JSON.parse(route.request().postData() || '{}');

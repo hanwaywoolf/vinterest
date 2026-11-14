@@ -36,7 +36,12 @@ const Store = {
 
   /* Called with the key after every device-storage write made through Store. Returns an unsubscribe. */
   subscribe(cb){ this._subs.add(cb); return ()=>this._subs.delete(cb); },
-  _emit(key){ this._subs.forEach(cb=>{ try{ cb(key); }catch(e){} }); },
+  _emit(key){ this._bump(key); this._subs.forEach(cb=>{ try{ cb(key); }catch(e){} }); },
+  /* A number that changes whenever a key is written, here or from another tab (the storage event), so a module can
+     keep a parsed copy of a large value and know when it's stale without reading the text back on every call. */
+  _gens:new Map(), _gAll:0,
+  _bump(key){ if(key==null) this._gAll++; else this._gens.set(key,(this._gens.get(key)||0)+1); },
+  gen(key){ return this._gAll*1e9+(this._gens.get(key)||0); },
 };
 
 /* Local caches of generated content (scan cards, articles, prices, Explore results): safe to lose,
@@ -54,3 +59,4 @@ const ErrorLog = {
   KEY:'vinterest_errors',
   list(){ const v=Store.getJSON(this.KEY,[]); return Array.isArray(v)?v:[]; },
 };
+try{ window.addEventListener('storage',e=>Store._bump(e.key)); }catch(e){}

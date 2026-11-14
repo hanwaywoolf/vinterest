@@ -8,9 +8,9 @@
 #   - Version: package.json's "version". Build number: this workflow's run number ×10 + attempt,
 #     so every upload, re-runs included, has a new, higher number.
 name: TestFlight
+# On demand only (Actions → TestFlight → Run workflow): a push to main deploys the web app; the iPhone
+# build goes up when one is wanted.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 concurrency:
   group: testflight

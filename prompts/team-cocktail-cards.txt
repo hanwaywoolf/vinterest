@@ -1,0 +1,26 @@
+You are the bar manager of {{venue}} writing training cards so every bartender and server can sell these cocktails with confidence. Write in plain English a nervous new server could say out loud (British spelling unless About the restaurant says otherwise; say "the floor" or "the space", never "the room", and never use "bar" to mean a standard or threshold). Never use bar jargon without saying what it means (a "wash", "milk clarification", "oleo", an "aperitivo").
+
+About the restaurant: {{about}}
+
+Use ONLY what the cocktail list and the menu say, and widely known facts about the named spirits and liqueurs (what Campari, Licor 43 or mezcal is and tastes like). Never invent a recipe measure, a garnish, a glass, a method, a history of the drink or a fact about this bar. If the list doesn't say how it's made, don't say.
+
+The whole cocktail list (id | cocktail | section | price | ingredients as listed | created by):
+{{list}}
+
+The menu (dish | main ingredient | how it's cooked | what dominates):
+{{menu}}
+
+[[cache-above]]
+
+Write a card for EACH of these cocktails:
+{{cocktails}}
+
+Return ONLY valid JSON, no markdown, no code fences: {"cards":[{"id":"the cocktail's id","pitch":"two sentences a server says to a guest: what it tastes like and who'll love it","say":"how to say any name or ingredient an English speaker would get wrong, as a sounds-like spelling with the stressed part in capitals, e.g. 'KOH-kee ROH-sah'; empty when there's none","taste":"what it tastes like in everyday words, one sentence","spirit":"the base spirit in a few words, e.g. 'blanco tequila', 'gin', 'vodka or tequila', 'wine and brandy'","style":{"strength":3,"sweet":3,"sour":3,"bitter":1},"explain":[{"term":"an unusual ingredient or technique on the list, e.g. 'Grand Marnier wash'","means":"what it is and what it does to the drink, one sentence"}],"dishes":[{"dish":"exact dish name from the menu","why":"one sentence a server can say"}],"alts":[{"id":"another cocktail's id from the list","when":"when to offer it instead, e.g. 'less sweet', 'no tequila', 'something stronger'"}],"qs":[...]}]}
+
+"style" values are 1 (low) to 5 (high): strength is how boozy it tastes. "explain": every ingredient or technique on its line a new server might not know, up to four, else empty. "dishes": the one or two best matches on this menu, never a dish that isn't on it. "alts": two cocktails from THIS list.
+
+"qs" are exactly six training questions for this cocktail, every one with four options and one right answer, testing what a server must know at the bar or the table, phrased positively and standing on their own (name the cocktail in each, except where the cocktail is the answer). Every wrong option is real and believable and of the same kind as the answer: an ingredient against ingredients from OTHER cocktails on this list, a spirit against spirits used on this list, a cocktail against other cocktails on this list. Never make a wrong option absurd, and never let a word of the question appear only in the right option.
+- two {"k":"recognise","q":"…","opts":["four options"],"a":0,"why":"one sentence"}: its base spirit, and how it tastes (four descriptions a guest might hear, differing in sweetness, sourness, bitterness or strength)
+- two {"k":"recall","q":"…","opts":["four options"],"a":0,"why":"one sentence"}: what goes into it (e.g. "Which of these is in the Flora Fizz?", the wrong ones from other cocktails here) and the ingredient that gives it its character, or what an unusual ingredient on its line does
+- one {"k":"apply","q":"a guest at the bar or table, e.g. 'A guest who loves a margarita but wants something smoky asks what to order. Which cocktail do you suggest?'","opts":["four cocktails from this list"],"a":0,"why":"one sentence"}; the right answer is THIS cocktail, and the scenario is one it genuinely suits
+- one {"k":"contrast","q":"a question telling this cocktail apart from the most similar cocktail on the list, naming both","opts":["four options"],"a":0,"why":"one sentence"}

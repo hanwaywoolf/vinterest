@@ -48,7 +48,7 @@ test('every device-storage write reaches Store subscribers; session handoffs and
       scans: Entitlement.scanCount() - scansBefore, read: LearnProgress.articleDone('x1'), bad: Store.getJSON('vinterest_missing', 'fallback') };
   });
   expect(out.seen).toEqual(['vinterest_wines', 'vinterest_favorites', 'vinterest_xp_v3', 'vinterest_script_length',
-    'vinterest_scan_count', 'vinterest_gen_article_x1_done', 'vinterest_wineDNA_unlock_seen', 'vinterest_test_cache']);
+    'vinterest_scan_count', 'vinterest_scan_month', 'vinterest_gen_article_x1_done', 'vinterest_wineDNA_unlock_seen', 'vinterest_test_cache']);
   expect(out).toMatchObject({ fav: true, handoff: true, quiz: { mode: 'practice' }, scans: 1, read: true, bad: 'fallback' });
   // Blocked storage (a private window, a full quota) reads as empty and writes report failure
   // instead of throwing into a screen.

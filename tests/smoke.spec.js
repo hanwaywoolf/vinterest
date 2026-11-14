@@ -114,5 +114,7 @@ test('as shipped nobody is Pro; the testing switch opens every unlock when turne
   await page.goto(`${BASE}/?demo=1#home`);
   expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = false; return [Entitlement.allPro(), Entitlement.isPro(), Entitlement.listScanNeeds()]; })).toEqual([false, false, 'pro']);
   expect(await page.evaluate(() => { Entitlement.ALL_PRO_FOR_TESTING = true; return [Entitlement.isPro(), Entitlement.atScanLimit()]; })).toEqual([true, false]);
-  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = true; return Entitlement.atScanLimit(); })).toBe(true);
+  // The free plan's 10 scans a month: none used this month is no limit; 10 used is.
+  expect(await page.evaluate(() => { window.VINTEREST_REAL_PLANS = true; localStorage.removeItem('vinterest_scan_month'); return [Entitlement.scansLeft(), Entitlement.atScanLimit()]; })).toEqual([10, false]);
+  expect(await page.evaluate(() => { localStorage.setItem('vinterest_scan_month', JSON.stringify({ m: new Date().toISOString().slice(0, 7), n: 10 })); return Entitlement.atScanLimit(); })).toBe(true);
 });

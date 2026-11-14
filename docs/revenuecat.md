@@ -31,6 +31,8 @@ It ships off: Pro comes only from a subscription or a promo code, and list scann
 
 App Review (3.1.1) doesn't allow an iPhone app to unlock features with codes of its own, so on iOS "Have a promo code?" opens Apple's own redeem sheet (`Billing.redeemOfferCode`, RevenueCat's `presentCodeRedemptionSheet`). Android and the web keep the codes in Supabase's `promo_codes`.
 
+During the beta, before the subscription exists, set the Cloudflare variable `IOS_TYPED_PROMO=1` on the vinterest project: `/config` then says `iosTypedPromo` and the iPhone app keeps the typed field and our Supabase codes (Apple's offer codes can't be made before the subscription is approved, and redeeming them from a TestFlight build is unreliable). Remove the variable before the App Store submission, so the shipped app opens Apple's sheet as 3.1.1 requires. No app update either way.
+
 To make codes:
 1. App Store Connect → Apps → Vinterest → Subscriptions → the subscription (do the monthly one; a code can be used on either product if you make an offer on each).
 2. Offers → Offer Codes → create an offer: a name, who is eligible (new subscribers, and optionally past ones), type Free, the length (for example 3 months) and the countries.

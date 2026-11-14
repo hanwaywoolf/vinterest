@@ -62,12 +62,32 @@ export const APP_SOURCES = [
   'pwa-app.jsx',
 ];
 
+// The restaurant staff-training app (docs/business.md), built to dist/team/ as team.js: every app
+// source above except pwa-app.jsx (which boots the consumer app), so the wine facts, scanning,
+// quizzes and components are shared, then these, which boot the team app instead.
+export const TEAM_SOURCES = [
+  'team-data.js',
+  'team-learn.js',
+  'team-sales.js',
+  'team-report.js',
+  'team-voice.js',
+  'team-vinny.js',
+  'team-shift.js',
+  'team-screens.jsx',
+  'team-shift.jsx',
+  'team-vinny.jsx',
+  'team-console.jsx',
+  'team-app.jsx',
+];
+export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];
+
 // Copied into dist/ unchanged. Directories are copied recursively.
 export const STATIC_FILES = [
   'manifest.json',
   'sw.js',
   '_worker.js',
   'data/retailers.json', // read by the Worker's /go, so link routing follows the deployed list
+  'data/tts-say.json', // read by the Worker's /tts: how the voice says the names it gets wrong
   '_headers',
   '_redirects',
   'icons',
@@ -76,4 +96,7 @@ export const STATIC_FILES = [
   'reset.html',
   'rescue.html',
   'tweaks-inline.compiled.js',
+  'team/faces', // the demo restaurant's staff photos, served beside the team app (docs/business.md)
+  'team/labels', // the demo's prepared new arrivals: two label photos (TeamSample.ARRIVALS)
+  'team/brand', // an installed restaurant's own logos (venue.brand; The Social Corner's from intake/perse/)
 ];

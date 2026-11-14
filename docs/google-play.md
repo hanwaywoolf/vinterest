@@ -1,7 +1,7 @@
 # Getting the Android app onto Google Play
 
-`.github/workflows/play.yml` builds the Android app as a signed App Bundle (`.aab`) on every push
-to `main` (or on demand: Actions → Google Play → Run workflow) and, once it's allowed to, uploads it
+`.github/workflows/play.yml` builds the Android app as a signed App Bundle (`.aab`) on demand
+(Actions → Google Play → Run workflow; releases are the web app, so nothing builds on a push) and, once it's allowed to, uploads it
 to Play's internal testing track. It does nothing until step 2 is done; until then the run says
 what's missing.
 

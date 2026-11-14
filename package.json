@@ -1,6 +1,6 @@
 {
   "name": "vinterest",
-  "version": "1.8.1",
+  "version": "1.10.1",
   "description": "Scan wine labels, build your taste profile, and order with confidence.",
   "scripts": {
     "dev": "open index.html",
@@ -10,6 +10,8 @@
     "test:smoke": "playwright test tests/smoke.spec.js",
     "test:db": "node scripts/test-db.mjs",
     "site:build": "node scripts/site.mjs",
+    "site:teams:build": "node scripts/site-teams.mjs",
+    "site:teams:serve": "npm run site:teams:build && node scripts/serve.mjs site-teams-dist 4176",
     "site:capture": "node scripts/site-capture.mjs",
     "site:og": "node scripts/site-og.mjs",
     "site:serve": "npm run site:build && node scripts/serve.mjs site-dist 4175",
@@ -19,7 +21,13 @@
     "lcbo:check": "node scripts/lcbo-check.mjs",
     "model:trial": "node scripts/model-trial.mjs",
     "match:backtest": "node scripts/match-backtest.mjs",
-    "trailer": "node scripts/trailer.mjs"
+    "site:video": "node scripts/site-video.mjs",
+    "trailer": "node scripts/trailer.mjs",
+    "tts:check": "node scripts/tts-check.mjs",
+    "team:dishes": "node scripts/team-dishes.mjs",
+    "team:write": "node scripts/team-write.mjs",
+    "team:audit": "node scripts/team-audit.mjs",
+    "team:review": "node scripts/team-review.mjs"
   },
   "keywords": [
     "wine",

@@ -405,7 +405,18 @@ function _RvEnd({wine,d,firstScan,existingRating,nav,showPro,curr,onDone,onRated
     {key:'deck',icon:'compass',label:'See the result and learn more',sub:'Your match and why, then the house, the year, how it\'s made',on:()=>onDone('deck')},
     {key:'finish',icon:'home',label:'Finish',sub:'Back to Home',on:()=>onDone('home')},
   ];
+  // The bottle at the partner shop (Shops.match: Winebuyers' feed, UK), for free and Pro alike: someone
+  // who liked a bottle, at a restaurant say, often wants to know where to buy it. Nothing at all when
+  // the shop doesn't list the wine; the Shop tab keeps its price and Find it for me. Looked up as the
+  // sheet opens so it's ready once they've rated; never on the first scan, which ends onboarding.
+  const [partner,setPartner]=React.useState(null);
+  React.useEffect(()=>{ if(!firstScan&&wine&&wine.name) Shops.match(wine).catch(()=>{}); },[]);
+  const shop=!firstScan&&typeof ShopBottle==='function'&&<div data-testid="reveal-shop" style={{display:partner&&partner!=='pending'?'block':'none'}}>
+    <ShopBottle wine={wine} onShop={setPartner}/>
+    <ShopDisclosure style={{marginTop:6}}/>
+  </div>;
   const ways=<div data-testid="reveal-ways" style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+    {shop}
     {rows.map(x=><div key={x.key} role="button" onClick={x.on} style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.14)',borderRadius:14,padding:'12px 14px',display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}>
       <div style={{width:38,height:38,borderRadius:19,background:_alpha(lift,0.22),display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={x.icon} sz={18} col={lift}/></div>
       <div style={{flex:1,minWidth:0}}>
