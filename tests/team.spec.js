@@ -2604,7 +2604,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // A device that opened The Larkspur before its file asked for the new look still gets it.
   expect(await page.evaluate(() => { const d = TeamData.get(); delete d.venue.console; TeamData.save(d); const o = window.VINTEREST_CONSOLE; window.VINTEREST_CONSOLE = null; const look = TeamData.consoleLook(); window.VINTEREST_CONSOLE = o; return look; })).toBe('preview');
   // One standout fact with quick ones beneath, about what knowing the list sells.
-  await expect(page.getByTestId('c2-fact')).toContainText('with a server who knows it');
+  await expect(page.getByTestId('c2-fact')).toContainText('with a server trained on it');
   expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
   await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
   await expect(page.getByTestId('c2-person')).toHaveCount(7);
@@ -2619,6 +2619,13 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-panel-close').click();
   await page.getByTestId('console-nav-sales').click();
   await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
+  // Every line of the briefing is what the sales say, then what to do; nothing in the console's own shorthand.
+  expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
+  await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
+  const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
+  await page.getByTestId('c2-chart-bottles').click();
+  await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
   await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
