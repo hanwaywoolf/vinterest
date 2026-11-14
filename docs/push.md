@@ -1,10 +1,10 @@
 # Push notifications
 
-Reminders to the phone when the app is closed, on iPhone (Apple's APNs) and Android (Google's FCM). The code is `pwa-push.js` (`Push`: permission, token, taps) in the app and, in `_worker.js`, `POST /push/register`, `/push/unregister`, `/push/test`, `/push/run` and the senders. The tables are `push_devices` and `push_sent` (`supabase/migrations/0007_push.sql`).
+Reminders to the phone when the app is closed, on iPhone (Apple's APNs) and Android (Google's FCM). The code is `pwa-push.js` (`Push`: permission, token, taps) in the app and, in `_worker.js`, `POST /push/register`, `/push/unregister`, `/push/run` and the senders. There's no test route or button: the notifications people get are the real reminders. The tables are `push_devices` and `push_sent` (`supabase/migrations/0007_push.sql`).
 
 ## What it sends
 
-At most one a day and three a week, at about 6pm where the person is, only to people signed in who switched push on (Profile → Account → Notifications → Push notifications):
+At most one a day and three a week, in the person's evening (17:00 to 22:59 where they are), only to people signed in who switched push on (Profile → Account → Notifications → Push notifications):
 
 - a bottle they're drinking and haven't rated, a day after they scanned it ("Rate the Alter Ego 2019"; several become "3 bottles waiting for your rating"); it follows the Reminders switch.
 - "N days since your last scan" after 14 days, once a month; also Reminders.
@@ -39,14 +39,14 @@ These are the same things the bell on Home collects. New articles, milestones an
 - Secret `PUSH_CRON_SECRET`: the same string as in Cloudflare.
 - Variable `PUSH_ENABLED` = `1`: iPhone builds include push. Set it only after step 2, because it changes how the iPhone app is signed (the archive carries the push entitlement; a check step fails the build with a clear message if it doesn't). Unset it to go back to the plain build.
 
-**6. Roll out, then try it.** Install the new TestFlight and Play builds, sign in, turn on Push notifications, tap "Send me a test". Then Actions → Push notifications → Run workflow with "Dry run" ticked to see how many people it would remind (the log prints counts only).
+**6. Roll out, then try it.** Install the new TestFlight and Play builds, sign in and turn on Push notifications. Then Actions → Push notifications → Run workflow with "Dry run" ticked to see how many people it would remind (the log prints counts only). To see one arrive, scan a bottle, say you're drinking it and don't rate it: the next run in your evening a day later reminds you.
 
 **7. App Store Connect → App Privacy.** The privacy notice now says push tokens are stored. Check Apple's current guidance on whether to declare a push token as a Device ID, and answer to match.
 
 ## Notes
 
-- A phone shows a notification only while the app is closed or in the background; with the app open it arrives silently. "Send me a test" therefore waits ten seconds so you can close the app or lock the screen first.
-- Pages has no cron, so `.github/workflows/push-run.yml` calls `/push/run` every hour. A run handles five people and says if there are more (`PUSH_BATCH`), and the workflow carries on; Cloudflare's free plan allows 50 requests per run.
+- A phone shows a notification only while the app is closed or in the background; with the app open it arrives silently.
+- Pages has no cron, so `.github/workflows/push-run.yml` calls `/push/run` every hour. GitHub only starts it every few hours in practice (runs seen 6 to 7 hours apart), so the evening is a six-hour window (`PUSH_HOUR`, `PUSH_WINDOW`) and the one-a-day rule keeps it to one. A run handles five people and says if there are more (`PUSH_BATCH`), and the workflow carries on; Cloudflare's free plan allows 50 requests per run.
 - Turning push off, signing out on purpose, or deleting the account removes the token. A token Apple or Google says is dead is deleted when we next try it.
-- Local time comes from the phone's time zone sent at registration; "6pm" is `PUSH_HOUR` in `_worker.js`.
+- Local time comes from the phone's time zone sent at registration; the window starts at `PUSH_HOUR` (17) and lasts `PUSH_WINDOW` (6) hours, in `_worker.js`.
 - Tests: `tests/push.spec.js` checks the Worker against real APNs and FCM keys (the JWTs are verified) and the app against a fake plugin. The entitlement and background mode are in `tests/native.spec.js`. Nothing here has run against real Apple or Google servers yet: the first real test is step 6.

@@ -1,5 +1,5 @@
 # Sends the day's push notifications (docs/push.md): every hour it asks the Worker to run its job,
-# which sends at most one reminder to each person whose local time is about 6pm. Pages has no cron,
+# which sends at most one reminder a day to each person whose local time is in their evening (17:00 to 22:59). Pages has no cron,
 # so this is the clock. Also on demand (Actions → Push notifications → Run workflow; tick "dry run" to
 # see what would be sent without sending). Needs the secret PUSH_CRON_SECRET, the same string as the
 # Cloudflare secret of that name; until it's set the job says so and does nothing.

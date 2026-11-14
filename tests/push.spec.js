@@ -132,69 +132,6 @@ test.describe('Worker', () => {
     expect(f.t.push_devices).toEqual([]);
   });
 
-  test('a test notification goes to APNs with a real ES256 token, the topic and the link; three an hour', async () => {
-    const f = fakes(); globalThis.fetch = f.fetch;
-    await reg('tok-1');
-    const r = await post('/push/test', { token: 'tok-1' });
-    expect(r.status).toBe(200);
-    const sent = f.apns[0];
-    expect(sent.token).toBe(TOKEN_IOS);
-    expect(sent.headers).toMatchObject({ 'apns-topic': 'app.vinterest', 'apns-push-type': 'alert', 'apns-priority': '10' });
-    expect(sent.body).toEqual({ aps: { alert: { title: 'Vinterest notifications are on', body: 'This is how a reminder will look.' }, sound: 'default' }, link: { screen: 'home' } });
-    const jwt = decodeJwt(sent.headers.authorization.replace(/^bearer /i, ''));
-    expect(jwt.header).toEqual({ alg: 'ES256', kid: 'KEY1234567' });
-    expect(jwt.claims.iss).toBe('TEAM123456');
-    expect(crypto.verify('sha256', Buffer.from(jwt.data), { key: ec.publicKey, dsaEncoding: 'ieee-p1363' }, jwt.sig)).toBe(true);
-    await post('/push/test', { token: 'tok-1' }); await post('/push/test', { token: 'tok-1' });
-    expect((await post('/push/test', { token: 'tok-1' })).status).toBe(429);
-  });
-
-  test('a test can wait, so there is time to close the app (a phone shows nothing while it is open)', async () => {
-    const f = fakes(); globalThis.fetch = f.fetch;
-    await reg('tok-1');
-    const t0 = Date.now();
-    const r = await post('/push/test', { token: 'tok-1', body: { delay: 2 } });
-    expect(r.status).toBe(200);
-    expect(Date.now() - t0).toBeGreaterThanOrEqual(1900);
-    expect(f.apns).toHaveLength(1);
-    // Capped at fifteen seconds, never negative.
-    const t1 = Date.now();
-    await post('/push/test', { token: 'tok-1', body: { delay: -5 } });
-    expect(Date.now() - t1).toBeLessThan(1500);
-  });
-
-  test('Android goes through FCM v1 with an access token made from the service account, the link in data', async () => {
-    const f = fakes(); globalThis.fetch = f.fetch;
-    await reg('tok-1', { token: TOKEN_AND, platform: 'android' });
-    expect((await post('/push/test', { token: 'tok-1' })).status).toBe(200);
-    const grant = new URLSearchParams(f.oauth[0]);
-    expect(grant.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');
-    const jwt = decodeJwt(grant.get('assertion'));
-    expect(jwt.claims).toMatchObject({ iss: 'svc@vinterest-test.iam.gserviceaccount.com', scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token' });
-    expect(crypto.verify('sha256', Buffer.from(jwt.data), rsa.publicKey, jwt.sig)).toBe(true);
-    expect(f.fcm[0].url).toBe('https://fcm.googleapis.com/v1/projects/vinterest-test/messages:send');
-    expect(f.fcm[0].auth).toBe('Bearer ya29.fake');
-    expect(f.fcm[0].body.message).toMatchObject({ token: TOKEN_AND, notification: { title: 'Vinterest notifications are on' }, data: { link: '{"screen":"home"}' }, android: { priority: 'HIGH' } });
-  });
-
-  test('a token Apple or Google says is gone is deleted, and the person is told in words', async () => {
-    let f = fakes({ apnsStatus: 410, apnsReason: 'Unregistered' }); globalThis.fetch = f.fetch;
-    await reg('tok-1');
-    const r = await post('/push/test', { token: 'tok-1' });
-    expect(r.status).toBe(502);
-    expect((await r.json()).error).toMatch(/expired/);
-    expect(f.t.push_devices).toEqual([]);
-    f = fakes({ fcmStatus: 404, fcmError: { code: 404, status: 'NOT_FOUND' } }); globalThis.fetch = f.fetch;
-    await reg('tok-1', { token: TOKEN_AND, platform: 'android' });
-    await post('/push/test', { token: 'tok-1' });
-    expect(f.t.push_devices).toEqual([]);
-    // A temporary failure keeps the token.
-    f = fakes({ apnsStatus: 500, apnsReason: 'InternalServerError' }); globalThis.fetch = f.fetch;
-    await reg('tok-1');
-    await post('/push/test', { token: 'tok-1' });
-    expect(f.t.push_devices).toHaveLength(1);
-  });
-
   // ---- the hourly job ----
   const NOW = Date.parse('2026-10-20T17:30:00Z'); // 18:30 in London (BST), so the 18:00 hour
   const wine = (o) => ({ user_id: U1, wine_key: (o.name + '|' + (o.vintage || 'nv')).toLowerCase(), rating: null, last_scanned: new Date(NOW - 2 * DAY).toISOString(), deleted_at: null,
@@ -204,6 +141,73 @@ test.describe('Worker', () => {
     await reg('tok-1'); f.apns.length = 0;
     extra(f.t);
   }
+
+  // ---- what goes over the wire, on a real reminder ----
+  test('a reminder goes to APNs with a real ES256 token, the topic and the link', async () => {
+    const f = fakes(); globalThis.fetch = f.fetch;
+    await ready(f, (t) => t.wines.push(wine({ name: 'Barolo', vintage: 2016 })));
+    await run();
+    const sent = f.apns[0];
+    expect(sent.token).toBe(TOKEN_IOS);
+    expect(sent.headers).toMatchObject({ 'apns-topic': 'app.vinterest', 'apns-push-type': 'alert', 'apns-priority': '10' });
+    expect(sent.body).toEqual({ aps: { alert: { title: 'Rate the Barolo 2016', body: 'Every rating sharpens your matches.' }, sound: 'default' }, link: { wine: { name: 'Barolo', vintage: 2016 } } });
+    const jwt = decodeJwt(sent.headers.authorization.replace(/^bearer /i, ''));
+    expect(jwt.header).toEqual({ alg: 'ES256', kid: 'KEY1234567' });
+    expect(jwt.claims.iss).toBe('TEAM123456');
+    expect(crypto.verify('sha256', Buffer.from(jwt.data), { key: ec.publicKey, dsaEncoding: 'ieee-p1363' }, jwt.sig)).toBe(true);
+  });
+
+  test('Android goes through FCM v1 with an access token made from the service account, the link in data', async () => {
+    const f = fakes(); globalThis.fetch = f.fetch;
+    await reg('tok-1', { token: TOKEN_AND, platform: 'android' });
+    f.t.wines.push(wine({ name: 'Barolo', vintage: 2016 }));
+    await run();
+    const grant = new URLSearchParams(f.oauth[0]);
+    expect(grant.get('grant_type')).toBe('urn:ietf:params:oauth:grant-type:jwt-bearer');
+    const jwt = decodeJwt(grant.get('assertion'));
+    expect(jwt.claims).toMatchObject({ iss: 'svc@vinterest-test.iam.gserviceaccount.com', scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token' });
+    expect(crypto.verify('sha256', Buffer.from(jwt.data), rsa.publicKey, jwt.sig)).toBe(true);
+    expect(f.fcm[0].url).toBe('https://fcm.googleapis.com/v1/projects/vinterest-test/messages:send');
+    expect(f.fcm[0].auth).toBe('Bearer ya29.fake');
+    expect(f.fcm[0].body.message).toMatchObject({ token: TOKEN_AND, notification: { title: 'Rate the Barolo 2016' }, data: { link: JSON.stringify({ wine: { name: 'Barolo', vintage: 2016 } }) }, android: { priority: 'HIGH' } });
+  });
+
+  test('a token Apple or Google says is gone is deleted; a temporary failure keeps it', async () => {
+    const barolo = (t) => t.wines.push(wine({ name: 'Barolo', vintage: 2016 }));
+    let f = fakes({ apnsStatus: 410, apnsReason: 'Unregistered' }); globalThis.fetch = f.fetch;
+    await ready(f, barolo); await run();
+    expect(f.t.push_devices).toEqual([]);
+    f = fakes({ fcmStatus: 404, fcmError: { code: 404, status: 'NOT_FOUND' } }); globalThis.fetch = f.fetch;
+    await reg('tok-1', { token: TOKEN_AND, platform: 'android' }); barolo(f.t); await run();
+    expect(f.t.push_devices).toEqual([]);
+    f = fakes({ apnsStatus: 500, apnsReason: 'InternalServerError' }); globalThis.fetch = f.fetch;
+    await ready(f, barolo); await run();
+    expect(f.t.push_devices).toHaveLength(1);
+  });
+
+  test('there is no test route: only the job sends', async () => {
+    const f = fakes(); globalThis.fetch = f.fetch;
+    await reg('tok-1');
+    // It's now an unknown path, served from the static files like any other: a 404.
+    expect((await post('/push/test', { token: 'tok-1' }, { ...env, ASSETS: { fetch: async () => new Response('Not found', { status: 404 }) } })).status).toBe(404);
+    expect(f.apns).toEqual([]);
+  });
+
+  // GitHub starts the "hourly" job only every few hours, so the evening is a window, not one hour.
+  test('anyone in their evening (17:00 to 22:59 where they are) is reached, once', async () => {
+    const at = (h, m = 30) => Date.parse(`2026-10-20T${String(h - 1).padStart(2, '0')}:${m}:00Z`); // London is UTC+1 in October
+    for (const [h, users] of [[16, 0], [17, 1], [20, 1], [22, 1], [23, 0]]) {
+      const f = fakes(); globalThis.fetch = f.fetch;
+      await ready(f, (t) => t.wines.push(wine({ name: 'Barolo', vintage: 2016 })));
+      const out = await (await run({ now: at(h) })).json();
+      expect(out.users, `${h}:30 in London`).toBe(users);
+      if (users) {
+        expect(out.sent).toHaveLength(1);
+        // A later run the same evening says nothing more.
+        expect((await (await run({ now: at(h) + 2 * HOUR })).json()).sent).toEqual([]);
+      }
+    }
+  });
 
   test('the job needs its secret, and Push set up', async () => {
     const f = fakes(); globalThis.fetch = f.fetch;
@@ -343,14 +347,13 @@ async function boot(context, page, { native = true, built = true, signedIn = tru
   await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_wines: '[]',
     ...(signedIn ? { vinterest_session: JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Date.now() / 1000 + 3600, user: { id: U1, email: 'a@example.com' } }) } : {}) });
   await stubNetwork(context);
-  const seen = { register: [], unregister: [], test: 0 };
+  const seen = { register: [], unregister: [] };
   const handler = async (route) => {
     const p = new URL(route.request().url()).pathname, body = route.request().postData() ? JSON.parse(route.request().postData()) : null;
     const ok = (o) => route.fulfill({ contentType: 'application/json', body: JSON.stringify(o) });
     if (p === '/config') return ok({ supabase: null, billing: null, allPro: false, push: serverPush });
     if (p === '/push/register') { seen.register.push(body); return ok({ ok: true }); }
     if (p === '/push/unregister') { seen.unregister.push(body); return ok({ ok: true }); }
-    if (p === '/push/test') { seen.test++; await new Promise((r) => setTimeout(r, 1200)); return ok({ ok: true }); } // the server waits, as it does for real
     if (p === '/me') return ok({ signedIn: true, accounts: true, tier: 'free', usage: {}, caps: {} });
     return ok({ text: '' });
   };
@@ -372,10 +375,8 @@ test.describe('in the app', () => {
     expect(typeof seen.register[0].tz === 'string' || seen.register[0].tz === null).toBe(true);
     expect(await page.evaluate(() => window.__push.map((c) => c[0]))).toEqual(['request', 'register']);
     await expect(control(page).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
-    await page.getByTestId('push-test').click();
-    await expect(page.getByTestId('push-msg')).toContainText('Close Vinterest or lock your phone');
-    await expect.poll(() => seen.test, { timeout: 20000 }).toBe(1);
-    await expect(page.getByTestId('push-msg')).toContainText('Sent', { timeout: 20000 });
+    // No test button: the notifications are the real reminders, sent in their evening.
+    await expect(page.getByText('Send me a test')).toHaveCount(0);
   });
 
   test('turning it off tells the server to forget this phone and the phone to stop', async ({ context, page }) => {
