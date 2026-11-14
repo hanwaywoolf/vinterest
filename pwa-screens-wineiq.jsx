@@ -144,7 +144,7 @@ function DnaTitle({t,basisLine}){ const T=useTheme();
       <span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P,letterSpacing:'0.09em',textTransform:'uppercase'}}>WineDNA</span>
       <div style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,background:`${t.col}15`,border:`1px solid ${t.col}35`}}>
         <div style={{width:5,height:5,borderRadius:3,background:t.col}}/>
-        <span style={{fontSize:12,fontWeight:700,color:t.col,fontFamily:C.P}}>{t.tab||t.label}</span>
+        <span style={{fontSize:12,fontWeight:700,color:T.ink,fontFamily:C.P}}>{t.tab||t.label}</span>
       </div>
     </div>
     <div style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'-0.3px',lineHeight:1.15}}>{t.personality}</div>
@@ -305,7 +305,7 @@ function DnaFlavourPills({t}){ const T=useTheme();
   if(t.wines.length<2||!cl.length) return null;
   return <div data-testid="dna-flavours" style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
     <span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Flavours you go for</span>
-    {cl.map(c=><span key={c.name} style={{padding:'4px 11px',borderRadius:20,background:`${t.col}12`,border:`1px solid ${t.col}30`,fontSize:13,fontWeight:700,color:t.col,fontFamily:C.P}}>{c.name}</span>)}
+    {cl.map(c=><span key={c.name} style={{padding:'4px 11px',borderRadius:20,background:`${t.col}22`,border:`1px solid ${t.col}55`,fontSize:13,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.name}</span>)}
   </div>;
 }
 /* What moves their ratings (WineDNA.loves): every grape, region, producer, country, price band,
@@ -330,7 +330,7 @@ function DnaMoves({t}){ const T=useTheme();
   return <div data-testid="dna-moves" style={{background:T.glass,border:`1px solid ${T.line}`,borderRadius:16,padding:14,display:'flex',flexDirection:'column',gap:14}}>
     {/* The average first and large: every + and − below is measured against it. */}
     <div style={{display:'flex',alignItems:'center',gap:14,padding:'10px 12px',borderRadius:12,background:_alpha(col,T.dark?0.14:0.08)}}>
-      <span data-testid="dna-avg" style={{fontSize:34,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1}}>{P.usual}</span>
+      <span data-testid="dna-avg" style={{fontSize:34,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1}}>{P.usual}</span>
       <div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}><b style={{color:T.ink}}>Your average rating for {L}</b>, from {WineDNA.noun(t.key,P.n)}. Every + and − below is points above or below it.</div>
     </div>
     {P.named.length>0&&<div style={{display:'flex',flexDirection:'column',gap:9}}>
@@ -791,7 +791,7 @@ function WineDNAScreen({nav,back,showPro}){
                 </div>
                 {w.rating>0&&<span style={{fontSize:15,fontWeight:800,color:T.lift(scoreCol(w.rating)),fontFamily:C.P}}>{w.rating}</span>}
                 {/* Their own shortlist, so the shortest path to buying it again (a partner shop when one is on). */}
-                <button onClick={e=>{ e.stopPropagation(); Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0,tab:'shop'}); nav('detail'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${T.green}55`,background:T.greenBg,color:T.green,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
+                <button onClick={e=>{ e.stopPropagation(); Handoff.openWine({demo:false,wine:w,existingRating:w.rating||0,tab:'shop'}); nav('detail'); }} aria-label={`Restock ${w.name}`} style={{flexShrink:0,border:`1px solid ${T.green}55`,background:T.greenBg,color:T.ink,borderRadius:20,padding:'4px 10px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Restock</button>
               </div>); })}
             </div>
           </Card>
@@ -832,8 +832,8 @@ function WineDNAScreen({nav,back,showPro}){
                     <span style={{fontSize:13,color:T.mid,fontFamily:C.P,flexShrink:0}}>{p.style.country}</span>
                   </div>
                   <div style={{display:'flex',flexWrap:'wrap',gap:5,marginBottom:8}}>
-                    {p.shares&&<span style={{fontSize:12,fontWeight:600,color:T.green,background:T.greenBg,border:`1px solid ${T.green}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
-                    <span style={{fontSize:12,fontWeight:600,color:t.col,background:`${t.col}10`,border:`1px solid ${t.col}30`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
+                    {p.shares&&<span style={{fontSize:12,fontWeight:600,color:T.ink,background:T.greenBg,border:`1px solid ${T.green}55`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>Shares: {p.shares}</span>}
+                    <span style={{fontSize:12,fontWeight:600,color:T.ink,background:`${t.col}22`,border:`1px solid ${t.col}55`,borderRadius:20,padding:'2px 9px',fontFamily:C.P}}>New: {p.style.adds}</span>
                   </div>
                   {more&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.55,textWrap:'pretty',marginBottom:6}}>{p.why}</div>}
                   <div style={{fontSize:13,fontWeight:600,color:t.col,fontFamily:C.P}}>Learn about it & find a bottle →</div>
@@ -1016,8 +1016,8 @@ function WineDNAScreen({nav,back,showPro}){
                     return(
                       <div key={i} onClick={()=>pickType(i)} style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:10,background:i===typeIdx?tp.col+'18':T.soft,border:`1.5px solid ${i===typeIdx?tp.col+'55':'transparent'}`,cursor:'pointer',opacity:typeStats[i].wines.length?1:0.45}}>
                         <div style={{width:7,height:7,borderRadius:4,background:tp.col,margin:'0 auto 3px'}}/>
-                        <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?tp.col:T.mid,fontFamily:C.P}}>{tp.tab}</div>
-                        <div style={{fontSize:12,color:i===typeIdx?tp.col:T.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
+                        <div style={{fontSize:13,fontWeight:i===typeIdx?700:500,color:i===typeIdx?T.ink:T.mid,fontFamily:C.P}}>{tp.tab}</div>
+                        <div style={{fontSize:12,color:i===typeIdx?T.ink:T.mid,fontFamily:C.P,opacity:0.75}}>{typeStats[i].pct}%</div>
                       </div>
                     );
                   })}
