@@ -64,7 +64,35 @@
         <li data-at="0.8"><h3>Remember everything you've tried.</h3></li>
       </ol>
       <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the Vinterest app: a scan: the wine and its match, the WineDNA profile, Ask Vinny, an article written for you, and My Wines.">
-        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="hero"></div></div>
+        <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="hero"></div>
+          <!-- The hero opens on the camera: a bottle in the frame and the scan passing over its label, then the story it found. Drawn here, shown only where it plays (html.js, motion allowed). -->
+          <div class="hero-cam" id="hero-cam">
+            <span class="cam-title">Scan Wine</span>
+            <div class="cam-frame">
+              <svg class="cam-bottle" viewBox="0 0 120 400" aria-hidden="true">
+                <defs>
+                  <linearGradient id="hb-glass" x1="0" x2="1"><stop offset="0" stop-color="#0c0d0c"/><stop offset=".28" stop-color="#232a25"/><stop offset=".5" stop-color="#141815"/><stop offset="1" stop-color="#070807"/></linearGradient>
+                  <linearGradient id="hb-foil" x1="0" x2="1"><stop offset="0" stop-color="#5a1220"/><stop offset=".4" stop-color="#a32a44"/><stop offset="1" stop-color="#4a0e1a"/></linearGradient>
+                </defs>
+                <path d="M47 6h26v70c0 20 27 38 27 78v226c0 9-6 14-14 14H34c-8 0-14-5-14-14V154c0-40 27-58 27-78z" fill="url(#hb-glass)"/>
+                <path d="M47 6h26v62H47z" fill="url(#hb-foil)"/>
+                <rect x="45" y="4" width="30" height="7" rx="2" fill="#7a1c2f"/>
+                <path d="M30 150c0-22 8-36 16-48" stroke="rgba(255,255,255,.22)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <rect x="28" y="196" width="64" height="128" rx="3" fill="#F3EDE2"/>
+                <rect x="33" y="201" width="54" height="118" rx="1.5" fill="none" stroke="#8B1A2F" stroke-width=".8"/>
+                <text x="60" y="222" text-anchor="middle" font-family="Poppins, sans-serif" font-size="5.6" font-weight="700" letter-spacing="1.1" fill="#3a2a22">ALAIN GRAILLOT</text>
+                <line x1="46" y1="230" x2="74" y2="230" stroke="#8B1A2F" stroke-width=".8"/>
+                <text x="60" y="254" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="15" fill="#1c1512">Crozes-</text>
+                <text x="60" y="271" text-anchor="middle" font-family="'Instrument Serif', Georgia, serif" font-size="15" fill="#1c1512">Hermitage</text>
+                <text x="60" y="296" text-anchor="middle" font-family="Poppins, sans-serif" font-size="9" font-weight="700" fill="#8B1A2F">2021</text>
+                <text x="60" y="311" text-anchor="middle" font-family="Poppins, sans-serif" font-size="4.4" letter-spacing=".8" fill="#6b5a50">SYRAH · RHÔNE</text>
+              </svg>
+              <i class="cam-scan"></i>
+              <span class="cam-corner tl"></span><span class="cam-corner tr"></span><span class="cam-corner bl"></span><span class="cam-corner br"></span>
+              <span class="cam-pill"><b class="a">Frame the wine label</b><b class="b">Analysing label…</b></span>
+            </div>
+            <span class="cam-shutter"><i></i></span>
+          </div></div>
         <span class="island"></span></div></div>
     </div>
   </div>

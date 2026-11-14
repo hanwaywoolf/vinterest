@@ -315,6 +315,16 @@
   } else {
     reveals.forEach(function (el) { el.classList.add('in'); });
   }
+  /* The hero opens on the camera (drawn in the page, see .hero-cam); as it lifts away the story underneath starts
+     again from its first scene, so the visitor sees the scan and then what it found, in order. */
+  var heroCam = document.getElementById('hero-cam');
+  if (heroCam && !reduced) {
+    heroCam.addEventListener('animationend', function (e) {
+      if (e.animationName !== 'camOut') return;
+      heroCam.hidden = true;
+      features.forEach(function (f) { if (f.carousel && f.auto) hold(f, 0, false); });
+    });
+  }
   /* On a phone a section's caption floats at the foot of the screen; it shows once the section's phone is on
      screen (before that it would sit over the section's own heading). Without an observer it always shows. */
   var capStages = Array.prototype.slice.call(document.querySelectorAll('.feature .stage'));
