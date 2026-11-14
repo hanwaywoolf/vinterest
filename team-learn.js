@@ -1636,9 +1636,10 @@ const TeamLearn = {
   /* The kitchen confirming a dish's allergens assigns its allergen question to everyone, due in a week. */
   assignAllergen(dishId,now=Date.now()){ const p=this._all(); this.people().forEach(person=>{ const m=this._mine(p,person.id); const k='a:'+dishId; if(!m.assigned[k]) m.assigned[k]={at:now,from:now,due:now+7*this.DAY,wave:0}; }); this._saveAll(p); },
   /* Put these wines first for someone (the console's plans: "the five that sell most and she isn't trained on"): each
-     becomes an assignment due in `days`, so the drill deals them before anything else. A wine already done stays done. */
-  prioritise(pid,ids,days=3,now=Date.now()){ const p=this._all(), m=this._mine(p,pid); let n=0;
-    (ids||[]).forEach(id=>{ const k='w:'+id, a=m.assigned[k]; if(a&&a.done) return; m.assigned[k]={...(a||{}),at:(a&&a.at)||now,from:now,due:now+days*this.DAY,wave:0,first:true}; n++; });
+     becomes an assignment due in `days`, so the drill deals them before anything else. A wine already done stays done. `pre` is the kind: w: wines, d: dishes,
+     c: cocktails, a: allergens. */
+  prioritise(pid,ids,days=3,now=Date.now(),pre='w:'){ const p=this._all(), m=this._mine(p,pid); let n=0;
+    (ids||[]).forEach(id=>{ const k=pre+id, a=m.assigned[k]; if(a&&a.done) return; m.assigned[k]={...(a||{}),at:(a&&a.at)||now,from:now,due:now+days*this.DAY,wave:0,first:true}; n++; });
     this._saveAll(p); return n; },
   assignments(pid){ const m=this._mine(this._all(),pid), now=Date.now();
     return Object.entries(m.assigned||{}).filter(([,a])=>!a.done).map(([k,a])=>({key:k,kind:k[0]==='w'?'wine':k[0]==='c'?'cocktail':k[0]==='a'?'allergen':'dish',id:k.slice(2),due:a.due,overdue:a.due<now})).sort((a,b)=>a.due-b.due); },

@@ -223,6 +223,29 @@ const TeamReport = {
       :this.coverage().rows.filter(x=>x.of>0&&TeamData.byGlass(x.wine)).map(x=>({name:TeamData.nick(x.wine),n:x.knows,of:x.of,open:{view:'wine',id:x.wine.id},wine:x.wine}));
     const all=items.filter(x=>x.n>=x.of), few=items.filter(x=>x.n<Math.ceil(x.of/2)), most=items.filter(x=>x.n<x.of&&x.n>=Math.ceil(x.of/2));
     return {total:items.length,all:all.length,most:most.length,few:few.length,gaps:[...few,...most].sort((a,b)=>a.n/a.of-b.n/b.of)}; },
+  /* One person's next step, progressively: the first area (in the order their role learns them) still under its
+     minimum, and the next `n` things in it, best sellers first. Says what it moves: the area's count against what
+     the minimum needs, readiness before and after (about), the drills it takes and what a week it's worth where
+     the sales say. Someone ready gets a stretch step (what they aren't trained on yet), or nothing left.
+     {person, part, label, ready, stretch, items:[{id,name}], pre, known, to, total, needs, pct, pctAfter, drills, extra} */
+  trainingPlan(pid,n=5){ const x=this.people().find(y=>y.person.id===pid); if(!x) return null; const p=x.person, r=x.r, role=p.role, sc=TeamLearn.scope(role), items=(TeamLearn._all()[pid]||{items:{}}).items||{};
+    const rank=TeamSales.has()?Object.fromEntries(this.salesByWine(28).map((y,i)=>[y.wine.id,i])):{}, PRE={glass:'w:',bottle:'w:',cocktails:'c:',dishes:'d:',allergens:'a:'};
+    const left=k=>(k==='dishes'?sc.dishes.filter(d=>TeamLearn.dishQsFor(role,d.id,{allergen:false}).length&&!TeamLearn.knowsDish(pid,d.id,items)):k==='allergens'?(sc.allergens||[]).filter(d=>!TeamLearn.knowsAllergens(pid,d.id,items)):(sc[k]||[]).filter(w=>TeamLearn.qsFor(role,w.id).length&&!TeamLearn.knowsWine(pid,role,w.id,items)))
+      .sort((a,b)=>(rank[a.id]==null?999:rank[a.id])-(rank[b.id]==null?999:rank[b.id]));
+    const order=TeamLearn.waves(role).map(w=>w.part).filter(k=>r.parts[k]), under=order.filter(k=>r.parts[k].share<r.parts[k].need-1e-9), part=under[0]||order.find(k=>left(k).length);
+    if(!part) return {person:p,ready:r.state==='ready',done:true,pct:r.pct,items:[]};
+    const pt=r.parts[part], needs=Math.ceil(pt.need*pt.total-1e-9), pick=left(part).slice(0,under.length?Math.max(1,Math.min(n,Math.max(needs-pt.known,3))):n);
+    const name=y=>part==='dishes'||part==='allergens'?y.name.split(',')[0]:part==='cocktails'?y.name:TeamData.nick(y), qs=pick.reduce((a,y)=>a+(part==='dishes'?TeamLearn.dishQsFor(role,y.id,{allergen:false}).length:part==='allergens'?1:TeamLearn.qsFor(role,y.id).length),0);
+    const after=Object.keys(r.parts).reduce((a,k)=>{ const q=r.parts[k], gain=k===part?pick.length:0; return a+Math.min(1,Math.min(1,(q.partial*q.total+gain)/Math.max(1,q.total))/q.need); },0)/Object.keys(r.parts).length;
+    const up=(this.upside()||{rows:[]}).rows, extra=part==='glass'||part==='bottle'?pick.reduce((a,w)=>{ const u=up.find(y=>y.wine.id===w.id&&y.missing.some(q=>q.id===pid)); return a+(u?u.extra/u.missing.length:0); },0):0;
+    return {person:p,part,label:TeamLearn.PART_LABEL[part],ready:r.state==='ready',stretch:!under.length,items:pick.map(y=>({id:y.id,name:name(y)})),pre:PRE[part],known:pt.known,to:Math.min(pt.total,pt.known+pick.length),total:pt.total,needs,pct:r.pct,pctAfter:Math.max(r.pct,Math.round(100*after)),drills:Math.max(1,Math.ceil(qs/5)),extra}; },
+  /* Push that step: its things go first in the person's drills, due in three days. Returns how many. */
+  pushPlan(pid){ const t=this.trainingPlan(pid); if(!t||!t.items.length) return 0; return TeamLearn.prioritise(pid,t.items.map(y=>y.id),3,Date.now(),t.pre); },
+  /* The Team page's table: each person with their areas against the minimum, what they sell and their next step. */
+  teamRows(){ const srv=TeamSales.has()?Object.fromEntries(this.salesByServer(28).map(y=>[y.person.id,y])):{}, weeks=Math.max(1,TeamSales.nights(28).length/7);
+    return this.people().map(x=>{ const s=srv[x.person.id], peers=Object.values(srv).filter(y=>y.shifts>0&&y.person.role===x.person.role), avg=peers.length?peers.reduce((a,y)=>a+(y.revenuePerShift||0),0)/peers.length:null;
+      return {...x,areas:Object.entries(x.r.parts).map(([k,q])=>({k,label:TeamLearn.PART_LABEL[k],known:q.known,total:q.total,needs:Math.ceil(q.need*q.total-1e-9),min:Math.round(100*q.need),met:q.share>=q.need-1e-9})),
+        sales:s&&s.shifts?{perShift:s.revenuePerShift||0,perWeek:s.revenue/weeks,glasses:s.glasses,bottles:s.bottles,roleAvg:avg,peers:peers.length}:null,plan:this.trainingPlan(x.person.id)}; }).sort((a,b)=>a.r.pct-b.r.pct); },
   /* A plan behind a line of Needs you: what's so in figures, then a few things to do, each with a button where the
      console can do it ({do:'first', pid, ids} puts wines first in someone's drills, {do:'feature', id} features a wine
      tonight, {do:'open', open} goes somewhere). kind: person | slow | train. */
@@ -321,6 +344,11 @@ const TeamReport = {
       if(k.share!=null) add(k.share>=0.6?'good':'note',`${Math.round(100*k.share)}% of wine takings came from servers trained on the wine they sold`);
       const fall=byWine.slice(0,10).filter(x=>delta[x.wine.id]!=null&&delta[x.wine.id]<0).sort((a,b)=>delta[a.wine.id]-delta[b.wine.id])[0];
       if(fall) add('bad',`${TeamData.nick(fall.wine)} sales down ${Math.abs(delta[fall.wine.id])}% on last week`); else if(gap) add('note',`${TeamData.nick(gap.wine)} sold ${sold(gap)}; ${gap.knows} of ${gap.of} servers trained on it`); }
+    else if(section==='team'){ const ps=this.people(), ready=ps.filter(x=>x.r.state==='ready'), near=ps.filter(x=>x.r.state!=='ready'&&x.r.pct>=70).sort((a,b)=>b.r.pct-a.r.pct), behind=ps.filter(x=>x.r.behind>0).sort((a,b)=>b.r.behind-a.r.behind), up=this.upside(), f=x=>x.person.name.split(' ')[0];
+      out.strong=`${ready.length} of ${ps.length}`; out.post=` ${ready.length===1?'is':'are'} ready for service tonight.`;
+      if(near.length) add('note',`${near.slice(0,3).map(x=>`${f(x)} ${x.r.pct}%`).join(', ')} within reach of ready`);
+      if(behind.length) add('bad',`${f(behind[0])} is ${behind[0].r.behind} day${behind[0].r.behind===1?'':'s'} behind the training plan`);
+      if(up&&up.total>=1) add('good',`Training the rest on your top sellers: about ${m(up.total)} more a week`); }
     else if(section==='wines'){ const rows=this.coverage().rows.filter(x=>x.of>0), ok=rows.filter(x=>x.knows>=Math.ceil(x.of/2)), gaps=rows.filter(x=>x.knows<Math.ceil(x.of/2));
       out.pre='Your team is trained on '; out.strong=`${ok.length} of ${rows.length}`; out.post=' wines.';
       if(s){ const by=Object.fromEntries(byWine.map(x=>[x.wine.id,x.revenue])), g=gaps.reduce((a,x)=>a+(by[x.wine.id]||0),0); if(g>0) add('note',`The other ${gaps.length} bring in ${m(g)} a week`); }

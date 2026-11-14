@@ -2659,7 +2659,18 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.evaluate(() => TeamData.trainsAllergens())).toBe(false);
   await page.getByTestId('c2-allergens-switch').click();
   // The other sections are the classic ones inside the new shell.
-  await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
+  await page.getByTestId('console-nav-cocktails').count();
+  // Team: a sentence, five figures, each person's areas against the minimum with what they sell, and a next step to push.
+  await page.getByTestId('console-nav-team').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('ready for service');
+  await expect(page.getByTestId('c2-team-row')).toHaveCount(7);
+  await expect(page.getByTestId('c2-team-table')).toContainText('a week'); await expect(page.getByTestId('c2-team-table')).toContainText(/needs \d+/);
+  await expect(page.getByTestId('c2-how')).toContainText('every area'); await expect(page.getByTestId('c2-how-example')).toContainText('minimum');
+  const next = page.getByTestId('c2-next').first(); await expect(next).toContainText(/→ \d+ of \d+/);
+  await next.getByTestId('c2-push').click(); await expect(next.getByTestId('c2-push')).toContainText('First in');
+  await next.getByTestId('c2-see-plan').click(); await expect(page.getByTestId('c2-plan')).toBeVisible(); await page.getByTestId('c2-plan-close').click();
+  // The classic team tools stay under Manage.
+  await page.getByTestId('c2-manage-c2-manage-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
   // And back to the classic console, remembered on the device.
   await page.evaluate(() => { window.VINTEREST_CONSOLE = null; });
   await page.getByTestId('c2-classic').click();

@@ -804,3 +804,13 @@ out with its wine (`TeamReport.pairings().sold`, which needs check-level sales) 
 - How far training has spread (`TeamReport.spread`, `_C2Spread`) is one bar in three parts (whole team, at least half,
   fewer) with the gaps named, so there's somewhere to go after "at least half".
 - A figure on the dashboard opens the card it summarises on its own page (`jump` in `TeamConsole2`).
+- Every page of the new look has the same top: the sentence, then five figures. Team (`_C2Team`) follows it: who is
+  ready, training finished, Train next (the wine worth most, opening its plan), Needs a plan (the person furthest
+  from ready, opening theirs) and what's still on the table. Its table (`TeamReport.teamRows`) gives each person
+  their readiness, every area as "9 of 15 · needs 12: 3 to go", the wine they sell a week and a shift against their
+  role's average, and one next step (`TeamReport.trainingPlan`: the first area under its minimum in the order the
+  role learns them, the next few things in it, best sellers first, with what it moves: the area's count, readiness
+  before and after, the drills it takes, what a week it's worth). "Push to Priya" (`pushPlan`) puts that step first
+  in her drills; "Push everyone's next step" does it for the team. Readiness is explained beside it with one person
+  worked through: ready is every area at its minimum, and the percentage is the average of each area's progress
+  towards its own minimum. The classic team tools sit under Manage.
