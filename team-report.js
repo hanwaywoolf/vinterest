@@ -184,7 +184,7 @@ const TeamReport = {
   salesActions(){ if(!TeamSales.has()) return []; const s=this.salesSummary(7); if(!s) return [];
     const out=[], m=n=>TeamData.money(Math.round(n)), byWine=this.salesByWine(28), lift=this.trainedLift(28), till=this.newOnTill(), d=s.delta.revenue, n=x=>x===1?'1 person':`${x} people`;
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
-    gaps.slice(0,2).forEach(x=>out.push({tag:'Train',tone:'bad',fact:`${TeamData.short(x.wine)} is one of your top sellers, but only ${x.knows} of the ${n(x.of)} who serve it ${x.knows===1?'is':'are'} trained on it.`,act:`Assign it to the other ${x.of-x.knows} so they learn it this week.`,open:{view:'wine',id:x.wine.id}}));
+    gaps.slice(0,2).forEach(x=>out.push({tag:'Train',tone:'bad',fact:`${TeamData.short(x.wine)} is one of your top sellers, but only ${x.knows} of the ${n(x.of)} who serve it ${x.knows===1?'is':'are'} trained on it.`,act:`Put it first for the other ${x.of-x.knows}: see who and how.`,open:{view:'plan',kind:'train',id:x.wine.id}}));
     out.push({tag:'Sales',tone:d==null?'note':d>=0?'good':'bad',fact:d==null?`You sold ${m(s.revenue)} of wine in the last 7 nights.`:`You sold ${m(s.revenue)} of wine in the last 7 nights, ${d>=0?'up':'down'} ${Math.abs(d)}% on the week before.`,
       act:d!=null&&d<0?'See Best sellers below for the wines that fell.':'See Best sellers below for the wines behind it.'});
     if(s.perCover!=null){ const dp=s.delta.perCover; out.push({tag:'Guests',tone:dp==null?'note':dp>=0?'good':'bad',fact:`Each guest spent ${TeamData.money(s.perCover,{dp:2})} on wine${dp==null?'':`, ${dp>=0?'up':'down'} ${Math.abs(dp)}% on the week before`}.`,
@@ -192,9 +192,9 @@ const TeamReport = {
     if(lift.pct>0&&lift.wines) out.push({tag:'Training',tone:'good',fact:`A server trained on a wine sells about ${lift.x>=1.95?Math.round(lift.x):lift.x} times as much of it as one who isn't.`,act:gaps.length?`Start with the ${TeamData.nick(gaps[0].wine)}: it sells and few are trained on it.`:'Keep new arrivals assigned as they come in.'});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];
-      if(low&&low.readiness&&low.readiness.state!=='ready'){ const f=low.person.name.split(' ')[0]; out.push({tag:'Team',tone:'bad',fact:`${f} sells the least wine a shift (${m(low.revenuePerShift||0)}) and has finished ${low.readiness.pct}% of the training for the role.`,act:`Ask ${f} to do today's drill before service.`,open:{view:'person',id:low.person.id}}); } }
+      if(low&&low.readiness&&low.readiness.state!=='ready'){ const f=low.person.name.split(' ')[0]; out.push({tag:'Team',tone:'bad',fact:`${f} sells the least wine a shift (${m(low.revenuePerShift||0)}) and has finished ${low.readiness.pct}% of the training for the role.`,act:`See what would lift ${f}'s sales: the best sellers ${f} isn't trained on.`,open:{view:'plan',kind:'person',id:low.person.id}}); } }
     const glassAll=this.slowMovers(28,Infinity), mid=glassAll.length?glassAll[Math.floor(glassAll.length/2)].perNight:0, known=glassAll.find(x=>x.of>=3&&x.knows>=Math.ceil(x.of/2)&&x.perNight<mid);
-    if(known) out.push({tag:'Slow',tone:'note',fact:`${TeamData.short(known.wine)} sells ${known.perNight.toFixed(1)} glasses a night, though most of its servers are trained on it.`,act:'Training isn\'t the problem here: look at its price or pour size.',open:{view:'wine',id:known.wine.id}});
+    if(known) out.push({tag:'Slow',tone:'note',fact:`${TeamData.short(known.wine)} sells ${known.perNight.toFixed(1)} glasses a night, though most of its servers are trained on it.`,act:'Training isn\'t the problem here. See four things to try, starting with featuring it tonight.',open:{view:'plan',kind:'slow',id:known.wine.id}});
     if(till.length) out.push({tag:'POS',tone:'note',fact:`${till.length} item${till.length===1?'':'s'} in your sales ${till.length===1?'isn\'t':'aren\'t'} matched to a wine on your list (${till[0].item}).`,act:'Match it in Integrations so its sales count.',open:{tab:'pos'}});
     return out; },
   /* The same wine, a shift: what servers trained on it take against servers who aren't, for the wines that sell most
@@ -204,10 +204,62 @@ const TeamReport = {
     return TeamData.wines().map(w=>{ const k=servers.filter(p=>shifts[p.id]&&TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=servers.filter(p=>shifts[p.id]&&!k.includes(p)); if(k.length<2||u.length<2) return null; // one person's shifts are that person, not a comparison
       const q=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0), sh=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
       return {wine:w,trained:q(k)/sh(k),untrained:q(u)/sh(u),k:k.length,u:u.length,revenue:q(k)+q(u)}; }).filter(Boolean).sort((a,b)=>b.revenue-a.revenue).slice(0,n); },
+  /* What training is worth, in weeks (the console's validation card): how much of a wine a server sells in a week when
+     trained on it and when not, and for each top seller with at least two servers of each kind, who isn't trained yet
+     and what a week would add if they sold it as the trained ones do (`extra`, the same sum as upside()). */
+  trainingWorth(days=28,n=5){ if(!TeamSales.has()) return null; const lift=this.trainedLift(days), up=this.upside(days); if(!lift||lift.x==null||!up) return null;
+    const rows=TeamSales.rows(days), nights=TeamSales.nights(days), all=TeamLearn._all(), weeks=Math.max(1,nights.length/7);
+    const servers=TeamLearn.people().filter(p=>['server','bartender','sommelier'].includes(p.role)), shifts=Object.fromEntries(servers.map(p=>[p.id,nights.filter(x=>(x.shifts||[]).includes(p.id)).length]));
+    const on=servers.filter(p=>shifts[p.id]), perWeek=on.length?on.reduce((a,p)=>a+shifts[p.id],0)/on.length/weeks:0;
+    const list=up.rows.map(x=>{ const w=x.wine, k=on.filter(p=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=on.filter(p=>!k.includes(p)); if(k.length<2||u.length<2) return null;
+      const money=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0);
+      return {wine:w,trained:money(k)/k.length/weeks,untrained:money(u)/u.length/weeks,k:k.length,u:u.length,missing:u,extra:x.extra}; }).filter(Boolean).slice(0,n);
+    return {x:lift.x,trained:lift.known*perWeek,untrained:lift.unknown*perWeek,total:up.total,rows:list}; },
+  /* How far training on a set of things has spread, with room to grow: how many the whole team is trained on, how many
+     at least half, how many fewer; `few` are the ones to act on. kind 'glass' (wines by the glass) or 'pairings'. */
+  spread(kind){ const items=kind==='pairings'?this.pairings().filter(x=>x.first&&x.of).map(x=>({name:x.dish.name.split(',')[0],n:x.people.length,of:x.of,open:{view:'dish',id:x.dish.id},wine:x.first}))
+      :this.coverage().rows.filter(x=>x.of>0&&TeamData.byGlass(x.wine)).map(x=>({name:TeamData.nick(x.wine),n:x.knows,of:x.of,open:{view:'wine',id:x.wine.id},wine:x.wine}));
+    const all=items.filter(x=>x.n>=x.of), few=items.filter(x=>x.n<Math.ceil(x.of/2)), most=items.filter(x=>x.n<x.of&&x.n>=Math.ceil(x.of/2));
+    return {total:items.length,all:all.length,most:most.length,few:few.length,gaps:[...few,...most].sort((a,b)=>a.n/a.of-b.n/b.of)}; },
+  /* A plan behind a line of Needs you: what's so in figures, then a few things to do, each with a button where the
+     console can do it ({do:'first', pid, ids} puts wines first in someone's drills, {do:'feature', id} features a wine
+     tonight, {do:'open', open} goes somewhere). kind: person | slow | train. */
+  plan(kind,id){ const m=n=>TeamData.money(Math.round(n)), all=TeamLearn._all(), names=ws=>ws.map(w=>TeamData.nick(w)).join(', '), money=x=>{ const r=/\d+(?:\.\d+)?/.exec(String(x||'')); return r?+r[0]:0; };
+    const trainedOn=(p,w)=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items);
+    if(kind==='person'){ const x=this.people().find(y=>y.person.id===id); if(!x) return null; const p=x.person, f=p.name.split(' ')[0], sc=TeamLearn.scope(p.role), mine=[...sc.glass,...sc.bottle];
+      const sold=TeamSales.has()?this.salesByWine(28).map(y=>y.wine):mine, gaps=sold.filter(w=>mine.some(y=>y.id===w.id)&&!trainedOn(p,w)).slice(0,5), qs=gaps.reduce((a,w)=>a+TeamLearn.qsFor(p.role,w.id).length,0);
+      const done=mine.filter(w=>trainedOn(p,w)).length, srv=TeamSales.has()?this.salesByServer(28).find(y=>y.person.id===id):null, peers=TeamSales.has()?this.salesByServer(28).filter(y=>y.shifts>0&&y.person.role===p.role&&y.person.id!==id):[];
+      const buddy=this.people().filter(y=>y.person.id!==id&&y.r.state==='ready').map(y=>({y,n:gaps.filter(w=>trainedOn(y.person,w)).length})).sort((a,b)=>b.n-a.n)[0];
+      const facts=[`${f} has finished ${x.r.pct}% of the training a ${TeamLearn.ROLES[p.role].label.toLowerCase()} needs.`,`Trained on ${done} of the ${mine.length} wines the role sells.`];
+      if(x.r.behind) facts.push(`${x.r.behind} day${x.r.behind===1?'':'s'} behind the training plan.`);
+      if(srv&&srv.shifts) facts.push(`Sells ${m(srv.revenuePerShift||0)} of wine a shift${peers.length?`; others in the role average ${m(peers.reduce((a,y)=>a+(y.revenuePerShift||0),0)/peers.length)}`:''}.`);
+      const steps=[];
+      if(gaps.length) steps.push({text:`Start with the ${gaps.length} best sellers ${f} isn't trained on: ${names(gaps)}. That's ${qs} questions, about ${Math.max(1,Math.ceil(qs/5))} drills.`,button:{label:`Put these first in ${f}'s drills`,do:'first',pid:id,ids:gaps.map(w=>w.id)}});
+      if(x.r.due) steps.push({text:`${x.r.due} answer${x.r.due===1?' has':'s have'} faded since ${f} learnt ${x.r.due===1?'it':'them'}. ${Math.max(1,Math.ceil(x.r.due/5))} drill${x.r.due>5?'s':''} brings ${x.r.due===1?'it':'them'} back.`});
+      if(buddy&&buddy.n) steps.push({text:`Put ${f} on a section beside ${buddy.y.person.name.split(' ')[0]} this week, who is trained on ${buddy.n===gaps.length?'all of these':`${buddy.n} of these`} and can show how they're sold.`});
+      if(gaps[0]) steps.push({text:`Have ${f} practise a guest at the table on the ${TeamData.nick(gaps[0])}: saying it out loud is what turns knowing a wine into selling it.`});
+      steps.push({text:`See everything ${f} is short of, wine by wine.`,button:{label:`Open ${f}'s page`,do:'open',open:{view:'person',id}}});
+      return {title:`Getting ${f} to where a ${TeamLearn.ROLES[p.role].label.toLowerCase()} needs to be`,facts,steps}; }
+    const w=TeamData.wine(id); if(!w) return null; const kb=this.knownBy(w), s=this._sellers(w), missing=s.who.filter(p=>!kb.people.some(q=>q.id===p.id)), nick=TeamData.nick(w);
+    if(kind==='train'){ const sold=TeamSales.has()?this.salesByWine(28).find(y=>y.wine.id===id):null, up=(this.upside()||{rows:[]}).rows.find(y=>y.wine.id===id);
+      const facts=[`${kb.people.length} of the ${kb.of} people who serve the ${nick} are trained on it.`]; if(sold) facts.push(`It took ${m(sold.revenue)} in the last 28 nights.`); if(up) facts.push(`Trained servers sell more of it: about ${m(up.extra)} a week more if the rest sold it the same way.`);
+      const steps=[{text:`Put it first for the ${missing.length} who aren't trained on it: ${missing.map(p=>p.name.split(' ')[0]).join(', ')}.`,button:{label:'Put it first in their drills',do:'first',pids:missing.map(p=>p.id),ids:[id]}}];
+      if(kb.people[0]) steps.push({text:`Ask ${kb.people[0].name.split(' ')[0]}, who is trained on it, to pour a taste and give the line at tonight's briefing.`});
+      steps.push({text:'Read what the team is taught to say about it.',button:{label:'Open the wine',do:'open',open:{view:'wine',id}}});
+      return {title:`Getting the team trained on the ${nick}`,facts,steps}; }
+    if(kind==='slow'){ const row=this.slowMovers(28,Infinity).find(y=>y.wine.id===id), peers=TeamData.wines().filter(y=>y.id!==id&&TeamData.byGlass(y)&&y.section===w.section), mine=money(w.glass), avg=peers.length?peers.reduce((a,y)=>a+money(y.glass),0)/peers.length:0;
+      const dishes=this.pairings().filter(y=>(y.first&&y.first.id===id)||(y.glass&&y.glass.id===id)).map(y=>y.dish.name.split(',')[0]);
+      const facts=[]; if(row) facts.push(`The ${nick} sells ${row.perNight.toFixed(1)} glasses a night.`); facts.push(`${kb.people.length} of the ${kb.of} people who serve it are trained on it, so the team can talk about it.`);
+      const steps=[{text:`Feature it tonight: it goes in the briefing with its line, and every server is asked to offer it.`,button:TeamData.isFeature(id)?null:{label:'Feature it tonight',do:'feature',id}}];
+      if(mine&&avg) steps.push({text:mine>avg*1.15?`At ${w.glass} a glass it's above your other ${String(w.section||'wines').toLowerCase()} by the glass (${TeamData.money(avg,{dp:avg%1?2:0})} on average). Try a lower price or a smaller pour for a fortnight and watch this figure.`:`At ${w.glass} a glass its price is in line with your other ${String(w.section||'wines').toLowerCase()} (${TeamData.money(avg,{dp:avg%1?2:0})} on average), so price is unlikely to be it. Look at where it sits on the printed list.`});
+      steps.push(dishes.length?{text:`It's the wine we suggest with ${dishes.slice(0,3).join(', ')}. Ask servers to offer it by name when ${dishes.length===1?'that is':'those are'} ordered.`,button:{label:'See the menu',do:'open',open:{tab:'menu'}}}:{text:'It isn\'t the suggested wine for any dish, so nobody has a reason to offer it. Give it a dish on the Menu page.',button:{label:'See the menu',do:'open',open:{tab:'menu'}}});
+      steps.push({text:'If it still doesn\'t move in a month, swap it for a glass your guests already ask for.'});
+      return {title:`Getting the ${nick} moving`,facts,steps}; }
+    return null; },
   /* The dashboard's "Needs you" in the new look: what's so (`fact`), then what to do (`act`), most pressing first. */
   dashActions(){ const out=[], seen=new Set(), ppl=this.people(), sa=this.salesActions();
     sa.filter(x=>x.tag==='Train').forEach(x=>out.push(x));
-    ppl.filter(x=>x.r.behind>0).slice(0,2).forEach(x=>{ const f=x.person.name.split(' ')[0]; seen.add(x.person.id); out.push({tag:'Team',tone:'bad',fact:`${f} is behind on the training plan: ${x.r.pct}% of what a ${TeamLearn.ROLES[x.person.role].label.toLowerCase()} needs, and ${x.r.behind} day${x.r.behind===1?'':'s'} behind.`,act:`Ask ${f} to do today's drill before service.`,open:{view:'person',id:x.person.id}}); });
+    ppl.filter(x=>x.r.behind>0).slice(0,2).forEach(x=>{ const f=x.person.name.split(' ')[0]; seen.add(x.person.id); out.push({tag:'Team',tone:'bad',fact:`${f} is behind on the training plan: ${x.r.pct}% of what a ${TeamLearn.ROLES[x.person.role].label.toLowerCase()} needs, and ${x.r.behind} day${x.r.behind===1?'':'s'} behind.`,act:`See the plan to get ${f} there: which wines to put first, and who can help.`,open:{view:'plan',kind:'person',id:x.person.id}}); });
     sa.filter(x=>x.tag==='Team'&&!(x.open&&seen.has(x.open.id))).forEach(x=>out.push(x));
     const st=TeamShift.status(); if(!st.empty&&!st.sent) out.push({tag:'Tonight',tone:'note',fact:'Tonight is set, but the briefing hasn\'t gone to the team.',act:'Send it so everyone reads it before service.',open:{view:'tonight'}});
     else if(st.sent&&st.changed) out.push({tag:'Tonight',tone:'note',fact:'Tonight has changed since the briefing went out.',act:'Send the new version.',open:{view:'tonight'}});
@@ -268,8 +320,8 @@ const TeamReport = {
       const fall=byWine.slice(0,10).filter(x=>delta[x.wine.id]!=null&&delta[x.wine.id]<0).sort((a,b)=>delta[a.wine.id]-delta[b.wine.id])[0];
       if(fall) add('bad',`${TeamData.nick(fall.wine)} sales down ${Math.abs(delta[fall.wine.id])}% on last week`); else if(gap) add('note',`${TeamData.nick(gap.wine)} sold ${sold(gap)}; ${gap.knows} of ${gap.of} servers trained on it`); }
     else if(section==='wines'){ const rows=this.coverage().rows.filter(x=>x.of>0), ok=rows.filter(x=>x.knows>=Math.ceil(x.of/2)), gaps=rows.filter(x=>x.knows<Math.ceil(x.of/2));
-      out.pre='The floor can sell '; out.strong=`${ok.length} of ${rows.length}`; out.post=' wines.';
-      if(s){ const by=Object.fromEntries(byWine.map(x=>[x.wine.id,x.revenue])), g=gaps.reduce((a,x)=>a+(by[x.wine.id]||0),0); if(g>0) add('note',`The ${gaps.length} it can't bring in ${m(g)} a week`); }
+      out.pre='Your team is trained on '; out.strong=`${ok.length} of ${rows.length}`; out.post=' wines.';
+      if(s){ const by=Object.fromEntries(byWine.map(x=>[x.wine.id,x.revenue])), g=gaps.reduce((a,x)=>a+(by[x.wine.id]||0),0); if(g>0) add('note',`The other ${gaps.length} bring in ${m(g)} a week`); }
       const ad=this.adoption(); if(ad.length) add('note',`${ad.length} new arrival${ad.length===1?'':'s'}: ${TeamData.nick(ad[0].wine)}, ${ad[0].knows} of ${ad[0].of} trained on it`);
       const old=TeamData.wines().filter(w=>{ const x=TeamData.window(w); return x&&x.stage==='old'; }).length; if(old) add('bad',`${old} past ${old===1?'its':'their'} best`);
       const hole=this.coverage().holes[0]; if(hole) add('note',`${TeamData.nick(hole.wine)} by the glass: ${hole.knows} of ${hole.of} trained on it`); }
@@ -278,8 +330,8 @@ const TeamReport = {
         out.strong=frac; out.post=' orders the pairing.'; const best=[...withSold].sort((a,b)=>b.sold*b.perWeek-a.sold*a.perWeek)[0], worst=[...withSold].filter(x=>x.perWeek>=20).sort((a,b)=>a.sold-b.sold)[0];
         if(best) add('good',`${best.dish.name.split(',')[0]} with the ${TeamData.nick(best.first)}: ${Math.round(best.sold*best.perWeek)} this week`);
         if(worst&&worst!==best) add('bad',`${worst.dish.name.split(',')[0]} sells ${worst.perWeek} a week; ${worst.people.length} can offer its ${TeamData.nick(worst.first)}`); }
-      else { out.pre='The floor can offer the wine for '; out.strong=`${all.length} of ${ps.length}`; out.post=' dishes.'; }
-      add(all.length===ps.length?'good':'note',`The floor can offer ${all.length} of ${ps.length} pairings`); }
+      else { out.pre='Your team is trained to offer the wine for '; out.strong=`${all.length} of ${ps.length}`; out.post=' dishes.'; }
+      add(all.length===ps.length?'good':'note',`The team is trained to offer ${all.length} of ${ps.length} pairings`); }
     return out; },
 };
 Object.assign(window,{TeamReport});

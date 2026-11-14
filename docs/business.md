@@ -788,3 +788,19 @@ page opens on that, never on specials or allergens.
 Two figures the console can't know yet are drawn for a demo restaurant only, tagged Demo data: how often a dish goes
 out with its wine (`TeamReport.pairings().sold`, which needs check-level sales) and readiness week by week
 (`readinessTrend`). The demo's Tonight is set once a day where it's empty (`TeamDemo.seedTonight`).
+
+### The new look after Carey's first review
+
+- One term: someone is **trained on** a wine once they've passed its questions in the drill. The new look never says
+  "knows" or "known", and says "the team", not "the floor".
+- Every problem it shows comes with what to do. "What you need to know" and "Needs you" are a fact, then an arrowed
+  action (`TeamReport.salesActions`, `dashActions`); a line about a person behind, a slow wine or a top seller few are
+  trained on opens a plan (`TeamReport.plan(kind, id)`, `_C2Plan`): where things stand, then numbered steps, with a
+  button where the console can do one (`TeamLearn.prioritise` puts wines first in someone's drills; feature a wine
+  tonight). "Do today's drill" is never the advice: everyone does that anyway.
+- What training is worth (`TeamReport.trainingWorth`) is in weeks like the rest: the multiple, what one server sells
+  of a wine in a week trained and not, the total a week still to gain, and each top seller with who isn't trained on
+  it, what a week would add and "Put it first in their drills". Only wines with two servers on each side are shown.
+- How far training has spread (`TeamReport.spread`, `_C2Spread`) is one bar in three parts (whole team, at least half,
+  fewer) with the gaps named, so there's somewhere to go after "at least half".
+- A figure on the dashboard opens the card it summarises on its own page (`jump` in `TeamConsole2`).
