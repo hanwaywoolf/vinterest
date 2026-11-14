@@ -77,6 +77,7 @@ export const TEAM_SOURCES = [
   'team-shift.jsx',
   'team-vinny.jsx',
   'team-console.jsx',
+  'team-console2.jsx',
   'team-app.jsx',
 ];
 export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];

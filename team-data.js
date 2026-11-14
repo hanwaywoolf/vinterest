@@ -29,6 +29,17 @@ const TeamData = {
   reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
+  setting(k,def){ const v=(this.get().settings||{})[k]; return v===undefined?def:v; },
+  /* Whether this restaurant trains allergens here. Off where they're managed in the kitchen's own system: nobody is
+     asked about one and no dish counts for it (allergensOf answers none confirmed). On unless switched off. */
+  trainsAllergens(){ return this.setting('allergens',true)!==false; },
+  /* Which console a manager gets: the new look (team-console2.jsx) where the restaurant's file asks for it
+     (venue.console 'preview', as The Larkspur's does), unless this device chose the other; tests pin it with
+     window.VINTEREST_CONSOLE ('classic' or 'preview'). */
+  consoleLook(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_CONSOLE; if(o==='classic'||o==='preview') return o; }catch(e){}
+    const mine=Store.get('vbiz_console_look'); if(mine==='classic'||mine==='preview') return mine;
+    return (this.get().venue||{}).console==='preview'?'preview':'classic'; },
+  setConsoleLook(v){ Store.set('vbiz_console_look',v==='preview'?'preview':'classic'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the
      floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
@@ -94,7 +105,7 @@ const TeamData = {
   allergenList(){ return this.ALLERGENS[this.allergenCountry()].map(([code,name])=>({code,name})); },
   allergenName(code){ const a=this.allergenList().find(x=>x.code===code); return a?a.name:code; },
   /* The allergens a server is taught for a dish: only what the kitchen confirmed. null until then. */
-  allergensOf(id){ const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
+  allergensOf(id){ if(!this.trainsAllergens()) return null; const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
   confirmAllergens(id,codes,by){ const doc=this.get(); doc.dishCards=doc.dishCards||{}; const c=doc.dishCards[id]||{say:'',allergens:{draft:[],note:''},mods:[],ask:[]};
     doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc);
     if(typeof TeamLearn!=='undefined') TeamLearn.assignAllergen(id); },
@@ -678,6 +689,13 @@ const TeamSample = {
 /* The demo's staff at different stages of training (docs/business.md), seeded with dated answers so
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
+  /* The demo restaurant's Tonight, set once a day where the console's new look opens on an empty one, so the Tonight
+     tile shows what a manager's four o'clock looks like: a bottle to push, a dish that's off and a note. Never for a
+     real restaurant, and never again that day once the manager has changed or cleared it. */
+  seedTonight(){ if(!TeamData.isDemo()) return false; const t=TeamData.tonight(), day=t.day; if(t.off.length||t.feature.length||t.note||Store.get('vbiz_tonight_demo')===day) return false;
+    const ws=TeamData.wines().filter(w=>!TeamData.isDrink(w)), ds=TeamData.dishes(), push=ws.find(w=>/barolo/i.test(TeamData.label(w)))||ws.find(w=>!TeamData.byGlass(w))||ws[0], off=ds.find(x=>/sole|scallop/i.test(x.name))||ds[ds.length-1];
+    Store.set('vbiz_tonight_demo',day); if(!push) return false;
+    TeamData.setTonight({feature:[push.id],off:off?[off.id]:[],note:`Two large tables at 7:30. Lead with the ${TeamData.nick(push)} for the red meat.`}); return true; },
   DAY:86400000,
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a

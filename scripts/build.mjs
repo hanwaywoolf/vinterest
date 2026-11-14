@@ -130,7 +130,7 @@ export async function transformSource(file, version) {
 // inside a native wrapper, the tests see the real typeface, and no request goes to Google.
 // Latin and latin-ext subsets of the weights the app uses, taken from @fontsource.
 const FONTS = [
-  ['poppins', ['400', '500', '600', '700', '800', '400-italic']],
+  ['poppins', ['300', '400', '500', '600', '700', '800', '400-italic']],
   ['instrument-serif', ['400', '400-italic']],
 ];
 const FONT_SUBSETS = /\/\* [a-z-]+-(latin|latin-ext)-\d+-(normal|italic) \*\/\n@font-face \{[\s\S]*?\n\}/g;

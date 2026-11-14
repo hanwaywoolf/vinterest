@@ -756,3 +756,35 @@ No shop is lined up yet.
    too much of one style).
 4. Till and stock-system connections (the plan above); billing per site through Stripe (Apple 3.1.3(c) lets an app
    sold to businesses for their staff take payment outside the App Store).
+
+## The console's new look (a preview on The Larkspur)
+
+A second console shell, `team-console2.jsx`, shown where a restaurant's list file sets `venue.console` to `preview`
+(The Larkspur's does) and switchable from its header ("Classic view") and back from the classic sidebar ("Try the new
+look"); the choice is kept on the device (`TeamData.consoleLook`, `vbiz_console_look`). Every other restaurant keeps
+the classic console until the look is signed off.
+
+What it is for: the console's job is to sell more wine by having the floor know the list and the pairings, so every
+page opens on that, never on specials or allergens.
+
+- Black, with the restaurant's accent as the only colour that isn't a status. Navigation runs along the top under the
+  restaurant's own logo; the person signed in sits on the right.
+- Each page opens on one standout fact in light Poppins (300, bundled for this) with at most three quick facts
+  beneath (`TeamReport.headline`): "A wine sells 3× better with a server who knows it." Never a paragraph.
+- Who can sell a wine is the faces of the people who hold it with "5 of 7" (`TeamReport.knownBy`), never a grid of
+  dots. "The floor can sell" a wine or offer a pairing when at least half the people who serve it know it.
+- Dashboard: best sellers and who can sell them, wine per guest, sales, readiness and what's still on the table
+  (`TeamReport.upside`), sales as the team learnt the list, the floor as faces in readiness rings, then Needs you,
+  Selling the pairing and Tonight as a small tile that opens the Tonight editor in the drawer.
+- Sales Insights: what you need to know, where the next money is and glass against bottle on the left; the figures, a
+  white line for sales by week (bottles dashed) and who sells it on the right; best sellers across the foot.
+- Wines: how well the list is known, drinking windows and new arrivals beside the whole list with its sales and faces.
+- Menu: every dish with its wine and who can offer it. Allergens are a switch here (`TeamData.setSetting('allergens')`,
+  `trainsAllergens`): off, `allergensOf` answers nothing, so no question, readiness part or column mentions them, for a
+  restaurant that manages allergens in its kitchen's own system.
+- Team, Cocktails, Upload, Integrations and Admin are the classic sections inside the new shell, and Wines and Menu
+  keep the classic editor under "Edit" at their foot, so nothing the console could do is lost.
+
+Two figures the console can't know yet are drawn for a demo restaurant only, tagged Demo data: how often a dish goes
+out with its wine (`TeamReport.pairings().sold`, which needs check-level sales) and readiness week by week
+(`readinessTrend`). The demo's Tonight is set once a day where it's empty (`TeamDemo.seedTonight`).

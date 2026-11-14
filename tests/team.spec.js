@@ -2590,3 +2590,53 @@ for (const seed of CARD_SEEDS) {
     await ctx.close();
   });
 }
+
+// The console's new look (team-console2.jsx), shown where a restaurant's file asks for it: The Larkspur's does, as a
+// preview. Tests elsewhere pin the classic console (helpers.stubNetwork); this one asks for the new one.
+test('the console\'s new look: four pages, the same drawer, and the way back to classic', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const con = page.getByTestId('team-console');
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  // One standout fact with quick ones beneath, about what knowing the list sells.
+  await expect(page.getByTestId('c2-fact')).toContainText('with a server who knows it');
+  expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
+  await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
+  await expect(page.getByTestId('c2-person')).toHaveCount(7);
+  // The demo's Tonight is set for it, so the tile is never empty.
+  await expect(page.getByTestId('c2-tonight')).toContainText('Pushing');
+  // The summary is Poppins at a light weight, loaded from the build's own fonts.
+  expect(await page.getByTestId('c2-fact').evaluate(el => getComputedStyle(el).fontWeight)).toBe('300');
+  expect(await page.evaluate(() => document.fonts.check('300 38px Poppins'))).toBe(true);
+  // A best seller opens the same wine drawer as the classic console.
+  await page.getByTestId('c2-seller').first().click();
+  await expect(page.getByTestId('console-panel')).toBeVisible();
+  await page.getByTestId('console-panel-close').click();
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
+  await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
+  await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
+  // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
+  await page.getByTestId('console-nav-menu').click();
+  await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);
+  await expect(page.getByTestId('c2-dishes')).toContainText('Allergens');
+  await page.getByTestId('c2-allergens-switch').click();
+  await expect(page.getByTestId('c2-dishes')).not.toContainText('Allergens');
+  expect(await page.evaluate(() => TeamData.trainsAllergens())).toBe(false);
+  await page.getByTestId('c2-allergens-switch').click();
+  // The other sections are the classic ones inside the new shell.
+  await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
+  // And back to the classic console, remembered on the device.
+  await page.evaluate(() => { window.VINTEREST_CONSOLE = null; });
+  await page.getByTestId('c2-classic').click();
+  await expect(con).not.toHaveAttribute('data-look', 'preview');
+  await page.getByTestId('console-new-look').click();
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
