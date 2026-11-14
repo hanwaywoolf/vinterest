@@ -308,7 +308,7 @@ html.js .hero .phone-slot { animation: face 1.3s cubic-bezier(.2, .8, .2, 1) bac
 /* The hero's camera: the bottle framed, the scan passing down its label twice, "Analysing label…", then it lifts
    away to the story the scan found (site.js starts the story from its first scene as it lifts). */
 .hero-cam { display: none; }
-html.js .hero-cam { display: flex; flex-direction: column; align-items: center; position: absolute; inset: 0; z-index: 40; padding: 62px 22px 34px; background: radial-gradient(120% 80% at 50% 40%, #1c1014, #0a0a0b 70%); pointer-events: none;
+html.js .hero-cam { display: flex; flex-direction: column; align-items: center; position: absolute; inset: 0; z-index: 3000; padding: 62px 22px 34px; background: radial-gradient(120% 80% at 50% 40%, #1c1014, #0a0a0b 70%); pointer-events: none;
   animation: camOut .7s cubic-bezier(.5, 0, .2, 1) 4.5s forwards; }
 .cam-title { font-weight: 700; font-size: 17px; color: #fff; }
 .cam-frame { position: relative; flex: 1; width: 100%; margin: 18px 0 22px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; }
