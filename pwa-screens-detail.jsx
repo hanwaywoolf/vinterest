@@ -117,7 +117,7 @@ function WineDetailScreen({back,nav,showPro}){ const T=useTheme(), cr=T.lift(C.c
             <div style={{fontSize:24,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15}}>{wine?.name||'Château Margaux'}</div>
             <div style={{fontSize:16,color:T.mid,fontFamily:C.P,marginTop:3}}>{wine?<>{wine.vintage||'NV'}{(wine.region||wine.country)&&<> · {Regions.wineFlag(wine)&&<span role="img" aria-label={wine.country||'Country'} style={{fontSize:'17px',marginRight:5,verticalAlign:'-1px'}}>{Regions.wineFlag(wine)}</span>}{[wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(', ')}</>}</>:'2018 · Bordeaux, France'}</div>
             {(()=>{ const had=wine&&(WineHistory.find(wine)||wine).where_had; return had?<div data-where-had style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>Had at {had}</div>:null; })()}
-            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=typeCol;
+            <div style={{display:'flex',gap:5,marginTop:8,flexWrap:'wrap',alignItems:'center'}}>{(()=>{ const t=WineDNA._t(wine?.type)||'red', col=_TYPE_COLORS[t]||C.cr; // the deep type colour as a fill; Pill picks the text that reads on it
               return <Pill active sm style={{background:col,borderColor:col,fontWeight:600}}>{({red:'Red wine',white:'White wine',rose:'Rosé',sparkling:'Sparkling',orange:'Orange wine',dessert:'Dessert wine',fortified:'Fortified'})[t]||wine?.type}</Pill>; })()}{wine?.grapes?.[0]&&<Pill sm>{wine.grapes[0]}{wine.blend||wine.grapes.length>1?' blend':''}</Pill>}{wine&&<span onClick={()=>setEditing(true)} style={{fontSize:13,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer',marginLeft:4}}>Edit details</span>}</div>
           </div>
         </div>
@@ -543,7 +543,7 @@ function DetailStory({wine,nav,showPro,existingRating=0}){ const T=useTheme(), c
           <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
             {wine.grapes.map((g,i)=>(
               <div key={i} style={{padding:'8px 14px',borderRadius:10,background:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`}}>
-                <span style={{fontSize:15,fontWeight:600,color:cr,fontFamily:C.P}}>{g}</span>
+                <span style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{g}</span>
               </div>
             ))}
           </div>

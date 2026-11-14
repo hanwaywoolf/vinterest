@@ -1,6 +1,6 @@
 {
   "name": "vinterest",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "description": "Scan wine labels, build your taste profile, and order with confidence.",
   "scripts": {
     "dev": "open index.html",

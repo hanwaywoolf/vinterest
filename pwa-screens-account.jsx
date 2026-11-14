@@ -225,9 +225,9 @@ function TextSizeControl(){ const T=useTheme(), cr=T.lift(C.cr);
         const on=cur===s.id;
         return <div key={s.id} role="radio" aria-checked={on} onClick={()=>TextSize.set(s.id)}
           style={{flex:1,textAlign:'center',padding:'10px 4px',borderRadius:10,cursor:'pointer',background:on?T.crSoft:T.soft,border:`1.5px solid ${on?cr:'transparent'}`}}>
-          <div style={{fontSize:14+i*2,fontWeight:800,color:on?cr:T.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
+          <div style={{fontSize:14+i*2,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.1}}>Aa</div>
           {/* The labels stay one size so the three tiles line up; the Aa above shows the difference. */}
-          <div style={{fontSize:'13px',fontWeight:on?700:500,color:on?cr:T.mid,fontFamily:C.P,marginTop:3,whiteSpace:'nowrap'}}>{s.label}</div>
+          <div style={{fontSize:'13px',fontWeight:on?700:500,color:on?T.ink:T.mid,fontFamily:C.P,marginTop:3,whiteSpace:'nowrap'}}>{s.label}</div>
         </div>;
       })}
     </div>
@@ -251,12 +251,6 @@ function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
     const r=ps==='on'?await Push.disable():await Push.enable();
     setPbusy(false); if(!r.ok) setPmsg(r.error||'');
   }
-  // A phone shows a notification only while the app isn't open: the server waits ten seconds, so close the app or lock the screen.
-  async function testPush(){
-    if(pbusy) return; setPbusy(true);
-    setPmsg('Sending in 10 seconds. Close Vinterest or lock your phone now: notifications only show when the app isn\'t open.');
-    const r=await Push.test(10); setPbusy(false); setPmsg(r.ok?'Sent. Look at your notifications.':r.error);
-  }
   const pushDesc=ps==='signin'?'Sign in to get reminders on this phone, even when the app is closed.':ps==='blocked'?'Turned off in your phone\'s settings. Turn Vinterest\'s notifications on there, then come back.':'Reminders and Pro alerts on this phone, even when the app is closed.';
   return <div data-testid="notify-control"><Card style={{padding:14,display:"flex",flexDirection:"column",gap:4}}>
     <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Notifications</div>
@@ -273,7 +267,6 @@ function NotifyControl(){ const T=useTheme(), cr=T.lift(C.cr);
         <div style={{position:'absolute',top:3,left:ps==='on'?21:3,width:22,height:22,borderRadius:11,background:'#fff',boxShadow:'0 1px 3px rgba(0,0,0,0.2)',transition:'left .15s'}}/>
       </div>}
     </div>}
-    {ps==='on'&&<div><span role="button" data-testid="push-test" onClick={testPush} style={{fontSize:14,fontWeight:600,color:cr,fontFamily:C.P,cursor:'pointer'}}>Send me a test</span></div>}
     {pmsg&&<div role="status" data-testid="push-msg" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{pmsg}</div>}
     {Object.entries(Notices.TYPES).map(([id,t])=>{ const on=prefs[id]!==false; const flip=()=>Notices.setPref(id,!on);
       return <div key={id} style={{display:'flex',alignItems:'center',gap:12,marginTop:10,paddingTop:10,borderTop:`1px solid ${T.line}`}}>

@@ -262,7 +262,7 @@ export default {
         iosTypedPromo: env.IOS_TYPED_PROMO === "1",
       });
     }
-    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
+    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/run") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       if (url.pathname === "/push/run") return handlePushRun(request, env);
@@ -746,11 +746,14 @@ async function handlePromo(request, env) {
    bell, Notices): a bottle waiting for its rating and a long gap since the last scan (Reminders,
    switched off by vinterest_notify.reminder in their synced settings), and Pro access ending
    soon or a payment that didn't go through (the account, always on). At most one a day and
-   three a week, at about 6pm where they are. POST /push/run is the hourly job (a GitHub
+   three a week, in their evening (PUSH_HOUR to PUSH_HOUR + PUSH_WINDOW hours, where they are). POST /push/run is the hourly job (a GitHub
    workflow with PUSH_CRON_SECRET, since Pages has no cron). Nothing here moves a match or a rating. */
 // A run handles a few people (each costs about seven requests to Supabase and the services, and Pages
 // allows 50 on the free plan); it says when there are more and the workflow asks again from there.
-const PUSH_HOUR = 18, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
+// The evening window: GitHub's scheduler starts the "hourly" job only every few hours, so a single hour
+// missed most people most days. Anyone whose local time is in the window when a run comes is reached;
+// the one-a-day rule (PUSH_RATE_AFTER_MS) keeps it to one.
+const PUSH_HOUR = 17, PUSH_WINDOW = 6, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
 const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
 function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
 function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
@@ -835,7 +838,7 @@ async function pushRecord(env, userId, kind, keys) {
     body: JSON.stringify(keys.map((key) => ({ user_id: userId, kind, key, sent_at: new Date().toISOString() }))) }).catch(() => null);
 }
 
-/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}, /push/test: signed-in app calls. */
+/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}: signed-in app calls. */
 async function handlePush(request, env, action) {
   const origin = request.headers.get("origin");
   if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
@@ -866,18 +869,7 @@ async function handlePush(request, env, action) {
     await db(env, token ? `push_devices?user_id=eq.${uid}&token=eq.${encodeURIComponent(token)}` : `push_devices?user_id=eq.${uid}`, { method: "DELETE" }).catch(() => null);
     return json(200, { ok: true });
   }
-  // test: one notification to their own phones, three an hour at most.
-  const since = new Date(Date.now() - 3600 * 1000).toISOString();
-  const recent = await db(env, `push_sent?user_id=eq.${uid}&kind=eq.test&sent_at=gte.${since}&select=key`);
-  if (recent.ok && (await recent.json()).length >= 3) return json(429, { error: "That's three tests this hour. Try again later.", code: "rate_limited" });
-  // A phone shows a notification only while the app isn't open, so the app asks for a pause (up to 15s)
-  // to give them time to close it or lock the screen.
-  const wait = Math.min(15, Math.max(0, parseInt(body.delay, 10) || 0));
-  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
-  const out = await pushToUser(env, user.id, { title: "Vinterest notifications are on", body: "This is how a reminder will look.", link: { screen: "home" } });
-  if (!out.sent) return json(502, { error: out.gone ? "This phone's notification token had expired. Open the app again and turn notifications off and on." : "We couldn't reach your phone just now. Try again in a minute.", code: "push_failed" });
-  await pushRecord(env, user.id, "test", [Date.now() + "-" + Math.random().toString(36).slice(2, 8)]);
-  return json(200, { ok: true, sent: out.sent });
+  return json(404, { error: "Not found" });
 }
 
 function localHour(tz, now) {
@@ -926,14 +918,15 @@ async function pushPlan(env, userId, now) {
   }
   return null;
 }
-/* Everyone whose local time is the push hour gets at most one. dry: say what would go, send nothing. */
+/* Everyone whose local time is in the evening window gets at most one. dry: say what would go, send nothing. */
 async function runPushJob(env, { now = Date.now(), dry = false, hour = PUSH_HOUR, offset = 0 } = {}) {
   const r = await db(env, "push_devices?select=user_id,tz&order=last_seen.desc&limit=2000");
   const devices = r.ok ? await r.json() : [];
   const tzOf = new Map();
   for (const d of devices) if (!tzOf.has(d.user_id)) tzOf.set(d.user_id, d.tz);
   const batch = Math.max(1, parseInt(env.PUSH_BATCH, 10) || PUSH_BATCH);
-  const all = [...tzOf].filter(([, tz]) => localHour(tz, now) === hour).map(([u]) => u).sort();
+  const inWindow = (h) => (h - hour + 24) % 24 < PUSH_WINDOW;
+  const all = [...tzOf].filter(([, tz]) => inWindow(localHour(tz, now))).map(([u]) => u).sort();
   const users = all.slice(offset, offset + batch);
   const out = { users: all.length, sent: [], skipped: 0, errors: [], more: all.length > offset + batch, next: offset + batch };
   for (const u of users) {

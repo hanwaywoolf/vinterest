@@ -381,7 +381,11 @@ const ExploreNext = {
     // enough to go on, so a generous scorer's picks follow what they love most, not all their 90+s.
     const target=p.loves&&p.loves.ready&&p.loves.bestAvg?p.loves.bestAvg:p.dnaAvg;
     const avg={}; Object.keys(this.AXES).forEach(k=>{ const v=target[k]!=null?target[k]:p.avg[k]; if(v!=null) avg[k]=v; });
-    return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes:lowOf(grapes),lowRegions:lowOf(region)};
+    // Also what holds their ratings back (WineDNA.loves().down, the list Your rules says "Skip" from):
+    // a grape they rate 4 points under their usual is never then suggested as the next thing to try.
+    const lowGrapes=lowOf(grapes), lowRegions=lowOf(region), down=(p.loves&&p.loves.ready&&p.loves.down)||[];
+    down.forEach(x=>{ if(x.kind==='Grape') lowGrapes.add(String(x.name).toLowerCase()); if(x.kind==='Region') lowRegions.add(String(x.name).toLowerCase()); });
+    return {wines:p.wines,avg,topGrapes:lc(p.topGrapes),topRegions:lc(p.topRegions),lowGrapes,lowRegions};
   },
   _level(v){ return {high:0,low:1,mid:2}[WineDNA.level(v)]; },
   _cap(s){ return s.replace(/\b\w/g,c=>c.toUpperCase()); },
@@ -398,7 +402,7 @@ const ExploreNext = {
     const ex=sharedAxis&&[...dna.wines].filter(w=>w.rating>0&&typeof w[sharedAxis.k]==='number'&&this._level(w[sharedAxis.k])===this._level(sharedAxis.u)).sort((a,b)=>b.rating-a.rating)[0];
     const has=(list,val)=>list.some(x=>x.includes(val)||val.includes(x));
     const bridge=(style.bridge.grapes||[]).find(g=>has(dna.topGrapes,g))||(style.bridge.regions||[]).find(r=>has(dna.topRegions,r))||null;
-    const low=style.grapes.some(g=>dna.lowGrapes.has(g.toLowerCase()))||(style.match||[]).some(m=>[...dna.lowRegions].some(r=>r.includes(m)));
+    const low=style.grapes.some(g=>dna.lowGrapes.has(g.toLowerCase())||dna.lowGrapes.has(String(WineDNA.grape(g)||g).toLowerCase()))||(style.match||[]).some(m=>[...dna.lowRegions].some(r=>r.includes(m)));
     const score=sim+(bridge?0.12:0)-(low?0.3:0);
     const lbl=label.toLowerCase();
     const why=[
@@ -407,7 +411,7 @@ const ExploreNext = {
         :`${style.name} brings ${style.adds}, a new corner of ${lbl} for your map.`,
       bridge?`A natural next step if you enjoy ${this._cap(bridge)}.`:''
     ].filter(Boolean).join(' ');
-    return {style,score,shares,bridge:bridge&&this._cap(bridge),why};
+    return {style,score,low,shares,bridge:bridge&&this._cap(bridge),why};
   },
   /* "Explore Next is ready": the moment a wine type reaches READY_AT wines and has picks to
      show, celebrated once per type in WineDNA. (It replaced "WineDNA unlocked", which marked a
@@ -455,7 +459,9 @@ const ExploreNext = {
       if(tried) explored.push({style:s,wine:tried}); else open.push(this.assess(s,dna,label));
     });
     open.forEach(a=>{ if(this.resting(a.style.id)){ a.resting=true; a.score-=this.REST_PENALTY; } });
-    open.sort((a,b)=>b.score-a.score);
+    // A style built on a grape or region their ratings hold back goes last, behind every other style,
+    // so Explore Next never suggests what Your rules says to skip.
+    open.sort((a,b)=>(a.low-b.low)||(b.score-a.score));
     const picks=[], countries=new Set();
     open.forEach(a=>{ if(picks.length<n&&!countries.has(a.style.country)){ picks.push(a); countries.add(a.style.country); } });
     open.forEach(a=>{ if(picks.length<n&&!picks.includes(a)) picks.push(a); });
