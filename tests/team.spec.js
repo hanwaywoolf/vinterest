@@ -2608,6 +2608,12 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
   await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
   await expect(page.getByTestId('c2-person')).toHaveCount(7);
+  // Five figures under the sentence, the pairing among them; then what training is worth, wine by wine, and what
+  // needs the manager as what's so and what to do.
+  await expect(page.getByTestId('c2-kpi-pairing')).toContainText('pairing');
+  await expect(page.getByTestId('c2-lift')).toContainText('×'); expect(await page.getByTestId('c2-lift-row').count()).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('console-dash')).not.toContainText(/know(s|n)? it|known by/);
   // The demo's Tonight is set for it, so the tile is never empty.
   await expect(page.getByTestId('c2-tonight')).toContainText('Pushing');
   // The summary is Poppins at a light weight, loaded from the build's own fonts.
