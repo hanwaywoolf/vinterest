@@ -71,6 +71,9 @@ async function minify(file, loader) {
   return code;
 }
 
+/* A store link from the environment: an https URL or nothing (it is written into an attribute). */
+function storeUrl(v) { return /^https:\/\/[^\s"'<>]+$/.test(v || '') ? v : ''; }
+
 function fill(html, vars) {
   const out = html.replace(/%%([A-Z_]+)%%/g, (m, k) => {
     if (!(k in vars)) throw new Error(`site: unknown token ${m}`);
@@ -113,6 +116,8 @@ async function build() {
   const vars = {
     JSONLD: structuredData(read('site/index.html'), origin),
     ORIGIN: origin,
+    // The apps' store pages. Empty until they're listed: the page then asks for beta sign-ups instead.
+    IOS_URL: storeUrl(process.env.APP_STORE_URL), ANDROID_URL: storeUrl(process.env.PLAY_STORE_URL),
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`

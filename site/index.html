@@ -25,15 +25,17 @@
 <link rel="preload" href="/fonts/poppins-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin/>
 <link rel="stylesheet" href="/fonts/fonts.css"/>
 <link rel="stylesheet" href="/site.css?v=%%CSS_V%%"/>
+<script>document.documentElement.classList.add('js')</script>
 </head>
-<body data-demo-src="/demo.js?v=%%DEMO_V%%">
-<a class="skip" href="#beta">Skip to the beta sign-up</a>
+<body data-demo-src="/demo.js?v=%%DEMO_V%%" data-ios-url="%%IOS_URL%%" data-android-url="%%ANDROID_URL%%">
+<a class="skip" href="#beta" data-live-text="Skip to the download">Skip to the beta sign-up</a>
 
 <header class="top" id="top">
   <div class="wrap">
     <a href="/" aria-label="Vinterest home"><img class="logo" src="/logo.png" alt="Vinterest" width="115" height="24"/></a>
     <nav aria-label="Main">
-      <a class="btn primary small" href="#beta">Join the beta</a>
+      <a class="link" href="#taste">Try it</a>
+      <a class="btn primary small cta-main" href="#beta" data-live-text="Get the app">Join the beta</a>
     </nav>
   </div>
 </header>
@@ -48,9 +50,10 @@
       <h1 id="hero-h">Find wines you'll <strong>love</strong>. Learn while you <strong>sip</strong>.</h1>
       <p class="lead">Just scan a bottle or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> to see how well it matches your taste and WineDNA. Then rate it and go deeper: pick a grape, a region or a skill and learn more about it with short quizzes and articles written for you.</p>
       <div class="cta">
-        <a class="btn primary" href="#beta">Join the beta</a>
+        <a class="btn primary cta-main" href="#beta" data-live-text="Download the app">Join the beta</a>
+        <a class="btn ghost" href="#taste">Find your taste in 20 seconds</a>
       </div>
-      <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. iPhone and Android apps are on their way.</p>
+      <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. <span data-live-text="On iPhone and Android.">iPhone and Android apps are on their way.</span></p>
     </div>
     <div class="stage">
       <ol class="steps" style="display:none">
@@ -63,6 +66,33 @@
       <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the Vinterest app: a scan: the wine and its match, the WineDNA profile, Ask Vinny, an article written for you, and My Wines.">
         <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="hero"></div></div>
         <span class="island"></span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Try it: three sliders, a first portrait and what to try (the app's own words and catalogue, via demo.js) -->
+<section class="dark taste" id="taste" aria-labelledby="taste-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <p class="eyebrow">Try it</p>
+      <h2 id="taste-h">What do you <strong>like</strong> in a wine?</h2>
+      <p class="lead">Move the sliders to how you like it. This is a first sketch of your WineDNA: in the app it's worked out for you, from the bottles you rate.</p>
+    </div>
+    <div class="taste-grid reveal">
+      <div class="taste-card" id="taste-controls">
+        <div class="seg" role="group" aria-label="Wine type">
+          <button type="button" data-type="red" aria-pressed="true">Red</button>
+          <button type="button" data-type="white" aria-pressed="false">White</button>
+        </div>
+        <div id="taste-rows" class="taste-rows"><div class="taste-skel"></div><div class="taste-skel"></div><div class="taste-skel"></div></div>
+      </div>
+      <div class="taste-card result" id="taste-result">
+        <p class="eyebrow" id="taste-words" aria-live="polite">Your taste</p>
+        <div id="taste-picks" class="taste-picks" aria-live="polite"><div class="taste-skel tall"></div></div>
+        <div class="taste-sketch" id="taste-sketch" aria-hidden="true"></div>
+        <a class="btn primary cta-main" href="#beta" data-live-text="Download the app">Get your real WineDNA</a>
+        <p class="fine">A first guess from three sliders. The app learns from what you actually rate, and matches every bottle you scan to it.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -266,11 +296,24 @@
 <section class="dark beta" id="beta" aria-labelledby="beta-h">
   <div class="wrap">
     <div>
-      <p class="eyebrow">Beta</p>
-      <h2 id="beta-h">Get in early, and help <strong>shape</strong> it.</h2>
-      <p class="lead">Tell us who you are and we'll invite you when your spot opens. We'll only email you about the beta.</p>
+      <p class="eyebrow" data-live-text="Download">Beta</p>
+      <h2 id="beta-h" data-live-html="Scan your first <strong>bottle</strong> tonight.">Get in early, and help <strong>shape</strong> it.</h2>
+      <p class="lead" data-live-text="Free to start on iPhone and Android. Scan your first bottle tonight.">Tell us who you are and we'll invite you when your spot opens. We'll only email you about the beta.</p>
+      <div class="try-dial" id="try-dial" hidden>
+        <p class="dial-q">How was the last wine you had? Turn the dial.</p>
+        <div id="dial-mount" class="dial-mount"></div>
+        <p class="dial-a" id="dial-a" aria-live="polite">That's the whole habit: one number a bottle, and every match after it gets sharper.</p>
+      </div>
     </div>
     <div>
+      <div class="form stores" id="stores" hidden>
+        <h3>Get Vinterest</h3>
+        <p>Free to start. Your wines stay on your phone.</p>
+        <div class="store-row">
+          <a class="btn store" id="store-ios" href="#" rel="noopener"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.5" y1="18.4" x2="13.5" y2="18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><small>Download on the</small>App Store</span></a>
+          <a class="btn store" id="store-android" href="#" rel="noopener"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 4.5v15l12-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span><small>Get it on</small>Google Play</span></a>
+        </div>
+      </div>
       <form class="form" id="beta-form" novalidate>
         <div class="fail" id="beta-fail" role="alert" hidden></div>
         <div class="row">
@@ -287,7 +330,7 @@
         <p class="fine">We use your name, country, phone type and email to invite you to the beta and to contact you about it. Nothing else, and never sold. See the <a href="/privacy/">privacy notice</a>.</p>
       </form>
       <div class="form thanks" id="beta-thanks" tabindex="-1" hidden>
-        <div class="tick"><svg width="30" height="30" viewBox="0 0 20 20"><polyline points="3.5,10 7.5,14.5 16.5,5" stroke="#1E7B4B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="tick"><svg width="30" height="30" viewBox="0 0 20 20"><polyline class="tick-line" pathLength="1" points="3.5,10 7.5,14.5 16.5,5" stroke="#1E7B4B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <h3>You're on the list.</h3>
         <p>Thanks, <span id="thanks-name"></span>. We'll email you when your spot opens.</p>
       </div>

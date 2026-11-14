@@ -282,6 +282,175 @@
     features.forEach(function (f) { f.steps.forEach(function (li) { li.classList.add('on'); }); apply(f); });
   }
 
+  /* ── Entrances ──
+     The hero's headline rises a word at a time (its words are wrapped here, the bold ones kept bold), and
+     anything marked .reveal arrives as it's reached. Without an observer, or with reduced motion, nothing
+     is ever hidden. */
+  var h1 = document.querySelector('.hero h1');
+  if (h1 && !reduced) {
+    var wi = 0;
+    var wrapWords = function (node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 1) { wrapWords(n); return; }
+        if (n.nodeType !== 3) return;
+        var frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function (part) {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span');
+          w.className = 'w'; w.style.setProperty('--i', wi++); w.textContent = part;
+          frag.appendChild(w);
+        });
+        node.replaceChild(frag, n);
+      });
+    };
+    wrapWords(h1);
+  }
+  var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if (!reduced && 'IntersectionObserver' in window) {
+    var rio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    reveals.forEach(function (el) { rio.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  }
+  /* On a phone a section's caption floats at the foot of the screen; it shows once the section's phone is on
+     screen (before that it would sit over the section's own heading). Without an observer it always shows. */
+  var capStages = Array.prototype.slice.call(document.querySelectorAll('.feature .stage'));
+  if ('IntersectionObserver' in window) {
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { e.target.closest('.feature').classList.toggle('capon', e.isIntersecting); });
+    }, { rootMargin: '0px 0px -35% 0px' });
+    capStages.forEach(function (st) { cio.observe(st); });
+  } else capStages.forEach(function (st) { st.closest('.feature').classList.add('capon'); });
+  /* The hero's phone leans a few degrees towards a mouse (never a finger, which is scrolling). */
+  var heroStage = document.querySelector('.hero .stage'), heroSlot = heroStage && heroStage.querySelector('.phone-slot');
+  if (heroSlot && !reduced && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    var hero = document.querySelector('.hero');
+    hero.addEventListener('pointermove', function (e) {
+      var r = hero.getBoundingClientRect();
+      heroSlot.style.setProperty('--tx', (((e.clientX - r.left) / r.width - 0.5) * 9).toFixed(2));
+      heroSlot.style.setProperty('--ty', ((0.5 - (e.clientY - r.top) / r.height) * 6).toFixed(2));
+    });
+    hero.addEventListener('pointerleave', function () { heroSlot.style.setProperty('--tx', 0); heroSlot.style.setProperty('--ty', 0); });
+  }
+
+  /* ── Try it: your taste ──
+     Three sliders for a wine type. The words under each (the step's name and what it means) and the
+     styles suggested are the app's own (VinterestDemo.taste: WineDNA's scales and the Explore Next
+     catalogue), so nothing here is written twice. The first pick's grape is drawn by the app's pen.
+     Nothing is stored or sent. */
+  var tasteBox = document.getElementById('taste');
+  if (tasteBox) (function () {
+    var rowsEl = document.getElementById('taste-rows'), picksEl = document.getElementById('taste-picks'), wordsEl = document.getElementById('taste-words'),
+      sketchEl = document.getElementById('taste-sketch'), typeBtns = Array.prototype.slice.call(tasteBox.querySelectorAll('.seg button'));
+    var START = { red: { body: 0.75, tannins: 0.5, acidity: 0.5 }, white: { body: 0.25, acidity: 0.75, sweetness: 0.12 } };
+    var state = { type: 'red', vals: { red: Object.assign({}, START.red), white: Object.assign({}, START.white) } };
+    var built = null, sketch = null, sketchFor = null, sketchTimer = 0;
+    var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    function draw() {
+      var t = window.VinterestDemo.taste(state.type, state.vals[state.type]);
+      tasteBox.style.setProperty('--tc', t.col);
+      // The sliders are built once per wine type, then only their words change (a rebuilt slider would drop the drag).
+      if (built !== state.type) {
+        built = state.type;
+        rowsEl.innerHTML = t.rows.map(function (r) {
+          return '<div class="trow" data-axis="' + r.axis + '"><label class="name" for="taste-' + r.axis + '">' + esc(r.name) + '</label>' +
+            '<input type="range" id="taste-' + r.axis + '" min="0" max="100" step="1" value="' + Math.round(r.value * 100) + '" aria-describedby="taste-' + r.axis + '-m"/>' +
+            '<div class="stops">' + r.steps.map(function (w, i) { return '<button type="button" tabindex="-1" data-step="' + i + '">' + esc(w) + '</button>'; }).join('') + '</div>' +
+            '<p class="means" id="taste-' + r.axis + '-m"></p></div>';
+        }).join('');
+      }
+      t.rows.forEach(function (r) {
+        var row = rowsEl.querySelector('[data-axis="' + r.axis + '"]'), input = row.querySelector('input');
+        input.style.setProperty('--v', Math.round(r.value * 100));
+        input.setAttribute('aria-valuetext', r.word);
+        Array.prototype.forEach.call(row.querySelectorAll('.stops button'), function (b, i) { b.classList.toggle('on', i === r.step); });
+        row.querySelector('.means').innerHTML = '<b>' + esc(r.word) + '.</b> ' + esc(r.meaning);
+      });
+      wordsEl.textContent = t.words.join(' · ');
+      var key = t.picks.map(function (p) { return p.name; }).join('|');
+      if (picksEl.getAttribute('data-key') !== key) {
+        picksEl.setAttribute('data-key', key);
+        picksEl.innerHTML = t.picks.map(function (p, i) {
+          return '<div class="pick' + (i === 0 ? ' first' : '') + '" style="--i:' + i + '"><div class="top-line"><h3>' + esc(p.name) + '</h3><span class="where">' + esc(p.country) + '</span></div>' +
+            (i === 0 ? '<p>' + esc(p.taste) + '</p><p class="ask">Ask for it: “' + esc(p.ask) + '”</p>' : '<p class="ask">' + esc((p.grapes || []).join(', ')) + (p.adds ? ' · ' + esc(p.adds) : '') + '</p>') + '</div>';
+        }).join('');
+        // The first pick's grape, drawn once the sliders have settled on it.
+        var grape = t.picks[0] && t.picks[0].grapes && t.picks[0].grapes[0];
+        clearTimeout(sketchTimer);
+        if (grape !== sketchFor) sketchTimer = setTimeout(function () {
+          sketchFor = grape;
+          if (sketch) { sketch.unmount(); sketch = null; }
+          sketchEl.textContent = '';
+          if (grape && !reduced) { var holder = document.createElement('div'); sketchEl.appendChild(holder); sketch = window.VinterestDemo.mountSketch(holder, grape); if (!sketch) sketchEl.textContent = ''; }
+        }, 450);
+      }
+    }
+    rowsEl.addEventListener('input', function (e) {
+      var row = e.target.closest && e.target.closest('.trow'); if (!row) return;
+      state.vals[state.type][row.getAttribute('data-axis')] = e.target.value / 100;
+      draw();
+    });
+    rowsEl.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.stops button'); if (!b) return;
+      var row = b.closest('.trow'), v = b.getAttribute('data-step') / 4;
+      state.vals[state.type][row.getAttribute('data-axis')] = v;
+      row.querySelector('input').value = Math.round(v * 100);
+      draw();
+    });
+    typeBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        state.type = b.getAttribute('data-type');
+        typeBtns.forEach(function (o) { o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+        if (window.VinterestDemo) draw();
+      });
+    });
+    // The app's code arrives with the first phone; if it never does, the section goes rather than sit empty.
+    loadDemoScript().then(function () { try { draw(); } catch (e) { tasteBox.hidden = true; if (window.console) console.warn(e); } }, function () { tasteBox.hidden = true; });
+  })();
+
+  /* ── The dial beside the sign-up: the app's own, for the visitor's finger ── */
+  var dialBox = document.getElementById('try-dial');
+  if (dialBox) {
+    var dialSay = document.getElementById('dial-a');
+    var SAY = function (n, band) {
+      return n + ' · ' + band + '. ' + (n >= 90 ? 'A wine you loved: Vinterest looks for more like it.' : n >= 80 ? 'A good bottle. It would count in every match from here.' : 'Not for you, and worth knowing: Vinterest steers you away from wines like it.');
+    };
+    var mountDial = function () {
+      loadDemoScript().then(function () {
+        if (dialBox._dial) return;
+        dialBox.hidden = false;
+        dialBox._dial = window.VinterestDemo.mountDial(document.getElementById('dial-mount'), function (n, band) { dialSay.textContent = SAY(n, band); });
+      }, function () {});
+    };
+    if ('IntersectionObserver' in window) {
+      var dio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { dio.disconnect(); mountDial(); } }); }, { rootMargin: '100% 0px' });
+      dio.observe(document.getElementById('beta'));
+    } else mountDial();
+  }
+
+  /* ── The stores ──
+     Once the apps are listed (the build fills data-ios-url / data-android-url from APP_STORE_URL and
+     PLAY_STORE_URL), the page stops asking for beta sign-ups: the form gives way to the two store
+     buttons, every main button says to download and goes to the visitor's own store (or to the
+     buttons, on a computer), and the copy marked data-live-text / data-live-html changes with it. */
+  var stores = { ios: body.getAttribute('data-ios-url') || '', android: body.getAttribute('data-android-url') || '' };
+  if (stores.ios || stores.android) {
+    var ua = navigator.userAgent || '';
+    var mine = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? stores.ios : /Android/.test(ua) ? stores.android : '';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-live-text]'), function (el) { el.textContent = el.getAttribute('data-live-text'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-live-html]'), function (el) { el.innerHTML = el.getAttribute('data-live-html'); });
+    Array.prototype.forEach.call(document.querySelectorAll('a.cta-main'), function (a) { if (mine) { a.href = mine; a.rel = 'noopener'; } });
+    var storeBox = document.getElementById('stores'), sIos = document.getElementById('store-ios'), sAnd = document.getElementById('store-android');
+    if (stores.ios) sIos.href = stores.ios; else sIos.hidden = true;
+    if (stores.android) sAnd.href = stores.android; else sAnd.hidden = true;
+    storeBox.hidden = false;
+    document.getElementById('beta-form').hidden = true;
+    body.setAttribute('data-stores', 'live');
+  }
+
   /* ── Beta form ── */
   var COUNTRIES = 'AF Afghanistan|AL Albania|DZ Algeria|AR Argentina|AM Armenia|AU Australia|AT Austria|AZ Azerbaijan|BH Bahrain|BD Bangladesh|BE Belgium|BR Brazil|BG Bulgaria|CA Canada|CL Chile|CN China|CO Colombia|HR Croatia|CY Cyprus|CZ Czechia|DK Denmark|EG Egypt|EE Estonia|FI Finland|FR France|GE Georgia|DE Germany|GR Greece|HK Hong Kong|HU Hungary|IS Iceland|IN India|ID Indonesia|IE Ireland|IL Israel|IT Italy|JP Japan|JO Jordan|KZ Kazakhstan|KE Kenya|KR South Korea|KW Kuwait|LV Latvia|LB Lebanon|LT Lithuania|LU Luxembourg|MY Malaysia|MT Malta|MX Mexico|MA Morocco|NL Netherlands|NZ New Zealand|NG Nigeria|NO Norway|PK Pakistan|PE Peru|PH Philippines|PL Poland|PT Portugal|QA Qatar|RO Romania|SA Saudi Arabia|RS Serbia|SG Singapore|SK Slovakia|SI Slovenia|ZA South Africa|ES Spain|LK Sri Lanka|SE Sweden|CH Switzerland|TW Taiwan|TH Thailand|TR Türkiye|UA Ukraine|AE United Arab Emirates|GB United Kingdom|US United States|UY Uruguay|VN Vietnam|ZZ Somewhere else'.split('|');
   var form = document.getElementById('beta-form');
