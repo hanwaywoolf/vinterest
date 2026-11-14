@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=540"/>
+<title>Vinterest: the table that wouldn't touch the wine list</title>
+<link rel="stylesheet" href="/fonts/fonts.css"/>
+<link rel="stylesheet" href="/site.css"/>
+<style>
+  /* One 540 x 960 scene (recorded at 1080 x 1920). Everything is drawn from the clock T in render(). */
+  html, body { margin: 0; background: #0b0606; overflow: hidden; width: 1080px; height: 1920px; font-family: 'Poppins', sans-serif; }
+  /* Designed at 540 x 960 and drawn at twice that, so everything stays sharp at 1080 x 1920. */
+  #scene { position: absolute; left: 0; top: 0; width: 540px; height: 960px; overflow: hidden; transform: scale(2); transform-origin: 0 0; }
+  /* Nothing here may run on the browser's own clock: the film is rendered a frame at a time. */
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  #art, #paper { position: absolute; inset: 0; width: 540px; height: 960px; }
+  #paper { pointer-events: none; z-index: 2; mix-blend-mode: multiply; }
+  .bubble { position: absolute; max-width: 250px; padding: 10px 14px; border-radius: 18px; background: #fffdf7; color: #1a1a1a; font-size: 17px; line-height: 1.25; font-weight: 500; border: 2.5px solid #2b2420; box-shadow: 3px 4px 0 rgba(43,36,32,.35); opacity: 0; z-index: 6; }
+  .bubble::after { content: ''; position: absolute; bottom: -11px; left: var(--tail, 30px); width: 16px; height: 16px; background: #fffdf7; border: 2.5px solid #2b2420; border-top: 0; border-left: 0; transform: rotate(45deg); }
+  .bubble.dark { background: #8B1A2F; color: #fff; }
+  .bubble.dark::after { background: #8B1A2F; }
+  #dim { position: absolute; inset: 0; background: rgba(240,230,210,.9); opacity: 0; z-index: 3; }
+  #phone { position: absolute; left: 0; top: 0; z-index: 5; transform-origin: 0 0; opacity: 0; --s: .62; }
+  #cap { position: absolute; left: 24px; right: 24px; top: 40px; z-index: 7; text-align: center; color: #2b2420; font-weight: 600; font-size: 25px; letter-spacing: -.02em; line-height: 1.15; opacity: 0; }
+  #cap b { color: #8B1A2F; }
+  #end { position: absolute; inset: 0; z-index: 9; background: #F3EBDD; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; opacity: 0; text-align: center; padding: 0 36px; }
+  #end h1 { margin: 0; font-weight: 400; font-size: 44px; letter-spacing: -.06em; line-height: 1.1; color: #2b2420; }
+  #end h1 strong { color: #8B1A2F; font-weight: 700; }
+  #end img { height: 44px; }
+  #end .btn { margin-top: 6px; display: inline-block; padding: 14px 30px; border-radius: 14px; background: #8B1A2F; color: #fff; font-weight: 600; font-size: 20px; }
+  #end p { margin: 0; color: rgba(43,36,32,.6); font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="scene">
+  <svg id="art" viewBox="0 0 540 960" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+  <svg id="paper" viewBox="0 0 540 960" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><filter id="pg" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7"/><feColorMatrix type="matrix" values="0 0 0 0 0.25  0 0 0 0 0.2  0 0 0 0 0.15  0 0 0 0.55 -0.12"/></filter><rect width="540" height="960" filter="url(#pg)" opacity=".5"/></svg>
+  <div id="dim"></div>
+  <div id="phone"><div class="phone-slot" style="--s:1"><div class="phone"><div class="phone-screen"><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" id="app"></div></div><span class="island"></span></div></div></div>
+  <div id="cap"></div>
+  <div id="bubbles"></div>
+  <div id="end"><img src="/logo.png" alt="Vinterest"/><h1>Learn if it's for you,<br><strong>before</strong> you order.</h1><span class="btn">Join the beta</span><p>vinterest.app</p></div>
+</div>
+<script src="/demo.js"></script>
+<script>
+(function () {
+  'use strict';
+  var NS = 'http://www.w3.org/2000/svg';
+  var art = document.getElementById('art');
+  var INK = true;
+  var clamp = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
+  var seg = function (t, a, b) { return clamp((t - a) / (b - a), 0, 1); };
+  var ease = function (x) { return x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; };
+  var lerp = function (a, b, k) { return a + (b - a) * k; };
+  function el(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    // Everything gets a pencil-ink outline unless it already has a stroke or is a soft glow.
+    if (INK && /^(path|rect|circle|ellipse)$/.test(name) && !('stroke' in attrs) && attrs.fill !== 'none' && String(attrs.fill || '').indexOf('url(') !== 0) {
+      e.setAttribute('stroke', '#2b2420'); e.setAttribute('stroke-width', 2.2); e.setAttribute('stroke-linejoin', 'round'); e.setAttribute('stroke-linecap', 'round');
+    }
+    (parent || art).appendChild(e);
+    return e;
+  }
+  function html(s) { var d = document.createElement('div'); d.innerHTML = s; return d.firstChild; }
+
+  /* ── The room ── */
+  var defs = el('defs', {});
+  var bg = el('linearGradient', { id: 'bg', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+  el('stop', { offset: 0, 'stop-color': '#F7F0E2' }, bg); el('stop', { offset: 1, 'stop-color': '#E9DDC7' }, bg);
+  var glow = el('radialGradient', { id: 'glow' }, defs);
+  el('stop', { offset: 0, 'stop-color': '#FFD79A', 'stop-opacity': .9 }, glow); el('stop', { offset: 1, 'stop-color': '#FFD79A', 'stop-opacity': 0 }, glow);
+  // the sketchbook look: lines wobble ("boil") a little every few frames, clothes are hatched, the paper has grain
+  var wob = el('filter', { id: 'wobble', x: '-2%', y: '-2%', width: '104%', height: '104%' }, defs);
+  el('feTurbulence', { id: 'turb', type: 'fractalNoise', baseFrequency: '0.018', numOctaves: 2, seed: 1, result: 'n' }, wob);
+  el('feDisplacementMap', { in: 'SourceGraphic', in2: 'n', scale: 6, xChannelSelector: 'R', yChannelSelector: 'G' }, wob);
+  var hatch = el('pattern', { id: 'hatch', width: 7, height: 7, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(35)' }, defs);
+  el('line', { x1: 0, y1: 0, x2: 0, y2: 7, stroke: 'rgba(43,36,32,.30)', 'stroke-width': 1.6 }, hatch);
+  var grain = el('filter', { id: 'grain', x: 0, y: 0, width: '100%', height: '100%' }, defs);
+  el('feTurbulence', { type: 'fractalNoise', baseFrequency: '0.9', numOctaves: 2, seed: 7 }, grain);
+  el('feColorMatrix', { type: 'matrix', values: '0 0 0 0 0.2  0 0 0 0 0.16  0 0 0 0 0.12  0 0 0 0.5 0' }, grain);
+  art.setAttribute('filter', 'url(#wobble)');
+  el('rect', { x: -10, y: -10, width: 560, height: 980, fill: 'url(#bg)', stroke: 'none' });
+  // A wall of bottles behind the table
+  var shelf = el('g', { opacity: .7 });
+  for (var r = 0; r < 2; r++) for (var i = 0; i < 17; i++) {
+    var bx = 6 + i * 32, by = 150 + r * 118;
+    el('rect', { x: bx + 9, y: by, width: 14, height: 46, rx: 4, fill: i % 3 === 0 ? '#c9a39b' : '#cdc4a8' }, shelf);
+    el('rect', { x: bx + 12, y: by - 20, width: 8, height: 24, rx: 2, fill: i % 3 === 0 ? '#c9a39b' : '#cdc4a8' }, shelf);
+  }
+  el('rect', { x: -4, y: 196, width: 548, height: 6, fill: '#b59a7a' }); el('rect', { x: -4, y: 314, width: 548, height: 6, fill: '#b59a7a' });
+  // Pendant lamps
+  [90, 270, 450].forEach(function (x) {
+    el('circle', { cx: x, cy: 96, r: 120, fill: 'url(#glow)', opacity: .55 });
+    el('line', { x1: x, y1: 0, x2: x, y2: 52, stroke: '#4a3a30', 'stroke-width': 2 });
+    el('path', { d: 'M' + (x - 26) + ' 76 Q' + x + ' 36 ' + (x + 26) + ' 76 Z', fill: '#7a5a43' });
+    el('ellipse', { cx: x, cy: 77, rx: 18, ry: 4, fill: '#FFD79A' });
+  });
+
+  /* ── People ── */
+  function person(o) {
+    var g = el('g', {});
+    var body = el('g', {}, g);
+    // shoulders and torso
+    el('path', { d: 'M-52 280 Q-52 96 -22 84 L22 84 Q52 96 52 280 Z', fill: o.top }, body);
+    el('path', { d: 'M-52 280 Q-52 96 -22 84 L-14 84 Q-34 100 -34 280 Z', fill: 'url(#hatch)', stroke: 'none' }, body);
+    el('rect', { x: -9, y: 70, width: 18, height: 20, rx: 6, fill: o.skin }, body);
+    var head = el('g', { transform: 'translate(0,40)' }, body);
+    var hg = el('g', {}, head);
+    el('circle', { cx: 0, cy: 0, r: 31, fill: o.skin }, hg);
+    if (o.hair === 'long') {
+      el('path', { d: 'M-34 4 Q-38 -40 0 -40 Q38 -40 34 4 Q34 44 26 58 L22 6 Q0 -16 -22 6 L-26 58 Q-34 44 -34 4Z', fill: o.hairCol }, hg);
+    } else if (o.hair === 'bun') {
+      el('circle', { cx: 0, cy: -38, r: 12, fill: o.hairCol }, hg);
+      el('path', { d: 'M-33 2 Q-34 -34 0 -34 Q34 -34 33 2 Q20 -16 0 -16 Q-20 -16 -33 2Z', fill: o.hairCol }, hg);
+    } else if (o.hair === 'bald') {
+      el('path', { d: 'M-31 -2 Q-33 -10 -28 -14 M31 -2 Q33 -10 28 -14', stroke: o.hairCol, 'stroke-width': 4, fill: 'none' }, hg);
+    } else {
+      el('path', { d: 'M-33 0 Q-36 -36 0 -36 Q36 -36 33 0 Q22 -20 0 -20 Q-22 -20 -33 0Z', fill: o.hairCol }, hg);
+    }
+    var eyes = el('g', {}, hg);
+    var eL = el('circle', { cx: -11, cy: 2, r: 3.2, fill: '#1a1210' }, eyes), eR = el('circle', { cx: 11, cy: 2, r: 3.2, fill: '#1a1210' }, eyes);
+    if (o.glasses) { el('circle', { cx: -11, cy: 2, r: 8, fill: 'none', stroke: '#222', 'stroke-width': 2 }, hg); el('circle', { cx: 11, cy: 2, r: 8, fill: 'none', stroke: '#222', 'stroke-width': 2 }, hg); }
+    var mouth = el('path', { d: '', stroke: '#6a2a2a', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }, hg);
+    var brows = el('g', { stroke: '#3a2a22', 'stroke-width': 2.6, 'stroke-linecap': 'round' }, hg);
+    var bL = el('path', { d: 'M-17 -9 L-6 -9' }, brows), bR = el('path', { d: 'M6 -9 L17 -9' }, brows);
+    var arm = el('g', { opacity: 0 }, body); // a raised hand, for waving a phone about
+    el('path', { d: 'M30 150 Q60 120 52 78', stroke: o.top, 'stroke-width': 24, fill: 'none', 'stroke-linecap': 'round' }, arm);
+    el('circle', { cx: 52, cy: 72, r: 12, fill: o.skin }, arm);
+    var p = { g: g, head: head, eL: eL, eR: eR, mouth: mouth, bL: bL, bR: bR, arm: arm, x: o.x, y: o.y, s: o.s || 1, bob: o.bob || 0 };
+    p.at = function (dx, dy) { g.setAttribute('transform', 'translate(' + (p.x + (dx || 0)) + ',' + (p.y + (dy || 0)) + ') scale(' + p.s + ')'); };
+    p.face = function (look, mood, tilt) {
+      eL.setAttribute('cx', -11 + look * 5); eR.setAttribute('cx', 11 + look * 5);
+      var m = { flat: 'M-9 16 L9 16', smile: 'M-11 13 Q0 26 11 13', big: 'M-13 12 Q0 32 13 12 Z', awk: 'M-10 17 Q-5 12 0 17 T10 17', o: 'M-4 15 a4 5 0 1 0 8 0 a4 5 0 1 0 -8 0' }[mood] || 'M-9 16 L9 16';
+      mouth.setAttribute('d', m);
+      mouth.setAttribute('fill', mood === 'big' ? '#7a2530' : 'none');
+      var up = mood === 'awk' ? -3 : mood === 'smile' || mood === 'big' ? -2 : 0;
+      bL.setAttribute('transform', 'translate(0,' + up + ') rotate(' + (mood === 'awk' ? 10 : 0) + ' -11 -9)');
+      bR.setAttribute('transform', 'translate(0,' + up + ') rotate(' + (mood === 'awk' ? -10 : 0) + ' 11 -9)');
+      head.setAttribute('transform', 'translate(0,40) rotate(' + (tilt || 0) + ' 0 30)');
+    };
+    p.at(0, 0); p.face(0, 'smile', 0);
+    return p;
+  }
+  var skin = ['#F1C9A5', '#D9A47C', '#8D5A3C', '#F4D2B3'];
+  // back row: the table (the woman in red is the one at the front right)
+  var A = person({ x: 160, y: 470, s: 1.15, top: '#3B5B8C', skin: skin[0], hair: 'short', hairCol: '#3a2a1e', glasses: true });
+  var B = person({ x: 268, y: 482, s: 1.15, top: '#4F7A5A', skin: skin[2], hair: 'bald', hairCol: '#2a2018' });
+  var C = person({ x: 372, y: 474, s: 1.15, top: '#7D6AA8', skin: skin[1], hair: 'bun', hairCol: '#2b1d18' });
+  var D = person({ x: 470, y: 440, top: '#C23B4E', skin: skin[3], hair: 'long', hairCol: '#5a2d1a', s: 1.35 });
+  var diners = [A, B, C, D];
+
+  /* ── The table ── */
+  el('rect', { x: -20, y: 720, width: 580, height: 240, fill: '#E9E0D2' });
+  el('rect', { x: -20, y: 720, width: 580, height: 44, fill: '#FBF8F2' });
+  el('rect', { x: -20, y: 764, width: 580, height: 12, fill: 'rgba(0,0,0,.14)' });
+  el('rect', { x: -20, y: 776, width: 580, height: 190, fill: 'url(#hatch)', stroke: 'none', opacity: .5 });
+  // candles, glasses, bread, plates
+  function glass(x, y, wine) {
+    el('path', { d: 'M' + (x - 12) + ' ' + y + ' Q' + (x - 14) + ' ' + (y + 28) + ' ' + x + ' ' + (y + 32) + ' Q' + (x + 14) + ' ' + (y + 28) + ' ' + (x + 12) + ' ' + y + 'Z', fill: wine ? '#7a1a2c' : 'rgba(210,225,235,.45)', stroke: 'rgba(255,255,255,.7)', 'stroke-width': 1.4 });
+    el('line', { x1: x, y1: y + 32, x2: x, y2: y + 48, stroke: 'rgba(255,255,255,.85)', 'stroke-width': 2 });
+    el('ellipse', { cx: x, cy: y + 49, rx: 10, ry: 3, fill: 'rgba(255,255,255,.8)' });
+  }
+  [60, 215, 320, 410, 515].forEach(function (x, i) { glass(x, 676, false); });
+  el('ellipse', { cx: 268, cy: 748, rx: 40, ry: 10, fill: '#C79B64' }); el('ellipse', { cx: 268, cy: 742, rx: 32, ry: 8, fill: '#E3B97A' });
+  var flame = el('ellipse', { cx: 135, cy: 690, rx: 5, ry: 9, fill: '#FFC76A' }); el('rect', { x: 131, y: 700, width: 8, height: 40, rx: 2, fill: '#F6EFE2' });
+  [110, 340, 480].forEach(function (x) { el('ellipse', { cx: x, cy: 752, rx: 48, ry: 10, fill: '#fff' }); el('ellipse', { cx: x, cy: 752, rx: 30, ry: 6, fill: '#EDE6DA' }); });
+
+  /* ── The sommelier (front left, in front of the table) ── */
+  var S = person({ x: 78, y: 330, top: '#171717', skin: skin[1], hair: 'short', hairCol: '#1b1512', s: 1.4 });
+  // a white shirt, a red tie and a long apron over the black vest
+  el('path', { d: 'M-18 86 L0 150 L18 86Z', fill: '#fff' }, S.g);
+  el('path', { d: 'M-34 150 L34 150 L40 520 L-40 520Z', fill: '#F1EBDF', stroke: '#ddd3c0', 'stroke-width': 1.5 }, S.g); // long apron
+  el('path', { d: 'M-3 92 L3 92 L3 150 L-3 150Z', fill: '#8B1A2F' }, S.g); // tie
+  // The wine list: a leather folder
+  var list = el('g', {});
+  el('rect', { x: -26, y: -34, width: 52, height: 70, rx: 5, fill: '#3b2418', stroke: '#C9A96B', 'stroke-width': 2 }, list);
+  el('rect', { x: -19, y: -27, width: 38, height: 56, rx: 3, fill: 'none', stroke: '#C9A96B', 'stroke-width': 1 }, list);
+  el('text', { x: 0, y: 0, 'text-anchor': 'middle', 'font-size': 10, 'font-family': 'Poppins', 'font-weight': 600, fill: '#C9A96B' }, list).textContent = 'WINE';
+  el('text', { x: 0, y: 12, 'text-anchor': 'middle', 'font-size': 10, 'font-family': 'Poppins', 'font-weight': 600, fill: '#C9A96B' }, list).textContent = 'LIST';
+  var sArm = el('path', { d: '', stroke: '#171717', 'stroke-width': 24, fill: 'none', 'stroke-linecap': 'round' });
+  var sHand = el('circle', { r: 11, fill: skin[1] });
+  // The bottle the sommelier brings at the end
+  var bottle = el('g', { opacity: 0 });
+  el('rect', { x: -13, y: 0, width: 26, height: 84, rx: 8, fill: '#1d2a1c' }, bottle);
+  el('rect', { x: -6, y: -34, width: 12, height: 40, rx: 4, fill: '#1d2a1c' }, bottle);
+  el('rect', { x: -6, y: -36, width: 12, height: 10, rx: 2, fill: '#8B1A2F' }, bottle);
+  el('rect', { x: -13, y: 28, width: 26, height: 34, fill: '#F4ECD8' }, bottle);
+  el('rect', { x: -9, y: 36, width: 18, height: 3, fill: '#8B1A2F' }, bottle); el('rect', { x: -9, y: 44, width: 18, height: 2, fill: '#999' }, bottle);
+  // the woman's phone (small), before it grows into the real one
+  var mini = el('g', { opacity: 0 });
+  el('rect', { x: -15, y: -28, width: 30, height: 56, rx: 7, fill: '#101010', stroke: '#444', 'stroke-width': 1.5 }, mini);
+  el('rect', { x: -12, y: -23, width: 24, height: 46, rx: 4, fill: '#8B1A2F' }, mini);
+  var sweat = el('path', { d: 'M0 0 Q-7 12 0 18 Q7 12 0 0Z', fill: '#8fd0f0', opacity: 0 });
+
+  /* ── Words ── */
+  var bubbleHost = document.getElementById('bubbles');
+  function bubble(x, y, text, o) { var b = html('<div class="bubble' + (o && o.dark ? ' dark' : '') + '" style="left:' + x + 'px;top:' + y + 'px;--tail:' + ((o && o.tail) || 34) + 'px">' + text + '</div>'); bubbleHost.appendChild(b); return b; }
+  var say = [
+    { b: bubble(110, 268, 'So… what are we drinking?', { tail: 40 }), a: 3.0, z: 5.8 },
+    { b: bubble(250, 330, '…', { tail: 24 }), a: 3.7, z: 5.8 },
+    { b: bubble(290, 262, "I've got this.", { dark: true, tail: 130 }), a: 6.2, z: 8.0 },
+    { b: bubble(236, 236, 'I like classic Rioja Reservas, around £45. What would you pour?', { dark: true, tail: 190 }), a: 25.4, z: 29.0 },
+    { b: bubble(30, 228, 'The Contino Reserva. Excellent choice.', { tail: 50 }), a: 29.2, z: 31.8 },
+    { b: bubble(130, 340, 'How did you know that one?', { tail: 50 }), a: 31.6, z: 33.4 },
+    { b: bubble(290, 262, 'I asked my phone.', { dark: true, tail: 170 }), a: 33.4, z: 35.2 },
+  ];
+  var capEl = document.getElementById('cap');
+  var caps = [
+    { a: 8.6, z: 12.0, t: 'Scan the <b>wine list</b>' },
+    { a: 12.0, z: 15.3, t: 'See your <b>match</b> for every wine' },
+    { a: 15.3, z: 19.6, t: 'Know <b>why</b> it fits you' },
+    { a: 19.6, z: 24.2, t: 'Say <b>exactly</b> what you like' },
+  ];
+
+  /* ── The real app, in the phone ── */
+  var phoneEl = document.getElementById('phone');
+  var app = document.getElementById('app');
+  var api = null, lastP = -1;
+  var PX = 190, PY = 80; // where the phone's top-left sits when it fills the scene
+  function mountApp() {
+    if (!window.VinterestDemo) return setTimeout(mountApp, 60);
+    api = window.VinterestDemo.mount(app, 'film');
+    api.update(0);
+  }
+  mountApp();
+  function appP(t) { return t < 11.4 ? 0 : t < 15.0 ? 0.17 : t < 19.5 ? 0.34 : 0.67; }
+
+  /* ── The clock ── */
+  var T0 = null, STARTED = false;
+  var END = 38;
+  window.__ready = function () { return !!api; };
+  window.__start = function () { STARTED = true; T0 = performance.now(); };
+
+  function render(T) {
+    // Candle flicker and a little life in everyone
+    flame.setAttribute('ry', 8 + Math.sin(T * 9) * 1.4);
+    document.getElementById('turb').setAttribute('seed', 1 + Math.floor(T * 8) % 7); // the lines boil, like hand-drawn animation
+    var bob = function (k) { return Math.sin(T * 1.6 + k) * 1.5; };
+    // sommelier
+    var inK = ease(seg(T, 0.4, 2.6));
+    var sx = lerp(-120, 78, inK), sy = 330 + bob(1);
+    S.g.setAttribute('transform', 'translate(' + sx + ',' + sy + ') scale(1.4)');
+    // his mood: polite, then a nod
+    S.face(T > 25 && T < 29 ? 0.8 : 0, T < 3 ? 'smile' : T < 6 ? 'flat' : T > 29 ? 'big' : 'smile', T > 26 && T < 28.5 ? Math.sin((T - 26) * 5) * 6 : 0);
+    // the list: in his hand, held out to the table, then in hers
+    var hold = ease(seg(T, 2.6, 3.2)), pass = ease(seg(T, 6.0, 7.0));
+    var lx = lerp(lerp(sx + 92, 170, hold), 470, pass), ly = lerp(lerp(sy + 330, 690, hold), 700, pass) - Math.sin(pass * Math.PI) * 40;
+    var tuck = ease(seg(T, 7.6, 8.4));
+    list.setAttribute('transform', 'translate(' + lx + ',' + (ly + tuck * 120) + ') rotate(' + lerp(-8, -2, pass) + ')');
+    list.setAttribute('opacity', 1 - tuck);
+    sArm.setAttribute('d', 'M' + (sx + 44) + ' ' + (sy + 220) + ' Q' + (sx + 100) + ' ' + (sy + 330) + ' ' + lx + ' ' + (ly + 14));
+    sArm.setAttribute('opacity', 1 - pass);
+    sHand.setAttribute('cx', lx - 4); sHand.setAttribute('cy', ly + 16); sHand.setAttribute('opacity', 1 - pass);
+    // the table, awkward
+    var awk = seg(T, 2.8, 3.6) * (1 - seg(T, 6.0, 6.6));
+    A.at(0, bob(0) + awk * 6); A.face(-awk * 0.9, T < 3 ? 'smile' : T < 6.2 ? 'awk' : 'smile', -awk * 9);
+    B.at(0, bob(2) + awk * 4); B.face(awk * 0.9, T < 3 ? 'smile' : T < 6.2 ? 'awk' : 'smile', awk * 7);
+    C.at(0, bob(3) + awk * 8); C.face(-awk * 0.7, T < 3 ? 'smile' : T < 6.2 ? 'awk' : 'smile', -awk * 11);
+    var woman = seg(T, 5.6, 6.4);
+    D.at(0, bob(4) - woman * 6); D.face(lerp(0, -0.9, woman) , T < 3 ? 'smile' : T < 6.2 ? 'flat' : T > 24.4 ? 'big' : 'smile', 0);
+    sweat.setAttribute('transform', 'translate(' + (A.x + 44) + ',' + (A.y + 30 + (T * 18 % 24)) + ')');
+    sweat.setAttribute('opacity', T > 3.4 && T < 6 ? 0.9 : 0);
+    // after the list is sorted, the table relaxes
+    if (T > 29) { A.face(0, 'smile', 0); B.face(0.6, 'big', 4); C.face(-0.6, 'smile', -4); }
+    // her phone
+    var up = ease(seg(T, 7.2, 8.3)), down = ease(seg(T, 24.2, 25.2));
+    mini.setAttribute('transform', 'translate(' + (D.x - 10) + ',' + lerp(800, 690, up) + ')');
+    mini.setAttribute('opacity', T > 7.1 && T < 8.9 || (T > 24.0 && T < 36) ? 1 : 0);
+    // the bottle arrives
+    var bk = ease(seg(T, 29.0, 30.2));
+    bottle.setAttribute('transform', 'translate(' + lerp(-40, 120, bk) + ',' + lerp(790, 640, bk) + ')');
+    bottle.setAttribute('opacity', bk > 0 ? 1 : 0);
+    // the big phone
+    var grow = ease(seg(T, 8.0, 9.2)), shrink = ease(seg(T, 23.9, 25.0));
+    var k = grow * (1 - shrink);
+    var scale = lerp(0.12, 0.74, k), px = lerp(D.x - 10, 270 - 205 * 0.74, k), py = lerp(700, 96, k);
+    phoneEl.style.opacity = k > 0.02 ? 1 : 0;
+    phoneEl.style.transform = 'translate(' + px + 'px,' + py + 'px) scale(' + scale + ')';
+    mini.setAttribute('opacity', k > 0.02 && T < 24.2 ? 0 : mini.getAttribute('opacity'));
+    document.getElementById('dim').style.opacity = 0.9 * k;
+    var p = appP(T);
+    if (api && p !== lastP && T >= 8.0) { lastP = p; api.update(p); }
+    // captions and bubbles
+    var c = caps.filter(function (x) { return T >= x.a - 0.01 && T < x.z + 0.3; })[0];
+    if (c) { if (capEl.getAttribute('data-a') !== String(c.a)) { capEl.innerHTML = c.t; capEl.setAttribute('data-a', c.a); } capEl.style.opacity = Math.min(seg(T, c.a, c.a + 0.3), 1 - seg(T, c.z, c.z + 0.3)); } else capEl.style.opacity = 0;
+    say.forEach(function (s) {
+      var o = Math.min(seg(T, s.a, s.a + 0.25), 1 - seg(T, s.z - 0.2, s.z));
+      s.b.style.opacity = o;
+      s.b.style.transform = 'translateY(' + (1 - o) * 6 + 'px) scale(' + (0.96 + 0.04 * o) + ')';
+    });
+    // the end card
+    document.getElementById('end').style.opacity = ease(seg(T, 35.4, 36.4));
+  }
+  var MANUAL = null;
+  function frame(now) {
+    if (MANUAL != null) render(MANUAL);
+    else if (STARTED) render(Math.min(END, (now - T0) / 1000));
+    else render(0);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  window.__setT = function (t) { MANUAL = t; };
+  window.__END = END;
+})();
+</script>
+</body>
+</html>
