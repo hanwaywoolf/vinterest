@@ -285,6 +285,13 @@ Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
   the reasons first and the dish to steer away from, the alternatives with their price, then where
   they stand and the reference material.
 
+### One size on the cards (built)
+
+A wine's, a cocktail's and a dish's card had text at seven sizes between 11 and 22 and four weights up to 800, so
+nothing led. Every line is now 14px, the size of the sentence in Where you stand, and only the name is larger (20px).
+Weights are light: the name 600, labels and anything emphasised 500, the rest 400. It's the same on the phone and in
+the console's drawer, on every restaurant, and a test fails if a card strays from it.
+
 ## The pre-shift briefing and specials (built, November 2026)
 
 What management decides before service reaches every member of staff as one page they read and accept before

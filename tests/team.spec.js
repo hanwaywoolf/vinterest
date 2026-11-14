@@ -2556,3 +2556,37 @@ test('the console tour: first visit only, each stop opens its section, skippable
   await expect(page.getByTestId('console-tour')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+// One text size on the cards (docs/business.md "One size on the cards"): on a wine's, a cocktail's and a dish's card every
+// line is 14px, the size of the sentence in Where you stand, only the name is larger (20px), and nothing is heavier
+// than 600. On every restaurant, on the phone and in the console's drawer. Sizes had drifted between 11 and 22.
+const CARD_SEEDS = ['demo', 'social', 'princess', 'eloise'];
+for (const seed of CARD_SEEDS) {
+  test(`the cards keep one text size and light weights (${seed})`, async ({ browser }) => {
+    const stray = (page, tid) => page.getByTestId(tid).first().evaluate((root) => {
+      const bad = [], own = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
+      root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
+        const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
+        if (size !== (name ? 20 : 14) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+      return bad; });
+    // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
+    await stubNetwork(ctx);
+    await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    await page.getByTestId('team-tab-wines').click();
+    await page.getByTestId('team-wine-row').first().click();
+    await expect(page.getByTestId('team-wine')).toBeVisible(); expect(await stray(page, 'team-wine')).toEqual([]);
+    await page.getByLabel('Back').click();
+    if (await page.getByTestId('team-list-switch').count()) {
+      await page.getByTestId('team-list-switch').getByText('Cocktails').click();
+      await page.getByTestId('team-cocktail-row').first().click();
+      await expect(page.getByTestId('team-cocktail')).toBeVisible(); expect(await stray(page, 'team-cocktail')).toEqual([]);
+      await page.getByLabel('Back').click();
+    }
+    await page.getByTestId('team-tab-menu').click();
+    await page.getByTestId('team-dish-row').first().click();
+    await expect(page.getByTestId('team-dish')).toBeVisible(); expect(await stray(page, 'team-dish')).toEqual([]);
+    await ctx.close();
+  });
+}
