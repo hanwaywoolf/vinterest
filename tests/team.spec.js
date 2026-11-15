@@ -2650,6 +2650,16 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
   await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
+  // Wines follows the other pages: five figures, each filtering the list or opening a plan; what needs the manager
+  // as what's so and what to do; glasses and bottles sold apart; training's spread with room to grow.
+  await page.getByTestId('c2-kpi-trained').click(); expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
+  await expect(page.getByTestId('c2-wine-filter-few')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('c2-wine-filter-all').click();
+  await expect(page.getByTestId('c2-list')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-list')).toContainText('Bottles sold');
+  expect(await page.getByTestId('c2-wine-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('c2-list-known').getByTestId('c2-spread')).toHaveCount(2);
+  await page.getByTestId('c2-wine-needs').getByTestId('c2-need').first().click(); await expect(page.getByTestId('c2-plan')).toBeVisible(); await page.getByTestId('c2-plan-close').click();
+  await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
   await page.getByTestId('console-nav-menu').click();
   await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);

@@ -230,39 +230,50 @@ const _C2_WIN={'At its peak':'#6FD79C','Drinking well':'#9CC9F5','Still young':'
 const _c2Chip=(T,label,on,onClick,tid)=><span key={label} role="button" data-testid={tid} aria-pressed={on} onClick={onClick} style={{padding:'5px 12px',borderRadius:999,fontSize:13,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',border:`1px solid ${on?T.ink:'rgba(255,255,255,0.17)'}`,color:on?T.ink:T.mid}}>{label}</span>;
 
 /* ── Wines ── */
-function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), ws=TeamData.wines().filter(w=>!TeamData.isDrink(w)), cov=TeamReport.coverage(), [q,setQ]=React.useState(''), [f,setF]=React.useState('all');
-  const sold=TeamSales.has()?Object.fromEntries(TeamReport.salesByWine(28).map(x=>[x.id,x])):{}, top=Math.max(1,...Object.values(sold).map(x=>x.qty)), fresh=new Set(TeamReport.adoption().map(a=>a.wine.id)), know=TeamSales.has()?TeamReport.soldKnowing(7):null;
-  const rows=ws.map(w=>({w,kb:TeamReport.knownBy(w),win:TeamData.window(w),s:sold[w.id]})), served=rows.filter(x=>x.kb.of>0), all=served.filter(x=>x.kb.people.length>=Math.ceil(x.kb.of/2)).length;
-  const n=x=>TeamShift._norm(x), hit=x=>(!q.trim()||n([TeamData.label(x.w),x.w.region,x.w.country,(x.w.grapes||[]).join(' ')].join(' ')).includes(n(q)))&&(f==='all'||(f==='glass'&&TeamData.byGlass(x.w))||(f==='few'&&x.kb.of&&x.kb.people.length<Math.ceil(x.kb.of/2))||(f==='new'&&fresh.has(x.w.id)));
-  const shown=rows.filter(hit), secs=[...new Set(shown.map(x=>x.w.section||'Wines'))], wins={}; rows.forEach(x=>{ if(x.win) wins[x.win.word]=(wins[x.win.word]||0)+1; });
-  const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 10px 8px 0',whiteSpace:'nowrap'}, td={padding:'10px 10px 10px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'middle'}, num={...td,textAlign:'right'};
-  const size=84, sw=8, r=(size-sw)/2, L=2*Math.PI*r, pct=served.length?Math.round(100*all/served.length):0, ad=TeamReport.adoption();
+function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), ws=TeamData.wines().filter(w=>!TeamData.isDrink(w)), [q,setQ]=React.useState(''), [f,setF]=React.useState('all'), listRef=React.useRef(null);
+  const has=TeamSales.has(), wk=has?Object.fromEntries(TeamReport.salesByWine(7).map(x=>[x.id,x])):{}, month=has?new Set(TeamReport.salesByWine(28).map(x=>x.id)):null, fresh=new Set(TeamReport.adoption().map(a=>a.wine.id)), know=has?TeamReport.soldKnowing(7):null, tw=has?TeamReport.trainingWorth(28,1):null;
+  const rows=ws.map(w=>({w,kb:TeamReport.knownBy(w),win:TeamData.window(w),s:wk[w.id]})), served=rows.filter(x=>x.kb.of>0), half=x=>x.kb.of>0&&x.kb.people.length>=Math.ceil(x.kb.of/2), trained=served.filter(half).length, few=served.filter(x=>!half(x));
+  const unsold=month?rows.filter(x=>!month.has(x.w.id)):[], peak=rows.filter(x=>x.win&&x.win.word==='At its peak'), glass=ws.filter(TeamData.byGlass).length;
+  const n=x=>TeamShift._norm(x), FILTERS=[['all','All',()=>true],['glass','By the glass',x=>TeamData.byGlass(x.w)],['bottle','Bottle only',x=>!TeamData.byGlass(x.w)],['few','Few trained',x=>x.kb.of>0&&!half(x)],['new','New',x=>fresh.has(x.w.id)],...(month?[['unsold','Not selling',x=>!month.has(x.w.id)]]:[]),['peak','At their peak',x=>x.win&&x.win.word==='At its peak']];
+  const pass=(FILTERS.find(y=>y[0]===f)||FILTERS[0])[2], hit=x=>(!q.trim()||n([TeamData.label(x.w),x.w.region,x.w.country,(x.w.grapes||[]).join(' ')].join(' ')).includes(n(q)))&&pass(x);
+  const shown=rows.filter(hit), secs=[...new Set(shown.map(x=>x.w.section||'Wines'))], all=TeamReport.wineActions(), needs=[...all.filter((x,i)=>all.findIndex(y=>y.tag===x.tag)===i),...all.filter((x,i)=>all.findIndex(y=>y.tag===x.tag)!==i)].slice(0,4); // one of each kind first
+  // A figure filters the list to what it counts and brings the list into view.
+  const show=k=>{ setF(k); setQ(''); setTimeout(()=>{ if(listRef.current) listRef.current.scrollIntoView({block:'start',behavior:'smooth'}); },60); };
+  const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 10px 8px 0',whiteSpace:'nowrap'}, td={padding:'10px 10px 10px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'middle'}, num={...td,textAlign:'right'}, dash=<span style={{color:T.mid}}>—</span>;
+  const names=ps=>{ const a=ps.map(p=>p.name.split(' ')[0]); return a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0]; };
   return <div data-testid="console-wines">
-    <_C2Head hi="Wines" sub={`${ws.length} on the list · ${ws.filter(TeamData.byGlass).length} by the glass`} section="wines" actions={<><_C2Btn onClick={()=>setSection('upload')}>Add a wine from its label</_C2Btn><_C2Btn primary onClick={()=>setSection('upload')}>Upload a new list</_C2Btn></>}/>
-    <_C2Split two={two} left={<_C2Card feat title="How well the team is trained on the list" testid="c2-list-known">
-        <div style={{display:'flex',alignItems:'center',gap:16,margin:'4px 0 16px'}}><div style={{position:'relative',width:size,height:size,flexShrink:0}}><svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={sw}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={acc} strokeWidth={sw} strokeLinecap="round" strokeDasharray={`${L*pct/100} ${L}`} transform={`rotate(-90 ${size/2} ${size/2})`}/></svg><div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:600,color:T.ink,fontFamily:C.P}}>{pct}%</div></div>
-          <div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>{all} of {served.length} have at least half their servers trained on them</div></div>
-        <_C2Meter label="By the glass" val={cov.glass.covered} of={cov.glass.total} col={_C2_TONE.good} />
-        <_C2Meter label="By the bottle" val={cov.bottle.covered} of={cov.bottle.total} col={cov.bottle.covered>=cov.bottle.total?_C2_TONE.good:_C2_TONE.note}/>
-        {know&&know.share!=null&&<_C2Meter label="Sold this week by a server trained on it" val={Math.round(100*know.share)} of={100} col={_C2_TONE.good} note="% of wine takings"/>}
-        {Object.keys(wins).length>0&&<div style={{paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.1)'}}>{_c2Lab(T,'Drinking windows')}<div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>{Object.keys(_C2_WIN).filter(k=>wins[k]).map(k=><span key={k}>{_c2Pill(`${wins[k]} ${k.toLowerCase()}`,_C2_WIN[k])}</span>)}</div></div>}
-        {ad.length>0&&<div style={{marginTop:14,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.1)'}}>{_c2Lab(T,'New on the list')}{ad.slice(0,3).map(a=><div key={a.wine.id} role="button" onClick={()=>open({view:'wine',id:a.wine.id})} style={{marginTop:6,cursor:'pointer'}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(a.wine)}</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Added {a.days===0?'today':`${a.days} day${a.days===1?'':'s'} ago`} · {a.knows} of {a.of} have it</div></div>)}</div>}
-      </_C2Card>}>
-      <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
-        <input aria-label="Find a wine" data-testid="c2-wine-find" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a wine, grape or region…" style={{width:280,padding:'8px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.14)',background:'transparent',color:T.ink,fontFamily:C.P,fontSize:14,outline:'none'}}/>
-        {[['all','All'],['glass','By the glass'],['few','Few trained'],['new','New']].map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-wine-filter-'+k))}
-        <span style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {rows.length}</span></div>
-      <_C2Card title="The list" right="tap a wine for its card" testid="c2-list"><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th><th style={{...th,textAlign:'right'}}>Glass</th><th style={{...th,textAlign:'right'}}>Bottle</th><th style={th}>Drinking window</th><th style={{...th,textAlign:'right'}}>Sold · 28 nights</th><th style={th}>Who can sell it</th></tr></thead>
-        <tbody>{secs.map(sec=><React.Fragment key={sec}><tr><td colSpan={6} style={{padding:'16px 0 4px',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',fontWeight:500,color:acc,fontFamily:C.P}}>{sec}</td></tr>
-          {shown.filter(x=>(x.w.section||'Wines')===sec).map(x=><tr key={x.w.id} data-testid="c2-list-row" onClick={()=>open({view:'wine',id:x.w.id})} style={{cursor:'pointer'}}>
-            <td style={td}><div style={{fontWeight:500}}>{TeamData.short(x.w)} {fresh.has(x.w.id)&&_c2Pill('New','#9CC9F5')}</div><div style={{fontSize:12,color:T.mid}}>{[x.w.vintage||'NV',[x.w.region,x.w.country].filter(Boolean).join(', ')].join(' · ')}</div></td>
-            <td style={num}>{x.w.glass||<span style={{color:T.mid}}>—</span>}</td><td style={num}>{x.w.bottle||<span style={{color:T.mid}}>—</span>}</td>
-            <td style={td}>{x.win?_c2Pill(x.win.word,_C2_WIN[x.win.word]||_C2_TONE.mut):<span style={{color:T.mid}}>—</span>}</td>
-            <td style={num}><div style={{display:'flex',alignItems:'center',justifyContent:'flex-end',gap:8}}><div style={{width:60,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${x.s?Math.round(100*x.s.qty/top):0}%`,background:'rgba(255,255,255,0.7)',borderRadius:3}}/></div><span style={{width:34}}>{x.s?x.s.qty:0}</span></div></td>
-            <td style={td}>{x.kb.of?<_C2Knowers people={x.kb.people} of={x.kb.of} size={22}/>:<span style={{color:T.mid}}>—</span>}</td></tr>)}</React.Fragment>)}</tbody></table></div>
-        {!shown.length&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'12px 0'}}>No wine matches that.</div>}</_C2Card>
-    </_C2Split>
-    <_C2Manage k="c2-manage-wines" title="Edit the list, see its questions and the reviews"><_CWines open={open} goUpload={()=>setSection('upload')}/></_C2Manage>
+    <_C2Head hi="Wines" sub={`${ws.length} on the list · ${glass} by the glass · ${ws.length-glass} by the bottle only`} section="wines" actions={<><_C2Btn onClick={()=>setSection('upload')}>Add a wine from its label</_C2Btn><_C2Btn primary onClick={()=>setSection('upload')}>Upload a new list</_C2Btn></>}/>
+    <div style={{..._c2Grid(5,two),marginBottom:16}}>
+      <_C2Kpi testid="c2-kpi-trained" label="Team trained on" value={trained} unit={`of ${served.length} wines`} note={few.length?`${few.length} where fewer than half its servers are trained →`:'At least half the servers on every wine'} onClick={()=>show('few')}/>
+      <_C2Kpi testid="c2-kpi-soldtrained" label="Sold by trained staff" value={know&&know.share!=null?`${Math.round(100*know.share)}%`:'—'} delta={know&&know.delta!=null?`${know.delta>=0?'▲':'▼'} ${Math.abs(know.delta)} points on last week`:null} good={!know||know.delta==null||know.delta>=0} note={has?'of wine sales this week, by a server trained on that wine':'Import your sales to see it'}/>
+      {tw&&tw.rows[0]?<_C2Kpi testid="c2-kpi-winenext" label="Train next" value={`+${_cMoney(tw.rows[0].extra)}`} unit="a week" note={`${TeamData.nick(tw.rows[0].wine)}: train ${names(tw.rows[0].missing)} →`} onClick={()=>open({view:'plan',kind:'train',id:tw.rows[0].wine.id})}/>
+        :<_C2Kpi label="Train next" value={few.length} unit={few.length===1?'wine':'wines'} note={few.length?'where few servers are trained: see them →':'Nothing waiting'} onClick={()=>show('few')}/>}
+      <_C2Kpi testid="c2-kpi-unsold" label="Not selling" value={month?unsold.length:'—'} unit={month?(unsold.length===1?'wine':'wines'):''} note={month?(unsold.length?'no sale in four weeks: see them →':'Everything has sold in four weeks'):'Import your sales to see it'} onClick={month?()=>show('unsold'):undefined}/>
+      <_C2Kpi testid="c2-kpi-peak" label="At their peak" value={peak.length} unit={peak.length===1?'wine':'wines'} note={peak.length?'drinking at their best now: the ones to recommend →':'No drinking windows written yet'} onClick={()=>show('peak')}/>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
+      <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,position:two?'sticky':'static',top:16}}>
+        <_C2Card feat title="Needs you on the list" testid="c2-wine-needs">{needs.length?<_C2Needs items={needs} open={open} tagW={78}/>:<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing on the list needs you right now.</div>}</_C2Card>
+        <_C2Card title="How far training has spread" testid="c2-list-known"><div style={{display:'flex',flexDirection:'column',gap:18}}>
+          <_C2Spread label="By the glass" sp={TeamReport.spread('glass')} unit="glass" open={open} act="Train more of the team on"/>
+          <_C2Spread label="By the bottle" sp={TeamReport.spread('bottle')} unit="bottle" open={open} act="Train more of the team on"/></div></_C2Card>
+      </div>
+      <div ref={listRef} style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,scrollMarginTop:16}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+          <input aria-label="Find a wine" data-testid="c2-wine-find" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a wine, grape or region…" style={{width:250,padding:'8px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.14)',background:'transparent',color:T.ink,fontFamily:C.P,fontSize:14,outline:'none'}}/>
+          {FILTERS.map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-wine-filter-'+k))}
+          <span style={{flex:1}}/><span data-testid="c2-list-count" style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {rows.length}</span></div>
+        <_C2Card title="The list" right={has?'sold in the last 7 nights · tap a wine for its card':'tap a wine for its card'} testid="c2-list"><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th><th style={th}>Drinking window</th>{has&&<><th style={{...th,textAlign:'right'}}>Glasses sold</th><th style={{...th,textAlign:'right'}}>Bottles sold</th><th style={{...th,textAlign:'right'}}>Sales</th></>}<th style={{...th,paddingLeft:14}}>Trained on it</th></tr></thead>
+          <tbody>{secs.map(sec=><React.Fragment key={sec}><tr><td colSpan={6} style={{padding:'16px 0 4px',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',fontWeight:500,color:acc,fontFamily:C.P}}>{sec}</td></tr>
+            {shown.filter(x=>(x.w.section||'Wines')===sec).map(x=><tr key={x.w.id} data-testid="c2-list-row" onClick={()=>open({view:'wine',id:x.w.id})} style={{cursor:'pointer'}}>
+              <td style={{...td,minWidth:230}}><div style={{fontWeight:500}}>{TeamData.short(x.w)} {fresh.has(x.w.id)&&_c2Pill('New','#9CC9F5')}{month&&!month.has(x.w.id)&&<> {_c2Pill('Not selling',_C2_TONE.bad)}</>}</div><div style={{fontSize:12,color:T.mid}}>{[x.w.vintage||'NV',[x.w.region,x.w.country].filter(Boolean).join(', ')].join(' · ')}</div><div style={{fontSize:12,color:T.ink2}}>{[x.w.glass&&`${x.w.glass} a glass`,x.w.bottle&&`${x.w.bottle} a bottle`].filter(Boolean).join(' · ')}</div></td>
+              <td style={td}>{x.win?_c2Pill(x.win.word,_C2_WIN[x.win.word]||_C2_TONE.mut):dash}</td>
+              {has&&<><td style={num}>{x.s&&x.s.glasses?x.s.glasses:dash}</td><td style={num}>{x.s&&x.s.bottles?x.s.bottles:dash}</td><td style={{...num,fontWeight:500}}>{x.s?_cMoney(x.s.revenue):dash}</td></>}
+              <td style={{...td,paddingLeft:14}}>{x.kb.of?<_C2Knowers people={x.kb.people} of={x.kb.of} size={22}/>:dash}</td></tr>)}</React.Fragment>)}</tbody></table></div>
+          {!shown.length&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'12px 0'}}>No wine matches that.</div>}</_C2Card>
+      </div>
+    </div>
+    <_C2Manage k="c2-manage-wines" title="Manage: edit the list, see its questions and the reviews"><_CWines open={open} goUpload={()=>setSection('upload')}/></_C2Manage>
   </div>; }
 
 /* ── Menu ── */

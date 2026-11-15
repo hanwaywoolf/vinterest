@@ -872,3 +872,13 @@ the four from `readiness().parts`; "Practise pairings" and "Practise menu" drill
 
 The Team page's Bespoke training figure opens every track at once (`_C2Tracks`): who it's for, who sent it, what it
 covers by area, each part's progress and its status; a row opens that person.
+
+### The Wines page
+
+Same top as the others: the sentence, then five figures (Team trained on, Sold by trained staff, Train next, Not
+selling, At their peak). A figure filters the list to what it counts and scrolls to it, or opens a plan. On the left,
+"Needs you on the list" (`TeamReport.wineActions`: a top seller few are trained on, a new arrival, a slow glass,
+bottles with no sale in four weeks, wines past their best; one of each kind first, each a fact then an action that
+opens a plan) and how far training has spread by the glass and by the bottle. On the right, the whole list with its
+drinking window, glasses and bottles sold this week apart, sales, and who is trained on it, with filters to match
+the figures. The classic editor stays under Manage.
