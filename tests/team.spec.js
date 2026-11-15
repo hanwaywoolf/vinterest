@@ -2672,6 +2672,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-mins')).toContainText('Server');
   // The demo opens with bespoke training in flight, tracked.
   await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
+  // The figure counts every track the window lists, drafts included.
+  expect(await page.evaluate(() => TeamPlans.all().length)).toBe(Number((await page.getByTestId('c2-kpi-bespoke').innerText()).match(/\n(\d+)/)[1]));
   // Four areas: glasses, bottles, pairings and the menu.
   for (const t of ['By the glass', 'Bottles', 'Pairings', 'Menu']) await expect(page.getByTestId('c2-stands')).toContainText(t);
   // The bespoke figure opens every track: who it's for, what it covers, how far along.

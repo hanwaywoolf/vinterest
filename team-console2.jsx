@@ -342,6 +342,8 @@ function _C2Team({open,setSection,me,two,refresh}){ const T=useTheme(), acc=_c2A
   const [sel,setSel]=React.useState(()=>(rows.find(x=>x.r.state!=='ready')||rows[0]||{person:{}}).person.id), x=rows.find(y=>y.person.id===sel)||rows[0];
   const [ask,setAsk]=React.useState(''), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(null), [tracks,setTracks]=React.useState(false);
   const low=rows.find(y=>y.r.state!=='ready'), running=TeamPlans.running(), live=running.filter(y=>!y.finished);
+  // Every track, counted the way the window that lists them does: running, drafts still to push, and finished.
+  const tracksAll=TeamPlans.all(), drafts=tracksAll.filter(p=>p.status==='draft'), fin=running.filter(y=>y.finished);
   if(!x) return <div data-testid="c2-team"><_C2Head hi="Team" sub="nobody yet" section="team"/><_C2Manage k="c2-manage-team" title="Add your team"><_CTeam open={open} refresh={refresh}/></_C2Manage></div>;
   const pick=id=>{ setSel(id); setErr(null); setAsk(''); }, pl=pushed[x.person.id]||x.plan, done=!!pushed[x.person.id], st=_tState[x.r.state], name=f(x);
   const push=()=>{ if(TeamReport.pushPlan(x.person.id)) setPushed(d=>({...d,[x.person.id]:x.plan})); };
@@ -357,7 +359,7 @@ function _C2Team({open,setSection,me,two,refresh}){ const T=useTheme(), acc=_c2A
       {tw&&tw.rows[0]?<_C2Kpi testid="c2-kpi-trainnext" label="Train next" value={`+${_cMoney(tw.rows[0].extra)}`} unit="a week" note={`${TeamData.nick(tw.rows[0].wine)}: train ${(n=>n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0])(tw.rows[0].missing.map(p=>p.name.split(' ')[0]))} →`} onClick={()=>open({view:'plan',kind:'train',id:tw.rows[0].wine.id})}/>
         :<_C2Kpi label="Train next" value={rows.filter(y=>y.plan&&y.plan.items.length).length} unit="steps ready" note="one next step for each person"/>}
       {low?<_C2Kpi testid="c2-kpi-help" label="Needs a plan" value={f(low)} unit={`${low.r.pct}%`} note={`See ${f(low)} and ask Vinny for a plan →`} onClick={()=>pick(low.person.id)}/>:<_C2Kpi label="Needs a plan" value="Nobody" note="everyone is ready for service"/>}
-      <_C2Kpi testid="c2-kpi-bespoke" label="Bespoke training" value={live.length} unit={live.length===1?'plan running':'plans running'} note={live.length?`${live.slice(0,2).map(y=>`${y.person.name.split(' ')[0]} ${y.done} of ${y.total}`).join(' · ')} · see all →`:'Ask Vinny for one, for anyone →'} onClick={()=>setTracks(true)}/>
+      <_C2Kpi testid="c2-kpi-bespoke" label="Bespoke training" value={tracksAll.length} unit={tracksAll.length===1?'track':'tracks'} note={tracksAll.length?`${[live.length&&`${live.length} running`,drafts.length&&`${drafts.length} draft${drafts.length===1?'':'s'} to push`,fin.length&&`${fin.length} finished`].filter(Boolean).join(' · ')} · see all →`:'Ask Vinny for one, for anyone →'} onClick={()=>setTracks(true)}/>
     </div>
     <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
       <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
