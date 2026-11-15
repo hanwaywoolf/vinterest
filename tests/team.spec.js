@@ -2664,11 +2664,14 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-nav-team').click();
   await expect(page.getByTestId('c2-fact')).toContainText('ready for service');
   await expect(page.getByTestId('c2-team-row')).toHaveCount(7);
-  await expect(page.getByTestId('c2-team-table')).toContainText('a week'); await expect(page.getByTestId('c2-team-table')).toContainText(/needs \d+/);
-  await expect(page.getByTestId('c2-how')).toContainText('every area'); await expect(page.getByTestId('c2-how-example')).toContainText('minimum');
-  const next = page.getByTestId('c2-next').first(); await expect(next).toContainText(/→ \d+ of \d+/);
-  await next.getByTestId('c2-push').click(); await expect(next.getByTestId('c2-push')).toContainText('First in');
-  await next.getByTestId('c2-see-plan').click(); await expect(page.getByTestId('c2-plan')).toBeVisible(); await page.getByTestId('c2-plan-close').click();
+  // Pick a person: their areas against the minimum, what they sell, and a next step to push.
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click();
+  await expect(page.getByTestId('c2-stands')).toContainText('to go'); await expect(page.getByTestId('c2-sells')).toContainText('a week');
+  await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
+  await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
+  await expect(page.getByTestId('c2-mins')).toContainText('Server');
+  // The demo opens with bespoke training in flight, tracked.
+  await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running'); await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText(/\d+ of \d+ done/);
   // The classic team tools stay under Manage.
   await page.getByTestId('c2-manage-c2-manage-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
   // And back to the classic console, remembered on the device.
@@ -2677,6 +2680,46 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(con).not.toHaveAttribute('data-look', 'preview');
   await page.getByTestId('console-new-look').click();
   await expect(con).toHaveAttribute('data-look', 'preview');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// Bespoke training (team-plans.js): the manager asks Vinny for a plan in their own words, reads the draft, pushes
+// it; it shows on that person's Today as its own training, and a question that covers one of their own counts.
+test('bespoke training: Vinny writes a plan, the manager pushes it, and it counts towards readiness', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = [];
+  // Vinny's answer is built from what the prompt offered: a new question on the first wine, covering one of its own.
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, wine = /^(w-[^ ]+) \| WINE/m.exec(text)[1], own = new RegExp('^  (' + wine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#\\d+) \\| not known', 'm').exec(text);
+    const q = (n, covers) => ({ on: wine, q: `Bespoke question ${n} about this wine?`, opts: ['Right ' + n, 'Wrong a' + n, 'Wrong b' + n, 'Wrong c' + n], a: 0, why: 'Because.', covers });
+    return JSON.stringify({ title: 'Reds: prices and pairings', summary: 'Three short parts on the reds she misses.', parts: [{ title: 'Prices', why: 'What each costs.', qs: [q(1, own ? own[1] : ''), q(2, '')] }, { title: 'Pairings', why: 'What to pour.', qs: [q(3, ''), q(4, ''), { on: 'not-a-wine', q: 'Dropped?', opts: ['a', 'b', 'c', 'd'], a: 0 }] }] }); };
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Amara' }).click();
+  await page.getByTestId('c2-vinny-sug').nth(1).click(); // a suggestion fills the box; only the arrow sends
+  expect(reqs.filter(r => r.purpose === 'team_plan')).toHaveLength(0);
+  await page.getByTestId('c2-vinny-send').click();
+  const draft = page.getByTestId('c2-plan-draft');
+  await expect(draft).toContainText('Reds: prices and pairings'); await expect(draft).toContainText('2 parts · 4 questions · 1 count');
+  const sent = reqs.find(r => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
+  await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  // Pushed: tracked on the console, and on Amara's phone as its own training.
+  await draft.getByTestId('c2-draft-push').click();
+  await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText('0 of 4 done');
+  const state = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')), plan = TeamPlans.forPerson(a.id)[0], qs = TeamPlans.questions(plan.id), q = qs.find(x => x.covers);
+    const items = () => TeamLearn._mine(TeamLearn._all(), a.id).items, before = !!(items()[q.covers] && items()[q.covers].reps);
+    TeamLearn.record(a.id, q, true, 'think'); TeamLearn.record(a.id, qs.find(x => !x.covers), false, 'think');
+    return { before, covered: !!items()[q.covers].reps, prog: TeamPlans.progress(plan), id: a.id }; });
+  expect(state.before).toBe(false); expect(state.covered).toBe(true); expect(state.prog.done).toBe(1); expect(state.prog.total).toBe(4);
+  await page.goto(`${BASE}/team/?seed=demo&view=phone`);
+  await page.evaluate((id) => { TeamLearn.setMe(id); window.dispatchEvent(new Event('vbiz:data')); }, state.id); await page.reload();
+  const card = page.getByTestId('today-plan').first();
+  await expect(card).toContainText('Reds: prices and pairings'); await expect(card).toContainText('1 of 4');
+  await card.getByText(/Carry on|Start/).click(); await expect(page.getByTestId('team-drill')).toBeVisible();
   expect(errors).toEqual([]);
   await ctx.close();
 });

@@ -814,3 +814,38 @@ out with its wine (`TeamReport.pairings().sold`, which needs check-level sales) 
   in her drills; "Push everyone's next step" does it for the team. Readiness is explained beside it with one person
   worked through: ready is every area at its minimum, and the percentage is the average of each area's progress
   towards its own minimum. The classic team tools sit under Manage.
+
+## Bespoke training (a paid add-on)
+
+A manager asks Vinny, in their own words, for a training plan for one person ("Priya is struggling with her reds,
+mostly the prices and the pairings: a three-part quiz"), reads the draft, and pushes it. `TeamPlans` (`team-plans.js`,
+`vbiz_plans_v1`, prompt `prompts/team-plan.txt`, purpose `team_plan`) owns it.
+
+- **What Vinny is given.** The person's standing in each area, the request, and up to eight wines and five dishes it is
+  about (`subjects`: a colour, the glass list, the bottles or the menu read from the request as Vinny's test reads
+  one, else the person's own gaps, best sellers first), each with what the team is taught about it and the person's
+  existing questions marked known or not.
+- **What comes back.** Two to four parts of four-option questions, each about one wine or dish. Vinny writes new
+  questions; `_q` drops any that isn't about something on the list, hasn't four distinct options or names no right one.
+- **How it counts.** Each new question says which of the person's own questions teaches the same fact (`covers`). A
+  bespoke question answered right is recorded for itself and for the one it covers (`TeamLearn.record`), so the wine
+  or dish moves towards trained in whichever area it sits in: by the glass, bottles or pairings. One that covers
+  nothing is extra practice. A miss marks only the bespoke question.
+- **On the phone.** A pushed plan is its own card on Today ("From Elena · your own training"), a part at a time, apart
+  from the daily drill.
+- **Tracking.** The Team page shows each plan's parts and questions done (`progress`), and the fifth figure is how many
+  are running.
+- **With no connection** the manager can build the same shape from the questions the person already has
+  (`fromCards`, no call). The demo opens with two such plans in flight (`seedDemo`).
+- **Not yet:** a plan's new questions don't go through the sommelier review before the manager reads them; the manager
+  is the review. Worth adding before this is sold.
+
+Cost: one call per plan, about 5,000 to 9,000 tokens in and 2,500 to 4,000 out with thinking. At the prices in
+`scripts/model-trial.mjs` that is roughly 10 to 12 cents a plan on Opus and about half that on Sonnet.
+
+## The Team page (layout B)
+
+Pick a person on the left (furthest from ready first, with their weekly sales and any plan's progress), see
+everything on the right: where they stand in each area with a white line at its minimum, what they sell against
+their role's average, their next step as four figures with Push, then Ask Vinny and their bespoke training. The
+minimum for each role sits under the list. The classic tools stay under Manage.

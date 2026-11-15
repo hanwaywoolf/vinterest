@@ -1595,6 +1595,9 @@ const TeamLearn = {
       if(done) m.assigned[key].done=now;
     }
     if(!this._batchP) this._saveAll(p);
+    // A bespoke question (team-plans.js) answered right also counts as the question of their own it teaches the fact
+    // of, so a plan moves the wine or dish towards known in whichever area it sits in. A miss only marks the bespoke one.
+    if(ok&&q.covers&&q.covers!==q.id) this.record(pid,{id:q.covers,wine:q.wine,dish:q.dish},true,sure,now);
     return it;
   },
 

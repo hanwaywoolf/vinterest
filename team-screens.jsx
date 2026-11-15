@@ -201,6 +201,16 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLay
       {ret.asked>=3&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
     </Card>
     {!wide&&drill}
+    {/* Bespoke training their manager pushed (team-plans.js): its own card, a part at a time, apart from the daily drill. */}
+    {TeamPlans.forPerson(pid).map(plan=>{ const pr=TeamPlans.progress(plan), i=pr.next<0?0:pr.next, part=plan.parts[i], by=plan.by&&TeamLearn.person(plan.by);
+      return <div key={plan.id} data-testid="today-plan" style={{marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${pr.finished?T.line:_alpha('#C9A96E',0.5)}`,background:pr.finished?'transparent':_alpha('#C9A96E',0.07)}}>
+        <div style={{fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:600,color:T.mid,fontFamily:C.P}}>{by?`From ${by.name.split(' ')[0]}`:'From your manager'} · your own training</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:4}}>{plan.title}</div>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><Prog val={pr.total?pr.done/pr.total:0} col={pr.finished?'#5FD48F':'#C9A96E'} h={6} style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{pr.done} of {pr.total}</span></div>
+        {pr.finished?<div style={{fontSize:14,color:'#5FD48F',fontFamily:C.P,marginTop:8}}>Finished. Every part done.</div>
+          :<><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>Part {i+1} of {plan.parts.length}: {part.title}{part.why?`. ${part.why}`:''}</div>
+            <Btn small primary style={{marginTop:10}} onClick={()=>open({view:'drill',qs:TeamPlans.questions(plan.id),intro:{title:plan.title,why:`Part ${i+1} of ${plan.parts.length}: ${part.title}.`}})}>{pr.done?'Carry on':'Start'} · {pr.parts[i].total-pr.parts[i].done} question{pr.parts[i].total-pr.parts[i].done===1?'':'s'}</Btn></>}
+      </div>; })}
     {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
     </div>; const colB=<div>
     {wide&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.canConsole(person)}/>}
