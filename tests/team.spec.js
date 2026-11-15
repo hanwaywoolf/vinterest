@@ -2663,6 +2663,16 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
   await page.getByTestId('console-nav-menu').click();
   await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);
+  // Every dish shows a wine by the glass and a bottle to offer, each with who is trained on it; the figures and the
+  // training spread are split the same way, and what needs the manager is a fact then an action.
+  await expect(page.getByTestId('c2-dishes')).toContainText('By the glass'); await expect(page.getByTestId('c2-dishes')).toContainText('By the bottle');
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasText: 'a bottle' }).count()).toBe(27);
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasNotText: 'The same wine' }).count()).toBeGreaterThan(15);
+  await expect(page.getByTestId('c2-kpi-pairglass')).toContainText('glass'); await expect(page.getByTestId('c2-kpi-pairbottle')).toContainText('bottle');
+  await expect(page.getByTestId('c2-pair-spread').getByTestId('c2-spread')).toHaveCount(2);
+  expect(await page.getByTestId('c2-menu-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await page.getByTestId('c2-kpi-pairbottle').click(); expect(await page.getByTestId('c2-dish-row').count()).toBeLessThan(27);
+  await page.getByTestId('c2-menu-filter-all').click();
   await expect(page.getByTestId('c2-dishes')).toContainText('Allergens');
   await page.getByTestId('c2-allergens-switch').click();
   await expect(page.getByTestId('c2-dishes')).not.toContainText('Allergens');

@@ -43,7 +43,7 @@ function _C2Btn({children,primary,onClick,testid}){ const T=useTheme(), acc=_c2A
   return <div role="button" data-testid={testid} onClick={onClick} style={{padding:primary?'10px 18px':'9px 16px',borderRadius:12,fontSize:14,fontWeight:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',background:primary?acc:'transparent',color:primary?_c2Ink():T.ink2,border:primary?'none':'1px solid rgba(255,255,255,0.17)'}}>{children}</div>; }
 function _C2Kpi({label,value,unit,delta,good=true,note,onClick,testid}){ const T=useTheme();
   return <_C2Card onClick={onClick} testid={testid} style={{padding:'20px 22px 20px',display:'flex',flexDirection:'column'}}>{_c2Lab(T,label)}
-    <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginTop:12}}><span style={{fontSize:32,fontWeight:600,lineHeight:1.1,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P}}>{value}</span>{unit&&<span style={{fontSize:14,fontWeight:400,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{unit}</span>}</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginTop:12}}><span style={{fontSize:String(value).length>9?24:32,fontWeight:600,lineHeight:1.15,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P}}>{value}</span>{unit&&<span style={{fontSize:14,fontWeight:400,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{unit}</span>}</div>
     {delta&&<div style={{fontSize:13,fontWeight:500,fontFamily:C.P,color:good?_C2_TONE.good:_C2_TONE.bad,marginTop:8,lineHeight:1.3}}>{delta}</div>}
     {note&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:delta?3:8}}>{note}</div>}</_C2Card>; }
 /* Who can sell it: the faces of the people who hold the wine, with how many of those who serve it that is. */
@@ -277,34 +277,51 @@ function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), ws=
   </div>; }
 
 /* ── Menu ── */
-function _C2Menu({open,setSection,me,two}){ const T=useTheme(), acc=_c2Acc(T), [,bump]=React.useReducer(x=>x+1,0), ps=TeamReport.pairings(), paired=ps.filter(x=>x.first), all=paired.filter(x=>x.of&&x.people.length>=Math.ceil(x.of/2)).length, sold=paired.filter(x=>x.sold!=null);
-  const al=TeamData.trainsAllergens(), described=TeamData.dishes().filter(x=>TeamData.dishCard(x.id)).length, secs=[...new Set(ps.map(x=>x.dish.section||'Menu'))];
-  const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 10px 8px 0',whiteSpace:'nowrap'}, td={padding:'10px 10px 10px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'middle'};
-  const bestSold=[...sold].sort((a,b)=>b.sold*b.perWeek-a.sold*a.perWeek).slice(0,3);
+function _C2Menu({open,setSection,me,two}){ const T=useTheme(), acc=_c2Acc(T), [,bump]=React.useReducer(x=>x+1,0), [f,setF]=React.useState('all'), listRef=React.useRef(null);
+  const ps=TeamReport.pairings(), paired=ps.filter(x=>x.first), gOk=paired.filter(x=>x.glassOk).length, bOk=paired.filter(x=>x.bottleOk).length, sold=paired.filter(x=>x.sold!=null), avg=k=>sold.length?Math.round(100*sold.reduce((a,x)=>a+(x[k]||0),0)/sold.length):null;
+  const al=TeamData.trainsAllergens(), needs=TeamReport.menuActions().slice(0,4), weak=[...paired].filter(x=>x.bottle&&!x.bottleOk).sort((a,b)=>(b.perWeek||0)-(a.perWeek||0))[0];
+  const FILTERS=[['all','All',()=>true],['glass','Few trained on the glass',x=>x.glass&&!x.glassOk],['bottle','Few trained on the bottle',x=>x.bottle&&!x.bottleOk]], pass=(FILTERS.find(y=>y[0]===f)||FILTERS[0])[2], shown=ps.filter(pass), secs=[...new Set(shown.map(x=>x.dish.section||'Menu'))];
+  const show=k=>{ setF(k); setTimeout(()=>{ if(listRef.current) listRef.current.scrollIntoView({block:'start',behavior:'smooth'}); },60); };
+  const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 12px 8px 0',whiteSpace:'nowrap'}, td={padding:'12px 12px 12px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'top'}, dash=<span style={{color:T.mid}}>—</span>;
+  // One pick in the table: the wine, its price said the way it's sold, and how many of its servers are trained on it.
+  const pick=(w,by,price,same)=>w?<><div style={{fontWeight:500}}>{same?'The same wine':TeamData.short(w)}</div><div style={{fontSize:12,color:T.mid}}>{price}</div><div style={{marginTop:5}}>{by&&by.of?_c2Known(by.people.length,by.of):null}</div></>:dash;
+  const bar=(v,col)=>v!=null?<div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:64,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${Math.min(100,Math.round(200*v))}%`,borderRadius:3,background:col}}/></div><span style={{fontWeight:500}}>{Math.round(100*v)}%</span></div>:dash;
   return <div data-testid="console-menu">
-    <_C2Head hi="Menu" sub={`${ps.length} dishes · ${paired.length} paired from your list`} section="menu" actions={<_C2Btn primary onClick={()=>setSection('upload')}>Upload a new menu</_C2Btn>}/>
-    <_C2Split two={two} left={<>
-      <_C2Card feat title="Selling the pairing" right={sold.length?<_CDemoTag/>:null} testid="c2-pairing-panel">
-        {sold.length>0&&<div style={{display:'flex',gap:24,margin:'2px 0 14px'}}><div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Ordered with the wine we suggest</div><div style={{fontSize:30,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{Math.round(100*sold.reduce((a,x)=>a+x.sold,0)/sold.length)}%</div></div></div>}
-        <_C2Meter label="Pairings the team can offer" val={all} of={paired.length} col={all===paired.length?_C2_TONE.good:_C2_TONE.note} note={all<paired.length?`${paired.length-all} dishes most of the team would have to ask about`:'Every dish, by at least half the team'}/>
-        <_C2Meter label="Dishes with a line to describe them" val={described} of={ps.length} col={described===ps.length?_C2_TONE.good:_C2_TONE.note}/>
-        {bestSold.length>0&&<div style={{paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.1)'}}>{_c2Lab(T,'Best pairings sold this week')}{bestSold.map((x,i)=><_C2Row key={x.dish.id} first={i===0} onClick={()=>open({view:'dish',id:x.dish.id})}><div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish.name.split(',')[0]} · {TeamData.nick(x.first)}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{TeamData.byGlass(x.first)?'by the glass':'by the bottle'}</div></div><span style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{Math.round(x.sold*x.perWeek)}</span></_C2Row>)}</div>}
-      </_C2Card>
-      <_C2Card title="What this restaurant trains" testid="c2-trains">
-        <_C2Row first><div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>Wine pairings and dish descriptions</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>Every dish with its wine, by the glass and by the bottle. Always on.</div></div></_C2Row>
-        <_C2Row><div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>Allergens</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{al?'On: the kitchen confirms each dish, then every role holds it at 100%.':'Off: managed in your kitchen\'s own system. Nobody is asked about one here.'}</div></div>
-          <div role="switch" aria-checked={al} data-testid="c2-allergens-switch" onClick={()=>{ TeamData.setSetting('allergens',!al); bump(); }} style={{width:38,height:22,borderRadius:11,background:al?acc:'rgba(255,255,255,0.16)',position:'relative',cursor:'pointer',flexShrink:0}}><div style={{position:'absolute',top:2,left:al?18:2,width:18,height:18,borderRadius:9,background:al?_c2Ink():'#fff',transition:'left .15s'}}/></div></_C2Row>
-      </_C2Card></>}>
-      <_C2Card title="Every dish and its wine" right="tap a dish for its card" testid="c2-dishes"><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Dish</th><th style={th}>Pour with it</th><th style={th}>Who can offer it</th>{sold.length>0&&<th style={th}>Ordered with that wine</th>}{al&&<th style={th}>Allergens</th>}</tr></thead>
-        <tbody>{secs.map(sec=><React.Fragment key={sec}><tr><td colSpan={5} style={{padding:'16px 0 4px',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',fontWeight:500,color:acc,fontFamily:C.P}}>{sec}</td></tr>
-          {ps.filter(x=>(x.dish.section||'Menu')===sec).map(x=>{ const a=al?TeamData.allergensOf(x.dish.id):null; return <tr key={x.dish.id} data-testid="c2-dish-row" onClick={()=>open({view:'dish',id:x.dish.id})} style={{cursor:'pointer'}}>
-            <td style={td}><div style={{fontWeight:500}}>{x.dish.name}</div><div style={{fontSize:12,color:T.mid}}>{x.dish.price}</div></td>
-            <td style={td}>{x.first?<><div style={{fontWeight:500}}>{TeamData.short(x.first)}</div><div style={{fontSize:12,color:T.mid}}>{x.glass&&x.glass.id!==x.first.id?`by the glass: ${TeamData.nick(x.glass)}`:TeamData.byGlass(x.first)?'by the glass':'by the bottle'}</div></>:<span style={{color:T.mid}}>Not paired yet</span>}</td>
-            <td style={td}>{x.first&&x.of?<_C2Knowers people={x.people} of={x.of} size={22}/>:<span style={{color:T.mid}}>—</span>}</td>
-            {sold.length>0&&<td style={td}>{x.sold!=null?<div style={{display:'flex',alignItems:'center',gap:8}}><div style={{width:90,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${Math.round(100*x.sold)}%`,borderRadius:3,background:x.sold>=0.45?_C2_TONE.good:x.sold>=0.25?_C2_TONE.note:_C2_TONE.bad}}/></div><span style={{fontWeight:500}}>{Math.round(100*x.sold)}%</span></div>:<span style={{color:T.mid}}>—</span>}</td>}
-            {al&&<td style={td}>{a?_c2Pill(a.length?`${a.length} confirmed`:'None',_C2_TONE.good):_c2Pill('To confirm',_C2_TONE.note)}</td>}</tr>; })}</React.Fragment>)}</tbody></table></div></_C2Card>
-    </_C2Split>
-    <_C2Manage k="c2-manage-menu" title={al?'Edit dishes and confirm allergens':'Edit dishes'}><_CMenu open={open} goUpload={()=>setSection('upload')} me={me}/></_C2Manage>
+    <_C2Head hi="Menu" sub={`${ps.length} dishes · each with a wine by the glass and a bottle`} section="menu" actions={<>{sold.length>0&&<_CDemoTag/>}<_C2Btn primary onClick={()=>setSection('upload')}>Upload a new menu</_C2Btn></>}/>
+    <div style={{..._c2Grid(5,two),marginBottom:16}}>
+      <_C2Kpi testid="c2-pairing-panel" label={sold.length?'Sold with the pairing':'Dishes paired'} value={sold.length?`${avg('sold')}%`:paired.length} unit={sold.length?'':`of ${ps.length}`} note={sold.length?'of dishes go out with the wine you suggest · demo data':'each with a wine by the glass and a bottle'}/>
+      <_C2Kpi testid="c2-kpi-pairglass" label={sold.length?'With the glass':'Glass pairings'} value={sold.length?`${avg('soldGlass')}%`:gOk} unit={sold.length?'':`of ${paired.length}`} note={`team trained to offer the glass for ${gOk} of ${paired.length} dishes →`} onClick={()=>show('glass')}/>
+      <_C2Kpi testid="c2-kpi-pairbottle" label={sold.length?'With the bottle':'Bottle pairings'} value={sold.length?`${avg('soldBottle')}%`:bOk} unit={sold.length?'':`of ${paired.length}`} note={`team trained to offer the bottle for ${bOk} of ${paired.length} dishes →`} onClick={()=>show('bottle')}/>
+      {weak?<_C2Kpi testid="c2-kpi-pairnext" label="Train next" value={TeamData.nick(weak.bottle)} note={`the bottle for ${weak.dish.name.split(',')[0]}: ${weak.bottleBy.people.length} of ${weak.bottleBy.of} trained →`} onClick={()=>open({view:'plan',kind:'train',id:weak.bottle.id})}/>
+        :<_C2Kpi label="Train next" value="Nothing" note="the team is trained on every bottle pairing"/>}
+      <_C2Kpi testid="c2-kpi-described" label="Dishes described" value={TeamData.dishes().filter(x=>TeamData.dishCard(x.id)).length} unit={`of ${ps.length}`} note="with a line the team can say to a guest"/>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
+      <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,position:two?'sticky':'static',top:16}}>
+        <_C2Card feat title="Needs you on the menu" testid="c2-menu-needs">{needs.length?<_C2Needs items={needs} open={open} tagW={86}/>:<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing on the menu needs you right now.</div>}</_C2Card>
+        <_C2Card title="How far pairing training has spread" testid="c2-pair-spread"><div style={{display:'flex',flexDirection:'column',gap:18}}>
+          <_C2Spread label="The wine by the glass for each dish" sp={TeamReport.spread('pairGlass')} unit="glass pairing" open={open} act="Few can offer the glass for"/>
+          <_C2Spread label="The bottle to offer with each dish" sp={TeamReport.spread('pairBottle')} unit="bottle pairing" open={open} act="Few can offer the bottle for"/></div></_C2Card>
+        <_C2Card title="What this restaurant trains" testid="c2-trains">
+          <_C2Row first><div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>Pairings and dish descriptions</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>Every dish with its wine by the glass and its bottle. Always on.</div></div></_C2Row>
+          <_C2Row><div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>Allergens</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{al?'On: the kitchen confirms each dish, then every role holds it at 100%.':'Off: managed in your kitchen\'s own system. Nobody is asked about one here.'}</div></div>
+            <div role="switch" aria-checked={al} data-testid="c2-allergens-switch" onClick={()=>{ TeamData.setSetting('allergens',!al); bump(); }} style={{width:38,height:22,borderRadius:11,background:al?acc:'rgba(255,255,255,0.16)',position:'relative',cursor:'pointer',flexShrink:0}}><div style={{position:'absolute',top:2,left:al?18:2,width:18,height:18,borderRadius:9,background:al?_c2Ink():'#fff',transition:'left .15s'}}/></div></_C2Row>
+        </_C2Card>
+      </div>
+      <div ref={listRef} style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,scrollMarginTop:16}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>{FILTERS.map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-menu-filter-'+k))}<span style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {ps.length}</span></div>
+        <_C2Card title="Every dish · its glass and its bottle" right="tap a dish for its card" testid="c2-dishes"><div style={{overflowX:'auto'}}><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Dish</th><th style={th}>By the glass</th><th style={th}>By the bottle</th>{sold.length>0&&<><th style={th}>Took the glass</th><th style={th}>Took the bottle</th></>}{al&&<th style={th}>Allergens</th>}</tr></thead>
+          <tbody>{secs.map(sec=><React.Fragment key={sec}><tr><td colSpan={6} style={{padding:'16px 0 4px',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',fontWeight:500,color:acc,fontFamily:C.P}}>{sec}</td></tr>
+            {shown.filter(x=>(x.dish.section||'Menu')===sec).map(x=>{ const a=al?TeamData.allergensOf(x.dish.id):null; return <tr key={x.dish.id} data-testid="c2-dish-row" onClick={()=>open({view:'dish',id:x.dish.id})} style={{cursor:'pointer'}}>
+              <td style={{...td,minWidth:170}}><div style={{fontWeight:500}}>{x.dish.name}</div><div style={{fontSize:12,color:T.mid}}>{x.dish.price}{x.perWeek?` · ${x.perWeek} a week`:''}</div></td>
+              <td data-testid="c2-dish-glass" style={td}>{x.first?pick(x.glass,x.glassBy,x.glass&&`${x.glass.glass} a glass`):<span style={{color:T.mid}}>Not paired yet</span>}</td>
+              <td data-testid="c2-dish-bottle" style={td}>{x.first?pick(x.bottle,x.bottleBy,x.bottle&&`${x.bottle.bottle} a bottle`,x.bottleSame):dash}</td>
+              {sold.length>0&&<><td style={td}>{bar(x.soldGlass,_C2_TONE.good)}</td><td style={td}>{bar(x.soldBottle,acc)}</td></>}
+              {al&&<td style={td}>{a?_c2Pill(a.length?`${a.length} confirmed`:'None',_C2_TONE.good):_c2Pill('To confirm',_C2_TONE.note)}</td>}</tr>; })}</React.Fragment>)}</tbody></table></div>
+          {!shown.length&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'12px 0'}}>No dish matches that.</div>}</_C2Card>
+      </div>
+    </div>
+    <_C2Manage k="c2-manage-menu" title={al?'Manage: edit dishes and confirm allergens':'Manage: edit dishes'}><_CMenu open={open} goUpload={()=>setSection('upload')} me={me}/></_C2Manage>
   </div>; }
 
 /* ── Team ── */

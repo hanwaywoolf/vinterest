@@ -882,3 +882,12 @@ bottles with no sale in four weeks, wines past their best; one of each kind firs
 opens a plan) and how far training has spread by the glass and by the bottle. On the right, the whole list with its
 drinking window, glasses and bottles sold this week apart, sales, and who is trained on it, with filters to match
 the figures. The classic editor stays under Manage.
+
+### The Menu page: a glass and a bottle for every dish
+
+Every dish shows two pairings (`TeamReport.pairings`): its wine by the glass (the pairing's own glass pick) and the
+bottle to offer (its first pick sold by the bottle alone, the step up for a table sharing; else its first pick,
+shown as "The same wine" with its bottle price). Each carries who is trained on it. The five figures, the training
+spread (`spread('pairGlass')`, `spread('pairBottle')`) and the filters are split the same way, and "Needs you on the
+menu" (`menuActions`) leads with the popular dish whose bottle few can offer. How often a dish goes out with its
+glass or its bottle is still demo data.
