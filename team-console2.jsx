@@ -42,10 +42,10 @@ function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h
 function _C2Btn({children,primary,onClick,testid}){ const T=useTheme(), acc=_c2Acc(T);
   return <div role="button" data-testid={testid} onClick={onClick} style={{padding:primary?'10px 18px':'9px 16px',borderRadius:12,fontSize:14,fontWeight:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',background:primary?acc:'transparent',color:primary?_c2Ink():T.ink2,border:primary?'none':'1px solid rgba(255,255,255,0.17)'}}>{children}</div>; }
 function _C2Kpi({label,value,unit,delta,good=true,note,onClick,testid}){ const T=useTheme();
-  return <_C2Card onClick={onClick} testid={testid} style={{padding:'16px 18px'}}>{_c2Lab(T,label)}
-    <div style={{fontSize:32,fontWeight:600,lineHeight:1.1,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P,marginTop:6}}>{value}{unit&&<span style={{fontSize:14,fontWeight:400,color:T.mid}}> {unit}</span>}</div>
-    {delta&&<div style={{fontSize:13,fontWeight:500,fontFamily:C.P,color:good?_C2_TONE.good:_C2_TONE.bad,marginTop:2}}>{delta}</div>}
-    {note&&<div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{note}</div>}</_C2Card>; }
+  return <_C2Card onClick={onClick} testid={testid} style={{padding:'20px 22px 20px',display:'flex',flexDirection:'column'}}>{_c2Lab(T,label)}
+    <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginTop:12}}><span style={{fontSize:32,fontWeight:600,lineHeight:1.1,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P}}>{value}</span>{unit&&<span style={{fontSize:14,fontWeight:400,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{unit}</span>}</div>
+    {delta&&<div style={{fontSize:13,fontWeight:500,fontFamily:C.P,color:good?_C2_TONE.good:_C2_TONE.bad,marginTop:8,lineHeight:1.3}}>{delta}</div>}
+    {note&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:delta?3:8}}>{note}</div>}</_C2Card>; }
 /* Who can sell it: the faces of the people who hold the wine, with how many of those who serve it that is. */
 function _C2Knowers({people,of,size=24}){ const T=useTheme();
   return <div data-testid="c2-knowers" style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}><div style={{display:'flex',paddingLeft:6}}>{people.map(p=><div key={p.id} title={p.name} style={{marginLeft:-6,border:`2px solid ${T.bg}`,borderRadius:'50%'}}><TeamFace person={p} size={size}/></div>)}</div>{_c2Known(people.length,of)}</div>; }
@@ -85,7 +85,7 @@ const _C2_TAG={week:'Week',cover:'Guest',top:'Top',gaps:'Gap',lift:'Lift',drill:
 const _c2Brief=(n,keep)=>(TeamReport.salesBrief()||[]).filter(b=>!keep||keep.includes(b.k)).slice(0,n).map(b=>({tag:_C2_TAG[b.k]||'Note',tone:b.tone==='good'?'good':b.tone==='bad'?'bad':'note',title:b.title,text:(b.rows?b.rows.map(r=>`${r.label} (${r.value.replace(' know it','')})`).join(', '):String(b.text||'').split(/(?<=[.!?])\s+/)[0]),open:b.open}));
 /* The page as the #3 layout: a tall column on the left, a grid on the right, both folding to one column when narrow. */
 function _C2Split({left,children,two}){ return <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2fr)':'minmax(0,1fr)',gap:16,alignItems:'stretch'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{left}</div><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{children}</div></div>; }
-const _c2Grid=(n,two)=>({display:'grid',gridTemplateColumns:`repeat(${two?n:Math.min(n,2)},minmax(0,1fr))`,gap:16});
+const _c2Grid=(n,two)=>({display:'grid',gridTemplateColumns:`repeat(${two?n:Math.min(n,2)},minmax(0,1fr))`,gap:16,alignItems:'stretch'});
 const _c2Up=(v,unit='%')=>v==null?null:`${v>=0?'▲':'▼'} ${Math.abs(v)}${unit} on last week`;
 
 /* ── Dashboard ── */
@@ -301,7 +301,7 @@ function _C2Menu({open,setSection,me,two}){ const T=useTheme(), acc=_c2Acc(T), [
    minimum, what they sell, their next step, and bespoke training (ask Vinny for a plan, read it, push it, track it). */
 const _c2Area=(T,a)=>{ const col=a.met?_C2_TONE.good:_C2_TONE.note; return <div key={a.k} style={{marginTop:10}}><div style={{display:'flex',justifyContent:'space-between',fontSize:13,fontFamily:C.P}}><span style={{color:T.ink}}>{a.label}</span><span style={{color:col}}>{a.known} of {a.total}{a.met?' ✓':` · ${a.needs-a.known} to go`}</span></div>
   <div style={{position:'relative',height:7,borderRadius:4,background:'rgba(255,255,255,0.08)',marginTop:5}}><div style={{position:'absolute',left:0,top:0,bottom:0,width:`${a.total?Math.round(100*a.known/a.total):0}%`,borderRadius:4,background:col}}/><div title={`minimum ${a.needs}`} style={{position:'absolute',top:-3,bottom:-3,left:`${a.min}%`,width:2,background:T.ink}}/></div></div>; };
-const _c2Counts=q=>q.covers?TeamLearn.PART_LABEL[TeamLearn._keyPart((q.wine?'w:':'d:')+(q.wine||q.dish))]:null;
+const _c2Counts=q=>q.covers?TeamLearn.PART_LABEL[q.wine?TeamLearn._keyPart('w:'+q.wine):TeamLearn.isPairing({id:q.covers,dish:q.dish})?'pairings':'menu']:null;
 function _C2PlanDraft({plan,onPush,onDiscard,bump}){ const T=useTheme(), acc=_c2Acc(T), who=TeamLearn.person(plan.pid), f=who?who.name.split(' ')[0]:'them', n=plan.parts.reduce((a,p)=>a+p.qs.length,0), counts=plan.parts.reduce((a,p)=>a+p.qs.filter(q=>q.covers).length,0), [open,setOpen]=React.useState(0);
   return <_C2Card feat testid="c2-plan-draft" title={`Draft for ${f} · read it, then push`} right={plan.source==='vinny'?'written by Vinny':'from their own questions'}>
     <div style={{fontSize:20,fontWeight:500,color:T.ink,fontFamily:C.P}}>{plan.title}</div>
@@ -317,10 +317,30 @@ function _C2PlanDraft({plan,onPush,onDiscard,bump}){ const T=useTheme(), acc=_c2
         {q.why&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:6}}>{q.why}</div>}</div>; })}</div>)}</div>
     <div style={{display:'flex',gap:10,marginTop:12}}><_C2Btn primary testid="c2-draft-push" onClick={onPush}>Push to {f}</_C2Btn><_C2Btn testid="c2-draft-discard" onClick={onDiscard}>Discard</_C2Btn></div>
   </_C2Card>; }
+/* Every bespoke training track at once: who it's for, what it covers, how far along it is. A row opens that person. */
+function _C2Tracks({close,pick}){ const T=useTheme(), acc=_c2Acc(T), plans=TeamPlans.all();
+  const covers=p=>{ const n={}; p.parts.forEach(x=>x.qs.forEach(q=>{ const c=_c2Counts(q)||'Extra practice'; n[c]=(n[c]||0)+1; })); return Object.entries(n).sort((a,b)=>b[1]-a[1]); };
+  return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)'}}/>
+    <div data-testid="c2-tracks" role="dialog" aria-label="Bespoke training" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(760px, 94%)',maxHeight:'88%',overflowY:'auto',background:'#0E0E10',border:`1px solid ${_alpha(acc,0.34)}`,borderRadius:20,padding:'22px 26px 24px'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:14}}><div><div style={{fontSize:20,fontWeight:500,color:T.ink,fontFamily:C.P}}>Bespoke training</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>{plans.length?`${plans.filter(p=>p.status==='pushed'&&!TeamPlans.progress(p).finished).length} running · ${plans.filter(p=>p.status==='pushed'&&TeamPlans.progress(p).finished).length} finished · ${plans.filter(p=>p.status==='draft').length} waiting for you to push`:'Plans you have Vinny write for one person'}</div></div>
+        <div role="button" aria-label="Close" data-testid="c2-tracks-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:'1px solid rgba(255,255,255,0.16)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,color:T.ink,flexShrink:0}}>×</div></div>
+      {plans.length?plans.map((p,i)=>{ const who=TeamLearn.person(p.pid), by=p.by&&TeamLearn.person(p.by), pr=TeamPlans.progress(p), draft=p.status==='draft', col=draft?T.mid:pr.finished?_C2_TONE.good:pr.done?acc:_C2_TONE.note, f=who.name.split(' ')[0];
+        return <div key={p.id} data-testid="c2-track" role="button" onClick={()=>{ pick(p.pid); close(); }} style={{display:'flex',gap:14,padding:'16px 0',borderTop:i?'1px solid rgba(255,255,255,0.08)':'none',marginTop:i?0:14,cursor:'pointer'}}>
+          <TeamFace person={who} size={44}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'baseline'}}><div style={{fontSize:15,fontWeight:500,color:T.ink,fontFamily:C.P}}>{p.title}</div>{_c2Pill(draft?'Draft: not pushed':pr.finished?'Finished':pr.done?`${pr.done} of ${pr.total} done`:'Not started',col)}</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>For {who.name} · {TeamLearn.ROLES[who.role].label}{by?` · from ${by.name.split(' ')[0]}`:''} · {draft?`written ${_cAgo(p.at)}`:`pushed ${_cAgo(p.pushedAt)}`} · {p.source==='vinny'?'written by Vinny':'from their own questions'}</div>
+            {(p.summary||p.ask)&&<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:8}}>{p.summary||p.ask}</div>}
+            <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>{covers(p).map(([c,n])=><span key={c}>{_c2Pill(`${c} · ${n} question${n===1?'':'s'}`,c==='Extra practice'?_C2_TONE.mut:_C2_TONE.good)}</span>)}</div>
+            <div style={{marginTop:10}}>{p.parts.map((x,k)=>{ const q=pr.parts[k]; return <div key={k} style={{display:'flex',alignItems:'center',gap:10,marginTop:5}}><div style={{width:190,fontSize:13,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',flexShrink:0}}>{k+1}. {x.title}</div><div style={{flex:1,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${Math.round(100*q.done/q.total)}%`,background:col,borderRadius:3}}/></div><div style={{width:54,textAlign:'right',fontSize:12,color:T.mid,fontFamily:C.P,flexShrink:0}}>{q.done} of {q.total}</div></div>; })}</div>
+            <div style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:10}}>{draft?`Read it and push it to ${f} →`:`See ${f} →`}</div>
+          </div></div>; })
+      :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.55,marginTop:16}}>No bespoke training yet. Pick someone on the Team page and ask Vinny for a plan in your own words; it appears here once written, and its progress once pushed.</div>}
+    </div></>; }
 function _C2Team({open,setSection,me,two,refresh}){ const T=useTheme(), acc=_c2Acc(T), [,bump]=React.useReducer(x=>x+1,0), [pushed,setPushed]=React.useState({});
   const rows=TeamReport.teamRows(), o=TeamReport.overview(), tw=TeamSales.has()?TeamReport.trainingWorth(28,1):null, f=x=>x.person.name.split(' ')[0];
   const [sel,setSel]=React.useState(()=>(rows.find(x=>x.r.state!=='ready')||rows[0]||{person:{}}).person.id), x=rows.find(y=>y.person.id===sel)||rows[0];
-  const [ask,setAsk]=React.useState(''), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(null);
+  const [ask,setAsk]=React.useState(''), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(null), [tracks,setTracks]=React.useState(false);
   const low=rows.find(y=>y.r.state!=='ready'), running=TeamPlans.running(), live=running.filter(y=>!y.finished);
   if(!x) return <div data-testid="c2-team"><_C2Head hi="Team" sub="nobody yet" section="team"/><_C2Manage k="c2-manage-team" title="Add your team"><_CTeam open={open} refresh={refresh}/></_C2Manage></div>;
   const pick=id=>{ setSel(id); setErr(null); setAsk(''); }, pl=pushed[x.person.id]||x.plan, done=!!pushed[x.person.id], st=_tState[x.r.state], name=f(x);
@@ -334,17 +354,17 @@ function _C2Team({open,setSection,me,two,refresh}){ const T=useTheme(), acc=_c2A
     <div style={{..._c2Grid(5,two),marginBottom:16}}>
       <_C2Kpi testid="c2-kpi-ready" label="Ready for service" value={o.ready} unit={`of ${o.total}`} note={`${o.slipping} slipping · ${o.total-o.ready-o.slipping} not there yet`}/>
       <_C2Kpi label="Training finished" value={`${o.avg}%`} note="the team's average against each role's minimum"/>
-      {tw&&tw.rows[0]?<_C2Kpi testid="c2-kpi-trainnext" label="Train next" value={`+${_cMoney(tw.rows[0].extra)}`} unit="a week" note={`${TeamData.nick(tw.rows[0].wine)}: train ${tw.rows[0].missing.map(p=>p.name.split(' ')[0]).join(' and ')} →`} onClick={()=>open({view:'plan',kind:'train',id:tw.rows[0].wine.id})}/>
+      {tw&&tw.rows[0]?<_C2Kpi testid="c2-kpi-trainnext" label="Train next" value={`+${_cMoney(tw.rows[0].extra)}`} unit="a week" note={`${TeamData.nick(tw.rows[0].wine)}: train ${(n=>n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]:n[0])(tw.rows[0].missing.map(p=>p.name.split(' ')[0]))} →`} onClick={()=>open({view:'plan',kind:'train',id:tw.rows[0].wine.id})}/>
         :<_C2Kpi label="Train next" value={rows.filter(y=>y.plan&&y.plan.items.length).length} unit="steps ready" note="one next step for each person"/>}
       {low?<_C2Kpi testid="c2-kpi-help" label="Needs a plan" value={f(low)} unit={`${low.r.pct}%`} note={`See ${f(low)} and ask Vinny for a plan →`} onClick={()=>pick(low.person.id)}/>:<_C2Kpi label="Needs a plan" value="Nobody" note="everyone is ready for service"/>}
-      <_C2Kpi testid="c2-kpi-bespoke" label="Bespoke training" value={live.length} unit={live.length===1?'plan running':'plans running'} note={live.length?live.slice(0,2).map(y=>`${y.person.name.split(' ')[0]} ${y.done} of ${y.total}`).join(' · '):'Ask Vinny for one, for anyone'} onClick={live[0]?()=>pick(live[0].person.id):undefined}/>
+      <_C2Kpi testid="c2-kpi-bespoke" label="Bespoke training" value={live.length} unit={live.length===1?'plan running':'plans running'} note={live.length?`${live.slice(0,2).map(y=>`${y.person.name.split(' ')[0]} ${y.done} of ${y.total}`).join(' · ')} · see all →`:'Ask Vinny for one, for anyone →'} onClick={()=>setTracks(true)}/>
     </div>
     <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
       <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
         <_C2Card title="The team · furthest from ready first" testid="c2-team-list" style={{padding:'16px 10px 10px'}}><div style={{margin:'0 -0px'}}>{rows.map(y=>{ const on=y.person.id===x.person.id, s2=_tState[y.r.state], run=running.find(z=>z.plan.pid===y.person.id&&!z.finished); return <div key={y.person.id} role="button" data-testid="c2-team-row" aria-current={on?'true':undefined} onClick={()=>pick(y.person.id)} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 10px',borderRadius:12,cursor:'pointer',background:on?_alpha(acc,0.12):'transparent',boxShadow:on?`inset 0 0 0 1px ${_alpha(acc,0.4)}`:'none'}}>
           <TeamFace person={y.person} size={40} ring={s2.col}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{y.person.name}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{TeamLearn.ROLES[y.person.role].label}{y.sales?` · ${_cMoney(y.sales.perWeek)} a week`:''}{run?` · plan ${run.done}/${run.total}`:''}</div></div>
           <div style={{textAlign:'right',flexShrink:0}}><div style={{fontSize:14,fontWeight:500,color:s2.col,fontFamily:C.P}}>{y.r.pct}%</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{y.r.state==='ready'?'Ready':y.r.behind?`${y.r.behind} days behind`:y.r.state==='slipping'?'Slipping':'Not yet'}</div></div></div>; })}</div></_C2Card>
-        <_C2Card title="The minimum for each role" testid="c2-mins"><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={{...th,textAlign:'left',paddingLeft:0}}>Role</th>{areas.map(k=><th key={k} style={th}>{lab(k).replace('Menu pairings','Pairings')}</th>)}</tr></thead>
+        <_C2Card title="The minimum for each role" testid="c2-mins"><table style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={{...th,textAlign:'left',paddingLeft:0}}>Role</th>{areas.map(k=><th key={k} style={th}>{k==='glass'?'Glasses':lab(k)}</th>)}</tr></thead>
           <tbody>{[...new Set(rows.map(y=>y.person.role))].map(role=>{ const need=TeamLearn.need(role); return <tr key={role}><td style={{...td,textAlign:'left',paddingLeft:0,fontWeight:500}}>{TeamLearn.ROLES[role].label}</td>{areas.map(k=><td key={k} style={td}>{need[k]?`${Math.round(100*need[k])}%`:<span style={{color:T.mid}}>—</span>}</td>)}</tr>; })}</tbody></table>
           <div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:10}}>Ready for service is every area at its minimum. The percentage beside a name is how far along they are across their areas.</div></_C2Card>
       </div>
@@ -385,6 +405,7 @@ function _C2Team({open,setSection,me,two,refresh}){ const T=useTheme(), acc=_c2A
       </div>
     </div>
     <_C2Manage k="c2-manage-team" title="Manage: add or remove people, set minimums and training depth"><_CTeam open={open} refresh={refresh}/></_C2Manage>
+    {tracks&&<_C2Tracks close={()=>setTracks(false)} pick={pick}/>}
   </div>; }
 
 /* ── The shell ── */

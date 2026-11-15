@@ -434,7 +434,7 @@ function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), tr=
     </div></Card>}
   </>; }
 function TeamMinimumsCard({changed}){ const T=useTheme(), phone=useLayoutSize()==='phone';
-  const parts=Object.keys(TeamLearn.PART_LABEL).filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
+  const parts=TeamLearn.AREAS.filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
   const step=(rk,k,d)=>{ const v=Math.round(Math.max(0.5,Math.min(1,TeamLearn.need(rk)[k]+d))*10)/10; TeamLearn.setNeed(rk,k,v); changed(); };
   const cellBtn=(label,onClick,off)=><div role="button" aria-label={label} onClick={off?undefined:onClick} style={{width:26,height:26,borderRadius:13,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:off?'default':'pointer',color:off?T.line:T.ink,fontSize:15,fontFamily:C.P,userSelect:'none'}}>{label==='Lower'?'−':'+'}</div>;
   const th={fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'0 8px 8px',textAlign:'center',whiteSpace:'nowrap'};

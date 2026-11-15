@@ -80,7 +80,7 @@ const TeamVinny = {
     const n=this.narrow(c,ask), wines=n?n.wines:c.wines, dishes=n?n.dishes:c.dishes;
     if(n&&!wines.length&&!dishes.length) return {qs:[],none:true,title:'Vinny\'s test',why:`Nothing you sell matches "${ask.trim()}". Try a type, a price, a grape or a dish.`};
     const r=TeamLearn.readiness(pid), short=Object.entries(r.parts).filter(([k,p])=>p.share<p.need&&k!=='cocktails').map(([k])=>k); // Vinny's test is the wine list and menu; cocktails drill on Today
-    const inShort=x=>!n&&short.length?(short.includes('dishes')&&x.dish)||(x.wine&&((short.includes('glass')&&TeamData.byGlass(x.wine))||(short.includes('bottle')&&!TeamData.byGlass(x.wine)))):true;
+    const inShort=x=>!n&&short.length?((short.includes('pairings')||short.includes('menu'))&&x.dish)||(x.wine&&((short.includes('glass')&&TeamData.byGlass(x.wine))||(short.includes('bottle')&&!TeamData.byGlass(x.wine)))):true;
     const assigned=new Set(TeamLearn.assignments(pid).map(a=>a.id));
     const sells=(!n&&typeof TeamSales!=='undefined'&&TeamSales.has()&&typeof TeamReport!=='undefined')?TeamReport.priority(28,10).map(x=>x.wine.id):[];
     // Each wine or dish with its questions, ranked: faded or missed first, then the till's priorities and

@@ -38,7 +38,15 @@ const TeamLearn = {
   },
   // Cocktails count only where the restaurant has a cocktail list (The Social Corner); everywhere else the part doesn't exist.
   // Allergens is the one hard gate: every dish the kitchen has confirmed, at 100%, whatever else a person knows.
-  PART_LABEL:{glass:'By the glass',bottle:'Bottles',dishes:'Menu pairings',cocktails:'Cocktails',allergens:'Allergens'},
+  // Readiness has four areas for the list and menu: the glasses, the bottles, the pairings (the wine for each dish)
+  // and the menu (what each dish is and how it can change), then cocktails and allergens where the restaurant has
+  // them. `dishes` is the older single area for the menu: still the key a role's minimum and its training wave are
+  // kept under, and what Pairings and Menu take their minimum from until one is set apart.
+  PART_LABEL:{glass:'By the glass',bottle:'Bottles',pairings:'Pairings',menu:'Menu',dishes:'Menu and pairings',cocktails:'Cocktails',allergens:'Allergens'},
+  AREAS:['glass','bottle','pairings','menu','cocktails','allergens'],
+  /* A dish's questions for one of its two areas: its pairings, or what it is and how it can change. */
+  dishAreaQs(role,id,area){ return this.dishQsFor(role,id,{allergen:false}).filter(q=>(area==='pairings')===this.isPairing(q)); },
+  knowsDishArea(pid,role,id,area,items){ const qs=this.dishAreaQs(role,id,area); return qs.length>0&&qs.every(q=>this.known(items[q.id])); },
   /* The rungs a role needs for one item: a cocktail's for the bartender all four (it's their list), a wine's by role. */
   kindsFor(role,id){ const r=this.ROLES[role]; return this.isCocktail(id)&&r.cocktailKinds?r.cocktailKinds:r.kinds; },
   isCocktail(id){ return /^c-/.test(String(id||'')); },
@@ -181,7 +189,7 @@ const TeamLearn = {
     this.assignExisting(id); return id; },
   removePerson(id){ const t=this.team(); delete t.people[id]; if(t.me===id) t.me=Object.keys(t.people)[0]||null; this._saveTeam(t); const p=this._all(); delete p[id]; this._saveAll(p); },
   setMe(id){ const t=this.team(); t.me=id; this._saveTeam(t); },
-  need(role){ const t=this.team(); return {...this.ROLES[role].need,...((t.targets||{})[role]||{})}; },
+  need(role){ const t=this.team(), n={...this.ROLES[role].need,...((t.targets||{})[role]||{})}; if(n.pairings==null) n.pairings=n.dishes; if(n.menu==null) n.menu=n.dishes; return n; },
   setNeed(role,part,v){ const t=this.team(); t.targets=t.targets||{}; t.targets[role]={...(t.targets[role]||{}),[part]:v}; this._saveTeam(t); },
 
   // Progress is read per question in the drill and the readiness figures; parsed once per stored text, as TeamData.get.
@@ -768,7 +776,7 @@ const TeamLearn = {
   /* Which wines and dishes a role sells: a bartender the by-the-glass list, everyone else all of it. */
   scope(role){
     const need=this.need(role), ws=TeamData.wines();
-    return {glass:need.glass>0?ws.filter(w=>TeamData.byGlass(w)):[],bottle:need.bottle>0?ws.filter(w=>!TeamData.byGlass(w)):[],dishes:need.dishes>0?TeamData.dishes():[],cocktails:need.cocktails>0?TeamData.cocktails():[],allergens:need.allergens>0?TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)!=null):[]};
+    return {glass:need.glass>0?ws.filter(w=>TeamData.byGlass(w)):[],bottle:need.bottle>0?ws.filter(w=>!TeamData.byGlass(w)):[],dishes:need.dishes>0||need.pairings>0||need.menu>0?TeamData.dishes():[],cocktails:need.cocktails>0?TeamData.cocktails():[],allergens:need.allergens>0?TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)!=null):[]};
   },
   // A rung opens once every question on the rung below has been answered right at least once.
   _open(qs,items,kind,kinds,tier='master'){
@@ -817,16 +825,16 @@ const TeamLearn = {
     const person=this.person(pid); if(!person) return null;
     const role=person.role, need=this.need(role), sc=this.scope(role), mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
     const parts={};
-    ['glass','bottle','dishes','cocktails','allergens'].forEach(k=>{
+    this.AREAS.forEach(k=>{ const dish=k==='pairings'||k==='menu';
       if(!need[k]) return;
       if(k==='cocktails'&&!sc.cocktails.length) return; // no cocktail list, no cocktail part
       if(k==='allergens'&&!(sc.allergens||[]).length) return; // nothing confirmed by the kitchen yet, no allergen part
       // A wine, cocktail or dish with nothing to ask at this role's level (every question held by the review, or above the level)
       // can't be learnt, so it isn't counted against anyone: at The Princess Royal one spritz once kept a whole team off Ready,
       // and at Eloise the Shrimp Linguine, every question of which the sommelier review held, did the same.
-      const list=k==='glass'||k==='bottle'||k==='cocktails'?sc[k].filter(x=>this.qsFor(role,x.id).length):k==='dishes'?sc[k].filter(x=>this.dishQsFor(role,x.id,{allergen:false}).length):sc[k], known=list.filter(x=>k==='dishes'?this.knowsDish(pid,x.id,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
+      const list=k==='glass'||k==='bottle'||k==='cocktails'?sc[k].filter(x=>this.qsFor(role,x.id).length):dish?sc.dishes.filter(x=>this.dishAreaQs(role,x.id,k).length):sc[k], known=list.filter(x=>dish?this.knowsDishArea(pid,role,x.id,k,items):k==='allergens'?this.knowsAllergens(pid,x.id,items):this.knowsWine(pid,role,x.id,items)).length;
       // partial: every answer they hold counts, so the figure moves with each drill; a wine is known (for the minimum) only whole.
-      const partial=k==='allergens'?known:list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:k==='dishes'}); return a+(pr.total?pr.known/pr.total:0); },0);
+      const partial=k==='allergens'?known:dish?list.reduce((a,x)=>{ const qs=this.dishAreaQs(role,x.id,k); return a+qs.filter(q=>this.known(items[q.id])).length/qs.length; },0):list.reduce((a,x)=>{ const pr=this.progress(pid,x.id,{dish:false}); return a+(pr.total?pr.known/pr.total:0); },0);
       parts[k]={known,total:list.length,need:need[k],share:list.length?known/list.length:1,partial:list.length?partial/list.length:1};
     });
     const ks=Object.keys(parts), tier=this.tier(role);
@@ -860,12 +868,12 @@ const TeamLearn = {
   _drillPool(pid,size,part){
     const person=this.person(pid); if(!person) return [];
     const role=person.role, kinds=this.ROLES[role].kinds, tier=this.tier(role), mine=this._mine(this._all(),pid), items=mine.items, now=Date.now();
-    const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:part==='dishes'||part==='allergens'?sc0.dishes:[],cocktails:part==='cocktails'?sc0.cocktails:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes, cocktails=sc.cocktails||[];
+    const sc0=this.scope(role), sc=part?{glass:part==='glass'?sc0.glass:[],bottle:part==='bottle'?sc0.bottle:[],dishes:['dishes','pairings','menu','allergens'].includes(part)?sc0.dishes:[],cocktails:part==='cocktails'?sc0.cocktails:[]}:sc0, wines=[...sc.glass,...sc.bottle], dishes=sc.dishes, cocktails=sc.cocktails||[];
     // A part's practice is its questions alone: allergens drills the allergen question of every confirmed dish, dishes everything else.
     // Practising "Menu pairings" leads with each dish's pairing questions, then what it is and the changes guests ask
     // for: one question per dish a drill, so with what-it-is first the pairings never came up in practice.
     const pairFirst=qs=>[...qs.filter(q=>/#\d+$/.test(q.id)),...qs.filter(q=>!/#\d+$/.test(q.id))];
-    const dqs=x=>part==='allergens'?this.dishQsFor(role,x.id).filter(q=>q.allergen):part==='dishes'?pairFirst(this.dishQsFor(role,x.id,{allergen:false})):this.dishQsFor(role,x.id);
+    const dqs=x=>part==='allergens'?this.dishQsFor(role,x.id).filter(q=>q.allergen):part==='pairings'||part==='menu'?this.dishAreaQs(role,x.id,part):part==='dishes'?pairFirst(this.dishQsFor(role,x.id,{allergen:false})):this.dishQsFor(role,x.id);
     const inPart=key=>{ if(!part) return true; const t=key[0]; if(part==='allergens') return t==='a'; if(t==='a') return false; return t==='w'?wines.some(w=>w.id===key.slice(2)):t==='c'?cocktails.some(c=>c.id===key.slice(2)):dishes.some(x=>x.id===key.slice(2)); };
     // A wine's or a cocktail's questions at the rungs this role needs for it.
     const qsFor=w=>this.qsFor(role,w.id), out=[], used=new Set();
@@ -885,7 +893,7 @@ const TeamLearn = {
     due.forEach(([id])=>push(byId[id]));
     // 2. New: assigned and not started, capped once anything is due, in the till's order, one per section.
     const assigned=Object.entries(mine.assigned||{}).filter(([k,a])=>!a.done&&inPart(k));
-    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQsFor(role,id).filter(q=>q.allergen):t==='d'?(part==='dishes'?pairFirst:(x=>x))(this.dishQsFor(role,id,{allergen:false})):qsFor({id}); };
+    const qsOfKey=k=>{ const [t,id]=[k.slice(0,1),k.slice(2)]; return t==='a'?this.dishQsFor(role,id).filter(q=>q.allergen):t==='d'?(part==='pairings'||part==='menu')?this.dishAreaQs(role,id,part):(part==='dishes'?pairFirst:(x=>x))(this.dishQsFor(role,id,{allergen:false})):qsFor({id}); };
     const started=k=>qsOfKey(k).some(q=>items[q.id]&&items[q.id].reps);
     let rank={}; try{ if(typeof TeamReport!=='undefined'&&typeof TeamSales!=='undefined'&&TeamSales.has()) TeamReport.priority(28,12).forEach((x,i)=>{ rank['w:'+x.wine.id]=i; }); }catch(e){}
     const fresh=assigned.filter(([k])=>!started(k)).sort((a,b)=>((rank[a[0]]??99)-(rank[b[0]]??99))||(a[1].at-b[1].at)||(a[1].due-b[1].due));

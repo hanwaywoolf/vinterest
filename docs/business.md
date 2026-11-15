@@ -859,3 +859,16 @@ pairing question is: a dish's "which wine suits it" and "name a wine by the glas
 table. Vinny's test on pairings asks those alone. A bespoke plan on pairings starts from the dishes whose pairing the
 person doesn't hold, brings the wines poured with them, tells Vinny every question is a pairing question (defined in
 `prompts/team-plan.txt`), and drops any written question about a dish that names no wine (`TeamPlans.isPairText`).
+
+### Four areas of readiness
+
+Readiness for the list and menu is four areas: **glasses, bottles, pairings and menu** (`TeamLearn.AREAS`, plus
+cocktails and allergens where a restaurant has them). The old single "Menu pairings" area mixed two things, so it is
+split: Pairings is each dish's wine questions (`TeamLearn.isPairing`), Menu is what a dish is and how it can change
+(`dishAreaQs`, `knowsDishArea`). Each takes its minimum from the role's old `dishes` minimum until one is set apart
+in the console (`need(role).pairings`, `.menu`). Assignments and training waves still key a dish as one thing
+(`d:<id>`, the `dishes` wave). The phone's Today, the console's person panel, minimums card and Team page all read
+the four from `readiness().parts`; "Practise pairings" and "Practise menu" drill each alone.
+
+The Team page's Bespoke training figure opens every track at once (`_C2Tracks`): who it's for, who sent it, what it
+covers by area, each part's progress and its status; a row opens that person.

@@ -361,7 +361,7 @@ test('readiness: ready once every part meets the role minimum, then slipping whe
     return { ready: ready.state, parts: Object.keys(ready.parts), slipping: slipping.state };
   }, [DAY]);
   expect(out.ready).toBe('ready');
-  expect(out.parts).toEqual(['glass', 'dishes']); // a bartender's minimum leaves bottles out
+  expect(out.parts).toContain('glass'); expect(out.parts).toContain('pairings'); expect(out.parts).not.toContain('bottle'); expect(out.parts).not.toContain('dishes'); // a bartender's minimum leaves bottles out; the menu is two areas, pairings and menu
   expect(out.slipping).toBe('slipping');
 });
 
@@ -782,7 +782,7 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
   await startFresh(page);
-  expect(await page.getByTestId('team-part').count()).toBe(3);
+  expect(await page.getByTestId('team-part').count()).toBe(4); // glasses, bottles, pairings, menu
   await page.getByTestId('team-part-practise').first().click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
   const header = await page.locator('[data-testid="team-drill"] > div').nth(1).innerText();
@@ -2671,7 +2671,15 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
   await expect(page.getByTestId('c2-mins')).toContainText('Server');
   // The demo opens with bespoke training in flight, tracked.
-  await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running'); await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText(/\d+ of \d+ done/);
+  await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
+  // Four areas: glasses, bottles, pairings and the menu.
+  for (const t of ['By the glass', 'Bottles', 'Pairings', 'Menu']) await expect(page.getByTestId('c2-stands')).toContainText(t);
+  // The bespoke figure opens every track: who it's for, what it covers, how far along.
+  await page.getByTestId('c2-kpi-bespoke').click();
+  await expect(page.getByTestId('c2-track').first()).toContainText(/For \w+/); await expect(page.getByTestId('c2-track').first()).toContainText(/questions?/); await expect(page.getByTestId('c2-tracks')).toContainText(/running/);
+  await page.getByTestId('c2-track').filter({ hasText: 'Dani' }).first().click();
+  await expect(page.getByTestId('c2-person-detail')).toContainText('Dani'); await expect(page.getByTestId('c2-tracks')).toHaveCount(0);
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click(); await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText(/\d+ of \d+ done/);
   // The classic team tools stay under Manage.
   await page.getByTestId('c2-manage-c2-manage-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
   // And back to the classic console, remembered on the device.
