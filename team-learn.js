@@ -717,7 +717,21 @@ const TeamLearn = {
     const bk=this.kindOf(best), bl=TeamData.short(best).length, byGap=(a,b)=>this._gapAt(a.id,id)-this._gapAt(b.id,id)||Math.abs(TeamData.short(a).length-bl)-Math.abs(TeamData.short(b).length-bl);
     const pick=[...(p.avoid&&TeamData.wine(p.avoid.id)&&!picks.has(p.avoid.id)&&this.kindOf(TeamData.wine(p.avoid.id))===bk?[TeamData.wine(p.avoid.id)]:[]),...this._shuffle(clear.filter(w=>this.kindOf(w)===bk),id).sort(byGap),...this._shuffle(clear.filter(w=>this.kindOf(w)!==bk),id+'x').sort(byGap)]
       .filter((w,i,a)=>a.indexOf(w)===i).slice(0,3);
-    if(pick.length<3) return out;
+    // The bottle, which is the upsell (#2, a pairing question). Where the dish has a pick sold by the bottle alone
+    // that isn't its first pick, a table sharing is asked which bottle: that pick against bottles the pairings rule
+    // out. (Where the first pick is itself bottle-only, "which wine suits it best" already asks for it.) Where the
+    // dish's wine is poured by the glass and has no bottle-only pick, it asks what to offer a table all drinking it:
+    // the bottle, against three ways of leaving the sale on the table, four answers in one form.
+    const extra=[]; if(!drink){ const only=p.best.map(b=>({w:TeamData.wine(b.id),why:b.why})).find(y=>y.w&&!TeamData.byGlass(y.w)&&y.w.bottle);
+      if(only&&only.w.id!==best.id){ const bl2=TeamData.short(only.w).length, bk2=this.kindOf(only.w), bottles=clear.filter(w=>w.bottle) /* any wine sold by the bottle that the pairings rule out, so there are enough of the right one's kind */, near=(a,b)=>this._gapAt(a.id,id)-this._gapAt(b.id,id)||Math.abs(TeamData.short(a).length-bl2)-Math.abs(TeamData.short(b).length-bl2);
+        const wrong=[...this._shuffle(bottles.filter(w=>this.kindOf(w)===bk2),id+'b').sort(near),...this._shuffle(bottles.filter(w=>this.kindOf(w)!==bk2),id+'bx').sort(near)].slice(0,3);
+        // Never three reds against the only white: at least two of the wrong bottles are the right one's kind.
+        if(wrong.length===3&&wrong.filter(w=>this.kindOf(w)===bk2).length>=2){ const o=[only.w,...wrong].map(w=>TeamData.short(w)), ord=this._shuffle([0,1,2,3],id+'bt'), q={id:'d:'+id+'#2',dish:id,k:'recognise',bottle:true,q:`A table sharing ${this._the(x.name)} would like a bottle. Which do you offer?`,opts:ord.map(i=>o[i]),a:ord.indexOf(0),why:only.why};
+          if(!this.lengthCue(q)) extra.push(q); } }
+      // No bottle-only pick, or no fair set of wrong bottles for it: the dish's own wine by the bottle.
+      if(!extra.length&&TeamData.byGlass(best)&&best.bottle){ const all=[`Offer the bottle at ${best.bottle} to share, rather than a glass each.`,`Pour a glass each at ${best.glass} and say nothing of the bottle.`,'Suggest a cheaper wine by the glass to keep the bill down.','Pour a glass each and wait for them to ask for more.'], ord=this._shuffle([0,1,2,3],id+'up');
+        extra.push({id:'d:'+id+'#2',dish:id,k:'recognise',bottle:true,q:`Everyone at a table of four would like the ${TeamData.nick(best)} with ${this._the(x.name)}. What do you do?`,opts:ord.map(i=>all[i]),a:ord.indexOf(0),why:`A bottle is the easy yes for a table all drinking the same wine: one pour, no waiting on top-ups, and the bigger sale. Say its price so the choice is theirs.`}); } }
+    if(pick.length<3) return [...out,...extra];
     const opts=[best,...pick].map(w=>TeamData.short(w)), order=this._shuffle([0,1,2,3],id);
     out.push(
       ...[{id:'d:'+id+'#0',dish:id,k:'recognise',q:`A guest orders ${this._the(x.name)}. Which wine on our list suits it best?`,opts:order.map(i=>opts[i]),a:order.indexOf(0),why:p.best[0].why}].filter(q=>!this.lengthCue(q)),
@@ -726,7 +740,7 @@ const TeamLearn = {
       ...((()=>{ const gw=p.glass&&TeamData.wine(p.glass.id); if(!gw||gw.id===best.id) return [];
         return [{id:'d:'+id+'#1',dish:id,k:'recall',q:`Name a wine by the glass for a guest having ${this._the(x.name)}.`,ans:TeamData.short(gw),acc:[gw,...p.best.map(b=>TeamData.wine(b.id))].filter(w=>w&&w.glass).flatMap(w=>[TeamData.short(w),w.name]),why:p.glass.why}]; })()),
     );
-    return out;
+    return [...out,...extra];
   },
   allergenQ(id){ return this.dishQs(id).find(q=>q.allergen)||null; },
   knowsAllergens(pid,id,items){ const q=this.allergenQ(id); return !!q&&this.known(items[q.id]); },

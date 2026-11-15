@@ -891,3 +891,13 @@ shown as "The same wine" with its bottle price). Each carries who is trained on 
 spread (`spread('pairGlass')`, `spread('pairBottle')`) and the filters are split the same way, and "Needs you on the
 menu" (`menuActions`) leads with the popular dish whose bottle few can offer. How often a dish goes out with its
 glass or its bottle is still demo data.
+
+### The bottle question
+
+Selling the bottle is the upsell, so every dish that can have one asks for it (`#2` in `TeamLearn._dishQs`, a pairing
+question, so it counts in the Pairings area). Where the dish has a pick sold by the bottle alone that isn't its first
+pick: "A table sharing the … would like a bottle. Which do you offer?", that pick against three bottles the pairings
+rule out, at least two of them the right one's kind. Otherwise, where the dish's wine is poured by the glass:
+"Everyone at a table of four would like the … with the …. What do you do?", offering the bottle at its price against
+three ways of leaving the sale on the table. A dish whose first pick is already bottle-only has "which wine suits it
+best" for that. In the new console every table centres its data under its headers; the first column reads from the left.

@@ -2671,6 +2671,13 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-kpi-pairglass')).toContainText('glass'); await expect(page.getByTestId('c2-kpi-pairbottle')).toContainText('bottle');
   await expect(page.getByTestId('c2-pair-spread').getByTestId('c2-spread')).toHaveCount(2);
   expect(await page.getByTestId('c2-menu-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  // Under every header but the first, the data is centred beneath it.
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(2)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
+  expect(await page.getByTestId('c2-dishes').locator('thead th').nth(2).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(1)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).not.toBe('center');
+  // Every dish with a wine poured by the glass or a bottle-only pick has a bottle question, counted under Pairings.
+  const bq = await page.evaluate(() => { const qs = TeamData.dishes().map((x) => TeamLearn.dishQs(x.id).find((q) => q.bottle)).filter(Boolean); return { n: qs.length, pairing: qs.every((q) => TeamLearn.isPairing(q)), four: qs.every((q) => q.opts.length === 4 && q.opts[q.a]), which: qs.filter((q) => /Which do you offer/.test(q.q)).length, upsell: qs.filter((q) => /Offer the bottle at/.test(q.opts[q.a])).length }; });
+  expect(bq.n).toBeGreaterThan(12); expect(bq.pairing).toBe(true); expect(bq.four).toBe(true); expect(bq.which).toBeGreaterThan(0); expect(bq.upsell).toBeGreaterThan(0);
   await page.getByTestId('c2-kpi-pairbottle').click(); expect(await page.getByTestId('c2-dish-row').count()).toBeLessThan(27);
   await page.getByTestId('c2-menu-filter-all').click();
   await expect(page.getByTestId('c2-dishes')).toContainText('Allergens');
