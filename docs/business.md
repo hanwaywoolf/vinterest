@@ -849,3 +849,13 @@ Pick a person on the left (furthest from ready first, with their weekly sales an
 everything on the right: where they stand in each area with a white line at its minimum, what they sell against
 their role's average, their next step as four figures with Push, then Ask Vinny and their bespoke training. The
 minimum for each role sits under the list. The classic tools stay under Manage.
+
+### Pairings are the wine for the dish
+
+Asked for "pairings", Vinny's test and a bespoke plan used to return questions about the menu (what a dish is, what
+can change), because the request was read as "the menu". Now `TeamVinny.narrow` reads pairing words apart from menu
+words (`pairing`, and `mixed` when prices, grapes or places are asked for too), and `TeamLearn.isPairing` says what a
+pairing question is: a dish's "which wine suits it" and "name a wine by the glass", and a wine's question at the
+table. Vinny's test on pairings asks those alone. A bespoke plan on pairings starts from the dishes whose pairing the
+person doesn't hold, brings the wines poured with them, tells Vinny every question is a pairing question (defined in
+`prompts/team-plan.txt`), and drops any written question about a dish that names no wine (`TeamPlans.isPairText`).

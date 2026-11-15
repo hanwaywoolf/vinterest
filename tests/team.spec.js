@@ -2723,3 +2723,28 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   expect(errors).toEqual([]);
   await ctx.close();
 });
+
+// "Pairings" means the wine for the dish, never the menu on its own: Vinny's test and a bespoke plan asked for
+// pairings ask only pairing questions, and a written question about a dish that names no wine is dropped.
+test('a request for pairings is about the wine for each dish, not the menu', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, dish = /^(\S+) \| DISH: ([^|\n,]+)/m.exec(text), pour = /pour with: ([^(]+) \(/.exec(text.slice(text.indexOf(dish[0])));
+    const wines = [...text.matchAll(/^\S+ \| WINE: (.+?) (?:\d{4}|NV) \|/gm)].map((m) => m[1]);
+    return JSON.stringify({ title: 'Pairings', summary: 's', parts: [{ title: 'The wine for the dish', why: 'w', qs: [
+      { on: dish[1], q: `A guest orders the ${dish[2].trim()}. Which wine do you pour?`, opts: [pour[1].trim(), ...wines.filter((w) => w !== pour[1].trim()).slice(0, 3)], a: 0, why: 'y', covers: '' },
+      { on: dish[1], q: `What is the ${dish[2].trim()} served with?`, opts: ['Chips', 'Rice', 'Salad', 'Bread'], a: 0, why: 'menu, not pairing', covers: '' },
+      { on: dish[1], q: `Which wine by the glass suits the ${dish[2].trim()}?`, opts: [wines[1], wines[2], wines[3], wines[4]], a: 0, why: 'y', covers: '' }] }] }); };
+  const reqs = []; await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const out = await page.evaluate(async () => { const p = TeamLearn.people().find((x) => x.name.startsWith('Priya')), ask = 'Priya needs custom training on pairings';
+    const t = TeamVinny.test(p.id, { ask: 'pairings' }), s = TeamPlans.subjects(p.id, ask), plan = await TeamPlans.write(p.id, ask, null), cards = TeamPlans.fromCards(p.id, ask, null);
+    return { test: t.qs.length, testAll: t.qs.every((q) => TeamLearn.isPairing(q)), dishes: s.dishes.length, wines: s.wines.length, pairing: s.pairing, written: plan.parts[0].qs.map((q) => q.q), cards: cards.parts.flatMap((x) => x.qs).every((q) => TeamLearn.isPairing({ ...q, id: q.covers })) }; });
+  expect(out.test).toBeGreaterThan(3); expect(out.testAll).toBe(true);
+  expect(out.pairing).toBe(true); expect(out.dishes).toBeGreaterThan(2); expect(out.wines).toBeGreaterThan(2);
+  expect(out.written).toHaveLength(2); expect(out.written.join(' ')).not.toContain('served with'); expect(out.cards).toBe(true);
+  const sent = reqs.find((r) => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('This is a PAIRING plan'); expect(sent).toContain('pour with:'); expect(sent).not.toMatch(/#know \|/);
+  await ctx.close();
+});

@@ -23,22 +23,30 @@ const TeamPlans = {
      menu, read the way Vinny's test reads a request), else the person's own gaps, best sellers first. */
   subjects(pid,ask){ const c=TeamVinny._ctx(pid); if(!c) return {wines:[],dishes:[]}; const n=TeamVinny.narrow(c,ask), a=String(ask||'').toLowerCase();
     const rank=TeamSales.has()?Object.fromEntries(TeamReport.salesByWine(28).map((y,i)=>[y.wine.id,i])):{}, by=(x,y)=>(rank[x.id]==null?999:rank[x.id])-(rank[y.id]==null?999:rank[y.id]);
-    const knownW=w=>TeamLearn.knowsWine(pid,c.role,w.id,c.items), knownD=x=>TeamLearn.knowsDish(pid,x.id,c.items), gapsFirst=(list,known)=>[...list.filter(x=>!known(x)),...list.filter(known)];
-    let wines=(n&&n.wines.length&&n.wines.length<c.wines.length?n.wines:c.wines).filter(w=>TeamData.card(w.id)&&TeamLearn.qsFor(c.role,w.id).length).sort(by);
-    let dishes=c.dishes.filter(x=>TeamData.pairing(x.id));
-    const wantFood=/pairing|dish|menu|food|table/.test(a), onlyFood=n&&!n.wines.length&&n.dishes.length;
-    wines=onlyFood?[]:gapsFirst(wines,knownW).slice(0,this.MAX_WINES);
-    // Dishes come in when the request is about pairing, or when the wines chosen are what they're poured with.
-    const ids=new Set(wines.map(w=>w.id)), poured=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]),p.glass].filter(Boolean).some(y=>ids.has(y.id)); };
-    dishes=onlyFood?gapsFirst(n.dishes.filter(x=>TeamData.pairing(x.id)),knownD).slice(0,this.MAX_WINES):wantFood||!wines.length?gapsFirst(dishes.filter(x=>!wines.length||poured(x)),knownD).slice(0,this.MAX_DISHES):[];
-    return {wines,dishes}; },
+    const knownW=w=>TeamLearn.knowsWine(pid,c.role,w.id,c.items), gapsFirst=(list,known)=>[...list.filter(x=>!known(x)),...list.filter(known)];
+    const ok=w=>TeamData.card(w.id)&&TeamLearn.qsFor(c.role,w.id).length, picks=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]).slice(0,2),p.glass].filter(Boolean).map(y=>TeamData.wine(y.id)).filter(Boolean); };
+    const pairing=!!(n&&n.pairing), mixed=!!(n&&n.mixed), pool=(n&&n.wines.length&&n.wines.length<c.wines.length?n.wines:c.wines).filter(ok).sort(by), inPool=new Set(pool.map(w=>w.id));
+    // A pairing plan starts from the dishes: the ones whose pairing they don't hold yet, each with the wines poured
+    // with it, so every question can be about a wine for a dish. Never the menu on its own.
+    if(pairing){ const holds=x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}).filter(q=>TeamLearn.isPairing(q)).every(q=>TeamLearn.known(c.items[q.id]));
+      const dishes=gapsFirst(((n.dishes.length?n.dishes:c.dishes)).filter(x=>picks(x).some(w=>inPool.has(w.id))),holds).slice(0,mixed?this.MAX_DISHES:this.MAX_DISHES+2);
+      const wines=[...new Map(dishes.flatMap(picks).filter(w=>inPool.has(w.id)&&ok(w)).map(w=>[w.id,w])).values()];
+      return {wines:(mixed?[...new Map([...wines,...gapsFirst(pool,knownW)].map(w=>[w.id,w])).values()]:wines).slice(0,this.MAX_WINES),dishes,pairing,mixed}; }
+    const onlyFood=n&&!n.wines.length&&n.dishes.length;
+    if(onlyFood) return {wines:[],dishes:n.dishes.slice(0,this.MAX_WINES),pairing:false,mixed:false,menu:true};
+    return {wines:gapsFirst(pool,knownW).slice(0,this.MAX_WINES),dishes:[],pairing:false,mixed:false}; },
+  /* Whether a written question is about a pairing: it names a wine from the list and a dish from the menu between
+     its words and its options. A question about a dish that names no wine is a menu question. */
+  _names(text){ const t=' '+TeamLearn._norm(text)+' ', has=x=>{ const k=TeamLearn._norm(x); return k.length>3&&t.includes(' '+k+' '); };
+    return {wine:TeamData.wines().some(w=>has(TeamData.short(w))||has(TeamData.nick(w))||has(w.name)||has(w.producer)),dish:TeamData.dishes().some(x=>has(x.name.split(',')[0]))}; },
+  isPairText(q){ const n=this._names([q.q,...(q.opts||[])].join(' . ')); return n.wine&&n.dish; },
   _wineLines(pid,c,w){ const card=TeamData.card(w.id)||{}, s=card.style||{}, qs=TeamLearn.qsFor(c.role,w.id);
     const dishes=TeamData.dishes().filter(x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]),p.glass].filter(Boolean).some(y=>y.id===w.id); }).map(x=>x.name.split(',')[0]);
     return [`${w.id} | WINE: ${TeamData.label(w)} | ${w.type}${w.section?' · '+w.section:''} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`,
       `  ${[(w.grapes||[]).length&&'grapes: '+w.grapes.join(', '),[w.region,w.country].filter(Boolean).length&&'from: '+[w.region,w.country].filter(Boolean).join(', '),s.body&&`body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`].filter(Boolean).join(' · ')}`,
       card.say&&`  to say: ${card.say}`,card.taste&&`  taste: ${card.taste}`,dishes.length&&`  poured with: ${dishes.join(', ')}`,
       ...qs.slice(0,8).map(q=>`  ${q.id} | ${TeamLearn.known(c.items[q.id])?'known':'not known'} | ${q.q} → ${this._answer(q)}`)].filter(Boolean).join('\n'); },
-  _dishLines(pid,c,x){ const p=TeamData.pairing(x.id)||{}, qs=TeamLearn.dishQsFor(c.role,x.id,{allergen:false}), name=y=>{ const w=TeamData.wine(y.id); return w?`${TeamData.short(w)} (${y.why||''})`:null; };
+  _dishLines(pid,c,x,pairing){ const p=TeamData.pairing(x.id)||{}, qs=TeamLearn.dishQsFor(c.role,x.id,{allergen:false}).filter(q=>!pairing||TeamLearn.isPairing(q)), name=y=>{ const w=TeamData.wine(y.id); return w?`${TeamData.short(w)} (${y.why||''})`:null; };
     return [`${x.id} | DISH: ${x.name}${x.price?' | '+x.price:''}`,(p.best||[]).length&&`  pour with: ${p.best.map(name).filter(Boolean).join('; ')}`,p.glass&&TeamData.wine(p.glass.id)&&`  by the glass: ${TeamData.short(TeamData.wine(p.glass.id))}`,
       ...qs.slice(0,5).map(q=>`  ${q.id} | ${TeamLearn.known(c.items[q.id])?'known':'not known'} | ${q.q} → ${this._answer(q)}`)].filter(Boolean).join('\n'); },
   _answer(q){ try{ const s=TeamLearn.shown(q); return (s.right||[]).map(i=>typeof i==='number'?(s.opts||[])[i]:i).filter(Boolean).join('; ')||q.ans||''; }catch(e){ return q.ans||''; } },
@@ -55,11 +63,13 @@ const TeamPlans = {
   async write(pid,ask,by){ const c=TeamVinny._ctx(pid); if(!c) throw new Error('Pick someone first.'); const text=String(ask||'').trim(); if(text.length<8) throw new Error('Say who it\'s for and what they need, in a sentence.');
     const s=this.subjects(pid,text); if(!s.wines.length&&!s.dishes.length) throw new Error('Nothing on the list matches that. Try a colour, the glass list, the bottles or the menu.');
     const v=TeamData.get().venue||{}, tpl=_loadTextSync('prompts/team-plan.txt');
-    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text)
-      .replace('{{subjects}}',[...s.wines.map(w=>this._wineLines(pid,c,w)),...s.dishes.map(x=>this._dishLines(pid,c,x))].join('\n\n'));
+    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':'No question asks what a dish is, how it is cooked or what is in it.')
+      .replace('{{subjects}}',[...s.wines.map(w=>this._wineLines(pid,c,w)),...s.dishes.map(x=>this._dishLines(pid,c,x,s.pairing))].join('\n\n'));
     const res=await window.claude.complete({purpose:'team_plan',messages:[{role:'user',content:prompt}]}), j=TeamData._json(res)||{};
     const id=this._id(), ok=new Set([...s.wines.flatMap(w=>TeamLearn.qsFor(c.role,w.id)),...s.dishes.flatMap(x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}))].map(q=>q.id)); let n=0;
-    const seen=new Set(), parts=(j.parts||[]).map(p=>({title:String(p.title||'').trim()||'Practice',why:String(p.why||'').trim(),qs:(p.qs||[]).map(r=>this._q(id,n++,r,ok)).filter(q=>{ if(!q) return false; const k=TeamLearn._norm(q.q); if(seen.has(k)) return false; seen.add(k); return true; })})).filter(p=>p.qs.length>=2);
+    const seen=new Set(), parts=(j.parts||[]).map(p=>({title:String(p.title||'').trim()||'Practice',why:String(p.why||'').trim(),qs:(p.qs||[]).map(r=>this._q(id,n++,r,ok)).filter(q=>{ if(!q) return false; const k=TeamLearn._norm(q.q); if(seen.has(k)) return false;
+      // Asked for pairings, a question that is only about a dish (or, in a pairing-only plan, only about a wine) is left out.
+      if(s.pairing&&(q.dish||!s.mixed)&&!this.isPairText(q)) return false; seen.add(k); return true; })})).filter(p=>p.qs.length>=2);
     if(!parts.length) throw new Error('Vinny couldn\'t write a plan from that. Say what they\'re struggling with: a colour, prices, pairings, the bottles.');
     const plan={id,pid,ask:text,by:by||null,at:Date.now(),status:'draft',source:'vinny',title:String(j.title||'').trim()||'Bespoke training',summary:String(j.summary||'').trim(),parts};
     const d=this.get(); d.plans.push(plan); this.save(d); return plan; },
@@ -68,7 +78,7 @@ const TeamPlans = {
   fromCards(pid,ask,by,{title,status='draft',at=Date.now()}={}){ const c=TeamVinny._ctx(pid); if(!c) return null; const s=this.subjects(pid,ask), id=this._id(); let n=0;
     const four=q=>(q.k==='recognise'||q.mc)&&Array.isArray(q.opts)&&q.opts.length>=3&&q.a!=null;
     const mk=(list,qsOf,key)=>list.flatMap(x=>qsOf(x).filter(four).slice(0,2).map(q=>({...q,id:`${id}#${n++}`,covers:q.id,bespoke:id,mc:true,[key]:x.id})));
-    const wq=mk(s.wines,w=>TeamLearn.qsFor(c.role,w.id),'wine'), dq=mk(s.dishes,x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}),'dish');
+    const wq=s.pairing&&!s.mixed?[]:mk(s.wines,w=>TeamLearn.qsFor(c.role,w.id),'wine'), dq=mk(s.dishes,x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}).filter(q=>s.menu||TeamLearn.isPairing(q)),'dish');
     const half=Math.ceil(wq.length/2), parts=[wq.length&&{title:'The wines, one fact each',why:'What each is and where it\'s from.',qs:wq.slice(0,half)},wq.length>3&&{title:'The same wines, a step further',why:'What sets each apart.',qs:wq.slice(half)},dq.length&&{title:'What to pour with the menu',why:'The wine for each dish.',qs:dq}].filter(p=>p&&p.qs.length);
     if(!parts.length) return null;
     const plan={id,pid,ask:String(ask||'').trim(),by:by||null,at,status,source:'cards',title:title||'Practice from their own questions',summary:'Built from the questions already written for these wines and dishes, the ones they don\'t hold yet first.',parts,...(status==='pushed'?{pushedAt:at}:{})};

@@ -7,6 +7,7 @@ How a question is written here:
 - The question never contains its own answer, never names the answer's telling word, and stands on its own.
 - Use only the facts given below about each wine and dish, and the prices as printed. Never invent a wine, a dish, a price, a grape or a place.
 - "why" is one sentence that teaches the point, said the way you'd brief someone.
+- A pairing question is about the wine for the food: which wine on the list to pour with a dish, which dish on the menu a wine suits, which wine by the glass for a dish, or why a wine works with a dish (what in the wine meets what in the food). It always names a dish from the menu and wines from the list between its question and its options, and its wrong options are other wines from this list (or other dishes from this menu) a server might reach for. What a dish is, how it is cooked, what is in it or its allergens is a menu question, never a pairing question.
 
 [[cache-above]]
 
@@ -14,6 +15,8 @@ The person: {{person}}
 
 What the manager asked for, in their words:
 {{ask}}
+
+{{kind}}
 
 The wines and dishes to build the plan from (id | what it is), each with what the team is taught about it and the questions this person already has on it (question id | known or not | question → answer):
 {{subjects}}

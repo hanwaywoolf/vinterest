@@ -745,6 +745,10 @@ const TeamLearn = {
   shapeKey(q){ if(q.light) return q.id.split('#')[1]; if(q.dish) return 'dish'; if(q.k==='apply'||q.k==='contrast') return q.k;
     const t=this._topic(q.q,TeamData.isDrink(TeamData.wine(q.wine))); return t?'t-'+t:/describ|style|tastes? like|best fits/i.test(q.q)?'t-style':q.k; },
   answerText(q){ return q.opts&&q.a!=null?q.opts[q.a]:q.ans||''; },
+  /* A pairing question is about the wine for a dish: which to pour, by the glass, or why it works at the table. What a
+     dish is, how it can change and its allergens are menu questions, and a wine's grape, place or price are facts
+     about the wine. Anything asked for as "pairings" (Vinny's test, a bespoke plan) is these alone. */
+  isPairing(q){ return !!q&&((!!q.dish&&!q.allergen&&/#\d+$/.test(String(q.id)))||(!!q.wine&&q.k==='apply')); },
   subjectKey(q){ return q.dish?'d:'+q.dish:'w:'+q.wine; },
   spread(cands,size){
     const keep=[], seen=new Set();
