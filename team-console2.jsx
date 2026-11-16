@@ -226,8 +226,11 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
       {wd&&<_C2Card style={{flex:1,display:'flex',flexDirection:'column'}} title="Which nights sell wine" right={wd.key==='perCover'?'wine per guest on an average night · the last 4 weeks':'wine sales on an average night · the last 4 weeks'} testid="c2-weekday">
         <div style={{flex:1,minHeight:170,display:'flex',alignItems:'flex-end',gap:two?18:8,paddingTop:22}}>
           {wd.days.map(d=>{ const hi=d===wd.best, lo=d===wd.worst; return <div key={d.dow} data-testid="c2-weekday-bar" style={{flex:1,minWidth:0,height:'100%',display:'flex',flexDirection:'column',justifyContent:'flex-end',alignItems:'center'}}>
-            {d.nights?<><div style={{fontSize:13,fontWeight:500,color:T.ink,fontFamily:C.P,marginBottom:6,whiteSpace:'nowrap'}}>{wd.key==='perCover'?_cMoney(d.perCover,{dp:2}):_cMoney(d.revenue)}</div>
-              <div style={{width:'100%',maxWidth:86,flex:`0 1 ${Math.max(4,Math.round(100*d[wd.key]/wd.best[wd.key]))}%`,minHeight:4,borderRadius:'8px 8px 3px 3px',background:hi?acc:lo?_alpha(_C2_TONE.bad,0.7):'rgba(255,255,255,0.22)'}}/></>
+            {d.nights?(()=>{ const col=hi?acc:lo?_C2_TONE.bad:'rgba(255,255,255,0.7)', pc=Math.max(6,Math.round(100*d[wd.key]/wd.best[wd.key])); return <>
+              <div style={{fontSize:13,fontWeight:hi||lo?600:500,color:hi?acc:lo?_C2_TONE.bad:T.ink,fontFamily:C.P,marginBottom:8,whiteSpace:'nowrap'}}>{wd.key==='perCover'?_cMoney(d.perCover,{dp:2}):_cMoney(d.revenue)}</div>
+              <div style={{position:'relative',flex:1,minHeight:60,width:4,borderRadius:2,background:'rgba(255,255,255,0.07)'}}>
+                <div style={{position:'absolute',left:0,right:0,bottom:0,height:`${pc}%`,borderRadius:2,background:`linear-gradient(to top, ${_alpha(hi?acc:lo?_C2_TONE.bad:'#ffffff',0.15)}, ${col})`}}/>
+                <div style={{position:'absolute',left:'50%',bottom:`${pc}%`,width:12,height:12,margin:'0 0 -6px -6px',borderRadius:6,background:col,boxShadow:`0 0 0 4px ${_alpha(hi?acc:lo?_C2_TONE.bad:'#ffffff',0.14)}`}}/></div></>; })()
             :<div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginBottom:8}}>Closed</div>}</div>; })}</div>
         <div style={{display:'flex',gap:two?18:8,marginTop:8,paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
           {wd.days.map(d=><div key={d.dow} style={{flex:1,minWidth:0,textAlign:'center',fontFamily:C.P}}><div style={{fontSize:13,fontWeight:500,color:d===wd.best?acc:d===wd.worst?_C2_TONE.bad:T.ink}}>{d.name.slice(0,3)}</div>
