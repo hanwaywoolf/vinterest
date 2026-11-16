@@ -74,6 +74,19 @@ test('the calculator follows the inputs', async ({ browser }) => {
   await page.close();
 });
 
+// The console's pictures and the sizes the page plays them at are taken together (npm run site:teams:shots): a
+// picture retaken by hand, or a size edited without its picture, would scroll the laptop to the wrong place.
+test('the console scenes play at the size their pictures are', async ({ page }) => {
+  const fs = require('node:fs'), path = require('node:path'), dir = path.join(__dirname, '..', 'site', 'teams', 'img', 'scenes');
+  const sizes = JSON.parse(fs.readFileSync(path.join(dir, 'sizes.json'), 'utf8'));
+  const dims = (f) => { const d = fs.readFileSync(path.join(dir, f)); for (let i = 2; i < d.length;) { if (d[i] !== 0xff) { i++; continue; } const m = d[i + 1]; if (m >= 0xc0 && m <= 0xc2) return [d.readUInt16BE(i + 7), d.readUInt16BE(i + 5)]; i += 2 + d.readUInt16BE(i + 2); } };
+  for (const [k, w] of [['dash', 1220], ['sales', 1220], ['team', 1220], ['wines', 1220], ['menu', 1220], ['card', 600], ['dish', 600], ['mgr', 584]]) expect(dims(k + '.jpg'), k).toEqual([w, sizes[k]]);
+  for (const k of ['dash', 'sales', 'team', 'wines', 'menu']) expect(dims('sidebar-' + k + '.jpg'), k).toEqual([220, 900]);
+  for (const k of ['cardTap', 'dishTap']) { expect(sizes[k].x).toBeGreaterThan(220); expect(sizes[k].y).toBeLessThan(840); }   // a tap on the first screen of its page
+  await page.goto(BASE + '/');
+  expect(await page.content()).toContain(`const SZ = ${JSON.stringify(sizes)};`);
+});
+
 test('the sitemap lists every page', async ({ request }) => {
   const xml = await (await request.get(BASE + '/sitemap.xml')).text();
   for (const p of PAGES) expect(xml).toContain(`https://vinterest.team${p === '/' ? '/' : p}<`);

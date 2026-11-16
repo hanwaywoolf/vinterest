@@ -117,6 +117,8 @@ export async function build() {
       : '',
   };
   vars.DEMO_PHONE_URL = demo.replace('view=console', 'view=phone').replace(/&/g, '&amp;'); // the same demo as the staff see it, to try by hand
+  // The console scenes' sizes, as scripts/site-teams-shots.mjs measured them when it took the pictures.
+  vars.SCENE_SIZES = JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROOT, 'site/teams/img/scenes/sizes.json'), 'utf8')));
   const live = await buildLive();
   fs.writeFileSync(path.join(OUT, 'live.js'), live);
   vars.LIVE_V = hash(live);

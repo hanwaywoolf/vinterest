@@ -324,13 +324,16 @@ const SW = 1440, SH = 900, SB = 220;
 const side = (k) => [{ img: 'sidebar-' + k, x: 0, w: SB, h: SH }];
 // Every scene and every card that opens rests on the top of its page first (TOP ms), then scrolls.
 const TOP = 2200;
+// The pictures' heights and the two taps come from the pictures themselves (scripts/site-teams-shots.mjs writes
+// img/scenes/sizes.json and the build puts it here), so retaking them needs no edit to this page.
+const SZ = %%SCENE_SIZES%%;
 const SCENES = {
-  tonight: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: 0, ms: 7000 } }] },
-  ready: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: 2844, from: 0, to: .58, ms: 8000 }, keep: true }] },
-  sales: { steps: [{ frames: side('sales'), pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 0, ms: TOP + 800 } }, { pan: { img: 'sales', x: SB, w: SW - SB, h: 2333, from: 0, to: 1, ms: 9000 }, keep: true }] },
-  team: { steps: [{ frames: side('team'), pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 0, ms: TOP } }, { pan: { img: 'team', x: SB, w: SW - SB, h: 1553, from: 0, to: 1, ms: 6000 }, keep: true }] },
-  cards: { steps: [{ frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: 2322, from: 0, to: 0, ms: TOP }, tap: { x: 400, y: 173 } }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: 1450, from: 0, to: 0, ms: TOP } }, { pan: { img: 'card', x: 840, w: 600, h: 1450, from: 0, to: 1, ms: 8000 }, keep: true }] },
-  menu: { steps: [{ frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: 2870, from: 0, to: 0, ms: TOP }, tap: { x: 390, y: 281 } }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: 1197, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dish', x: 840, w: 600, h: 1197, from: 0, to: 1, ms: 6000 }, keep: true }] },
+  tonight: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: 0, ms: 7000 } }] },
+  ready: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: .58, ms: 8000 }, keep: true }] },
+  sales: { steps: [{ frames: side('sales'), pan: { img: 'sales', x: SB, w: SW - SB, h: SZ.sales, from: 0, to: 0, ms: TOP + 800 } }, { pan: { img: 'sales', x: SB, w: SW - SB, h: SZ.sales, from: 0, to: 1, ms: 9000 }, keep: true }] },
+  team: { steps: [{ frames: side('team'), pan: { img: 'team', x: SB, w: SW - SB, h: SZ.team, from: 0, to: 0, ms: TOP } }, { pan: { img: 'team', x: SB, w: SW - SB, h: SZ.team, from: 0, to: 1, ms: 6000 }, keep: true }] },
+  cards: { steps: [{ frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: SZ.wines, from: 0, to: 0, ms: TOP }, tap: SZ.cardTap }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: SZ.card, from: 0, to: 0, ms: TOP } }, { pan: { img: 'card', x: 840, w: 600, h: SZ.card, from: 0, to: 1, ms: 8000 }, keep: true }] },
+  menu: { steps: [{ frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: SZ.menu, from: 0, to: 0, ms: TOP }, tap: SZ.dishTap }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: SZ.dish, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dish', x: 840, w: 600, h: SZ.dish, from: 0, to: 1, ms: 6000 }, keep: true }] },
 };
 const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
 const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/', 'wheel');
@@ -442,7 +445,7 @@ fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersectin
 (function () {
   const el = document.getElementById('mstage'), MW = 584, MH = 720;
   const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
-  const steps = [{ pan: { img: 'mgr', x: 0, w: MW, h: 3853, from: 0, to: 0, ms: 2200 } }, { pan: { img: 'mgr', x: 0, w: MW, h: 3853, from: 0, to: 1, ms: 26000 }, keep: true }, { pan: { img: 'mgr', x: 0, w: MW, h: 3853, from: 1, to: 1, ms: 2200 }, keep: true }];
+  const steps = [{ pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 0, to: 0, ms: 2200 } }, { pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 0, to: 1, ms: 26000 }, keep: true }, { pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 1, to: 1, ms: 2200 }, keep: true }];
   let on = false;
   async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }
   if (reduced) { mp.play([steps[0]]); return; }
