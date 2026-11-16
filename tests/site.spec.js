@@ -358,15 +358,30 @@ test.describe('short desktop window', () => {
 test.describe('phone', () => {
   test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
 
-  test('nothing spills sideways, and the phone sits below the caption', async ({ page }) => {
+  test('nothing spills sideways, the phone is nearly as wide as the screen, and its caption floats once the phone is on screen', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of FITS) {
-      const b = await fits(page, id);
+      const b = await page.evaluate((id) => {
+        const r = (q) => document.querySelector(q).getBoundingClientRect();
+        return { wide: document.documentElement.scrollWidth <= window.innerWidth + 1, vw: window.innerWidth, sec: r(`#${id}`), h2: r(`#${id} h2`), phone: r(`#${id} .phone`), steps: r(`#${id} .steps`) };
+      }, id);
       expect(b.wide, id).toBe(true);
-      expect(b.secBottom - b.secTop, `${id} height`).toBeLessThanOrEqual(Math.max(b.vh, 600) + 2);
-      expect(b.phoneTop, id).toBeGreaterThanOrEqual(b.copyBottom - 2);
-      expect(b.phoneBottom, id).toBeLessThanOrEqual(b.secBottom + 2);
+      // A phone the page scrolls past, not the sliver that fits under a heading in one screen-height.
+      expect(b.phone.width, `${id} phone width`).toBeGreaterThan(b.vw * 0.8);
+      expect(b.phone.top, id).toBeGreaterThanOrEqual(b.h2.bottom - 2);
+      expect(b.phone.bottom, id).toBeLessThanOrEqual(b.sec.bottom + 2);
     }
+    // Before a section's phone is on screen its caption is held back; with the phone in view it floats at the foot of the screen.
+    await page.evaluate(() => document.getElementById('scan').scrollIntoView({ block: 'end', behavior: 'instant' }));
+    await page.evaluate(() => window.scrollBy(0, -(document.getElementById('scan').offsetHeight - 80)));
+    await expect(page.locator('#scan')).not.toHaveClass(/capon/);
+    await page.evaluate(() => document.querySelector('#scan .stage').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await expect(page.locator('#scan')).toHaveClass(/capon/);
+    await expect(page.locator('#scan .steps li.on h3')).toBeVisible();
+    await page.waitForTimeout(500); // the card settles into place
+    const cap = await page.evaluate(() => { const r = document.querySelector('#scan .steps').getBoundingClientRect(); return { bottom: r.bottom, vh: window.innerHeight }; });
+    expect(cap.bottom).toBeLessThanOrEqual(cap.vh);
+    expect(cap.bottom).toBeGreaterThan(cap.vh - 40);
   });
 });
 
@@ -380,6 +395,109 @@ test.describe('reduced motion', () => {
     for (const li of await page.locator('#scan .steps li').all()) { await expect(li).toBeVisible(); await expect(li.locator('p')).toBeVisible(); }
     await expect(page.locator('#scan .phone-app')).toContainText('Crozes-Hermitage 2021');
     await page.waitForTimeout(1500);
+  });
+});
+
+test.describe('trying it', () => {
+  test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false });
+
+  test('the taste sliders say each step in the app\'s own words and suggest styles from its catalogue', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(BASE + '/');
+    await show(page, 'taste');
+    const body = page.locator('#taste-body');
+    await expect(body).toBeVisible();
+    // Where it starts: a medium red, said in WineDNA's words.
+    await expect(page.locator('#taste-words')).toHaveText('Medium-full · Medium · Fresh');
+    await expect(page.locator('#taste .trow[data-axis="tannins"] .means')).toContainText('Medium. A clear, dry grip on the gums');
+    const first = await page.locator('#taste-picks .pick.first h3').textContent();
+    // Full and grippy: the words and the picks follow the sliders.
+    await body.fill('100');
+    await page.locator('#taste-tannins').fill('100');
+    await expect(page.locator('#taste-words')).toHaveText('Full · Grippy · Fresh');
+    await expect(page.locator('#taste .trow[data-axis="body"] .means')).toContainText('Full. Coats the mouth like cream');
+    await expect(page.locator('#taste-picks .pick')).toHaveCount(3);
+    await expect(page.locator('#taste-picks .pick.first h3')).not.toHaveText(first);
+    await expect(page.locator('#taste-picks .pick.first')).toContainText('Ask for it');
+    // A named stop is a button to that step.
+    await page.locator('#taste .trow[data-axis="body"] .stops button', { hasText: /^Light$/ }).click();
+    await expect(page.locator('#taste-words')).toHaveText('Light · Grippy · Fresh');
+    // White has its own traits and its own styles.
+    await page.locator('#taste .seg button', { hasText: 'White' }).click();
+    await expect(page.locator('#taste .trow')).toHaveCount(3);
+    await expect(page.locator('#taste .trow[data-axis="sweetness"] .name')).toHaveText('Sweetness');
+    await expect(page.locator('#taste-picks .pick')).toHaveCount(3);
+    expect(errors).toEqual([]);
+  });
+
+  test('a pick whose grape is in the guide is drawn by the app\'s pen', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'taste');
+    await expect(page.locator('#taste-body')).toBeVisible();
+    // Full, grippy and fresh is Cabernet country.
+    await page.locator('#taste-body').fill('95');
+    await page.locator('#taste-tannins').fill('90');
+    await expect(page.locator('#taste-sketch svg')).toBeVisible({ timeout: 8000 });
+  });
+
+  test('the dial by the sign-up is the app\'s own and answers a finger', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await show(page, 'beta');
+    const dial = page.locator('#try-dial [role="slider"]');
+    await expect(dial).toBeVisible();
+    await dial.focus();
+    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+    await expect(page.locator('#dial-a')).toContainText('92 · Outstanding');
+  });
+
+  test('the hero\'s entrance leaves everything in place, and sections arrive as they are reached', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
+    await page.waitForTimeout(2600);
+    const seen = await page.evaluate(() => [...document.querySelectorAll('.hero h1 .w, .hero .lead, .hero .cta, .hero .phone-slot')].every((el) => getComputedStyle(el).opacity === '1'));
+    expect(seen).toBe(true);
+    await show(page, 'taste');
+    await expect(page.locator('#taste .section-head')).toHaveClass(/in/);
+  });
+});
+
+test.describe('once the apps are listed', () => {
+  test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36' });
+  // The build fills the stores' links from APP_STORE_URL and PLAY_STORE_URL; here they're written into the served page.
+  const live = async (page) => page.route(BASE + '/', async (route) => {
+    const res = await route.fetch();
+    const html = (await res.text()).replace('data-ios-url=""', 'data-ios-url="https://apps.apple.com/app/id1"').replace('data-android-url=""', 'data-android-url="https://play.google.com/store/apps/details?id=app.vinterest"');
+    await route.fulfill({ response: res, body: html });
+  });
+
+  test('on a computer the form gives way to both stores and the buttons say to download', async ({ page }) => {
+    await live(page);
+    await page.goto(BASE + '/');
+    await expect(page.locator('.hero .cta-main')).toHaveText('Download the app');
+    await expect(page.locator('.hero .cta-main')).toHaveAttribute('href', '#beta');
+    await expect(page.locator('#beta-form')).toBeHidden();
+    await expect(page.locator('#store-ios')).toHaveAttribute('href', 'https://apps.apple.com/app/id1');
+    await expect(page.locator('#store-android')).toHaveAttribute('href', /play\.google\.com/);
+    await expect(page.locator('#beta-h')).toContainText('Scan your first bottle tonight');
+  });
+
+  test('on a phone every main button goes straight to that phone\'s store', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 780 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
+    const page = await ctx.newPage();
+    await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":"GB"}' }));
+    await live(page);
+    await page.goto(BASE + '/');
+    await expect(page.locator('.hero .cta-main')).toHaveAttribute('href', 'https://apps.apple.com/app/id1');
+    await expect(page.locator('.top .cta-main')).toHaveText('Get the app');
+    await ctx.close();
+  });
+
+  test('until then nothing changes: the page asks for beta sign-ups', async ({ page }) => {
+    await page.goto(BASE + '/');
+    await expect(page.locator('.hero .cta-main')).toHaveText('Join the beta');
+    await expect(page.locator('#stores')).toBeHidden();
+    await expect(page.locator('#beta-form')).toBeVisible();
   });
 });
 

@@ -682,4 +682,49 @@ const VinterestDemo = {
     return api;
   },
 };
+
+/* ── The page's own interactive pieces ──
+   Built from the app's code and data, so the words on the page are the app's own and can't drift:
+   the taste sliders use WineDNA's scale steps and meanings and the Explore Next catalogue, the dial
+   is the app's RatingDial, and the grape is its GrapeSketch. Nothing here reads or writes the store. */
+const _SITE_TASTE_AXES = { red: ['body', 'tannins', 'acidity'], white: ['body', 'acidity', 'sweetness'] };
+/* What three sliders say: each trait's step word and meaning, and the catalogue's nearest styles. */
+VinterestDemo.taste = function (type, vals) {
+  const axes = _SITE_TASTE_AXES[type] || _SITE_TASTE_AXES.red;
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  const rows = axes.map((k) => {
+    const v = Math.max(0, Math.min(1, vals && typeof vals[k] === 'number' ? vals[k] : 0.5)), st = WineDNA.stepAt(v);
+    return { axis: k, name: WineDNA.AXES[k].name, steps: WineDNA.STEPS[k], step: st, word: WineDNA.STEPS[k][st], value: v,
+      meaning: cap(String(WineDNA.STEP_MEANING[k][st] || '').replace(/^[^:]+:\s*/, '')) };
+  });
+  const picks = _loadJSON('data/explore-styles.json').filter((x) => x.type === type).map((x) => {
+    const ks = axes.filter((k) => typeof x.profile[k] === 'number');
+    const d = Math.sqrt(ks.reduce((a, k) => a + Math.pow(x.profile[k] - rows.find((r) => r.axis === k).value, 2), 0) / (ks.length || 1));
+    return { d, name: x.name, country: x.country, region: x.region, grapes: x.grapes || [], adds: x.adds, taste: x.learn && x.learn.taste, ask: x.learn && x.learn.ask };
+  }).sort((a, b) => a.d - b.d).slice(0, 3);
+  return { type, col: _DECK_DARK.lift(_TYPE_COLORS[type] || C.cr), rows, picks, words: rows.map((r) => r.word) };
+};
+function _SiteDial({ onChange }) {
+  // It opens on a rating, not the app's "tap a rating" prompt: there are no preset buttons beside it here.
+  const [v, setV] = React.useState(88);
+  return <DeckTheme.Provider value={_DECK_DARK}>
+    <RatingDial min={ParkerScale.MIN} value={v} size={232}
+      onChange={(n) => { setV(n); if (onChange) onChange(n, ParkerScale.label(n)); }} />
+  </DeckTheme.Provider>;
+}
+/* The app's rating dial, for a visitor's own finger. onChange(rating, band). */
+VinterestDemo.mountDial = function (el, onChange) {
+  const root = ReactDOM.createRoot(el);
+  root.render(<_SiteDial onChange={onChange} />);
+  return { unmount() { root.unmount(); } };
+};
+/* A grape's bunch, drawn by the pen as it is in the scan story. False when the guide has no such grape. */
+VinterestDemo.mountSketch = function (el, grape) {
+  let info = null;
+  try { info = GrapeInfo.get(WineDNA.grape(grape), []); } catch (e) { info = null; }
+  if (!info || !info.look) return null;
+  const root = ReactDOM.createRoot(el);
+  root.render(<GrapeSketch key={info.name} info={info} animate ink="rgba(255,255,255,0.85)" />);
+  return { name: info.name, unmount() { root.unmount(); } };
+};
 window.VinterestDemo = VinterestDemo;

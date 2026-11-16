@@ -181,3 +181,19 @@ Once:
 
 Without the Supabase pair the form answers "Pilot requests aren't open just yet" with the email
 address, and nothing else breaks.
+
+## When the apps are in the stores
+
+The page asks for beta sign-ups until it is told where the apps are. Set these on the site's Cloudflare
+Pages project (Settings → Environment variables, Production) and redeploy:
+
+- `APP_STORE_URL`: the App Store page, e.g. `https://apps.apple.com/app/id…`
+- `PLAY_STORE_URL`: the Google Play page, e.g. `https://play.google.com/store/apps/details?id=app.vinterest`
+
+With either set, the sign-up form gives way to the store buttons, every main button says to download and
+goes to the visitor's own store on a phone (to both buttons on a computer), and the headline and small
+print change with it. With one set, only that store's button shows. Remove both to go back to sign-ups.
+
+The two store buttons are plain buttons. Apple and Google each require their own badge artwork on a
+marketing page: download them from Apple's Marketing Resources and Google Play's badge generator and
+replace the buttons in `site/index.html` (`#store-ios`, `#store-android`) before launch.
