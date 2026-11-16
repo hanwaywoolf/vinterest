@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-10-eloise",
+ "rev": "2026-11-11-eloise-manager",
  "venue": {
   "name": "Eloise",
   "city": "Toronto",
@@ -24,6 +24,11 @@
    "roleTiers": {
     "sommelier": "master"
    }
+  },
+  "console": {
+   "hide": [
+    "sommelier"
+   ]
   }
  },
  "wines": [
@@ -1820,9 +1825,9 @@
  ],
  "staff": [
   {
-   "name": "Elena Ruiz",
+   "name": "Cam Dryburgh",
    "role": "manager",
-   "photo": "faces/1.png"
+   "photo": "brand/eloise/cam-dryburgh.jpg"
   },
   {
    "name": "Claire Whitfield",

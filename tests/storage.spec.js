@@ -48,7 +48,7 @@ test('every device-storage write reaches Store subscribers; session handoffs and
       scans: Entitlement.scanCount() - scansBefore, read: LearnProgress.articleDone('x1'), bad: Store.getJSON('vinterest_missing', 'fallback') };
   });
   expect(out.seen).toEqual(['vinterest_wines', 'vinterest_favorites', 'vinterest_xp_v3', 'vinterest_script_length',
-    'vinterest_scan_count', 'vinterest_gen_article_x1_done', 'vinterest_wineDNA_unlock_seen', 'vinterest_test_cache']);
+    'vinterest_scan_count', 'vinterest_scan_month', 'vinterest_gen_article_x1_done', 'vinterest_wineDNA_unlock_seen', 'vinterest_test_cache']);
   expect(out).toMatchObject({ fav: true, handoff: true, quiz: { mode: 'practice' }, scans: 1, read: true, bad: 'fallback' });
   // A full device never throws into a screen, and what wouldn't fit is kept for the visit: it reads back, Store.full()
   // says so, and it's gone once removed (or on the next load).

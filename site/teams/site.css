@@ -546,7 +546,17 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .cellar[data-cards] .cellar-grid i { cursor: pointer; }
 .cellar-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, .55); }
 .cellar-key span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--k); margin-right: 6px; }
-@media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } }
+.cellar.pouring.in .cellar-grid i { transition-delay: var(--d, 0ms); transition-duration: .34s; }
+.cellar.pouring .cellar-cap { font-variant-numeric: tabular-nums; }
+/* The headline's second line waits for the bottles (see data-pour in site.js). */
+.pour-wait h1 em { opacity: 0; transform: translateY(.3em); }
+.pr-hero h1 em { display: inline-block; transition: opacity .7s ease, transform .7s cubic-bezier(.2, .8, .2, 1); }
+/* Tiles that rise in as they're scrolled to, and a caret while a line types (site.js adds the classes). */
+.rv { opacity: 0; transform: translateY(14px); transition: opacity .6s ease var(--rv, 0ms), transform .6s cubic-bezier(.2, .8, .2, 1) var(--rv, 0ms); }
+.rv.on { opacity: 1; transform: none; }
+blockquote.typing::after { content: ''; display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -.12em; background: var(--neon); animation: caret .8s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cellar-grid i { transition: none !important; } .pour-wait h1 em { opacity: 1; transform: none; } .pr-hero h1 em, .rv { transition: none; } }
 
 /* The live phone (live.js, site/teams/live/): the real app drawn over a phone's stage, with a dot where it taps.
    The pictures it replaces go once it is up. */
@@ -747,7 +757,8 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .pr-foot { padding: 32px 0 48px; font-size: 13px; color: var(--mute); }
 .pr-foot p + p { margin-top: 8px; } .pr-foot a { color: inherit; }
 @media (max-width: 860px) { .pr-facts, .pr-say { grid-template-columns: 1fr; } .pr-out, .pr-in { grid-template-columns: repeat(2, 1fr); } .pr-top .btn.ghost { display: none; } .pr-hero { padding: 48px 0 56px; } }
-@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 36px; } .pr-hero .cellar { justify-self: start; } }
+/* One column: the bottles sit between the lead and the buttons, and the headline is a little larger. */
+@media (max-width: 980px) { .pr-hero .wrap { grid-template-columns: 1fr; gap: 0; } .pr-hero .wrap > div:first-child { display: contents; } .pr-hero .cellar { justify-self: start; order: 1; margin-top: 28px; } .pr-hero .cta { order: 2; } .pr-hero h1, .pr-hero.stack h1 { font-size: clamp(28px, 9.4vw, 52px); } }
 /* A long list (over 80 wines): the copy first with its headline on one line, then the bottles across the whole width,
    small enough that the list sits in a few rows (--cols and --cols-m are set per page from the wine count). */
 /* The copy's own box is dissolved so its buttons can sit after the bottles: copy, bottles, then the calls to action. */

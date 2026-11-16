@@ -288,7 +288,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){ const T=useTh
           ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:T.tone[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
           :saved
             ?<span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Saved</span>
-            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${_alpha(cr,0.4)}`,background:T.crSoft,color:cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${_alpha(cr,0.4)}`,background:T.crSoft,color:T.ink,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
         {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?T.ink:T.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
       </div>
     </div>
@@ -346,7 +346,7 @@ function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the 
               <Icon n="sort" sz={15} col={T.ink2}/><span style={{fontSize:14,fontWeight:600,color:T.ink2,fontFamily:C.P}}>{sortLabel}</span>
             </div>
             {sortOpen&&<div style={{position:'absolute',right:0,top:'calc(100% + 6px)',background:T.dark?T.card:C.white,border:`1px solid ${T.line}`,borderRadius:12,boxShadow:'0 8px 24px rgba(0,0,0,0.3)',padding:4,zIndex:20,minWidth:150}}>
-              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:sort===s.id?cr:T.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?T.crSoft:'transparent'}}>{s.label}</div>)}
+              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:T.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?T.crSoft:'transparent'}}>{s.label}</div>)}
             </div>}
           </div>
         </div>

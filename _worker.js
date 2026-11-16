@@ -172,7 +172,34 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal", "eloise.vinterest.team": "eloise" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
+
+// A restaurant's address that opens the page written for it, with its demo beside it (eloise.vinterest.team): the root
+// is the Teams site's private page (site/teams/for/<name>.html, fetched from TEAMS_SITE_ORIGIN, default vinterest.team,
+// with the stylesheet, script, images and cards it asks for by path; fonts and the logo are this project's own, the same
+// files), and /demo/ is the staff app (dist/team/), which opens that restaurant from the address (TeamSample.HOSTS).
+// The API routes answer as on any other address.
+const VENUE_PAGES = { "eloise.vinterest.team": "eloise" };
+const VENUE_PAGE_FILE = /^\/(site\.css$|site\.js$|for\/|img\/)/;
+async function serveVenuePage(request, url, env) {
+  const name = VENUE_PAGES[url.hostname], site = (env.TEAMS_SITE_ORIGIN || "https://vinterest.team").replace(/\/+$/, ""), p = url.pathname;
+  if (p === "/demo" || p === "/team" || p.startsWith("/team/")) return Response.redirect(`${url.origin}/demo/${p.startsWith("/team/") ? p.slice(6) : ""}${url.search}`, 302);
+  if (p.startsWith("/demo/")) {
+    const res = await env.ASSETS.fetch(new Request(new URL("/team/" + p.slice(6) + url.search, url.origin), request));
+    if (p !== "/demo/") return res;
+    const headers = new Headers(res.headers);
+    headers.set("Cache-Control", "no-cache, must-revalidate");
+    return new Response(res.body, { status: res.status, headers });
+  }
+  const page = p === "/" || p === "/index.html";
+  if (!page && !VENUE_PAGE_FILE.test(p)) return null; // /claude, /tts, /config, fonts, the logo: as on any address
+  if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405 });
+  const res = await fetch(site + (page ? `/for/${name}` : p + url.search), { headers: { accept: request.headers.get("accept") || "*/*" } });
+  const headers = new Headers(res.headers);
+  headers.set("x-robots-tag", "noindex, nofollow"); // written for one prospect: never in search
+  if (page) headers.set("Cache-Control", "no-cache, must-revalidate");
+  return new Response(res.body, { status: res.status, headers });
+}
 
 // The teams demo's own address (a custom domain on this Pages project, docs/site-setup.md): the team
 // app (dist/team/) served at its root, The Larkspur seeded on a first visit. Its script and photos
@@ -205,6 +232,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // A restaurant's demo address opens its staff app, not the consumer app.
+    if (VENUE_PAGES[url.hostname]) { const res = await serveVenuePage(request, url, env); if (res) return res; }
     if (VENUE_HOSTS[url.hostname] && (url.pathname === "/" || url.pathname === "/index.html")) {
       return Response.redirect(new URL("/team/" + url.search, url).toString(), 302);
     }
@@ -234,7 +262,7 @@ export default {
         iosTypedPromo: env.IOS_TYPED_PROMO === "1",
       });
     }
-    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
+    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/run") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       if (url.pathname === "/push/run") return handlePushRun(request, env);
@@ -612,6 +640,12 @@ async function tierOf(env, userId) {
   if (ALL_PRO_FOR_TESTING && env.ALL_PRO !== "0") return "pro";
   return (await entitlementOf(env, userId)).tier;
 }
+/* The free plan's label scans are counted per calendar month (UTC), not per week: FREE_MONTHLY a
+   month, through use_quota_month (0009_monthly_scans.sql), kind "<purpose>:month". Pro keeps only the
+   weekly fair-use cap. The app shows what's left from /me's `month` and says so before the camera. */
+const FREE_MONTHLY = { label_scan: 10 };
+function monthStart(d = new Date()) { return d.toISOString().slice(0, 7) + "-01"; }
+function nextMonthName(d = new Date()) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" }); }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
 function weekStart(d = new Date()) {
   const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -631,6 +665,12 @@ async function gateAccount(request, env, purpose) {
   }
   const tier = await tierOf(env, user.id);
   if (PRO_ONLY[purpose] && tier !== "pro" && !OPEN_TO_SIGNED_IN[purpose]) return { response: json(402, { error: PRO_ONLY[purpose], code: "pro_required" }) };
+  if (tier !== "pro" && FREE_MONTHLY[purpose]) {
+    const m = await db(env, "rpc/use_quota_month", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose + ":month", p_cap: FREE_MONTHLY[purpose] }) });
+    if (m.ok && (await m.json()) === null) {
+      return { response: json(429, { error: `You've used your ${FREE_MONTHLY[purpose]} free scans this month. They come back on 1 ${nextMonthName()}, or go Pro to keep scanning.`, code: "scan_limit" }) };
+    }
+  }
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
   if (r.ok && (await r.json()) === null) {
     return { response: json(429, { error: "You've reached this week's fair-use limit for this. It resets on Monday.", code: "fair_use" }) };
@@ -652,7 +692,15 @@ async function handleMe(request, env) {
   const week = weekStart();
   const r = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${week}&select=kind,count`);
   const usage = r.ok ? Object.fromEntries((await r.json()).map((u) => [u.kind, u.count])) : {};
-  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier] });
+  // The free plan's monthly scans: used so far this month against FREE_MONTHLY.
+  let month = null;
+  if (tier !== "pro") {
+    const start = monthStart(), used = {};
+    const mr = await db(env, `usage_counters?user_id=eq.${encodeURIComponent(user.id)}&period_start=eq.${start}&select=kind,count`);
+    if (mr.ok) for (const u of await mr.json()) if (/:month$/.test(u.kind)) used[u.kind.replace(/:month$/, "")] = u.count;
+    month = { start, used, caps: FREE_MONTHLY };
+  }
+  return json(200, { signedIn: true, accounts: true, email: user.email, tier, expires_at: ent.expires_at || null, source: ent.source || null, week, usage, caps: FAIR_USE[tier], month });
 }
 
 /* POST /promo {code}: redeems a promo code for the signed-in user (redeem_promo in
@@ -698,11 +746,14 @@ async function handlePromo(request, env) {
    bell, Notices): a bottle waiting for its rating and a long gap since the last scan (Reminders,
    switched off by vinterest_notify.reminder in their synced settings), and Pro access ending
    soon or a payment that didn't go through (the account, always on). At most one a day and
-   three a week, at about 6pm where they are. POST /push/run is the hourly job (a GitHub
+   three a week, in their evening (PUSH_HOUR to PUSH_HOUR + PUSH_WINDOW hours, where they are). POST /push/run is the hourly job (a GitHub
    workflow with PUSH_CRON_SECRET, since Pages has no cron). Nothing here moves a match or a rating. */
 // A run handles a few people (each costs about seven requests to Supabase and the services, and Pages
 // allows 50 on the free plan); it says when there are more and the workflow asks again from there.
-const PUSH_HOUR = 18, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
+// The evening window: GitHub's scheduler starts the "hourly" job only every few hours, so a single hour
+// missed most people most days. Anyone whose local time is in the window when a run comes is reached;
+// the one-a-day rule (PUSH_RATE_AFTER_MS) keeps it to one.
+const PUSH_HOUR = 17, PUSH_WINDOW = 6, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
 const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
 function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
 function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
@@ -787,7 +838,7 @@ async function pushRecord(env, userId, kind, keys) {
     body: JSON.stringify(keys.map((key) => ({ user_id: userId, kind, key, sent_at: new Date().toISOString() }))) }).catch(() => null);
 }
 
-/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}, /push/test: signed-in app calls. */
+/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}: signed-in app calls. */
 async function handlePush(request, env, action) {
   const origin = request.headers.get("origin");
   if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
@@ -818,18 +869,7 @@ async function handlePush(request, env, action) {
     await db(env, token ? `push_devices?user_id=eq.${uid}&token=eq.${encodeURIComponent(token)}` : `push_devices?user_id=eq.${uid}`, { method: "DELETE" }).catch(() => null);
     return json(200, { ok: true });
   }
-  // test: one notification to their own phones, three an hour at most.
-  const since = new Date(Date.now() - 3600 * 1000).toISOString();
-  const recent = await db(env, `push_sent?user_id=eq.${uid}&kind=eq.test&sent_at=gte.${since}&select=key`);
-  if (recent.ok && (await recent.json()).length >= 3) return json(429, { error: "That's three tests this hour. Try again later.", code: "rate_limited" });
-  // A phone shows a notification only while the app isn't open, so the app asks for a pause (up to 15s)
-  // to give them time to close it or lock the screen.
-  const wait = Math.min(15, Math.max(0, parseInt(body.delay, 10) || 0));
-  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
-  const out = await pushToUser(env, user.id, { title: "Vinterest notifications are on", body: "This is how a reminder will look.", link: { screen: "home" } });
-  if (!out.sent) return json(502, { error: out.gone ? "This phone's notification token had expired. Open the app again and turn notifications off and on." : "We couldn't reach your phone just now. Try again in a minute.", code: "push_failed" });
-  await pushRecord(env, user.id, "test", [Date.now() + "-" + Math.random().toString(36).slice(2, 8)]);
-  return json(200, { ok: true, sent: out.sent });
+  return json(404, { error: "Not found" });
 }
 
 function localHour(tz, now) {
@@ -878,14 +918,15 @@ async function pushPlan(env, userId, now) {
   }
   return null;
 }
-/* Everyone whose local time is the push hour gets at most one. dry: say what would go, send nothing. */
+/* Everyone whose local time is in the evening window gets at most one. dry: say what would go, send nothing. */
 async function runPushJob(env, { now = Date.now(), dry = false, hour = PUSH_HOUR, offset = 0 } = {}) {
   const r = await db(env, "push_devices?select=user_id,tz&order=last_seen.desc&limit=2000");
   const devices = r.ok ? await r.json() : [];
   const tzOf = new Map();
   for (const d of devices) if (!tzOf.has(d.user_id)) tzOf.set(d.user_id, d.tz);
   const batch = Math.max(1, parseInt(env.PUSH_BATCH, 10) || PUSH_BATCH);
-  const all = [...tzOf].filter(([, tz]) => localHour(tz, now) === hour).map(([u]) => u).sort();
+  const inWindow = (h) => (h - hour + 24) % 24 < PUSH_WINDOW;
+  const all = [...tzOf].filter(([, tz]) => inWindow(localHour(tz, now))).map(([u]) => u).sort();
   const users = all.slice(offset, offset + batch);
   const out = { users: all.length, sent: [], skipped: 0, errors: [], more: all.length > offset + batch, next: offset + batch };
   for (const u of users) {

@@ -43,7 +43,7 @@ function fakeSupabase({ down = false, adminDown = false } = {}) {
       deleted.push(url.slice(`${SB}/rest/v1/`.length)); return res(204, null);
     }
     if (url.startsWith(`${SB}/rest/v1/entitlements`)) return res(200, url.includes('u-pro') ? [{ tier: 'pro', expires_at: null }] : []);
-    if (url === `${SB}/rest/v1/rpc/use_quota`) {
+    if (url === `${SB}/rest/v1/rpc/use_quota` || url === `${SB}/rest/v1/rpc/use_quota_month`) {
       const { p_user, p_kind, p_cap } = JSON.parse(init.body);
       const k = p_user + ':' + p_kind, n = counters[k] || 0;
       if (p_cap <= 0 || n >= p_cap) return res(200, null);
@@ -58,7 +58,10 @@ function fakeSupabase({ down = false, adminDown = false } = {}) {
     }
     if (url.startsWith(`${SB}/rest/v1/usage_counters`)) {
       const who = /user_id=eq\.([^&]+)/.exec(url)[1];
-      return res(200, Object.entries(counters).filter(([k]) => k.startsWith(who + ':')).map(([k, count]) => ({ kind: k.split(':')[1], count })));
+      // The week's rows, or the month's (kind "<purpose>:month"), as the two queries ask.
+      const monthly = (k) => k.endsWith(':month');
+      const want = url.includes(`period_start=eq.${new Date().toISOString().slice(0, 7)}-01`) ? monthly : (k) => !monthly(k);
+      return res(200, Object.entries(counters).filter(([k]) => k.startsWith(who + ':') && want(k)).map(([k, count]) => ({ kind: k.slice(who.length + 1), count })));
     }
     return res(404, {});
   };
@@ -110,6 +113,24 @@ test.describe('Worker', () => {
     const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), shipped)).json();
     expect(me.tier).toBe('free');
     expect((await scan('list_scan', 'tok-free', shipped)).status).toBe(402);
+  });
+
+  test('a free account gets 10 label scans a month, then 429 scan_limit; Pro is not counted by month', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    for (let i = 0; i < 10; i++) expect((await scan('label_scan', 'tok-free')).status).toBe(200);
+    const r = await scan('label_scan', 'tok-free');
+    expect(r.status).toBe(429);
+    const body = await r.json();
+    expect(body.code).toBe('scan_limit');
+    expect(body.error).toMatch(/10 free scans this month\. They come back on 1 [A-Z][a-z]+, or go Pro/);
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), env)).json();
+    expect(me.month).toMatchObject({ used: { label_scan: 10 }, caps: { label_scan: 10 } });
+    // Other calls aren't capped by month, and Pro has no monthly meter at all.
+    expect((await scan('wine_qa', 'tok-free')).status).toBe(200);
+    for (let i = 0; i < 12; i++) expect((await scan('label_scan', 'tok-pro')).status).toBe(200);
+    expect(sb.counters['u-pro:label_scan:month']).toBeUndefined();
+    const pro = await (await worker.fetch(req('/me', { token: 'tok-pro', method: 'GET' }), env)).json();
+    expect(pro.month).toBeNull();
   });
 
   test('the weekly fair-use limit answers 429 once reached, and /me reports usage', async () => {

@@ -200,10 +200,26 @@ filled white (`team/brand/eloise/wordmark-white.svg`). It carries the same inven
 sales, labelled Demo data, with its own `offList` POS item ("House Prosecco (Events)"). Its training
 (`data/team-eloise.json`) was written through the production Worker by `npm run team:write -- eloise`, then put
 through `npm run team:audit` (nothing flagged) and `npm run team:review -- eloise`, then `--held` once more: 695
-questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its demo address is eloise.vinterest.team
-(`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), which needs adding as a custom domain on the vinterest Pages project.
-The page written for the restaurant is `site/teams/for/eloise.html` (vinterest.team/for/eloise, private), its list and
-cards made from the seed's two files with `cellarOf`.
+questions read, 139 rewritten, 140 held out of the drill (120 on wines, 6 on cocktails, 14 on dishes). Its address is eloise.vinterest.team, a custom domain on the vinterest Pages project, and it opens differently from the
+other restaurants' (`VENUE_PAGES` in `_worker.js`): the root is the page written for the restaurant
+(`site/teams/for/eloise.html`, private, its list and cards made from the seed's two files with `cellarOf`; the Worker
+fetches it and its files from the Teams site, `TEAMS_SITE_ORIGIN`, default vinterest.team, where it is also
+vinterest.team/for/eloise), and the demo is at eloise.vinterest.team/demo/ (the staff app's files; `TeamSample.HOSTS`
+opens Eloise from the address). A new prospect who should get the same is a row in `VENUE_PAGES` and `HOSTS`. Its list file also sets
+`venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
+(our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
+training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
+
+## The console's first-use tour (built)
+
+The first time a person opens the console on a device, a tour walks them through it (`_CTour` in `team-console.jsx`,
+steps and who has seen it in `TeamTour`, `team-data.js`, `vbiz_tour_v1`, per restaurant and person, never synced): a
+welcome card, then a spotlight down the sidebar, one section at a time (Dashboard, Sales Insights, Team, Wines,
+Cocktails where there are any, Menu, Upload), each stop opening its section behind the dimming with a card saying what
+it's for, and last the switch to the phone view. Back, Next, Skip the tour; Escape skips and the arrow keys step;
+nothing under it takes a click. On a narrow window the card sits at the foot. "Take the tour" at the sidebar's foot
+brings it back. The app's shell asks for it (`tour` on `TeamConsole`); tests turn it off (`window.VINTEREST_TOUR =
+'off'`, `helpers.stubNetwork`) except the one that tests it.
 
 ## How staff learn
 
@@ -709,6 +725,77 @@ counts.
 - The demo's sales are invented and labelled; a real venue's export replaces them when one is on.
 - Does any venue in reach count stock in Square or a beverage-inventory tool, or is stock a manual
   count for now?
+
+## Wine shops (concept, November 2026: nothing built)
+
+A wine shop needs the same thing a restaurant does, someone who can sell the wine, and has already done the
+expensive part: its stock is priced and structured. This is the same product with a second kind of venue,
+never a separate build. The thinking so far, kept here until there is a shop to test it on.
+
+**What carries over as it is.** Ingestion (a list, a label, cards with the pitch, the taste, what to say,
+drinking windows, "if they want something else"); Ask Vinny; the guest at the table, who becomes a customer at
+the counter; the drill, readiness, the console and sales import; Tonight and the briefing, which become "this
+week": what's out of stock (the shop's 86), what we're pushing, new arrivals.
+
+**What changes.**
+
+- Pairing flips from lookup to recommendation. A restaurant has a menu, so dish to wines is written ahead. A
+  shop has occasions without end ("a roast dinner for eight, good reds, about £120"), so Vinny works at the
+  moment of asking. The rule that keeps it honest is the one the app already follows: code filters first
+  (budget, colour, in stock, ready to drink), then Claude only chooses among what's left and says why. Three
+  picks every time: the safe one, the step up, the one they wouldn't have found. A card carries the foods the
+  wine suits as general kinds (roast beef, spicy food, oily fish) in place of named dishes.
+- Scale. A restaurant is 30 to 130 wines; a shop is 300 to 3,000 that turn over weekly. Full cards for the top
+  sellers and staff picks, light cards for the rest (the teaser-install path, written cheaply).
+- What staff learn. Restaurant staff must know our list. Shop staff must know wine and find their way around
+  the stock, so the consumer app's regions, grapes and quizzes have a place in Teams here. Nobody drills 2,000
+  bottles: the top sellers, then by region, grape and price band.
+- Stock is live. A PDF won't do; it needs the shop's POS or online store (Shopify, WooCommerce, Lightspeed,
+  Square), so the connector is day-one work. Shop data is cleaner than a restaurant's: SKU, vintage, price and
+  stock count are already there. A bottle recommended an hour after it sold out is worse than no
+  recommendation.
+- Quantity. Dinner for eight is four or five bottles, a budget for the lot, perhaps a case discount, and "a
+  white for the starter?".
+- Margin. Owners will want Vinny to lean to overstock and better-margin bottles. In a staff tool that's fair,
+  but only to choose between equally good fits, and the staff member is shown that it did.
+
+**Three surfaces on one engine.**
+
+1. Staff at the counter: Ask Vinny and the training, closest to what's built.
+2. Vinny on the shop's website, for a shop with an online store: the customer says what they need and gets
+   three bottles as product cards with the reason for each and Add to basket.
+3. Later, in the shop itself: a tablet or a QR code on the shelf.
+
+**Why the website may come first.** The online store already is the live stock, so the hard part is free.
+The result has a number on it: conversion and basket size for visits that used Vinny against those that
+didn't, a cleaner sales case than a restaurant's. It installs as a script or a store app, with no staff
+rollout. And an owner who sees Vinny answer customers well asks why the Saturday staff can't.
+
+**What the website needs that Teams doesn't.**
+
+- Vinny's mistakes land on the customer, with nobody in between: never a bottle that isn't in the feed, and
+  "nothing like that under £15" said plainly. Its own review pass, like the sommelier review.
+- Alcohol rules: an age gate, nothing that encourages quantity, and each market's rules on recommending
+  alcohol, checked before a pilot.
+- Cost per conversation: thousands of anonymous chats a month, so caching, a short model for most turns and
+  limits per visitor. Pricing probably wants a usage part or a share of the sales Vinny helped.
+- Abuse: it talks about wine and this shop's stock, nothing else.
+- Brand: "Vinny, powered by Vinterest" in the shop's colours, as a venue's logo is in Teams now.
+
+**The link to the consumer app.** A shopper signed in to Vinterest can be shown the bottles in this shop that
+match their WineDNA, with the match beside each; a shopper who isn't meets Vinny on a shop's site first. It
+sits beside the partner shops the consumer app already links to (docs/affiliates.md): a shop running Vinny is
+one whose stock we already hold.
+
+**Who buys it.** Not the owner who is the expert and on the floor every day. A shop with part-time or
+Christmas staff, a small chain, a deli with a wine wall, and above all one with an online store. A shop has
+three staff, so the price is per shop, not per person.
+
+**The test, before anything is built.** One friendly shop's product export (name, producer, vintage, price,
+stock, category) of 200 or so bottles, and twenty questions its customers have really asked. Write the light
+cards, run the questions through Vinny by hand, and ask the owner whether they'd stand behind the picks. If
+they would, the website widget is the first thing worth building, because it's the one with a number attached.
+No shop is lined up yet.
 
 ## Next
 

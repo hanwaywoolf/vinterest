@@ -259,3 +259,26 @@ test('the Play upload says what is wrong when its secret is not a service accoun
   await expect(accessToken({ project_info: { project_id: 'x' }, client: [] })).rejects.toThrow(/not a service account key/);
   await expect(accessToken(null)).rejects.toThrow(/PLAY_SERVICE_ACCOUNT_JSON/);
 });
+
+// In the apps the page runs edge to edge (Android 16 enforces it), so the strip behind the status bar is
+// the shell's top padding: brand crimson, as Chrome draws the web app's bar, never the shell's light
+// background, which showed as a white bar above a dark Home.
+test('the strip behind the status bar is crimson, dark or light', async ({ context, page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_age_ok: '1' });
+  await stubNetwork(context);
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 40, topMax: 40 } });
+  const strip = page.getByTestId('status-strip');
+  for (const theme of ['dark', 'light']) {
+    await page.goto('http://localhost:4173/#home');
+    await page.evaluate((t) => Settings.setTheme(t), theme);
+    await page.goto('http://localhost:4173/#learn');
+    expect(await strip.evaluate((s) => s.offsetHeight)).toBe(40);
+    expect(await strip.evaluate((s) => getComputedStyle(s).backgroundColor)).toBe('rgb(139, 26, 47)');
+  }
+  // The camera runs to the top edge itself: no strip.
+  await page.goto('http://localhost:4173/#camera');
+  await expect.poll(() => strip.evaluate((s) => s.offsetHeight)).toBe(0);
+});

@@ -196,7 +196,7 @@ function SideNav({active,nav,showPro,xpBadge,onXpClick}){
   const learnActive=['learn','quiz','article','gen-article','guide','mastery-map'].includes(active);
   const profileActive=active==='profile';
   const isPro=Entitlement.isPro();
-  const atLimit=!isPro&&Entitlement.scanCount()>=10;
+  const atLimit=Entitlement.atScanLimit();
   const lv=xpBadge?XPSystem.getLevel(xpBadge.total):null;
   const items=[
     {key:'home',   icon:'home',  label:'Home',     isActive:homeActive},
@@ -255,12 +255,13 @@ function ProBadge({style:s}){
 function ProGate({feature,onClose}){
   const FEAT={
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
-    'unlimited-scans':{icon:'♾️',title:'Unlimited Scans',desc:"You've used your 10 free scans. Pro gives you unlimited.",bullets:['Scan as many bottles as you like','Your full scan history never expires','Priority AI label recognition']},
+    'unlimited-scans':{icon:'📷',title:'Keep scanning',desc:`Free includes ${Entitlement.FREE_SCANS} label scans a month. Pro scans every bottle you open.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
+    'scan-limit':{icon:'📷',title:`That's your ${Entitlement.FREE_SCANS} free scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans every bottle you open, and whole wine lists too.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
     'grape-library':{icon:'🍇',title:'Every Grape',desc:`You've unlocked your ${typeof FREE_GRAPE_CAP!=='undefined'?FREE_GRAPE_CAP:5} free grapes. Pro opens all 50.`,bullets:['A quiz and article for every grape you meet','Learn what each grape tastes like, and why','New grapes unlock the moment you scan them']},
     'mastery-map':{icon:'🏆',title:'Your Mastery',desc:'See how rounded your wine knowledge is, built from what you\'ve read and the quizzes you\'ve passed.',bullets:['A rating for every wine type, region, grape and skill','Your strongest areas and your biggest gaps','The next thing to read or pass in each one']},
     'regions':{icon:'🗺️',title:'Every Region',desc:`You've unlocked your ${typeof FREE_REGION_CAP!=='undefined'?FREE_REGION_CAP:5} free regions. Pro opens every region you scan.`,bullets:['Region quizzes and articles for every wine you scan','How each place shapes the wine in your glass','Personalised pieces on the regions you drink']},
-    'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Unlimited label scans, and wine list scanning','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
+    'upgrade':{icon:'🍷',title:'Vinterest Pro',desc:'Everything in Vinterest, with nothing held back.',bullets:['Wine list scanning, and more scans each week','Every grape and region you meet, with quizzes and articles','Your full Mastery map and every wine type in WineDNA']},
     'expert-quiz':{icon:'🎓',title:'Expert Quizzes',desc:'Advanced wine knowledge questions with bigger XP rewards.',bullets:['WSET-inspired question sets','200 XP per completed quiz','Unlock Expert badge on your profile']},
   };
   const f=FEAT[feature]||FEAT['wine-list'];
@@ -297,7 +298,7 @@ function ProGate({feature,onClose}){
           <div onClick={()=>{Entitlement.startPro();onClose();}}
             style={{background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`,marginTop:2}}>
             <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>Upgrade to Pro</div>
-            <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£4.99/month · Cancel anytime</div>
+            <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>£3.99/month · Cancel anytime</div>
           </div>}
           <div style={{display:'flex',justifyContent:'center',gap:18,paddingBottom:4}}>
             <span onClick={onClose} style={{fontSize:16,color:C.mid,fontFamily:C.P,cursor:'pointer'}}>Maybe later</span>
@@ -311,9 +312,20 @@ function ProGate({feature,onClose}){
   );
 }
 
+/* The text colour for a solid fill: white or near-black, whichever reads better on it, so a filled
+   pill never has white on yellow or a colour on its own colour. Tinted pills (a wash of a colour) use
+   the screen's own text colour (T.ink) instead; the colour stays in the wash and the border. */
+function inkOn(bg){
+  const m=String(bg||'').match(/^#([0-9a-f]{6})$/i), p=m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):(String(bg).match(/\d+(\.\d+)?/g)||[]).slice(0,3).map(Number);
+  if(p.length<3) return '#fff';
+  const L=p.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }), lum=0.2126*L[0]+0.7152*L[1]+0.0722*L[2];
+  return (1.05/(lum+0.05))>=((lum+0.05)/(0.0075+0.05))?'#fff':'#151515';
+}
 function Pill({children,active,sm,style:s}){
-  const T=typeof useTheme==='function'?useTheme():null, cr=T?T.lift(C.cr):C.cr, mid=T?T.mid:C.mid, line=T?T.line:C.line;
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?cr:'transparent',color:active?'#fff':mid,border:`1px solid ${active?cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  const T=typeof useTheme==='function'?useTheme():null, mid=T?T.mid:C.mid, line=T?T.line:C.line;
+  // Filled, it's brand crimson (never the lifted pink, which white can't be read on) with the text that contrasts with the fill.
+  const fill=(s&&s.background)||C.cr;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?inkOn(fill):mid,border:`1px solid ${active?C.cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
   const T=typeof useTheme==='function'?useTheme():null;

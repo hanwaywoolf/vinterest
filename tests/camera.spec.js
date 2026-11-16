@@ -105,3 +105,26 @@ test('a camera without a torch shows no torch button', async ({ context, page })
   await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
   await expect(page.getByRole('button', { name: /torch/ })).toHaveCount(0);
 });
+
+// The free plan's 10 label scans a month: the camera says how many are left once it's 5 or fewer,
+// and with none left the shutter opens the Pro sheet instead of sending the photo.
+test('free scans: the count shows from 5 left, and the 11th scan opens the Pro sheet without sending anything', async ({ context, page }) => {
+  const reqs = [];
+  await stubNetwork(context, { claudeRequests: reqs });
+  const month = new Date().toISOString().slice(0, 7);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk', vinterest_scan_month: JSON.stringify({ m: month, n: 7 }) });
+  await page.goto(`${BASE}/#camera`);
+  await expect(page.getByTestId('scans-left')).toHaveText('3 free scans left this month');
+  await page.evaluate((m) => localStorage.setItem('vinterest_scan_month', JSON.stringify({ m, n: 10 })), month);
+  await page.goto(`${BASE}/#home`); await page.goto(`${BASE}/#camera`);
+  await expect(page.getByTestId('scans-left')).toHaveText('No free scans left this month');
+  await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
+  await page.getByLabel('Take photo').click();
+  await expect(page.locator('[data-sheet="pro"]')).toContainText("That's your 10 free scans this month");
+  expect(reqs.filter((r) => r.purpose === 'label_scan')).toHaveLength(0);
+  // Last month's count doesn't carry over.
+  await page.evaluate(() => localStorage.setItem('vinterest_scan_month', JSON.stringify({ m: '2020-01', n: 10 })));
+  await page.goto(`${BASE}/#home`); await page.goto(`${BASE}/#camera`);
+  await expect(page.locator('#root')).toContainText('Scan Wine');
+  await expect(page.getByTestId('scans-left')).toHaveCount(0);
+});

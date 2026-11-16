@@ -120,12 +120,18 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   await expect(page.getByTestId('team-state')).toBeVisible();
   const st = await page.evaluate(() => {
     const rows = TeamSales.get().rows;
-    return { me: TeamLearn.me().name, people: TeamLearn.people().length, cur: TeamData.currency(), venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
+    const me = TeamLearn.me(), mr = TeamLearn.readiness(me.id);
+    return { me: me.name, manager: { role: me.role, photo: me.photo, state: mr.state, pct: mr.pct }, people: TeamLearn.people().length, cur: TeamData.currency(), venue: TeamData.get().venue, allergens: TeamData.allergenCountry(),
       wines: TeamData.wines().length, cards: TeamData.wines().filter((w) => TeamData.card(w.id)).length, dishes: TeamData.dishes().length, pairings: TeamData.dishes().filter((x) => TeamData.pairing(x.id)).length,
       cocktails: TeamData.cocktails().length, mixCards: TeamData.cocktails().filter((c) => TeamData.cocktailCard(c.id)).length, glass: TeamData.wines().filter((w) => TeamData.byGlass(w)).length,
       demo: TeamSales.demo(), rows: rows.length, offList: rows.some((r) => /House Prosecco \(Events\)/.test(r.n) && !r.w) };
   });
-  expect(st.me).toBe('Elena Ruiz');
+  // The demo opens as the person it's shown to: Eloise's own head of food and beverage as its manager, with his photo,
+  // at the manager's stage of the invented team (about three quarters of the way, not yet ready).
+  expect(st.me).toBe('Cam Dryburgh');
+  expect(st.manager).toMatchObject({ role: 'manager', photo: 'brand/eloise/cam-dryburgh.jpg', state: 'not' });
+  expect(st.manager.pct).toBeGreaterThan(65);
+  expect((await page.request.get(`${BASE}/team/brand/eloise/cam-dryburgh.jpg`)).status()).toBe(200);
   expect(st.people).toBe(7);
   expect(st.cur).toMatchObject({ sym: '$', code: 'CAD' });
   expect(st.allergens).toBe('CA');
@@ -135,6 +141,32 @@ test('Eloise opens from ?seed=eloise on its own team, Canadian dollars and inven
   expect(st).toMatchObject({ wines: 76, cards: 76, dishes: 17, pairings: 17, cocktails: 10, mixCards: 10, glass: 12, demo: true, offList: true });
   expect(st.rows).toBeGreaterThan(1000);
   await expect(page.locator('#root')).not.toContainText('£');
+  // The allergens drafted from the menu are accepted for the demo (by "Demo data"), so Menu has nothing left to confirm.
+  expect(await page.evaluate(() => TeamData.dishes().every((x) => TeamData.allergensOf(x.id) != null) && TeamData.allergensOf('d-seared-scallop'))).toEqual(['shellfish']);
+  // A browser that opened an earlier copy, when the manager was Elena, starts again as Cam instead of keeping her
+  // with Cam added beside her; the same copy opened again keeps its team.
+  await page.evaluate(() => { const t = TeamLearn.team(), m = Object.values(t.people).find((p) => p.role === 'manager'); m.name = 'Elena Ruiz'; m.photo = 'faces/1.png'; TeamLearn._saveTeam(t); const d = TeamData.get(); d.venue.seeded = 'an-older-copy'; TeamData.save(d); });
+  await page.goto(`${BASE}/team/?seed=eloise`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => [TeamLearn.me().name, TeamLearn.people().length, TeamLearn.people().some((p) => p.name === 'Elena Ruiz')])).toEqual(['Cam Dryburgh', 7, false]);
+  // Shown to a prospect: the console's Wines section opens on their wines, without our sommelier review card
+  // (venue.console.hide); the questions it held stay out of the drill, and another restaurant still shows the card.
+  await page.goto(`${BASE}/team/?seed=eloise&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-wines')).toBeVisible();
+  await expect(page.getByTestId('console-sommelier')).toHaveCount(0);
+  await page.getByTestId('console-nav-menu').click();
+  await expect(page.getByTestId('menu-allergens').first()).toBeVisible();
+  await expect(page.getByTestId('menu-allergen-todo')).toHaveCount(0);
+  await page.getByTestId('console-nav-wines').click();
+  expect(await page.evaluate(() => TeamData.reviewed().held.length)).toBeGreaterThan(0);
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('console-sommelier')).toBeVisible();
+  // Admin never says what the training costs us to write: a prospect reads this screen.
+  await page.getByTestId('console-nav-admin').click();
+  await expect(page.getByText('Accounts and billing')).toBeVisible();
+  await expect(page.locator('#root')).not.toContainText(/Writing is the only cost|about 3p|under a penny/);
   expect(errors).toEqual([]);
 });
 
@@ -2503,5 +2535,68 @@ test('a short card has no written questions and the app still builds Essentials 
   const calls = asked.filter((b) => b.purpose === 'team_cards');
   expect(calls.length).toBe(Math.ceil(out.wines / 8));           // eight wines a call, not four
   expect(JSON.stringify(calls[0])).toContain('Write nothing else for a wine');
+  expect(errors).toEqual([]);
+});
+
+// The console's first-use tour: by itself on a person's first visit, a spotlight down the sidebar with a card at each
+// stop, each stop opening its section; nothing under it takes a click; Done (or Skip) is remembered for that person on the
+// device, and "Take the tour" at the sidebar's foot brings it back.
+test('the console tour: first visit only, each stop opens its section, skippable, and it comes back when asked', async ({ context, page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await stubNetwork(context);
+  await context.addInitScript(() => { window.VINTEREST_TOUR = 'real'; });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${BASE}/team/?seed=eloise&view=console`);
+  const card = page.getByTestId('console-tour-card');
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  await expect(card).toContainText("Welcome to Eloise's console");
+  await expect(page.getByTestId('console-tour-light')).toHaveCount(0);
+  const steps = await page.evaluate(() => TeamTour.steps().map((s) => s.id));
+  expect(steps).toEqual(['welcome', 'dash', 'sales', 'team', 'wines', 'cocktails', 'menu', 'upload', 'phone']);
+  await page.getByTestId('console-tour-next').click();
+  // each section's stop lights its place in the sidebar and opens the section behind the dimming
+  for (const [id, testid] of [['dash', 'console-dash'], ['sales', null], ['team', null], ['wines', 'console-wines']]) {
+    await expect(card).toHaveAttribute('data-step', id);
+    const nav = await page.getByTestId('console-nav-' + id).boundingBox();
+    await expect.poll(async () => { const light = await page.getByTestId('console-tour-light').boundingBox(); return Math.abs(light.y + light.height / 2 - (nav.y + nav.height / 2)); }).toBeLessThan(3); // once it has slid there
+    if (testid) await expect(page.getByTestId(testid)).toBeVisible();
+    // the card stays on screen and clear of the lit control
+    const box = await card.boundingBox();
+    expect(box.x).toBeGreaterThan(nav.x + nav.width); expect(box.y + box.height).toBeLessThanOrEqual(800);
+    if (id !== 'wines') await page.getByTestId('console-tour-next').click();
+  }
+  await expect(card).toContainText('4 of 8');
+  // a click meant for the page behind does nothing while the tour is up
+  await page.mouse.click(120, 400);
+  await expect(card).toHaveAttribute('data-step', 'wines');
+  await page.getByTestId('console-tour-back').click();
+  await expect(card).toHaveAttribute('data-step', 'team');
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowRight');
+  await expect(card).toHaveAttribute('data-step', 'upload');
+  await page.getByTestId('console-tour-next').click();
+  await expect(card).toHaveAttribute('data-step', 'phone');
+  await expect(page.getByTestId('console-tour-skip')).toHaveCount(0);
+  await expect(page.getByTestId('console-tour-next')).toHaveText('Done');
+  await page.getByTestId('console-tour-next').click();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  await page.reload(); // seen: it doesn't come back by itself
+  await expect(page.getByTestId('team-console')).toBeVisible();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  await page.getByTestId('console-tour-start').click(); // until asked
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  await page.getByTestId('console-tour-skip').click();
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
+  // a restaurant with no cocktails has no cocktail stop; on a narrow window the card sits at the foot
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await expect(card).toHaveAttribute('data-step', 'welcome');
+  expect(await page.evaluate(() => TeamTour.steps().some((s) => s.id === 'cocktails'))).toBe(false);
+  await page.getByTestId('console-tour-next').click();
+  await expect(card).toHaveAttribute('data-step', 'dash');
+  const foot = await card.boundingBox();
+  expect(foot.y + foot.height).toBeGreaterThan(760); expect(foot.x + foot.width).toBeLessThanOrEqual(390);
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('console-tour')).toHaveCount(0);
   expect(errors).toEqual([]);
 });

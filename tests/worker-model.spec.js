@@ -166,6 +166,33 @@ test('/tts: an unhurried pace, slower still for a name on its own', async () => 
   expect(oa.upstream[0].body.speed).toBe(0.9);
 });
 // A restaurant's demo address: its root opens the staff app, and its pages may call the voice and Claude.
+// Eloise's address is the page written for them, with the demo at /demo/ (VENUE_PAGES): the root and the page's own files
+// come from the Teams site, /demo/ is the staff app's files, and everything else is the Worker as usual.
+test('eloise.vinterest.team is the page written for them, with the staff app at /demo/', async () => {
+  const worker = await loadWorker(), asked = [], assets = [], realFetch = globalThis.fetch;
+  globalThis.fetch = async (u) => { asked.push(String(u)); return new Response('<h1>76 wines</h1>', { headers: { 'content-type': 'text/html' } }); };
+  const env = { ASSETS: { fetch: async (r) => { assets.push(new URL(r.url).pathname + new URL(r.url).search); return new Response('app'); } } };
+  const get = (path) => worker.fetch(new Request('https://eloise.vinterest.team' + path), env, { waitUntil() {} });
+  try {
+    const home = await get('/');
+    expect(await home.text()).toContain('76 wines');
+    expect(home.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+    await get('/site.css?v=1'); await get('/for/eloise.cards.json?v=2'); await get('/img/for/eloise.svg');
+    expect(asked).toEqual(['https://vinterest.team/for/eloise', 'https://vinterest.team/site.css?v=1', 'https://vinterest.team/for/eloise.cards.json?v=2', 'https://vinterest.team/img/for/eloise.svg']);
+    const bare = await get('/demo?view=console');
+    expect(bare.status).toBe(302); expect(bare.headers.get('location')).toBe('https://eloise.vinterest.team/demo/?view=console');
+    expect((await get('/team/?view=phone')).headers.get('location')).toBe('https://eloise.vinterest.team/demo/?view=phone');
+    const app = await get('/demo/?view=console');
+    expect(await app.text()).toBe('app'); expect(app.headers.get('cache-control')).toContain('no-cache');
+    await get('/demo/team.js?v=abc'); await get('/demo/brand/eloise/wordmark-white.svg'); await get('/fonts/fonts.css');
+    expect(assets).toEqual(['/team/?view=console', '/team/team.js?v=abc', '/team/brand/eloise/wordmark-white.svg', '/fonts/fonts.css']);
+    // another origin for the page, for a preview
+    asked.length = 0;
+    await worker.fetch(new Request('https://eloise.vinterest.team/'), { ...env, TEAMS_SITE_ORIGIN: 'https://x.vinterest-teams.pages.dev/' }, { waitUntil() {} });
+    expect(asked).toEqual(['https://x.vinterest-teams.pages.dev/for/eloise']);
+  } finally { globalThis.fetch = realFetch; }
+});
+
 test('socialcorner.vinterest.team opens the staff app and is an allowed origin', async () => {
   const worker = await loadWorker();
   const r = await worker.fetch(new Request('https://socialcorner.vinterest.team/'), {}, { waitUntil() {} });

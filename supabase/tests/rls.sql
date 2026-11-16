@@ -90,6 +90,11 @@ select pg_temp.check(pg_temp.refused('anon', null, $q$select public.use_quota('a
 select pg_temp.check(pg_temp.count_as('service_role', null, $q$select public.use_quota('bbbbbbbb-0000-0000-0000-00000000000b', 'wine_qa', 2)$q$) = 1, 'the meter counts the first call');
 select pg_temp.check(pg_temp.count_as('service_role', null, $q$select public.use_quota('bbbbbbbb-0000-0000-0000-00000000000b', 'wine_qa', 2)$q$) = 2, 'and the second');
 select pg_temp.check(pg_temp.count_as('service_role', null, $q$select coalesce(public.use_quota('bbbbbbbb-0000-0000-0000-00000000000b', 'wine_qa', 2), -1)$q$) = -1, 'the third is over the cap');
+-- The free plan's monthly scan meter (0009) is server-only too and stops at its cap.
+select pg_temp.check(pg_temp.refused('authenticated', :A, $q$select public.use_quota_month('aaaaaaaa-0000-0000-0000-00000000000a', 'label_scan:month', 10)$q$), 'A cannot run the monthly meter');
+select pg_temp.check(pg_temp.refused('anon', null, $q$select public.use_quota_month('aaaaaaaa-0000-0000-0000-00000000000a', 'label_scan:month', 10)$q$), 'signed-out cannot run the monthly meter');
+select pg_temp.check(pg_temp.count_as('service_role', null, $q$select public.use_quota_month('bbbbbbbb-0000-0000-0000-00000000000b', 'label_scan:month', 1)$q$) = 1, 'the monthly meter counts the first scan');
+select pg_temp.check(pg_temp.count_as('service_role', null, $q$select coalesce(public.use_quota_month('bbbbbbbb-0000-0000-0000-00000000000b', 'label_scan:month', 1), -1)$q$) = -1, 'and refuses past the month''s cap');
 select pg_temp.check((select count from public.usage_counters where user_id = :B and kind = 'wine_qa') = 2, 'a refused call is not counted');
 select pg_temp.check(pg_temp.count_as('service_role', null, $q$select coalesce(public.use_quota('bbbbbbbb-0000-0000-0000-00000000000b', 'list_scan', 0), -1)$q$) = -1, 'a cap of 0 refuses outright');
 select pg_temp.check(pg_temp.count_as('authenticated', :B, $q$select count::int from public.usage_counters where kind = 'wine_qa'$q$) = 2, 'B can read their own usage');

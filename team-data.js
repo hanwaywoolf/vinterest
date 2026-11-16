@@ -596,7 +596,13 @@ const TeamSample = {
     // and question id, which a new copy keeps, so testing carries on where it was instead of starting again.
     // The Larkspur is invented from end to end, so an older copy of it is replaced whole (its team, progress and
     // sales seeded again): a visitor from the website always meets the demo as it now is.
-    const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0;
+    // Unless the invented manager it was seeded with (Elena, the Larkspur's) is no longer in the new copy's team, as at
+    // Eloise, whose manager became the person the demo is shown to: the device would go on opening as her with the new
+    // manager added beside her, so it starts again like a first visit. Someone who set themselves up is always kept.
+    const newStaff=s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:[]), lower=x=>String(x||'').toLowerCase(), inNew=new Set(newStaff.map(p=>lower(p.name)));
+    const invented=new Set(this.DEMO_STAFF.filter(p=>p.role==='manager').map(p=>lower(p.name)));
+    const sameMgr=!newStaff.length||!TeamLearn.people().some(p=>p.role==='manager'&&invented.has(lower(p.name))&&!inNew.has(lower(p.name)));
+    const keep=which!=='demo'&&(TeamData.get().venue||{}).sample===which&&TeamLearn.people().length>0&&sameMgr;
     // A changed demo story (TeamDemo.STORY) re-invents a kept restaurant's sales, which are demo data too; its team's progress stays.
     const story=s=>(String(s||'').match(/\|story(\d+)$/)||[])[1]||null, newStory=keep&&story((TeamData.get().venue||{}).seeded)!==String(TeamDemo.STORY);
     // The installed restaurant's own details (city, style, currency, brand) come with it; the list file is
@@ -647,7 +653,8 @@ const TeamSample = {
     TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); return true; },
   // The Larkspur's team (photos in team/faces/). The manager is first, so the demo opens as her.
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
-     Worker's VENUE_HOSTS sends that address's root to /team/. Null anywhere else. */
+     Worker's VENUE_HOSTS sends that address's root to /team/; eloise.vinterest.team is in its VENUE_PAGES instead: the page
+     written for Eloise at the root, this app at /demo/. Null anywhere else. */
   HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','eloise.vinterest.team':'eloise','demo.vinterest.team':'demo'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
@@ -715,7 +722,8 @@ const TeamDemo = {
     const PLAN={Claire:{to:100,checks:[14,0.93]},Elena:{to:76,checks:[8,0.88]},David:{to:100,checks:[9,0.89]},Dani:{to:82,checks:[7,0.86]},
       Marco:{to:62,stale:0.35,wasReady:20,checks:[6,0.5]},Priya:{to:36,overdue:true,checks:[3,0.67]},Amara:{to:18,newbie:true}};
     const pct=pid=>TeamLearn.readiness(pid).pct;
-    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||{to:60}, days=plan.newbie?4:40, steps=plan.newbie?1:3;
+    // A manager under another name (an install shown to its own manager, as Eloise's is) takes the manager's place in the plan.
+    ppl.forEach(p=>{ const plan=PLAN[String(p.name).split(' ')[0]]||(p.role==='manager'?PLAN.Elena:{to:60}), days=plan.newbie?4:40, steps=plan.newbie?1:3;
       dishes(p.id,menu.slice(0,Math.round(menu.length*Math.min(1,plan.to/100+0.1))),now-(plan.newbie?2:5)*this.DAY);
       if(mixes.length) mixes.slice(0,Math.round(mixes.length*plan.to/100)).forEach(c=>spacedQs(p.id,qsOf(p,c.id,true),days,steps));
       // Someone meant to be ready learns until they are (a figure that rounds to 100% can still be one part short).
@@ -779,6 +787,35 @@ const TeamBrand = {
 };
 Object.assign(window,{TeamBrand});
 
+/* The console's first-use tour (team-console.jsx, _CTour): a spotlight that steps down the sidebar, one section at a
+   time, saying what each is for. It starts by itself the first time a person opens the console on a device and comes
+   back from "Take the tour" at the sidebar's foot. Who has seen it is kept per person on the device (vbiz_tour_v1,
+   never synced). The steps are data here so the screen only draws them: `k` is the section a step opens and lights,
+   `target` another control to light instead (the view switch); a step with neither is a card on its own. */
+const TeamTour = {
+  KEY:'vbiz_tour_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  // People are numbered afresh in every restaurant, so who has seen it is kept per restaurant and person.
+  _key(pid){ const v=TeamData.get().venue||{}; return `${v.sample||v.name||''}:${pid}`; },
+  seen(pid){ return !!this._all()[this._key(pid)]; },
+  done(pid){ if(!pid) return; const a=this._all(); a[this._key(pid)]=Date.now(); Store.setJSON(this.KEY,a); },
+  /* Whether it should open unasked: never in tests or wherever the page turns it off (window.VINTEREST_TOUR = 'off'). */
+  due(pid){ try{ if(typeof window!=='undefined'&&window.VINTEREST_TOUR==='off') return false; }catch(e){} return !!pid&&!this.seen(pid); },
+  steps(){ const v=TeamData.get().venue||{}, name=v.name||'your restaurant', mixes=TeamData.cocktails().length>0;
+    const demoSales=typeof TeamSales!=='undefined'&&TeamSales.demo&&TeamSales.demo();
+    return [
+      {id:'welcome',title:`Welcome to ${name}'s console`,text:`This is where you run wine training for ${name}: who knows what, what sells, and what the team learns next. A quick tour of each section takes about a minute.`},
+      {id:'dash',k:'dash',title:'Start here each day',text:'What needs attention, who is ready for the floor and what the team should learn first. Every figure opens the people or wines behind it.'},
+      {id:'sales',k:'sales',title:'What your sales say',text:'The week in a few lines: what sold, and whether the people selling it know it.'+(demoSales?' These figures are demo data until your POS is connected.':'')},
+      {id:'team',k:'team',title:'Who is ready',text:'Each person against the minimum for their role, and how deep the training goes for servers, bartenders and sommeliers. Add people here.'},
+      {id:'wines',k:'wines',title:'Your list, wine by wine',text:'Open any wine for the card your team learns from: what to say at the table, how it tastes, what to pour it with and how to say its name.'},
+      ...(mixes?[{id:'cocktails',k:'cocktails',title:'Your cocktails',text:'What goes into each one, how it tastes and what guests ask about it.'}]:[]),
+      {id:'menu',k:'menu',title:'Your dishes and their wines',text:'Each dish with the wines to pour and a pick by the glass. Allergens are confirmed here before anyone is asked about them.'},
+      {id:'upload',k:'upload',title:'Keeping it current',text:'A new list, a new menu or a photo of a label becomes a draft. Nothing reaches the team until you publish it.'},
+      {id:'phone',target:'console-view-toggle',title:'See what your team sees',text:'Switch to the phone view to try the daily drill, open a wine card and practise with a guest at the table. You can take this tour again any time.'},
+    ]; },
+};
+Object.assign(window,{TeamTour});
 /* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
    synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
    stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */

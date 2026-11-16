@@ -55,7 +55,7 @@ function TeamApp(){
     posRef.current[stack.length]=scrollNow(); pendRef.current=0; setStack(s=>[...s,v]); };
   const consoleOn=set&&manager&&(forceConsole||wantConsole||size!=='phone')&&!phoneView;
   const toPhone=v=>{ setPhoneView(true); setWantConsole(false); setStack([]); if(v&&v.pid&&TeamLearn.person(v.pid)) TeamLearn.setMe(v.pid); if(v&&v.tab) setTab(v.tab); else setTab('today'); if(v&&v.view==='drill') setStack([{view:'drill',only:v.only,part:v.part}]); refresh(); };
-  if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary><TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection}/></ScreenErrorBoundary></div></DeckTheme.Provider>;
+  if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary><TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/></ScreenErrorBoundary></div></DeckTheme.Provider>;
   const back=()=>{ pendRef.current=posRef.current[stack.length-1]||0; setStack(s=>s.slice(0,-1)); };
   const top=stack[stack.length-1];
   let body;

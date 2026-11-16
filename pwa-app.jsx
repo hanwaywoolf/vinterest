@@ -128,6 +128,7 @@ function App(){
   // background, not the app's. Keep the page background the colour of whatever sits at the bottom
   // of the screen: dark under the welcome and camera screens, white under the nav. Otherwise a
   // dark screen shows a white bar beneath it.
+  const stripRef=React.useRef(null);
   React.useEffect(()=>{
     let raf=0;
     const sync=()=>{ cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{
@@ -136,8 +137,13 @@ function App(){
         return ''; };
       const c=at(window.innerHeight-2);
       if(c){ document.documentElement.style.backgroundColor=c; document.body.style.backgroundColor=c; }
+      // In the apps the page runs edge to edge (Android 16 enforces it, and setting the status bar's own
+      // colour no longer works there), so the strip behind the clock is the shell's top padding. It's
+      // brand crimson, as Chrome draws the web app's bar from its theme-color, never the shell's light
+      // background (a white bar over a dark screen); the status bar's icons then turn white for it.
+      const strip=stripRef.current, topCol=strip&&strip.offsetHeight>0?C.cr:'';
       // The phone's status bar takes the colour at the top of the screen, with icons to suit.
-      const top=at(2)||c; if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
+      const top=topCol?'rgb('+[1,3,5].map(k=>parseInt(topCol.slice(k,k+2),16)).join(',')+')':(at(2)||c); if(top){ const m=top.match(/\d+/g)||[], [r,g,b]=m.map(Number), hex='#'+[r,g,b].map(x=>(x||0).toString(16).padStart(2,'0')).join('');
         Platform.statusBar(hex,(0.299*r+0.587*g+0.114*b)<128); }
     }); };
     sync(); const t=setTimeout(sync,350);
@@ -170,6 +176,8 @@ function App(){
 
   return(
     <div style={{width:'100%',maxWidth:isTablet?'100%':430,height:'100%',margin:'0 auto',background:(screen==='camera')?'#0A0A0A':C.bg,display:'flex',flexDirection:'column',position:'relative',overflow:'hidden',boxSizing:'border-box',paddingTop:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)'}}>
+      {/* The strip behind the phone's status bar, in brand crimson as the web app's bar is (see the effect above). */}
+      <div ref={stripRef} aria-hidden="true" data-testid="status-strip" style={{position:'absolute',top:0,left:0,right:0,height:(screen==='onboarding'||screen==='camera')?0:'env(safe-area-inset-top)',background:C.cr,pointerEvents:'none'}}/>
       <DeckTheme.Provider value={theme}><div key={dataGen} style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',minHeight:0}}>
         {screen==='onboarding' && <NewUserFlow onComplete={()=>{Settings.setOnboarded();nav('home');}}/>}
         {screen==='home'      && <HomeScreen {...ctx}/>}

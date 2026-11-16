@@ -210,6 +210,7 @@ export function render(a, o) {
 ${o.logo ? `.pr-pair .them { height: ${logoH}px; } .pr-for img { height: ${heroH}px; }
 @media (max-width: 760px) { .pr-pair .them { height: auto; max-width: ${Math.min(190, Math.round(logoH * o.aspect))}px; flex-basis: ${Math.min(190, Math.round(logoH * o.aspect))}px; } }` : `.pr-pair .them-name { color: #fff; font-size: 15px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .pr-for b { color: #fff; font-size: 20px; letter-spacing: .04em; }`}
 </style>
+<noscript><style>.pour-wait h1 em { opacity: 1; transform: none; }</style></noscript>
 </head>
 <body>
 
@@ -220,7 +221,7 @@ ${o.logo ? `.pr-pair .them { height: ${logoH}px; } .pr-for img { height: ${heroH
   </div>
 </header>
 
-<section class="pr-hero${stack ? ' stack' : ''}">
+<section class="pr-hero pour-wait${stack ? ' stack' : ''}">
   <div class="wrap">
     <div>
     <div class="pr-for"><span>Prepared for</span>${o.logo ? `<img src="/img/for/${o.logo}?v=%%IMG_V%%" alt="${esc(a.name)}${a.city ? ', ' + esc(a.city) : ''}">` : `<b>${esc(a.name)}</b>`}</div>
@@ -228,7 +229,7 @@ ${o.logo ? `.pr-pair .them { height: ${logoH}px; } .pr-for img { height: ${heroH
     <p class="lead">${f.bottleOnly > f.wines / 2 ? `${say(Math.round(f.bottleOnly / f.wines * 10), true)} in ten of your wines are bottle only, so they sell` : 'Your bottle-only wines carry the bigger spend, and they sell'} when someone on the floor can say why. Here's what your list says, what knowing it could be worth, and a working demo built from it.</p>
     <div class="cta"><a class="btn primary" href="${esc(o.demo)}" target="_blank" rel="noopener">Open your demo</a><a class="btn ghost" href="#worth">See what it's worth</a></div>
     </div>
-    <div class="cellar" style="--cols: ${cols14}; --cols-m: ${colsM}" data-cellar="forList" data-sym="${sym}" data-top="${f.topAt}" data-cards="/for/${o.slug}.cards.json?v=%%CARDS_V%%" data-cards-demo="${esc(o.demo)}"></div>
+    <div class="cellar" style="--cols: ${cols14}; --cols-m: ${colsM}" data-pour data-cellar="forList" data-sym="${sym}" data-top="${f.topAt}" data-cards="/for/${o.slug}.cards.json?v=%%CARDS_V%%" data-cards-demo="${esc(o.demo)}"></div>
   </div>
 </section>
 <script type="application/json" id="forList">%%LIST%%</script>

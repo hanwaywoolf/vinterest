@@ -91,9 +91,17 @@ const Shops={
   async match(wine){
     const gl=FindOnline.country();
     if(!gl||!wine||!wine.name) return null;
+    // Only a switched-on shop with a product feed for their country has bottles to match (the Worker says the same).
+    if(!this.config().retailers.some(r=>r.enabled&&r.feed&&r.country===gl)) return null;
     const k=this.MATCH_PREFIX+[gl,wine.producer,wine.name,wine.vintage].map(x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-')).join('|').slice(0,160);
     const hit=Cache.get(k,null);
     if(hit&&hit.at&&Date.now()-hit.at<this.MATCH_MS) return hit.data;
+    // One request per wine at a time: the scan story's end sheet looks it up early and the card asks again.
+    this._busy=this._busy||{};
+    if(this._busy[k]) return this._busy[k];
+    return (this._busy[k]=this._match(gl,wine,k).finally(()=>{ delete this._busy[k]; }));
+  },
+  async _match(gl,wine,k){
     try{
       const r=await fetch(Platform.api('/shop-match'),{method:'POST',headers:{'content-type':'application/json'},
         body:JSON.stringify({country:gl,wine:{name:wine.name,producer:wine.producer||'',vintage:wine.vintage||null,region:wine.region||'',country:wine.country||'',type:wine.type||'',grapes:wine.grapes||[]}})});

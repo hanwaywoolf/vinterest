@@ -504,7 +504,12 @@ const VinterestDemo = {
     const driveBlind = (b) => {
       lastBlindP = BLIND_AT + b * (BLIND_END - BLIND_AT);
       window.__demoPortal = el.querySelector('[data-portal]');
-      if (!blindOpened && b >= 0.02) { blindOpened = true; _until(() => _tapText(el, /Play Blind Call/), 40); }
+      if (!blindOpened && b >= 0.02) {
+        blindOpened = true; _until(() => _tapText(el, /Play Blind Call/), 40);
+        // The sliders appear a moment after the tap. If the caption's animation has already stopped by
+        // then (a slow machine), nothing would move them, so set them to where p is once they exist.
+        _until(() => { if (!el.querySelector('[role="slider"][aria-label="Body"]')) return false; if (blindOpened) driveBlind((lastBlindP - BLIND_AT) / (BLIND_END - BLIND_AT)); return true; }, 40);
+      }
       [['Body', 0.08, 0.28], ['Acidity', 0.28, 0.48], ['Tannins', 0.48, 0.68]].forEach(([name, a, z]) => {
         const sl = el.querySelector('[role="slider"][aria-label="' + name + '"]');
         if (!sl || b < a) return;
