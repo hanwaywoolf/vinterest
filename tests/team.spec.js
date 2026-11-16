@@ -2876,6 +2876,14 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
   expect((await order()).right[1]).toBe('c2-upside');
   await page.getByTestId('c2-board-reset').click(); expect(await order()).toEqual({ left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'] });
+  // Team's cards for a person sit two across and move the same way: About swapped in front of Where they stand.
+  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('console-nav-team').click();
+  expect((await order()).detail).toEqual(['c2-stands', 'c2-sells', 'c2-next', 'c2-vinny', 'c2-bespoke']);
+  { const g2 = page.locator('[data-k="c2-sells"] [data-testid="c2-grip"]'); await g2.scrollIntoViewIfNeeded(); const a = await g2.boundingBox(), t = await page.locator('[data-k="c2-stands"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 30, Math.min(880, Math.max(90, t.y + 80)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
+  await expect.poll(async () => (await order()).detail.slice(0, 2)).toEqual(['c2-sells', 'c2-stands']);
+  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
   // The navigation can go back along the top, and be hidden again.

@@ -102,19 +102,20 @@ const _c2Brief=(n,keep)=>(TeamReport.salesBrief()||[]).filter(b=>!keep||keep.inc
    is dragged by the grip that shows at its top edge, within its column or into another; where each sits is kept per
    person (TeamBoard). `children` gets each stack ready to place: S => layout. */
 let _c2Pid='';
-function _C2Board({page,stacks,children}){ const T=useTheme(), acc=_c2Acc(T), ids=Object.keys(stacks), els={}, def={}, pid=_c2Pid;
+function _C2Board({page,stacks,children,across}){ const T=useTheme(), acc=_c2Acc(T), ids=Object.keys(stacks), els={}, def={}, pid=_c2Pid;
   ids.forEach(id=>{ def[id]=[]; React.Children.toArray(stacks[id].props.children).forEach(el=>{ if(!React.isValidElement(el)) return; const k=el.props.testid||String(el.key).replace(/^\.\$?/,''); els[k]=el; def[id].push(k); }); });
   const [,bump]=React.useReducer(x=>x+1,0), [drag,setDrag]=React.useState(null), [over,setOver]=React.useState(null);
   const lay=TeamBoard.arrange(TeamBoard.saved(pid,page),def), end=()=>{ setDrag(null); setOver(null); };
   const drop=e=>{ e.preventDefault(); e.stopPropagation(); if(drag&&over) TeamBoard.move(pid,page,def,drag,over.id,over.k,over.after); end(); bump(); };
-  const S={}; ids.forEach(id=>{ S[id]=<div key={id} data-testid={'c2-stack-'+id} onDragOver={e=>{ if(!drag) return; e.preventDefault(); if(!over||over.id!==id||over.k) setOver({id,k:null}); }} onDrop={drop}
-      style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,flex:1,minHeight:drag?60:0,borderRadius:18,outline:drag&&over&&over.id===id&&!over.k?`2px dashed ${_alpha(acc,0.6)}`:'none',outlineOffset:4}}>
+  // A stack is a column by default; `across` makes it a grid of that many columns, where a card with `span` takes more than one.
+  const S={}; ids.forEach(id=>{ const n=Math.max(1,(across&&across[id])||1); S[id]=<div key={id} data-testid={'c2-stack-'+id} onDragOver={e=>{ if(!drag) return; e.preventDefault(); if(!over||over.id!==id||over.k) setOver({id,k:null}); }} onDrop={drop}
+      style={{...(n>1?{display:'grid',gridTemplateColumns:`repeat(${n},minmax(0,1fr))`,alignItems:'stretch'}:{display:'flex',flexDirection:'column'}),gap:16,minWidth:0,flex:1,minHeight:drag?60:0,borderRadius:18,outline:drag&&over&&over.id===id&&!over.k?`2px dashed ${_alpha(acc,0.6)}`:'none',outlineOffset:4}}>
     {lay[id].map(k=>{ const el=els[k], here=over&&over.k===k&&drag!==k, grow=el.props.style&&el.props.style.flex; return <div key={k} data-testid="c2-drag" data-k={k}
-        onDragOver={e=>{ if(!drag) return; e.preventDefault(); e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(), after=e.clientY>r.top+r.height/2; if(!over||over.k!==k||over.after!==after) setOver({id,k,after}); }} onDrop={drop}
-        style={{position:'relative',minWidth:0,display:'flex',flexDirection:'column',flex:grow?1:'none',opacity:drag===k?0.45:1}}>
+        onDragOver={e=>{ if(!drag) return; e.preventDefault(); e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(), wideCard=n<2||r.width>0.6*e.currentTarget.parentElement.clientWidth, after=wideCard?e.clientY>r.top+r.height/2:e.clientX>r.left+r.width/2; e.currentTarget.dataset.side=wideCard?'y':'x'; if(!over||over.k!==k||over.after!==after) setOver({id,k,after}); }} onDrop={drop}
+        style={{position:'relative',minWidth:0,display:'flex',flexDirection:'column',flex:n>1?undefined:grow?1:'none',gridColumn:n>1?`span ${Math.min(n,el.props.span||1)}`:undefined,opacity:drag===k?0.45:1}}>
       <div className="c2grip" data-testid="c2-grip" role="button" aria-label="Drag to move this card" title="Drag to move this card" draggable onDragStart={e=>{ try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',k); const w=e.currentTarget.parentElement; e.dataTransfer.setDragImage(w,w.offsetWidth/2,8); }catch(x){} setTimeout(()=>setDrag(k),0); }} onDragEnd={end}><span/><span/><span/></div>
-      {here&&<div style={{position:'absolute',left:0,right:0,[over.after?'bottom':'top']:-10,height:4,borderRadius:2,background:acc,zIndex:7}}/>}
-      {el}</div>; })}</div>; });
+      {here&&(n>1&&!(el.props.span>1)?<div style={{position:'absolute',top:0,bottom:0,[over.after?'right':'left']:-10,width:4,borderRadius:2,background:acc,zIndex:7}}/>:<div style={{position:'absolute',left:0,right:0,[over.after?'bottom':'top']:-10,height:4,borderRadius:2,background:acc,zIndex:7}}/>)}
+      {n>1?React.cloneElement(el,{style:{...(el.props.style||{}),flex:1}}):el}</div>; })}</div>; });
   return <>{children(S)}{TeamBoard.changed(pid,page,def)&&<div style={{textAlign:'right',marginTop:10}}><span role="button" data-testid="c2-board-reset" onClick={()=>{ TeamBoard.reset(pid,page); bump(); }} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Reset this page's layout</span></div>}</>; }
 function _C2Split({left,children,two}){ return <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2fr)':'minmax(0,1fr)',gap:16,alignItems:'stretch'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{left}</div><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{children}</div></div>; }
 const _c2Grid=(n,two)=>({display:'grid',gridTemplateColumns:`repeat(${two?n:Math.min(n,2)},minmax(0,1fr))`,gap:16,alignItems:'stretch'});
@@ -431,7 +432,8 @@ function _C2Menu({open,setSection,me,two,wide}){ const T=useTheme(), acc=_c2Acc(
       <_C2Kpi testid="c2-kpi-described" label="Dishes described" value={TeamData.dishes().filter(x=>TeamData.dishCard(x.id)).length} unit={`of ${ps.length}`} note="with a line the team can say to a guest"/>
     </div>
     <div style={{display:'grid',gridTemplateColumns:wide?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
-      <div style={{display:wide?'flex':'grid',gridTemplateColumns:wide?undefined:`repeat(${two?2:1},minmax(0,1fr))`,alignItems:wide?undefined:'stretch',flexDirection:'column',gap:16,minWidth:0,position:wide?'sticky':'static',top:16,...(wide?{maxHeight:'calc(var(--c2h, 800px) - 32px)',overflowY:'auto',scrollbarWidth:'thin',paddingRight:4}:{})}} data-testid="c2-side">
+      <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,position:wide?'sticky':'static',top:16,...(wide?{maxHeight:'calc(var(--c2h, 800px) - 32px)',overflowY:'auto',scrollbarWidth:'thin',paddingRight:4}:{})}} data-testid="c2-side">
+        <_C2Board page="menu" across={{side:wide?1:two?2:1}} stacks={{side:<>
         <_C2Card feat title="Needs you on the menu" testid="c2-menu-needs">{needs.length?<_C2Needs items={needs} open={open} tagW={86}/>:<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing on the menu needs you right now.</div>}</_C2Card>
         <_C2Card title="How far pairing training has spread" testid="c2-pair-spread"><div style={{display:'flex',flexDirection:'column',gap:18}}>
           <_C2Spread label="The wine by the glass for each dish" sp={TeamReport.spread('pairGlass')} unit="glass pairing" open={open} act="Few can offer the glass for"/>
@@ -441,6 +443,7 @@ function _C2Menu({open,setSection,me,two,wide}){ const T=useTheme(), acc=_c2Acc(
           <_C2Row><div style={{flex:1}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>Allergens</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{al?'On: the kitchen confirms each dish, then every role holds it at 100%.':'Off: managed in your kitchen\'s own system. Nobody is asked about one here.'}</div></div>
             <div role="switch" aria-checked={al} data-testid="c2-allergens-switch" onClick={()=>{ TeamData.setSetting('allergens',!al); bump(); }} style={{width:38,height:22,borderRadius:11,background:al?acc:'rgba(255,255,255,0.16)',position:'relative',cursor:'pointer',flexShrink:0}}><div style={{position:'absolute',top:2,left:al?18:2,width:18,height:18,borderRadius:9,background:al?_c2Ink():'#fff',transition:'left .15s'}}/></div></_C2Row>
         </_C2Card>
+        </>}}>{S=>S.side}</_C2Board>
       </div>
       <div ref={listRef} style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,scrollMarginTop:16}}>
         <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>{FILTERS.map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-menu-filter-'+k))}<span style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {ps.length}</span></div>
@@ -539,7 +542,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
           <div style={{flex:1,minWidth:160}}><div style={{fontSize:22,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.person.name}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[x.person.role].label} · last drill {_cAgo(x.lastDrill)}</div>
             <div role="button" data-testid="c2-open-person" onClick={()=>open({view:'person',id:x.person.id})} style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:4,cursor:'pointer'}}>Everything {name} has learnt, wine by wine →</div></div>
           <div style={{textAlign:'right'}}><div style={{fontSize:36,fontWeight:600,lineHeight:1.1,color:st.col,fontFamily:C.P}}>{x.r.pct}%</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{x.r.state==='ready'?'Ready for service':x.r.behind?`${x.r.behind} days behind the plan`:x.r.state==='slipping'?'Slipping below the minimum':'Not ready yet'}</div></div></div></_C2Card>
-        <div style={_c2Grid(2,two)}>
+        <_C2Board page="team" across={{detail:two?2:1}} stacks={{detail:<>
           <_C2Card title={`Where ${name} stands`} testid="c2-stands">{x.areas.map(a=>_c2Area(T,a))}<div style={{fontSize:12,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:12}}>The white line is the minimum for a {TeamLearn.ROLES[x.person.role].label.toLowerCase()}. {x.areas.every(a=>a.met)?`Every area is past its line, so ${name} is ready.`:`${name} is ready once ${x.areas.filter(a=>!a.met).map(a=>a.label.toLowerCase()).join(' and ')} ${x.areas.filter(a=>!a.met).length===1?'is':'are'} past the line.`}</div>
             {(()=>{ const wl=TeamReport.whatsLeft(x.person.id); return wl.length>0&&<div data-testid="c2-left" style={{marginTop:14,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.08)'}}>{_c2Lab(T,`What ${name} trains on next`)}
               {wl.map((a,i)=><div key={a.k} data-testid="c2-left-row" style={{display:'flex',gap:12,padding:'8px 0',borderTop:i?'1px solid rgba(255,255,255,0.05)':'none'}}>
@@ -552,12 +555,10 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             <div style={{marginTop:12,paddingTop:4,borderTop:'1px solid rgba(255,255,255,0.08)'}}>{TeamReport.about(x.person.id).rows.map((a,i)=><div key={i} data-testid="c2-about-row" role={a.open?'button':undefined} onClick={a.open?()=>open(a.open):undefined} style={{display:'flex',gap:12,padding:'7px 0',borderTop:i?'1px solid rgba(255,255,255,0.05)':'none',cursor:a.open?'pointer':'default'}}>
               <div style={{width:132,flexShrink:0,fontSize:12,letterSpacing:'0.04em',color:a.tone?_C2_TONE[a.tone]:T.mid,fontFamily:C.P,fontWeight:500,paddingTop:1}}>{a.label}</div><div style={{flex:1,fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{a.text}{a.open?<span style={{color:acc}}> →</span>:null}</div></div>)}</div>
           </_C2Card>
-        </div>
-        <_C2Card title={`${name}'s next step`} testid="c2-next" right={pl&&pl.items.length?<div role="button" data-testid="c2-push" onClick={()=>!done&&push()} style={{padding:'7px 14px',borderRadius:10,fontSize:13,fontWeight:500,fontFamily:C.P,cursor:done?'default':'pointer',whiteSpace:'nowrap',background:done?'transparent':acc,color:done?_C2_TONE.good:_c2Ink(),border:done?`1px solid ${_alpha(_C2_TONE.good,0.4)}`:'none'}}>{done?`✓ First in ${name}'s drills`:`Push to ${name}`}</div>:null}>
+        <_C2Card span={2} title={`${name}'s next step`} testid="c2-next" right={pl&&pl.items.length?<div role="button" data-testid="c2-push" onClick={()=>!done&&push()} style={{padding:'7px 14px',borderRadius:10,fontSize:13,fontWeight:500,fontFamily:C.P,cursor:done?'default':'pointer',whiteSpace:'nowrap',background:done?'transparent':acc,color:done?_C2_TONE.good:_c2Ink(),border:done?`1px solid ${_alpha(_C2_TONE.good,0.4)}`:'none'}}>{done?`✓ First in ${name}'s drills`:`Push to ${name}`}</div>:null}>
           {pl&&pl.items.length?<><div style={{..._c2Grid(4,two),gap:14}}>{[['Train on',`${pl.items.length} ${pl.label.toLowerCase()}`],['Moves',`${pl.label} ${pl.known} → ${pl.to} of ${pl.total}`],['Readiness',pl.pctAfter>pl.pct?`${pl.pct}% → about ${pl.pctAfter}%`:`${pl.pct}%, already ready`],['Takes',`about ${pl.drills} drill${pl.drills===1?'':'s'}`]].map(([l,v])=><div key={l}><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{l}</div><div style={{fontSize:16,fontWeight:500,color:T.ink,fontFamily:C.P,marginTop:2}}>{v}</div></div>)}</div>
             <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:10}}>{pl.items.map(y=>y.name).join(', ')}</div></>
           :<div style={{fontSize:14,color:_C2_TONE.good,fontFamily:C.P}}>{name} is trained on everything the role sells.</div>}</_C2Card>
-        <div style={_c2Grid(2,two)}>
           <_C2Card feat={!draft} title={`Ask Vinny for a plan for ${name}`} testid="c2-vinny">
             <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>Say what {name} needs in your own words. Vinny writes new questions from your list, your menu and what {name} gets wrong. You read it, then push it.</div>
             <div style={{position:'relative'}}><textarea aria-label={`What does ${name} need?`} data-testid="c2-vinny-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); write(); } }} rows={3} placeholder={`${name} is struggling with…`} style={{width:'100%',boxSizing:'border-box',resize:'vertical',padding:'12px 44px 12px 14px',borderRadius:12,border:`1px solid ${_alpha(acc,0.4)}`,background:'rgba(0,0,0,0.35)',color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.5,outline:'none'}}/>
@@ -573,7 +574,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:12,color:T.mid,fontFamily:C.P}}><span>{pr.finished?'Every part finished':`On part ${pr.next+1}: ${p.parts[pr.next].title}`}</span><span role="button" data-testid="c2-bespoke-remove" onClick={()=>{ if(confirm(`Take "${p.title}" away from ${name}? Their answers stay.`)){ TeamPlans.discard(p.id); bump(); } }} style={{cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Remove</span></div></div>; })
             :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing pushed to {name} yet. A plan you push appears on {name}'s phone as its own training, apart from the daily drill, and its progress shows here.</div>}
           </_C2Card>
-        </div>
+        </>}}>{S=>S.detail}</_C2Board>
         {draft&&<_C2PlanDraft plan={draft} bump={bump} onPush={()=>{ TeamPlans.push(draft.id); bump(); refresh&&refresh(); }} onDiscard={()=>{ TeamPlans.discard(draft.id); bump(); }}/>}
       </div>
     </div>
