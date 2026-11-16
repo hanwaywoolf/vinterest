@@ -815,11 +815,21 @@ const TeamBoard = {
   saved(pid,page){ return ((this._all()[pid]||{})[page])||null; },
   arrange(saved,def){ const ids=Object.keys(def), all=new Set(ids.flatMap(id=>def[id])), out={}, seen=new Set(); ids.forEach(id=>{ out[id]=((saved||{})[id]||[]).filter(k=>all.has(k)&&!seen.has(k)&&seen.add(k)); });
     ids.forEach(id=>def[id].forEach((k,i)=>{ if(seen.has(k)) return; const before=def[id].slice(0,i).reverse().find(x=>out[id].includes(x)); out[id].splice(before?out[id].indexOf(before)+1:0,0,k); seen.add(k); })); return out; },
+  /* Every change keeps what was there before it (the last HIST of them), so a move or a reset can be undone. */
+  HKEY:'vbiz_console_boards_undo', HIST:20,
+  _set(pid,page,lay,keep=true){ const all=this._all(), h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page;
+    if(keep){ (h[k]=h[k]||[]).push(((all[pid]||{})[page])||null); h[k]=h[k].slice(-this.HIST); Store.setJSON(this.HKEY,h); }
+    if(lay) (all[pid]=all[pid]||{})[page]=lay; else if(all[pid]) delete all[pid][page]; Store.setJSON(this.KEY,all); },
   /* Move a card to a stack, before `at` (a card key) or, with `after`, behind it; with no `at`, to the stack's end. */
-  move(pid,page,def,key,to,at,after){ const lay=this.arrange(this.saved(pid,page),def); Object.keys(lay).forEach(id=>{ lay[id]=lay[id].filter(k=>k!==key); }); if(!lay[to]) return lay;
-    const i=at&&at!==key?lay[to].indexOf(at):-1; lay[to].splice(i<0?lay[to].length:i+(after?1:0),0,key); const all=this._all(); (all[pid]=all[pid]||{})[page]=lay; Store.setJSON(this.KEY,all); return lay; },
+  move(pid,page,def,key,to,at,after){ const lay=this.arrange(this.saved(pid,page),def), was=JSON.stringify(lay); Object.keys(lay).forEach(id=>{ lay[id]=lay[id].filter(k=>k!==key); }); if(!lay[to]) return null;
+    const i=at&&at!==key?lay[to].indexOf(at):-1; lay[to].splice(i<0?lay[to].length:i+(after?1:0),0,key); if(JSON.stringify(lay)===was) return null; this._set(pid,page,lay); return lay; },
   changed(pid,page,def){ const s=this.saved(pid,page); return !!s&&JSON.stringify(this.arrange(s,def))!==JSON.stringify(def); },
-  reset(pid,page){ const all=this._all(); if(all[pid]){ delete all[pid][page]; Store.setJSON(this.KEY,all); } },
+  canUndo(pid,page){ return (((Store.getJSON(this.HKEY,{})||{})[pid+'|'+page])||[]).length>0; },
+  undo(pid,page){ const h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page; if(!(h[k]||[]).length) return false; const prev=h[k].pop(); Store.setJSON(this.HKEY,h); this._set(pid,page,prev,false); return true; },
+  /* Back to the page's own layout; that too can be undone. */
+  reset(pid,page){ if(this.saved(pid,page)) this._set(pid,page,null); },
+  /* Whether a card that needs `fit` pixels of width goes into a stack `width` wide laid `across` columns (a card that spans them all gets the whole width). */
+  fits(fit,width,across=1,span=1){ if(!fit) return true; const n=Math.max(1,across), cell=n>1&&span<n?(width-16*(n-1))/n:width; return cell>=fit-1; },
 };
 Object.assign(window,{TeamDemo,TeamJobs,TeamLayout,TeamBoard});
 Object.assign(window,{TeamData,TeamSample});

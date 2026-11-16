@@ -2860,9 +2860,12 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(500, 400); await page.mouse.move(3, 400); await expect(drawer).toHaveAttribute('data-open', '1');
   expect(await left()).toBe(before); // a layer over the page: nothing moved across
   await page.getByTestId('console-nav-sales').click(); await expect(drawer).toHaveAttribute('data-open', '0');
-  await expect(page.getByTestId('c2-section-title')).toHaveText('Sales Insights'); await expect(page.getByTestId('console-sales')).toBeVisible();
-  // The mouse leaving the open drawer closes it; the menu button opens it where there's no mouse.
-  await page.getByTestId('c2-nav-button').click(); await expect(drawer).toHaveAttribute('data-open', '1');
+  await expect(page.getByTestId('console-sales')).toBeVisible();
+  // No bar across the top: the page runs full height, and the section's name leads the sentence at its head.
+  await expect(page.getByTestId('c2-top')).toHaveCount(0); await expect(page.getByTestId('c2-head')).toContainText('Sales Insights');
+  expect(await page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(60);
+  // The mouse leaving the open drawer closes it; the small tab on the edge opens it too, and the drawer says who is signed in.
+  await page.getByTestId('c2-nav-tab').click(); await expect(page.getByTestId('c2-nav-me')).toContainText('Elena'); await expect(drawer).toHaveAttribute('data-open', '1');
   await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
   // Drag "Where the next £ is" from the left column to the top of the right one.
   const order = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="c2-stack-"]')].map(s => [s.getAttribute('data-testid').slice(9), [...s.querySelectorAll(':scope>[data-testid="c2-drag"]')].map(d => d.getAttribute('data-k'))])));
@@ -2872,25 +2875,38 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(gb.x + 24, gb.y + 8); await page.mouse.down(); await page.mouse.move(gb.x + 60, gb.y + 30, { steps: 5 }); await page.waitForTimeout(80);
   await page.mouse.move(tb.x + 200, Math.min(880, Math.max(90, tb.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up();
   await expect.poll(order).toEqual({ top: ['c2-mix'], left: ['sales-brief'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
-  // It's kept: another section and back, and after a reload.
+  // A mistake is one step back: Undo (or Ctrl+Z) puts the card where it was, and the move can be made again.
+  await expect(page.getByTestId('c2-board-note')).toContainText('Card moved');
+  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['sales-brief', 'c2-upside']);
+  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] };
+    TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-servers', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
   await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
   expect((await order()).right[1]).toBe('c2-upside');
+  // A card only goes where it fits: Best sellers needs the full width, so the narrow left column won't take it.
+  expect(await page.evaluate(() => [TeamBoard.fits(860, 430), TeamBoard.fits(860, 1300), TeamBoard.fits(420, 900, 2), TeamBoard.fits(520, 900, 2), TeamBoard.fits(520, 900, 2, 2)])).toEqual([false, true, true, false, true]);
+  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="sales-brief"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 100, Math.min(880, Math.max(40, t.y + 40)), { steps: 10 }); await page.waitForTimeout(150);
+    await expect(page.getByTestId('c2-stack-left')).toHaveAttribute('data-fits', 'no'); await expect(page.getByTestId('c2-stack-top')).toHaveAttribute('data-fits', 'yes');
+    await page.mouse.up(); await page.waitForTimeout(200); }
+  expect((await order()).bottom).toEqual(['sales-wines']);
+  // It's kept: another section and back, and after a reload.
   await page.getByTestId('c2-board-reset').click(); expect(await order()).toEqual({ top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
   // Team's cards for a person sit two across and move the same way: About swapped in front of Where they stand.
-  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-team').click();
   expect((await order()).detail).toEqual(['c2-stands', 'c2-sells', 'c2-next', 'c2-vinny', 'c2-bespoke']);
   { const g2 = page.locator('[data-k="c2-sells"] [data-testid="c2-grip"]'); await g2.scrollIntoViewIfNeeded(); const a = await g2.boundingBox(), t = await page.locator('[data-k="c2-stands"]').boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
     await page.mouse.move(t.x + 30, Math.min(880, Math.max(90, t.y + 80)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
   await expect.poll(async () => (await order()).detail.slice(0, 2)).toEqual(['c2-sells', 'c2-stands']);
-  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
   // The full-width tables move too: the dishes table on Menu and Best sellers on Sales Insights are cards like the rest.
   expect((await order()).main).toEqual(['c2-dishes']); await expect(page.locator('[data-k="c2-dishes"] [data-testid="c2-grip"]')).toHaveCount(1);
   expect(await page.evaluate(() => { const def = { top: ['c2-mix'], left: ['a'], right: ['b'], bottom: ['sales-wines'] }; return TeamBoard.arrange({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] }, def); })).toEqual({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] });
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
   // The navigation can go back along the top, and be hidden again.
-  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('c2-nav-top').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(0);
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('c2-nav-top').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(0);
   await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toBeVisible();
   await page.getByTestId('c2-nav-side').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(1);
   expect(errors).toEqual([]); await ctx.close();
