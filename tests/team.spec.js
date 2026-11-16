@@ -2885,6 +2885,21 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   expect(errors).toEqual([]); await ctx.close();
 });
 
+// With no mouse, a small tab on the left edge opens the navigation, and a touch outside it closes it.
+test('the new console on a touch screen: a tab on the left edge opens the navigation', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1194, height: 834 }, hasTouch: true, isMobile: true });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const drawer = page.getByTestId('c2-nav-drawer'), tab = page.getByTestId('c2-nav-tab');
+  await expect(tab).toBeVisible(); expect((await tab.boundingBox()).x).toBe(0);
+  await tab.tap(); await expect(drawer).toHaveAttribute('data-open', '1'); await expect(tab).toHaveCount(0);
+  await page.touchscreen.tap(800, 500); await expect(drawer).toHaveAttribute('data-open', '0');
+  await tab.tap(); await page.getByTestId('console-nav-wines').tap(); await expect(page.getByTestId('console-wines')).toBeVisible(); await expect(drawer).toHaveAttribute('data-open', '0');
+  expect(errors).toEqual([]); await ctx.close();
+});
+
 // Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
 // exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
 test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
