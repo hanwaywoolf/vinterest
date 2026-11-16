@@ -424,7 +424,6 @@ footer a { text-decoration: none; }
 /* The way in sits under the laptop, never over the demo it plays. */
 .laptop .lhint { display: block; margin: 22px auto 0; }
 .lid:focus-visible { outline: 3px solid var(--neon); outline-offset: 3px; }
-.dside .explore { margin-top: 18px; }
 @media (min-width: 861px) {
   .dgrid { display: grid; grid-template-columns: minmax(260px, .72fr) 1.6fr; gap: 40px; align-items: center; }
   .dgrid .laptop { width: 100%; }
@@ -442,7 +441,6 @@ footer a { text-decoration: none; }
 @media (max-width: 860px) {
   .dgrid .tabs button span { display: none; }
   .dgrid .tabs button b { font-weight: 600; }
-  .dside .explore { display: flex; margin: 0 auto 14px; }
 }
 
 /* The live demo, full screen. */
