@@ -421,10 +421,9 @@ footer a { text-decoration: none; }
 /* The console demo: the tabs as a list beside the laptop, each saying what's on screen; the laptop
    opens the live demo. On a phone the tabs go back to a row over the laptop, with the line under it. */
 .lid[data-demo-open] { cursor: pointer; position: relative; }
-.lid .hint { position: absolute; left: 50%; bottom: 26px; transform: translate(-50%, 6px); padding: 8px 14px; border-radius: 999px; background: rgba(15, 15, 15, .82); color: #fff; font-size: 13px; font-weight: 600; border: 1px solid rgba(255,255,255,.18); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap; backdrop-filter: blur(6px); }
-.lid:hover .hint, .lid:focus-visible .hint { opacity: 1; transform: translate(-50%, 0); }
+/* The way in sits under the laptop, never over the demo it plays. */
+.laptop .lhint { display: block; margin: 22px auto 0; }
 .lid:focus-visible { outline: 3px solid var(--neon); outline-offset: 3px; }
-@media (hover: none) { .lid .hint { opacity: 1; transform: translate(-50%, 0); } }
 .dside .explore { margin-top: 18px; }
 @media (min-width: 861px) {
   .dgrid { display: grid; grid-template-columns: minmax(260px, .72fr) 1.6fr; gap: 40px; align-items: center; }
