@@ -2847,6 +2847,44 @@ for (const [W, H, name] of [[1194, 834, 'on its side'], [834, 1194, 'upright']])
   expect(errors).toEqual([]); await ctx.close();
 });
 
+// The new console's navigation starts hidden at the left edge and slides over the page, never pushing it across;
+// and a page's cards can be dragged by their grip, within a column or into another, kept per person, with a way back.
+test('the new console: navigation hidden at the left edge, and cards dragged to a new place', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
+  const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
+  await page.mouse.move(500, 400); await page.mouse.move(3, 400); await expect(drawer).toHaveAttribute('data-open', '1');
+  expect(await left()).toBe(before); // a layer over the page: nothing moved across
+  await page.getByTestId('console-nav-sales').click(); await expect(drawer).toHaveAttribute('data-open', '0');
+  await expect(page.getByTestId('c2-section-title')).toHaveText('Sales Insights'); await expect(page.getByTestId('console-sales')).toBeVisible();
+  // The mouse leaving the open drawer closes it; the menu button opens it where there's no mouse.
+  await page.getByTestId('c2-nav-button').click(); await expect(drawer).toHaveAttribute('data-open', '1');
+  await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
+  // Drag "Where the next £ is" from the left column to the top of the right one.
+  const order = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="c2-stack-"]')].map(s => [s.getAttribute('data-testid').slice(9), [...s.querySelectorAll(':scope>[data-testid="c2-drag"]')].map(d => d.getAttribute('data-k'))])));
+  expect(await order()).toEqual({ left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'] });
+  const g = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g.scrollIntoViewIfNeeded();
+  const gb = await g.boundingBox(), tb = await page.locator('[data-k="sales-servers"]').boundingBox();
+  await page.mouse.move(gb.x + 24, gb.y + 8); await page.mouse.down(); await page.mouse.move(gb.x + 60, gb.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+  await page.mouse.move(tb.x + 200, Math.min(880, Math.max(90, tb.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up();
+  await expect.poll(order).toEqual({ left: ['sales-brief'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'] });
+  // It's kept: another section and back, and after a reload.
+  await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
+  expect((await order()).right[1]).toBe('c2-upside');
+  await page.getByTestId('c2-board-reset').click(); expect(await order()).toEqual({ left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'] });
+  // A new card the page gains later joins its own column, and one it loses is dropped.
+  expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
+  // The navigation can go back along the top, and be hidden again.
+  await page.getByTestId('c2-nav-button').click(); await page.getByTestId('c2-nav-top').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(0);
+  await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toBeVisible();
+  await page.getByTestId('c2-nav-side').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(1);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
 // Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
 // exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
 test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
