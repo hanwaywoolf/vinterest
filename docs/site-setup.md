@@ -5,6 +5,12 @@ the app (`npm run build` -> `dist/`): its own Cloudflare Pages project, its own 
 
 ## Cloudflare Pages project
 
+The project is `vinterest-site`. Every push of a branch builds a preview of the site, and Cloudflare posts
+its address on the branch's pull request ("Deploying vinterest-site", Preview URL:
+`https://<deploy id>.vinterest-site.pages.dev`). The address changes with each push, so read it from the pull
+request (or its `Cloudflare Pages: vinterest-site` check) rather than building it from the branch name.
+vinterest.app changes only when something is merged to `main`.
+
 | Setting | Value |
 | --- | --- |
 | Framework preset | None |
