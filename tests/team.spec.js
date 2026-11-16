@@ -2828,6 +2828,25 @@ test('the console on a phone: one page of key figures from every section', async
   expect(errors).toEqual([]); await ctx.close();
 });
 
+// On an iPad the new console keeps every section in reach and nothing is cut off: a table too wide for its card
+// scrolls sideways inside it, and the page itself never runs off the side.
+for (const [W, H, name] of [[1194, 834, 'on its side'], [834, 1194, 'upright']]) test(`the new console on an iPad ${name}: every section reachable, no table cut off`, async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: W, height: H } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  if (W > 1000) expect(await page.getByTestId('console-nav-admin').evaluate(el => el.parentElement.scrollWidth <= el.parentElement.clientWidth + 1)).toBe(true);
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) {
+    await page.getByTestId('console-nav-' + k).click(); await page.waitForTimeout(250);
+    const r = await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), cut = [];
+      sc.querySelectorAll('table').forEach(t => { const w = t.parentElement, c = t.closest('[data-testid]'); if (t.getBoundingClientRect().right > c.getBoundingClientRect().right + 1 && getComputedStyle(w).overflowX !== 'auto') cut.push(c.getAttribute('data-testid')); });
+      return { side: sc.scrollWidth - sc.clientWidth, cut }; });
+    expect(r, k).toEqual({ side: 0, cut: [] });
+  }
+  expect(errors).toEqual([]); await ctx.close();
+});
+
 // Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
 // exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
 test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
