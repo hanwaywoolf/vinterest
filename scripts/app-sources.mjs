@@ -74,6 +74,7 @@ export const TEAM_SOURCES = [
   'team-vinny.js',
   'team-shift.js',
   'team-plans.js',
+  'team-buyer.js',
   'team-screens.jsx',
   'team-shift.jsx',
   'team-vinny.jsx',

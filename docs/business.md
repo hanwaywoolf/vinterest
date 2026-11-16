@@ -914,3 +914,13 @@ joined the list). What someone did in the demo moves with it. A real restaurant'
 behind, what she sells most, how much of it is wine she's trained on, what she sells without training, the team's
 best sellers she hasn't sold, answers fading, when she last practised, and her surprise re-checks. The Wines list
 keeps its header row in view while it scrolls.
+
+## The buyer's Wines page and the Training page
+
+In the console's new look the Wines page is written for whoever buys and prices the list, and training has a page of its own.
+
+Wines opens on how much of wine sales the top five bring in, then five figures: the top five's share, wines with no sale in four weeks, wines to sell through before their drinking window closes, the usual markup against a shop price, and gaps in the price ladder. Under them: what needs the buyer (each a fact, then what to do), the list's balance by colour, country, region or grape against each one's share of sales, the price ladder for each colour with its gaps and crowded prices, and the list itself with drinking window, dishes on the menu, glasses and bottles sold, shop price and markup. All of it is worked out on the device by `TeamBuyer` with no call.
+
+"Ask Vinny to review the list" is one call. Vinny reads the list against the menu and the sales as a buyer would and returns an estimate of each bottle's shop price, dishes the menu lacks that a wine on the list could sell, dishes the list serves badly with the style of wine they want, what a guest would look for and not find, and wines worth cutting. Only wines and dishes that exist are kept. Shop prices are estimates and the page says so; in a demo restaurant they're invented until Vinny is asked, and a live restaurant has no markup column until then.
+
+Training gathers what was spread over Team, Wines and Menu: who is ready, each person's glasses, bottles, pairings and menu against their minimum, their next step with Push (and Push everyone's), what training is worth from the restaurant's own sales, how far training has spread, and the bespoke tracks. Team keeps the person-by-person view, where Vinny writes a plan.

@@ -398,12 +398,13 @@ const TeamReport = {
       if(near.length) add('note',`${near.slice(0,3).map(x=>`${f(x)} ${x.r.pct}%`).join(', ')} within reach of ready`);
       if(behind.length) add('bad',`${f(behind[0])} is ${behind[0].r.behind} day${behind[0].r.behind===1?'':'s'} behind the training plan`);
       if(up&&up.total>=1) add('good',`Training the rest on your top sellers: about ${m(up.total)} more a week`); }
-    else if(section==='wines'){ const rows=this.coverage().rows.filter(x=>x.of>0), ok=rows.filter(x=>x.knows>=Math.ceil(x.of/2)), gaps=rows.filter(x=>x.knows<Math.ceil(x.of/2));
-      out.pre='Your team is trained on '; out.strong=`${ok.length} of ${rows.length}`; out.post=' wines.';
-      if(s){ const by=Object.fromEntries(byWine.map(x=>[x.wine.id,x.revenue])), g=gaps.reduce((a,x)=>a+(by[x.wine.id]||0),0); if(g>0) add('note',`The other ${gaps.length} took ${m(g)} this week with few servers trained on them`); }
-      const ad=this.adoption(); if(ad.length) add('note',`${ad.length} new arrival${ad.length===1?'':'s'}: ${TeamData.nick(ad[0].wine)}, ${ad[0].knows} of ${ad[0].of} trained on it`);
-      const old=TeamData.wines().filter(w=>{ const x=TeamData.window(w); return x&&x.stage==='old'; }).length; if(old) add('bad',`${old} past ${old===1?'its':'their'} best`);
-      const hole=this.coverage().holes[0]; if(hole) add('note',`${TeamData.nick(hole.wine)} by the glass: ${hole.knows} of ${hole.of} trained on it`); }
+    else if(section==='wines'){ const B=TeamBuyer, c=B.concentration(), ws=B.wines(), bal=B.balance('colour'), mk=B.markups(), win=B.windows();
+      if(c&&c.total>0){ out.pre='Your top five wines bring in '; out.strong=`${Math.round(100*c.share)}%`; out.post=' of wine sales.'; }
+      else { out.pre='Your list has '; out.strong=`${ws.length} wines`; out.post=`, ${ws.filter(TeamData.byGlass).length} of them by the glass.`; }
+      const over=bal.find(g=>g.flag==='over'), under=bal.find(g=>g.flag==='under');
+      if(over) add('note',`${over.key} is ${Math.round(100*over.share)}% of the list and ${Math.round(100*over.salesShare)}% of sales`); else if(under) add('good',`${under.key} is ${Math.round(100*under.share)}% of the list and ${Math.round(100*under.salesShare)}% of sales`);
+      if(c&&c.dead.length) add('bad',`${c.dead.length} wine${c.dead.length===1?' hasn\'t':'s haven\'t'} sold in four weeks`); else if(win.past.length+win.soon.length) add('note',`${win.past.length+win.soon.length} to sell through before they tire`);
+      if(mk) add('note',`Bottles are usually ${mk.median.toFixed(1)} times their shop price`); }
     else if(section==='menu'){ const ps=this.pairings().filter(x=>x.first), gOk=ps.filter(x=>x.glassOk).length, bOk=ps.filter(x=>x.bottleOk).length, withSold=ps.filter(x=>x.sold!=null), avg=k=>withSold.reduce((a,x)=>a+(x[k]||0),0)/Math.max(1,withSold.length);
       if(withSold.length){ const a=avg('sold'), frac=a>=0.45?'One table in two':a>=0.29?'One table in three':a>=0.22?'One table in four':'One table in five';
         out.strong=frac; out.post=' orders the wine you suggest.';

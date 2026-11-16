@@ -2650,21 +2650,37 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
   await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
-  // Wines follows the other pages: five figures, each filtering the list or opening a plan; what needs the manager
-  // as what's so and what to do; glasses and bottles sold apart; training's spread with room to grow.
-  await page.getByTestId('c2-kpi-trained').click(); expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
-  await expect(page.getByTestId('c2-wine-filter-few')).toHaveAttribute('aria-pressed', 'true');
+  // Wines is the buyer's page: five figures about the list itself, each opening what it's about; what needs the
+  // buyer as what's so and what to do; the list's balance against its sales; the price ladder; markup against the shop.
   await page.getByTestId('c2-wine-filter-all').click();
-  await expect(page.getByTestId('c2-list')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-list')).toContainText('Bottles sold');
+  await expect(page.getByTestId('c2-kpi-topfive')).toContainText('%'); await expect(page.getByTestId('c2-kpi-markup')).toContainText('×');
+  await page.getByTestId('c2-kpi-through').click(); await expect(page.getByTestId('c2-wine-filter-through')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
+  await page.getByTestId('c2-wine-filter-all').click();
+  for (const t of ['Glasses sold', 'Bottles sold', 'Drinking window', 'On the menu', 'Shop price', 'Markup']) await expect(page.getByTestId('c2-list')).toContainText(t);
   expect(await page.getByTestId('c2-wine-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
-  await expect(page.getByTestId('c2-list-known').getByTestId('c2-spread')).toHaveCount(2);
+  expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
+  const colours = await page.getByTestId('c2-balance').innerText();
+  await page.getByTestId('c2-balance-grape').click(); expect(await page.getByTestId('c2-balance').innerText()).not.toBe(colours);
+  expect(await page.getByTestId('c2-ladder-row').count()).toBeGreaterThan(2); await expect(page.getByTestId('c2-ladder')).toContainText('Gap:');
+  // What the page says is what TeamBuyer worked out: the list's shares add up, and a markup is the bottle over its shop price.
+  expect(await page.evaluate(() => { const b = TeamBuyer.balance('colour'), m = TeamBuyer.markups(), w = TeamBuyer.wines()[0], k = TeamBuyer.markup(w); return [Math.round(100 * b.reduce((a, g) => a + g.share, 0)), Math.abs(k.x - TeamBuyer._m(w.bottle) / k.retail) < 0.01, m.source]; })).toEqual([100, true, 'demo']);
+  // Training has left this page: who is trained on a wine is on the Training page.
+  await expect(page.getByTestId('c2-list').locator('thead')).not.toContainText(/trained/i);
   // The list's header row stays in view as the list scrolls under it.
   expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
-  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 1500; });
+  await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-list"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 600; });
   expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(4);
   await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
-  await page.getByTestId('c2-wine-needs').getByTestId('c2-need').first().click(); await expect(page.getByTestId('c2-plan')).toBeVisible(); await page.getByTestId('c2-plan-close').click();
   await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
+  // Training: everything about training in one place. Each person's areas and next step, pushed from here; a person opens on Team.
+  await page.getByTestId('console-nav-training').click();
+  await expect(page.getByTestId('c2-training-row')).toHaveCount(7);
+  for (const t of ['Glasses', 'Bottles', 'Pairings', 'Menu', 'Next step']) await expect(page.getByTestId('c2-training-people')).toContainText(t);
+  await expect(page.getByTestId('c2-training-spread').getByTestId('c2-spread')).toHaveCount(4);
+  await page.getByTestId('c2-training-push').first().click(); await expect(page.getByTestId('c2-training-push').first()).toContainText('Pushed');
+  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible(); await page.getByTestId('c2-tracks-close').click();
+  await expect(page.getByTestId('c2-training')).not.toContainText(/know(s|n)? it|known by|the floor|overdue/i);
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
   await page.getByTestId('console-nav-menu').click();
   await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);
@@ -2765,6 +2781,28 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   await card.getByText(/Carry on|Start/).click(); await expect(page.getByTestId('team-drill')).toBeVisible();
   expect(errors).toEqual([]);
   await ctx.close();
+});
+
+// Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
+// exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
+test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = []; let fail = true;
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: (b) => { if (b.purpose !== 'team_buyer') return ''; if (fail) { fail = false; return 'no'; }
+    const text = b.messages[0].content, ws = [...text.matchAll(/^(w-[^ ]+) \|/mg)].map(m => m[1]), ds = [...text.matchAll(/^(d-[^ ]+) \| ([^|\n]+)/mg)];
+    return JSON.stringify({ retail: [{ id: ws[0], price: 20 }, { id: 'w-nothing', price: 9 }], missing_dishes: [{ wine: ws[1], dish: 'Grilled sardines on toast', why: 'Its salt and acidity want oily fish.' }, { wine: ws[1], dish: ds[0][2].split(',')[0].trim(), why: 'Already here.' }, { wine: 'w-nothing', dish: 'Soup', why: 'x' }],
+      weak_dishes: [{ dish: ds[1][1], why: 'Nothing on the list has the weight for it.', wants: 'a ripe, fuller white with some oak' }, { dish: 'd-nothing', why: 'x', wants: 'y' }], gaps: [{ what: 'A red under £45', why: 'The cheapest red is a jump from the house pour.' }], cut: [{ wine: ws[2], why: 'It overlaps and hasn\'t sold.' }] }); } });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('console-nav-wines').click();
+  await page.getByTestId('c2-buyer-ask').click(); await expect(page.getByTestId('c2-buyer-error')).toBeVisible();
+  await page.getByTestId('c2-buyer-ask').click(); const res = page.getByTestId('c2-buyer-result'); await expect(res).toBeVisible();
+  await expect(res).toContainText('Grilled sardines on toast'); await expect(res).toContainText('Wants a ripe, fuller white with some oak'); await expect(res).toContainText('A red under £45');
+  const sent = reqs.filter(r => r.purpose === 'team_buyer'); expect(sent).toHaveLength(2); expect(sent[0].messages[0].content).toContain('The Larkspur');
+  const kept = await page.evaluate(() => { const r = TeamBuyer.reviewed(), id = Object.keys(r.retail)[0]; return { retail: Object.keys(r.retail).length, missing: r.missing.length, weak: r.weak.length, cut: r.cut.length, source: TeamBuyer.markups().source, shop: TeamBuyer.retail(TeamData.wine(id)) }; });
+  expect(kept).toMatchObject({ retail: 1, missing: 1, weak: 1, cut: 1, source: 'estimate', shop: { price: 20 } });
+  await expect(page.getByTestId('c2-kpi-markup')).toContainText('Vinny');
+  expect(errors).toEqual([]); await ctx.close();
 });
 
 // "Pairings" means the wine for the dish, never the menu on its own: Vinny's test and a bespoke plan asked for

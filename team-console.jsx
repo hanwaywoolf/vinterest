@@ -6,7 +6,7 @@
    so it can be checked on a phone. Sales figures are labelled "Demo data" while the till is the
    demo's invented sales (TeamSales.demo). */
 const CONSOLE_SECTIONS=[
-  {k:'dash',label:'Dashboard',icon:'home'},{k:'sales',label:'Sales Insights',icon:'cart'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
+  {k:'dash',label:'Dashboard',icon:'home'},{k:'sales',label:'Sales Insights',icon:'cart'},{k:'team',label:'Team',icon:'user'},{k:'training',label:'Training',icon:'bolt',only:()=>TeamData.consoleLook()==='preview'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera'},{k:'pos',label:'Integrations',icon:'bolt'},{k:'admin',label:'Admin',icon:'edit'},
 ];
 // Money on the console is written in full with its thousands grouped ("$12,480"), never shortened to "12.5k".
