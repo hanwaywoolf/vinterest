@@ -2907,6 +2907,17 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   // The full-width tables move too: the dishes table on Menu and Best sellers on Sales Insights are cards like the rest.
   expect((await order()).main).toEqual(['c2-dishes']); await expect(page.locator('[data-k="c2-dishes"] [data-testid="c2-grip"]')).toHaveCount(1);
   expect(await page.evaluate(() => { const def = { top: ['c2-mix'], left: ['a'], right: ['b'], bottom: ['sales-wines'] }; return TeamBoard.arrange({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] }, def); })).toEqual({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] });
+  // Every side card moved under the table: the empty column folds away and the table takes the page's width; a drag brings it back to drop into.
+  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { side: ['c2-menu-needs', 'c2-pair-spread', 'c2-trains'], main: ['c2-dishes'] };
+    for (const k of def.side) TeamBoard.move(pid, 'menu', def, k, 'main', null, true); });
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-sales').click(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click();
+  expect((await order()).main).toEqual(['c2-dishes', 'c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  await expect(page.getByTestId('c2-side')).toHaveCount(0); await expect(page.getByTestId('c2-stack-side')).toHaveCount(0);
+  expect(await page.evaluate(() => { const h = document.querySelector('[data-testid="c2-head"]').parentElement.getBoundingClientRect(), d = document.querySelector('[data-k="c2-dishes"]').getBoundingClientRect(); return d.width > h.width - 120; })).toBe(true);
+  { const g4 = page.locator('[data-k="c2-trains"] [data-testid="c2-grip"]'); await g4.scrollIntoViewIfNeeded(); const a = await g4.boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(150);
+    await expect(page.getByTestId('c2-stack-side')).toHaveCount(1); await page.mouse.up(); await page.keyboard.press('Escape'); }
+  await page.getByTestId('c2-board-reset').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
   // The navigation can go back along the top, and be hidden again.

@@ -123,7 +123,9 @@ function _C2Board({page,stacks,children,across}){ const T=useTheme(), acc=_c2Acc
       {here&&(n>1&&!(el.props.span>1)?<div style={{position:'absolute',top:0,bottom:0,[over.after?'right':'left']:-10,width:4,borderRadius:2,background:acc,zIndex:7}}/>:<div style={{position:'absolute',left:0,right:0,[over.after?'bottom':'top']:-10,height:4,borderRadius:2,background:acc,zIndex:7}}/>)}
       {n>1?React.cloneElement(el,{style:{...(el.props.style||{}),flex:1}}):el}</div>; })}</div>; });
   const can=TeamBoard.canUndo(pid,page), chg=TeamBoard.changed(pid,page,def), link={fontSize:13,fontFamily:C.P,cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3};
-  return <>{children(S)}
+  // A column whose cards have all been moved out folds away, so the rest take its width; while a card is dragged it's back as a place to drop.
+  const E={}; ids.forEach(id=>{ E[id]=!drag&&!lay[id].length; });
+  return <>{children(S,E)}
     {(can||chg)&&<div data-testid="c2-board-bar" style={{display:'flex',justifyContent:'flex-end',gap:18,marginTop:12}}>
       {can&&<span role="button" data-testid="c2-board-undo" onClick={undo} style={{...link,color:T.ink2}}>Undo the last move</span>}
       {chg&&<span role="button" data-testid="c2-board-reset" onClick={reset} style={{...link,color:T.mid}}>Back to the default layout</span>}</div>}
@@ -219,7 +221,7 @@ function _C2Dash({open,setSection,me,two,jump}){ const T=useTheme(), acc=_c2Acc(
             {off.length>0&&<><span style={{color:T.mid}}>86'd</span><span>{off.map(x=>x.name).join(', ')}</span></>}
             {tn.note&&<><span style={{color:T.mid}}>Note</span><span>{tn.note}</span></>}</div>}
           <div style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:10}}>{st.empty?'Set tonight →':'Change tonight →'}</div></_C2Card>
-    </>}}>{S=><>{S.top}<div style={{display:'grid',gridTemplateColumns:two?'minmax(0,2fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,marginTop:16,alignItems:'stretch'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.main}</div><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.side}</div></div></>}</_C2Board>
+    </>}}>{(S,E)=><>{S.top}<div style={{display:'grid',gridTemplateColumns:two&&!E.main&&!E.side?'minmax(0,2fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,marginTop:16,alignItems:'stretch'}}>{!E.main&&<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.main}</div>}{!E.side&&<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.side}</div>}</div></>}</_C2Board>
   </div>; }
 
 /* ── Sales Insights ── */
@@ -279,7 +281,7 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
         <td style={num}>{x.glasses||<span style={{color:T.mid}}>—</span>}</td><td style={num}>{x.bottles||<span style={{color:T.mid}}>—</span>}</td><td style={{...num,fontWeight:500}}>{_cMoney(x.revenue)}</td>
         <td style={{...num,color:d==null?T.mid:d>=0?_C2_TONE.good:_C2_TONE.bad,fontWeight:500}}>{d==null?'—':`${d>=0?'+':'−'}${Math.abs(d)}%`}</td>
         <td style={td}><_C2Knowers people={kb.people} of={kb.of} size={22}/></td><td style={num}>{upBy[x.wine.id]?`+${_cMoney(upBy[x.wine.id])}`:'—'}</td></tr>; })}</tbody></table></div></_C2Card>
-    </>}}>{S=><div style={{display:'flex',flexDirection:'column',gap:16}}>{S.top}<_C2Split two={two} left={S.left}>{S.right}</_C2Split>{S.bottom}</div>}</_C2Board>
+    </>}}>{(S,E)=><div style={{display:'flex',flexDirection:'column',gap:16}}>{S.top}{E.left||E.right?<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{E.left?S.right:S.left}</div>:<_C2Split two={two} left={S.left}>{S.right}</_C2Split>}{S.bottom}</div>}</_C2Board>
   </div>; }
 
 /* The classic section's editor, kept under a fold so nothing the console could do is lost in the new look. */
@@ -363,7 +365,7 @@ function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), B=T
           <_C2Ladder open={open} two={two}/>
           {odd.length>0&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:10,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.08)'}}><span style={{fontWeight:500,color:T.ink}}>Glass against bottle:</span> most of your wines are about {odd[0].med.toFixed(1)} glasses to the bottle price. {odd.slice(0,2).map(o=>`The ${TeamData.nick(o.w)} is ${o.r.toFixed(1)} (${o.w.glass} a glass, ${o.w.bottle} a bottle), so its glass looks ${o.dear?'dear':'cheap'}`).join('; ')}.</div>}
         </_C2Card>
-    </>}}>{S=><div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.left}</div><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.right}</div></div>}</_C2Board>
+    </>}}>{(S,E)=><div style={{display:'grid',gridTemplateColumns:two&&!E.left&&!E.right?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>{!E.left&&<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.left}</div>}{!E.right&&<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{S.right}</div>}</div>}</_C2Board>
     <div ref={listRef} style={{marginTop:16,scrollMarginTop:16}}>
       <_C2Card title="The list" right={has?'sold in the last 7 nights · tap a wine for its card':'tap a wine for its card'} testid="c2-list" sub={<div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginTop:12}}>
         <input aria-label="Find a wine" data-testid="c2-wine-find" value={q} onChange={e=>setQ(e.target.value)} placeholder="Find a wine, grape or region…" style={{width:250,padding:'8px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.14)',background:'transparent',color:T.ink,fontFamily:C.P,fontSize:14,outline:'none'}}/>
@@ -465,7 +467,7 @@ function _C2Menu({open,setSection,me,two,wide}){ const T=useTheme(), acc=_c2Acc(
               {sold.length>0&&<><td style={td}>{bar(x.soldGlass,_C2_TONE.good)}</td><td style={td}>{bar(x.soldBottle,acc)}</td></>}
               {al&&<td style={td}>{a?_c2Pill(a.length?`${a.length} confirmed`:'None',_C2_TONE.good):_c2Pill('To confirm',_C2_TONE.note)}</td>}</tr>; })}</React.Fragment>)}</tbody></table></div>
           {!shown.length&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'12px 0'}}>No dish matches that.</div>}</_C2Card>
-    </>}}>{S=><div style={{display:'grid',gridTemplateColumns:wide?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,position:wide?'sticky':'static',top:16,...(wide?{maxHeight:'calc(var(--c2h, 800px) - 32px)',overflowY:'auto',scrollbarWidth:'thin',paddingRight:4}:{})}} data-testid="c2-side">{S.side}</div><div ref={listRef} style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,scrollMarginTop:16}}><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>{FILTERS.map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-menu-filter-'+k))}<span style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {ps.length}</span></div>{S.main}</div></div>}</_C2Board>
+    </>}}>{(S,E)=><div style={{display:'grid',gridTemplateColumns:wide&&!E.side?'minmax(0,1fr) minmax(0,2.2fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>{!E.side&&<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,position:wide?'sticky':'static',top:16,...(wide?{maxHeight:'calc(var(--c2h, 800px) - 32px)',overflowY:'auto',scrollbarWidth:'thin',paddingRight:4}:{})}} data-testid="c2-side">{S.side}</div>}<div ref={listRef} style={{display:'flex',flexDirection:'column',gap:16,minWidth:0,scrollMarginTop:16}}><div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>{FILTERS.map(([k,l])=>_c2Chip(T,l,f===k,()=>setF(k),'c2-menu-filter-'+k))}<span style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{shown.length} of {ps.length}</span></div>{S.main}</div></div>}</_C2Board>
     <_C2Manage k="c2-manage-menu" title={al?'Manage: edit dishes and confirm allergens':'Manage: edit dishes'}><_CMenu open={open} goUpload={()=>setSection('upload')} me={me}/></_C2Manage>
   </div>; }
 
