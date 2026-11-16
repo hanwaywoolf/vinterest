@@ -49,6 +49,17 @@ const TeamReport = {
   _money(x){ const m=/\d+(?:\.\d+)?/.exec(String(x||'')); return m?+m[0]:0; },
   _sum(rows){ return rows.reduce((a,r)=>({revenue:a.revenue+r.q*r.p,lines:a.lines+r.q,glasses:a.glasses+(r.s==='glass'?r.q:0),bottles:a.bottles+(r.s==='bottle'?r.q:0),bottleRevenue:a.bottleRevenue+(r.s==='bottle'?r.q*r.p:0)}),{revenue:0,lines:0,glasses:0,bottles:0,bottleRevenue:0}); },
   _covers(nights){ return nights.reduce((a,n)=>a+(n.covers||0),0); },
+  /* Which nights of the week sell wine: for each weekday over the last `days`, the average wine sales a night, glasses
+     and bottles a night, and wine per guest; the strongest and weakest night by wine per guest (by sales without covers). */
+  byWeekday(days=28){ if(!TeamSales.has()) return null; const now=new Date().setHours(0,0,0,0), from=now-days*this.DAY, NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const by={}; TeamSales.rows(0).filter(r=>r.t>=from&&r.t<now).forEach(r=>{ const k=TeamSales.night(r.t); (by[k]=by[k]||[]).push(r); });
+    const cov=Object.fromEntries(TeamSales.nights(0).map(n=>[n.night,n.covers||0]));
+    const days7=[1,2,3,4,5,6,0].map(dow=>{ const ks=Object.keys(by).filter(k=>new Date(k+'T12:00:00').getDay()===dow), n=ks.length; if(!n) return {dow,name:NAMES[dow],nights:0};
+      const sm=this._sum(ks.flatMap(k=>by[k])), c=ks.reduce((a,k)=>a+(cov[k]||0),0);
+      return {dow,name:NAMES[dow],nights:n,revenue:sm.revenue/n,glasses:sm.glasses/n,bottles:sm.bottles/n,covers:c?c/n:null,perCover:c?sm.revenue/c:null}; });
+    const open=days7.filter(x=>x.nights), key=open.every(x=>x.perCover!=null)?'perCover':'revenue'; if(open.length<2) return null;
+    const sorted=[...open].sort((a,b)=>b[key]-a[key]);
+    return {days:days7,key,best:sorted[0],worst:sorted[sorted.length-1],max:Math.max(...open.map(x=>x.revenue))}; },
   /* This period against the one before it. */
   // Windows end at last midnight, so "the last 7 nights" is seven whole days against the seven before, never a part-night.
   salesSummary(days=7){ if(!TeamSales.has()) return null; const now=new Date().setHours(0,0,0,0), rows=TeamSales.rows(0), nights=TeamSales.nights(0);
@@ -241,6 +252,13 @@ const TeamReport = {
     const after=Object.keys(r.parts).reduce((a,k)=>{ const q=r.parts[k], gain=k===part?pick.length:0; return a+Math.min(1,Math.min(1,(q.partial*q.total+gain)/Math.max(1,q.total))/q.need); },0)/Object.keys(r.parts).length;
     const up=(this.upside()||{rows:[]}).rows, extra=part==='glass'||part==='bottle'?pick.reduce((a,w)=>{ const u=up.find(y=>y.wine.id===w.id&&y.missing.some(q=>q.id===pid)); return a+(u?u.extra/u.missing.length:0); },0):0;
     return {person:p,part,label:TeamLearn.PART_LABEL[part],ready:r.state==='ready',stretch:!under.length,items:pick.map(y=>({id:y.id,name:name(y)})),pre:PRE[part],known:pt.known,to:Math.min(pt.total,pt.known+pick.length),total:pt.total,needs,pct:r.pct,pctAfter:Math.max(r.pct,Math.round(100*after)),drills:Math.max(1,Math.ceil(qs/5)),extra}; },
+  /* What one person still has to train on in each area, best sellers first: [{k, label, left, toMin, names[]}],
+     an area with nothing left is left out. */
+  whatsLeft(pid,n=3){ const x=this.people().find(y=>y.person.id===pid); if(!x) return []; const p=x.person, r=x.r, role=p.role, sc=TeamLearn.scope(role), items=(TeamLearn._all()[pid]||{items:{}}).items||{};
+    const rank=TeamSales.has()?Object.fromEntries(this.salesByWine(28).map((y,i)=>[y.wine.id,i])):{}, dish=k=>k==='pairings'||k==='menu';
+    return Object.keys(r.parts).map(k=>{ const left=(dish(k)?sc.dishes.filter(d=>TeamLearn.dishAreaQs(role,d.id,k).length&&!TeamLearn.knowsDishArea(pid,role,d.id,k,items)):k==='allergens'?(sc.allergens||[]).filter(d=>!TeamLearn.knowsAllergens(pid,d.id,items)):(sc[k]||[]).filter(w=>TeamLearn.qsFor(role,w.id).length&&!TeamLearn.knowsWine(pid,role,w.id,items)))
+        .sort((a,b)=>(rank[a.id]==null?999:rank[a.id])-(rank[b.id]==null?999:rank[b.id])), q=r.parts[k];
+      return {k,label:TeamLearn.PART_LABEL[k],left:left.length,toMin:Math.max(0,Math.ceil(q.need*q.total-1e-9)-q.known),names:left.slice(0,n).map(y=>dish(k)||k==='allergens'?y.name.split(',')[0]:k==='cocktails'?y.name:TeamData.nick(y))}; }).filter(a=>a.left); },
   /* Push that step: its things go first in the person's drills, due in three days. Returns how many. */
   pushPlan(pid){ const t=this.trainingPlan(pid); if(!t||!t.items.length) return 0; return TeamLearn.prioritise(pid,t.items.map(y=>y.id),3,Date.now(),t.pre); },
   /* About one person, for the Team page: short findings a manager can act on, from their training and their sales.

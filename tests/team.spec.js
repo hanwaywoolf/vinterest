@@ -2647,6 +2647,10 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('c2-chart-bottles').click();
   await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
   await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
+  // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
+  await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');
+  await expect(page.getByTestId('c2-weekday-act')).toContainText('→');
+  expect(await page.evaluate(() => { const w = TeamReport.byWeekday(28), open = w.days.filter(d => d.nights); return [open.length, open.every(d => d.revenue > 0 && d.nights <= 4), w.best[w.key] >= w.worst[w.key]]; })).toEqual([6, true, true]);
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
   await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
@@ -2728,6 +2732,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click();
   await expect(page.getByTestId('c2-stands')).toContainText('to go'); await expect(page.getByTestId('c2-sells')).toContainText('a week');
   await expect(page.getByTestId('c2-sells')).toContainText('About Priya'); expect(await page.getByTestId('c2-about-row').count()).toBeGreaterThan(4);
+  // Where they stand also says what comes next in each area, so the card carries its weight beside About.
+  expect(await page.getByTestId('c2-left-row').count()).toBeGreaterThan(0);
   await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
   await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
   await expect(page.getByTestId('c2-mins')).toContainText('Server');
