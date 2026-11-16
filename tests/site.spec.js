@@ -49,9 +49,10 @@ test.describe('desktop', () => {
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
     // The first tile is the start of the scan story: the wine, then its match a few seconds in.
     const hero = page.locator('.hero .phone-app');
-    await expect(hero).toContainText('Crozes-Hermitage 2021');
-    await expect(hero).toContainText(`${SAMPLE_MATCH.pct}%`, { timeout: 10000 });
-    await expect(hero).toContainText(SAMPLE_MATCH.label, { timeout: 10000 });
+    // The bottle in the hero's camera is another vintage of the sample user's favourite, so its match is high and says why.
+    await expect(hero).toContainText('Viña Ardanza Reserva 2020');
+    await expect(hero).toContainText('Likely a favourite', { timeout: 25000 });
+    await expect(hero).toContainText('You gave the 2016 a 94', { timeout: 10000 });
     expect(errors).toEqual([]);
   });
 
@@ -94,7 +95,7 @@ test.describe('desktop', () => {
     await page.waitForTimeout(2500);
     await expect(page.locator('.hero .stage .cap')).toHaveText(at); // stopped turning
     await page.locator('.hero .prog button').first().click();
-    await expect(page.locator('.hero .phone-app')).toContainText('Crozes-Hermitage 2021');
+    await expect(page.locator('.hero .phone-app')).toContainText('Viña Ardanza Reserva 2020');
   });
 
   test('a caption stops the autoplay and holds the scan story on that scene', async ({ page }) => {
@@ -455,9 +456,21 @@ test.describe('trying it', () => {
     await page.goto(BASE + '/');
     const cam = page.locator('#hero-cam');
     await expect(cam).toBeVisible();
-    await expect(cam.locator('svg.cam-bottle')).toContainText('Crozes-');
+    // A photo of the bottle, not a drawing, and it has loaded.
+    const img = cam.locator('img.cam-bottle');
+    await expect(img).toBeVisible();
+    expect(await img.evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
+    // The camera stays long enough to frame the label, find its focus and read it, then the story plays from its first scene.
+    await page.waitForTimeout(5000);
+    await expect(cam).toBeVisible();
     await expect(cam).toBeHidden({ timeout: 9000 });
-    await expect(page.locator('.hero .phone-app')).toContainText('Crozes-Hermitage 2021');
+    const scene = page.locator('.hero [data-testid="reveal-scene"]');
+    await expect(scene).toHaveAttribute('data-scene', 'label');
+    // The match is given time to finish: its ring fills and its verdict and reason are up while the tile is still showing.
+    await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: 9000 });
+    await expect(page.locator('.hero .phone-app')).toContainText('Likely a favourite', { timeout: 6000 });
+    await page.waitForTimeout(3000);
+    await expect(scene).toHaveAttribute('data-scene', 'match');
   });
 
   test('the hero\'s entrance leaves everything in place, and sections arrive as they are reached', async ({ page }) => {

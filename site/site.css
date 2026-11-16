@@ -305,26 +305,42 @@ html.js .hero .note { animation: rise .7s ease both 1.05s; }
 html.js .hero .phone-slot { animation: face 1.3s cubic-bezier(.2, .8, .2, 1) backwards .25s; }
 @keyframes face { from { opacity: 0; transform: translateY(46px) rotateY(-22deg) rotateX(8deg); } to { opacity: 1; transform: none; } }
 .hero .phone-slot { transform: rotateY(calc(var(--tx, 0) * 1deg)) rotateX(calc(var(--ty, 0) * 1deg)); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
-/* The hero's camera: the bottle framed, the scan passing down its label twice, "Analysing label…", then it lifts
-   away to the story the scan found (site.js starts the story from its first scene as it lifts). */
+/* The hero's camera, as a hand holding a phone up to a bottle (the Ardanza's photo): the bottle comes into the frame a
+   little soft and unsteady, the camera moves in on the label and finds its focus (a square settles round it and turns
+   green), the shutter fires, the scan passes down the label while it's read, then the camera lifts away to the story the
+   scan found (site.js starts the story from its first scene as it lifts). About seven seconds. */
 .hero-cam { display: none; }
-html.js .hero-cam { display: flex; flex-direction: column; align-items: center; position: absolute; inset: 0; z-index: 3000; padding: 62px 22px 34px; background: radial-gradient(120% 80% at 50% 40%, #1c1014, #0a0a0b 70%); pointer-events: none;
-  animation: camOut .7s cubic-bezier(.5, 0, .2, 1) 4.5s forwards; }
+html.js .hero-cam { display: flex; flex-direction: column; align-items: center; position: absolute; inset: 0; z-index: 3000; padding: 62px 22px 34px; background: #0b0b0c; pointer-events: none;
+  animation: camOut .8s cubic-bezier(.5, 0, .2, 1) 7.3s forwards; }
 .cam-title { font-weight: 700; font-size: 17px; color: #fff; }
-.cam-frame { position: relative; flex: 1; width: 100%; margin: 18px 0 22px; display: grid; place-items: center; overflow: hidden; border-radius: 10px; }
-.cam-bottle { height: 94%; width: auto; filter: drop-shadow(0 30px 40px rgba(0, 0, 0, .7)); animation: camIn 1.1s cubic-bezier(.2, .8, .2, 1) both .2s; }
-.cam-corner { position: absolute; width: 44px; height: 44px; border: 3px solid #B02440; }
+.cam-frame { position: relative; flex: 1; width: 100%; margin: 18px 0 22px; overflow: hidden; border-radius: 10px; background: radial-gradient(90% 70% at 50% 45%, #2a2320, #0d0c0c 75%); }
+/* The hand: a slow drift that never quite stops. The lens: in from the whole bottle to its label, with the focus breathing as it finds it. */
+.cam-view { position: absolute; inset: 0; display: grid; place-items: center; animation: camHand 3.1s ease-in-out infinite alternate; }
+.cam-bottle { height: 92%; width: auto; transform-origin: 50% 73%; filter: blur(3px) brightness(.8); animation: camIn 1s cubic-bezier(.2, .8, .2, 1) .2s both, camZoom 2s cubic-bezier(.45, 0, .2, 1) 1.5s forwards, camFocus 2s ease 1.5s forwards; }
+.cam-corner { position: absolute; width: 44px; height: 44px; border: 3px solid #B02440; z-index: 2; }
 .cam-corner.tl { left: 0; top: 0; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; } .cam-corner.tr { right: 0; top: 0; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
 .cam-corner.bl { left: 0; bottom: 0; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; } .cam-corner.br { right: 0; bottom: 0; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
-.cam-scan { position: absolute; left: 4%; right: 4%; top: 0; height: 110px; background: linear-gradient(180deg, rgba(224, 90, 116, 0), rgba(224, 90, 116, .22) 80%, rgba(255, 196, 208, .95) 97%, rgba(224, 90, 116, 0)); transform: translateY(-120px); animation: scan 1.35s cubic-bezier(.5, 0, .3, 1) 1.2s 2 both; }
-.cam-pill { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); padding: 7px 16px; border-radius: 999px; background: rgba(60, 60, 64, .82); color: #fff; font-size: 14px; white-space: nowrap; display: grid; }
-.cam-pill b { grid-area: 1 / 1; font-weight: 500; text-align: center; }
-.cam-pill .a { animation: fadeOut .3s ease 3.3s forwards; } .cam-pill .b { opacity: 0; animation: fadeIn .3s ease 3.4s forwards; }
-.cam-shutter { flex: none; width: 74px; height: 74px; border-radius: 50%; background: #fff; display: grid; place-items: center; animation: press .35s ease 3.25s; }
+/* The focus square: lands large round the label, tightens, and turns green when it has it. */
+.cam-focus { position: absolute; left: 50%; top: 50%; width: 88%; aspect-ratio: 1 / .92; margin: 0; border: 2px solid rgba(255, 255, 255, .9); border-radius: 12px; opacity: 0; transform: translate(-50%, -50%) scale(1.35);
+  animation: camLock 1.7s cubic-bezier(.3, .7, .2, 1) 2.1s forwards, camLocked .5s ease 3.8s forwards, fadeOut .3s ease 4.5s forwards; }
+.cam-scan { position: absolute; left: 4%; right: 4%; top: 0; height: 110px; z-index: 1; background: linear-gradient(180deg, rgba(224, 90, 116, 0), rgba(224, 90, 116, .22) 80%, rgba(255, 196, 208, .95) 97%, rgba(224, 90, 116, 0)); transform: translateY(-120px); animation: scan 1.25s cubic-bezier(.5, 0, .3, 1) 4.6s 2 both; }
+.cam-flash { position: absolute; inset: 0; z-index: 3; background: #fff; opacity: 0; animation: camFlash .45s ease-out 4.3s; }
+.cam-pill { position: absolute; z-index: 2; bottom: 14px; left: 50%; transform: translateX(-50%); padding: 7px 16px; border-radius: 999px; background: rgba(60, 60, 64, .82); color: #fff; font-size: 14px; white-space: nowrap; display: grid; }
+.cam-pill b { grid-area: 1 / 1; font-weight: 500; text-align: center; opacity: 0; }
+.cam-pill .a { opacity: 1; animation: fadeOut .3s ease 2.1s forwards; }
+.cam-pill .b { animation: fadeIn .3s ease 2.2s forwards, fadeOut .3s ease 4.3s forwards; }
+.cam-pill .c { animation: fadeIn .3s ease 4.45s forwards; }
+.cam-shutter { flex: none; width: 74px; height: 74px; border-radius: 50%; background: #fff; display: grid; place-items: center; animation: press .4s ease 4.15s; }
 .cam-shutter i { width: 60px; height: 60px; border-radius: 50%; background: #8B1A2F; }
-@keyframes camIn { from { opacity: 0; transform: translateY(26px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes camIn { from { opacity: 0; transform: translateY(30px) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes camHand { from { transform: translate(-5px, 3px) rotate(-.6deg); } to { transform: translate(6px, -4px) rotate(.5deg); } }
+@keyframes camZoom { from { transform: none; } to { transform: translateY(-21%) scale(1.8); } }
+@keyframes camFocus { 0% { filter: blur(3px) brightness(.8); } 45% { filter: blur(5px) brightness(.85); } 70% { filter: blur(.6px) brightness(1); } 82% { filter: blur(1.6px) brightness(1); } 100% { filter: blur(0) brightness(1.04); } }
+@keyframes camLock { from { opacity: 0; transform: translate(-50%, -50%) scale(1.35); } 25% { opacity: 1; } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes camLocked { to { border-color: #5FD48F; box-shadow: 0 0 0 4px rgba(95, 212, 143, .2); } }
+@keyframes camFlash { from { opacity: .75; } to { opacity: 0; } }
 @keyframes camOut { to { opacity: 0; transform: scale(1.06); visibility: hidden; } }
-@keyframes press { 50% { transform: scale(.86); } }
+@keyframes press { 50% { transform: scale(.84); } }
 @keyframes fadeOut { to { opacity: 0; } } @keyframes fadeIn { to { opacity: 1; } }
 @keyframes scan { from { transform: translateY(-120px); opacity: 1; } 85% { opacity: 1; } to { transform: translateY(560px); opacity: 0; } }
 

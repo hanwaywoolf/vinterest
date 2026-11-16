@@ -126,9 +126,15 @@ const BLIND_AT = 0.75, BLIND_END = 0.777;
 
 /* The bottle in the camera: the sample user's next scan. `tracked` keeps the scan from being saved
    into the demo user's wines, so the other demos never change. */
-function _openScan(view, unlock, fresh) {
+/* The bottle the front page's camera is pointed at (its photo is site/video/ardanza.png): another vintage of the wine the
+   sample user rated highest, so its match leads with "you gave the 2016 a 94". The same reading the films' scan returns. */
+const _HERO_WINE = { name: 'Viña Ardanza Reserva', alternative: '', producer: 'La Rioja Alta', vintage: 2020, region: 'Rioja', sub_region: 'Rioja Alta',
+  country: 'Spain', type: 'red', grapes: ['Tempranillo', 'Garnacha'], blend: true, grapes_basis: 'known', grape_shares: null, body: 0.62, tannins: 0.5, acidity: 0.62, sweetness: 0.03,
+  texture: null, effervescence: null, abv: 13.5, tasting_notes: ['Dried cherry', 'Vanilla', 'Tobacco'], food_pairings: ['Roast lamb', 'Manchego', 'Chorizo'], price_usd: 38,
+  description: 'A classic Reserva from La Rioja Alta.' };
+function _openScan(view, unlock, fresh, scanned) {
   DemoPersona.reset();
-  const wine = { ...DemoPersona.user.scanned, confidence: 'high' };
+  const wine = { ...(scanned || DemoPersona.user.scanned), confidence: 'high' };
   // A confirmed scan opens its grape's and region's quizzes (ScanFlow.unlockLearning): what the
   // "Keep learning" options after a score are built from. `tracked` skips it, so do it here.
   if (unlock) ScanFlow.unlockLearning(wine);
@@ -298,8 +304,8 @@ const _DEMO_SCREENS = {
   hero: { nav: 'scan', layers: [
     // The scan story, as a fresh scan plays it. The app saves a scanned wine, which would add a bottle to the WineDNA beside it: take it back out.
     { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() {
-      _openScan(undefined, false, true);
-      const w = DemoPersona.user.scanned;
+      _openScan(undefined, false, true, _HERO_WINE);
+      const w = _HERO_WINE;
       setTimeout(() => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* the bottle stays */ } }, 700);
     } },
     { id: 'dna', nav: 'profile', Screen: WineDNAScreen },
@@ -307,7 +313,8 @@ const _DEMO_SCREENS = {
     { id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
     { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
   ], steps: [
-    { at: 0, layer: 'scan', do: [{ story: 3000, until: 'match' }] },
+    // The label scene long enough to read, then the match, which the carousel holds on until its ring has filled and its reasons are read.
+    { at: 0, layer: 'scan', do: [{ story: 4800, until: 'match' }] },
     { at: 0.2, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
     { at: 0.4, layer: 'vinny', do: [{ vinny: true }] },
     { at: 0.6, layer: 'article', to: 'top', drift: 0.6, ms: 9000 },
