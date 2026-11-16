@@ -10,7 +10,8 @@
    "full": "brand/larkspur/logo-white.png",
    "accent": "#C9A96E",
    "scale": 1.6
-  }
+  },
+  "console": "preview"
  },
  "rev": "2026-11-04-larkspur-logo",
  "wines": [

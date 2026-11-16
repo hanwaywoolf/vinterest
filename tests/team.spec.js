@@ -67,6 +67,22 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 // The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
 // (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
 // with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
+// A browser already holding the consumer app's data has little room left on this address. The venue and team fit; the
+// sales, written last, once didn't, and Sales Insights said "No sales yet" with no word of why.
+test('a nearly full browser still opens The Princess Royal with its sales', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=sample`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  // Fill the device until about 2.2MB is left: enough for the venue and the team, not for the sales as well.
+  await page.evaluate(() => { localStorage.clear(); const chunk = 'x'.repeat(100000); let i = 0; try { for (;; i++) localStorage.setItem('vinterest_fill_' + i, chunk); } catch (e) {} for (let k = 0; k < 11; k++) localStorage.removeItem('vinterest_fill_' + (i - 1 - k)); });
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('console-nav-sales')).toBeVisible();
+  const st = await page.evaluate(() => ({ rows: (TeamSales.get().rows || []).length, held: Store.full(), wines: TeamData.wines().length, people: TeamLearn.people().length }));
+  expect(st.wines).toBeGreaterThan(100); expect(st.people).toBe(7);
+  expect(st.held).toBe(true);                                                                   // the test really did run out of room
+  expect(st.rows).toBeGreaterThan(1000);
+});
+
 test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -361,7 +377,7 @@ test('readiness: ready once every part meets the role minimum, then slipping whe
     return { ready: ready.state, parts: Object.keys(ready.parts), slipping: slipping.state };
   }, [DAY]);
   expect(out.ready).toBe('ready');
-  expect(out.parts).toEqual(['glass', 'dishes']); // a bartender's minimum leaves bottles out
+  expect(out.parts).toContain('glass'); expect(out.parts).toContain('pairings'); expect(out.parts).not.toContain('bottle'); expect(out.parts).not.toContain('dishes'); // a bartender's minimum leaves bottles out; the menu is two areas, pairings and menu
   expect(out.slipping).toBe('slipping');
 });
 
@@ -782,7 +798,7 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
   await startFresh(page);
-  expect(await page.getByTestId('team-part').count()).toBe(3);
+  expect(await page.getByTestId('team-part').count()).toBe(4); // glasses, bottles, pairings, menu
   await page.getByTestId('team-part-practise').first().click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
   const header = await page.locator('[data-testid="team-drill"] > div').nth(1).innerText();
@@ -2494,6 +2510,34 @@ test('the pre-shift briefing: a special read, paired and approved, a gate everyo
   expect(errors).toEqual([]);
 });
 
+// A pitch demo's short card (docs/business.md "Pitch demos"): written from its own prompt with no questions, more wines a
+// call, and enough for the app to build its Essentials questions, so every wine on the list still counts and can be drilled.
+test('a short card has no written questions and the app still builds Essentials questions from it', async ({ context, page }) => {
+  const asked = [];
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (body) => {
+    const text = JSON.stringify(body), ids = [...new Set((text.slice(text.lastIndexOf('Write a card for EACH of these wines')).match(/w-[a-z0-9-]+(?= \|)/g)) || [])];
+    return JSON.stringify({ cards: ids.map((id) => ({ id, hook: 'From the house on the list.', pitch: 'It is fresh and bright. You will enjoy it with the fish.', say: '', taste: 'Fresh, bright and dry.', style: { body: 2, acid: 4, tannin: 0, sweet: 1 }, serve: { temp: '8-10°C', glass: 'white wine glass', decant: 'no' }, dishes: [], alts: [] })) }); } });
+  const out = await page.evaluate(async () => {
+    const ids = TeamData.wines().map((w) => w.id), d = TeamData.get(), dishes = {};
+    ids.forEach((id) => { dishes[id] = (d.cards[id] || {}).dishes || []; }); d.cards = {}; TeamData.save(d);
+    await TeamData.writeCards(ids, null, { short: true });
+    const now = TeamData.get(); ids.forEach((id) => { now.cards[id].dishes = dishes[id]; }); TeamData.save(now); // the dishes a real answer would carry
+    TeamLearn.setTier('essentials');
+    const server = TeamLearn.people().find((p) => p.role === 'server') || TeamLearn.me();
+    return { wines: ids.length, cards: Object.keys(TeamData.get().cards).length, written: Object.values(TeamData.get().cards).reduce((n, c) => n + (c.qs || []).length, 0),
+      built: ids.map((id) => TeamLearn.qsFor(server.role, id).length), drill: TeamLearn.drill(server.id).length, readiness: !!TeamLearn.readiness(server.id) };
+  });
+  expect(out.cards).toBe(out.wines);
+  expect(out.written).toBe(0);                                   // nothing written to ask
+  expect(Math.min(...out.built)).toBeGreaterThanOrEqual(1);      // and still something to ask of every wine
+  expect(out.drill).toBeGreaterThan(0);
+  expect(out.readiness).toBe(true);
+  const calls = asked.filter((b) => b.purpose === 'team_cards');
+  expect(calls.length).toBe(Math.ceil(out.wines / 8));           // eight wines a call, not four
+  expect(JSON.stringify(calls[0])).toContain('Write nothing else for a wine');
+  expect(errors).toEqual([]);
+});
+
 // The console's first-use tour: by itself on a person's first visit, a spotlight down the sidebar with a card at each
 // stop, each stop opening its section; nothing under it takes a click; Done (or Skip) is remembered for that person on the
 // device, and "Take the tour" at the sidebar's foot brings it back.
@@ -2555,4 +2599,313 @@ test('the console tour: first visit only, each stop opens its section, skippable
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('console-tour')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+// One text size on the cards (docs/business.md "One size on the cards"): on a wine's, a cocktail's and a dish's card every
+// line is 14px, the size of the sentence in Where you stand, only the name is larger (20px), and nothing is heavier
+// than 600. On every restaurant, on the phone and in the console's drawer. Sizes had drifted between 11 and 22.
+const CARD_SEEDS = ['demo', 'social', 'princess', 'eloise'];
+for (const seed of CARD_SEEDS) {
+  test(`the cards keep one text size and light weights (${seed})`, async ({ browser }) => {
+    const stray = (page, tid) => page.getByTestId(tid).first().evaluate((root) => {
+      const bad = [], own = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
+      root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
+        const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
+        if (size !== (name ? 20 : 14) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+      return bad; });
+    // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
+    await stubNetwork(ctx);
+    await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    await page.getByTestId('team-tab-wines').click();
+    await page.getByTestId('team-wine-row').first().click();
+    await expect(page.getByTestId('team-wine')).toBeVisible(); expect(await stray(page, 'team-wine')).toEqual([]);
+    await page.getByLabel('Back').click();
+    if (await page.getByTestId('team-list-switch').count()) {
+      await page.getByTestId('team-list-switch').getByText('Cocktails').click();
+      await page.getByTestId('team-cocktail-row').first().click();
+      await expect(page.getByTestId('team-cocktail')).toBeVisible(); expect(await stray(page, 'team-cocktail')).toEqual([]);
+      await page.getByLabel('Back').click();
+    }
+    await page.getByTestId('team-tab-menu').click();
+    await page.getByTestId('team-dish-row').first().click();
+    await expect(page.getByTestId('team-dish')).toBeVisible(); expect(await stray(page, 'team-dish')).toEqual([]);
+    await ctx.close();
+  });
+}
+
+// The console's new look (team-console2.jsx), shown where a restaurant's file asks for it: The Larkspur's does, as a
+// preview. Tests elsewhere pin the classic console (helpers.stubNetwork); this one asks for the new one.
+test('the console\'s new look: four pages, the same drawer, and the way back to classic', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const con = page.getByTestId('team-console');
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  // A device that opened The Larkspur before its file asked for the new look still gets it.
+  expect(await page.evaluate(() => { const d = TeamData.get(); delete d.venue.console; TeamData.save(d); const o = window.VINTEREST_CONSOLE; window.VINTEREST_CONSOLE = null; const look = TeamData.consoleLook(); window.VINTEREST_CONSOLE = o; return look; })).toBe('preview');
+  // One standout fact with quick ones beneath, about what knowing the list sells.
+  await expect(page.getByTestId('c2-fact')).toContainText('with a server trained on it');
+  expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
+  await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
+  await expect(page.getByTestId('c2-person')).toHaveCount(7);
+  // Five figures under the sentence, the pairing among them; then what training is worth, wine by wine, and what
+  // needs the manager as what's so and what to do.
+  await expect(page.getByTestId('c2-kpi-pairing')).toContainText('pairing');
+  await expect(page.getByTestId('c2-lift')).toContainText('×'); expect(await page.getByTestId('c2-lift-row').count()).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('console-dash')).not.toContainText(/know(s|n)? it|known by/);
+  await expect(page.getByTestId('console-dash')).not.toContainText(/the floor/i);
+  // Training's worth is said in weeks, and a wine can be put first for the people not trained on it.
+  await expect(page.getByTestId('c2-lift')).toContainText('a week'); await expect(page.getByTestId('c2-lift')).not.toContainText('a shift');
+  await page.getByTestId('c2-lift-assign').first().click(); await expect(page.getByTestId('c2-lift-assign').first()).toContainText('First in their drills');
+  // How far training has spread leaves room to grow: whole team, at least half, fewer.
+  await expect(page.getByTestId('c2-spread').first()).toContainText('whole team trained');
+  // A line of Needs you opens a plan: where things stand, then steps, with a button where the console can do one.
+  await page.getByTestId('c2-needs').getByTestId('c2-need').first().click();
+  await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
+  await page.getByTestId('c2-plan-do').first().click(); await expect(page.getByTestId('c2-plan-do').first()).toContainText('Done');
+  await page.getByTestId('c2-plan-close').click();
+  // A figure opens the card it summarises.
+  await page.getByTestId('c2-kpi-pairing').click(); await expect(page.getByTestId('c2-pairing-panel')).toHaveAttribute('data-lit', '1');
+  await page.getByTestId('console-nav-dash').click();
+  // The demo's Tonight is set for it, so the tile is never empty.
+  await expect(page.getByTestId('c2-tonight')).toContainText('Pushing');
+  // The summary is Poppins at a light weight, loaded from the build's own fonts.
+  expect(await page.getByTestId('c2-fact').evaluate(el => getComputedStyle(el).fontWeight)).toBe('300');
+  expect(await page.evaluate(() => document.fonts.check('300 38px Poppins'))).toBe(true);
+  // A best seller opens the same wine drawer as the classic console.
+  await page.getByTestId('c2-seller').first().click();
+  await expect(page.getByTestId('console-panel')).toBeVisible();
+  await page.getByTestId('console-panel-close').click();
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
+  // Every line of the briefing is what the sales say, then what to do; nothing in the console's own shorthand.
+  expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
+  await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
+  const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
+  await page.getByTestId('c2-chart-bottles').click();
+  await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
+  await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
+  // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
+  await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');
+  await expect(page.getByTestId('c2-weekday-act')).toContainText('→');
+  expect(await page.evaluate(() => { const w = TeamReport.byWeekday(28), open = w.days.filter(d => d.nights); return [open.length, open.every(d => d.revenue > 0 && d.nights <= 4), w.best[w.key] >= w.worst[w.key]]; })).toEqual([6, true, true]);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
+  await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
+  // Wines is the buyer's page: five figures about the list itself, each opening what it's about; what needs the
+  // buyer as what's so and what to do; the list's balance against its sales; the price ladder; markup against the shop.
+  await page.getByTestId('c2-wine-filter-all').click();
+  await expect(page.getByTestId('c2-kpi-topfive')).toContainText('%'); await expect(page.getByTestId('c2-kpi-markup')).toContainText('×');
+  await page.getByTestId('c2-kpi-through').click(); await expect(page.getByTestId('c2-wine-filter-through')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
+  await page.getByTestId('c2-wine-filter-all').click();
+  for (const t of ['Glasses sold', 'Bottles sold', 'Drinking window', 'On the menu', 'Shop price', 'Markup']) await expect(page.getByTestId('c2-list')).toContainText(t);
+  expect(await page.getByTestId('c2-wine-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
+  const colours = await page.getByTestId('c2-balance').innerText();
+  await page.getByTestId('c2-balance-grape').click(); expect(await page.getByTestId('c2-balance').innerText()).not.toBe(colours);
+  expect(await page.getByTestId('c2-ladder-row').count()).toBeGreaterThan(2); await expect(page.getByTestId('c2-ladder')).toContainText('Gap:');
+  // What the page says is what TeamBuyer worked out: the list's shares add up, and a markup is the bottle over its shop price.
+  expect(await page.evaluate(() => { const b = TeamBuyer.balance('colour'), m = TeamBuyer.markups(), w = TeamBuyer.wines()[0], k = TeamBuyer.markup(w); return [Math.round(100 * b.reduce((a, g) => a + g.share, 0)), Math.abs(k.x - TeamBuyer._m(w.bottle) / k.retail) < 0.01, m.source]; })).toEqual([100, true, 'demo']);
+  // Training has left this page: who is trained on a wine is on the Training page.
+  await expect(page.getByTestId('c2-list').locator('thead')).not.toContainText(/trained/i);
+  // The list's header row stays in view as the list scrolls under it.
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
+  await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-list"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 600; });
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(130);
+  // The search box and the filters are locked with the title, above the header.
+  await expect(page.getByTestId('c2-list')).toHaveAttribute('data-stuck', '');
+  expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none', !!el.querySelector('[data-testid="c2-wine-find"]'), !!el.querySelector('[data-testid="c2-wine-filter-glass"]')]; })).toEqual([0, true, true, true]);
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
+  await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
+  // Training: everything about training in one place. Each person's areas and next step, pushed from here; a person opens on Team.
+  await page.getByTestId('console-nav-training').click();
+  await expect(page.getByTestId('c2-training-row')).toHaveCount(7);
+  for (const t of ['Glasses', 'Bottles', 'Pairings', 'Menu', 'Next step']) await expect(page.getByTestId('c2-training-people')).toContainText(t);
+  await expect(page.getByTestId('c2-training-spread').getByTestId('c2-spread')).toHaveCount(4);
+  await page.getByTestId('c2-training-push').first().click(); await expect(page.getByTestId('c2-training-push').first()).toContainText('Pushed');
+  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible(); await page.getByTestId('c2-tracks-close').click();
+  await expect(page.getByTestId('c2-training')).not.toContainText(/know(s|n)? it|known by|the floor|overdue/i);
+  // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
+  await page.getByTestId('console-nav-menu').click();
+  await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);
+  // Every dish shows a wine by the glass and a bottle to offer, each with who is trained on it; the figures and the
+  // training spread are split the same way, and what needs the manager is a fact then an action.
+  await expect(page.getByTestId('c2-dishes')).toContainText('By the glass'); await expect(page.getByTestId('c2-dishes')).toContainText('By the bottle');
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasText: 'a bottle' }).count()).toBe(27);
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasNotText: 'The same wine' }).count()).toBeGreaterThan(15);
+  await expect(page.getByTestId('c2-kpi-pairglass')).toContainText('glass'); await expect(page.getByTestId('c2-kpi-pairbottle')).toContainText('bottle');
+  await expect(page.getByTestId('c2-pair-spread').getByTestId('c2-spread')).toHaveCount(2);
+  expect(await page.getByTestId('c2-menu-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  // Every table's header stays in view as it scrolls, and the side column scrolls by itself beside the long table.
+  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
+  await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-dishes"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 500; });
+  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(el.getBoundingClientRect().top - s.top); })).toBeLessThan(70);
+  // The card's title is locked above the header, so the header never floats alone.
+  await expect(page.getByTestId('c2-dishes')).toHaveAttribute('data-stuck', '');
+  expect(await page.getByTestId('c2-dishes').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none']; })).toEqual([0, true]);
+  expect(await page.getByTestId('c2-side').evaluate(el => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'); return [getComputedStyle(el).overflowY, el.clientHeight <= sc.clientHeight, el.scrollHeight > el.clientHeight]; })).toEqual(['auto', true, true]);
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
+  // Under every header but the first, the data is centred beneath it.
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(2)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
+  expect(await page.getByTestId('c2-dishes').locator('thead th').nth(2).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(1)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).not.toBe('center');
+  // Every dish with a wine poured by the glass or a bottle-only pick has a bottle question, counted under Pairings.
+  const bq = await page.evaluate(() => { const qs = TeamData.dishes().map((x) => TeamLearn.dishQs(x.id).find((q) => q.bottle)).filter(Boolean); return { n: qs.length, pairing: qs.every((q) => TeamLearn.isPairing(q)), four: qs.every((q) => q.opts.length === 4 && q.opts[q.a]), which: qs.filter((q) => /Which do you offer/.test(q.q)).length, upsell: qs.filter((q) => /Offer the bottle at/.test(q.opts[q.a])).length }; });
+  expect(bq.n).toBeGreaterThan(12); expect(bq.pairing).toBe(true); expect(bq.four).toBe(true); expect(bq.which).toBeGreaterThan(0); expect(bq.upsell).toBeGreaterThan(0);
+  await page.getByTestId('c2-kpi-pairbottle').click(); expect(await page.getByTestId('c2-dish-row').count()).toBeLessThan(27);
+  await page.getByTestId('c2-menu-filter-all').click();
+  await expect(page.getByTestId('c2-dishes')).toContainText('Allergens');
+  await page.getByTestId('c2-allergens-switch').click();
+  await expect(page.getByTestId('c2-dishes')).not.toContainText('Allergens');
+  expect(await page.evaluate(() => TeamData.trainsAllergens())).toBe(false);
+  await page.getByTestId('c2-allergens-switch').click();
+  // The other sections are the classic ones inside the new shell.
+  await page.getByTestId('console-nav-cocktails').count();
+  // Team: a sentence, five figures, each person's areas against the minimum with what they sell, and a next step to push.
+  await page.getByTestId('console-nav-team').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('ready for service');
+  await expect(page.getByTestId('c2-team-row')).toHaveCount(7);
+  // Pick a person: their areas against the minimum, what they sell, and a next step to push.
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click();
+  await expect(page.getByTestId('c2-stands')).toContainText('to go'); await expect(page.getByTestId('c2-sells')).toContainText('a week');
+  await expect(page.getByTestId('c2-sells')).toContainText('About Priya'); expect(await page.getByTestId('c2-about-row').count()).toBeGreaterThan(4);
+  // Where they stand also says what comes next in each area, so the card carries its weight beside About.
+  expect(await page.getByTestId('c2-left-row').count()).toBeGreaterThan(0);
+  await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
+  await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
+  await expect(page.getByTestId('c2-mins')).toContainText('Server');
+  // The demo opens with bespoke training in flight, tracked.
+  await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
+  // The figure counts every track the window lists, drafts included.
+  expect(await page.evaluate(() => TeamPlans.all().length)).toBe(Number((await page.getByTestId('c2-kpi-bespoke').innerText()).match(/\n(\d+)/)[1]));
+  // Four areas: glasses, bottles, pairings and the menu.
+  for (const t of ['By the glass', 'Bottles', 'Pairings', 'Menu']) await expect(page.getByTestId('c2-stands')).toContainText(t);
+  // The bespoke figure opens every track: who it's for, what it covers, how far along.
+  await page.getByTestId('c2-kpi-bespoke').click();
+  await expect(page.getByTestId('c2-track').first()).toContainText(/For \w+/); await expect(page.getByTestId('c2-track').first()).toContainText(/questions?/); await expect(page.getByTestId('c2-tracks')).toContainText(/running/);
+  await page.getByTestId('c2-track').filter({ hasText: 'Dani' }).first().click();
+  await expect(page.getByTestId('c2-person-detail')).toContainText('Dani'); await expect(page.getByTestId('c2-tracks')).toHaveCount(0);
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click(); await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText(/\d+ of \d+ done/);
+  // The classic team tools stay under Manage.
+  await page.getByTestId('c2-manage-c2-manage-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
+  // And back to the classic console, remembered on the device.
+  await page.evaluate(() => { window.VINTEREST_CONSOLE = null; });
+  await page.getByTestId('c2-classic').click();
+  await expect(con).not.toHaveAttribute('data-look', 'preview');
+  await page.getByTestId('console-new-look').click();
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// Bespoke training (team-plans.js): the manager asks Vinny for a plan in their own words, reads the draft, pushes
+// it; it shows on that person's Today as its own training, and a question that covers one of their own counts.
+test('bespoke training: Vinny writes a plan, the manager pushes it, and it counts towards readiness', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = [];
+  // Vinny's answer is built from what the prompt offered: a new question on the first wine, covering one of its own.
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, wine = /^(w-[^ ]+) \| WINE/m.exec(text)[1], own = new RegExp('^  (' + wine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#\\d+) \\| not known', 'm').exec(text);
+    const q = (n, covers) => ({ on: wine, q: `Bespoke question ${n} about this wine?`, opts: ['Right ' + n, 'Wrong a' + n, 'Wrong b' + n, 'Wrong c' + n], a: 0, why: 'Because.', covers });
+    return JSON.stringify({ title: 'Reds: prices and pairings', summary: 'Three short parts on the reds she misses.', parts: [{ title: 'Prices', why: 'What each costs.', qs: [q(1, own ? own[1] : ''), q(2, '')] }, { title: 'Pairings', why: 'What to pour.', qs: [q(3, ''), q(4, ''), { on: 'not-a-wine', q: 'Dropped?', opts: ['a', 'b', 'c', 'd'], a: 0 }] }] }); };
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Amara' }).click();
+  await page.getByTestId('c2-vinny-sug').nth(1).click(); // a suggestion fills the box; only the arrow sends
+  expect(reqs.filter(r => r.purpose === 'team_plan')).toHaveLength(0);
+  await page.getByTestId('c2-vinny-send').click();
+  const draft = page.getByTestId('c2-plan-draft');
+  await expect(draft).toContainText('Reds: prices and pairings'); await expect(draft).toContainText('2 parts · 4 questions · 1 count');
+  const sent = reqs.find(r => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
+  await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  // Pushed: tracked on the console, and on Amara's phone as its own training.
+  await draft.getByTestId('c2-draft-push').click();
+  await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText('0 of 4 done');
+  const state = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')), plan = TeamPlans.forPerson(a.id)[0], qs = TeamPlans.questions(plan.id), q = qs.find(x => x.covers);
+    const items = () => TeamLearn._mine(TeamLearn._all(), a.id).items, before = !!(items()[q.covers] && items()[q.covers].reps);
+    TeamLearn.record(a.id, q, true, 'think'); TeamLearn.record(a.id, qs.find(x => !x.covers), false, 'think');
+    return { before, covered: !!items()[q.covers].reps, prog: TeamPlans.progress(plan), id: a.id }; });
+  expect(state.before).toBe(false); expect(state.covered).toBe(true); expect(state.prog.done).toBe(1); expect(state.prog.total).toBe(4);
+  await page.goto(`${BASE}/team/?seed=demo&view=phone`);
+  await page.evaluate((id) => { TeamLearn.setMe(id); window.dispatchEvent(new Event('vbiz:data')); }, state.id); await page.reload();
+  const card = page.getByTestId('today-plan').first();
+  await expect(card).toContainText('Reds: prices and pairings'); await expect(card).toContainText('1 of 4');
+  await card.getByText(/Carry on|Start/).click(); await expect(page.getByTestId('team-drill')).toBeVisible();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
+// exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
+test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = []; let fail = true;
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: (b) => { if (b.purpose !== 'team_buyer') return ''; if (fail) { fail = false; return 'no'; }
+    const text = b.messages[0].content, ws = [...text.matchAll(/^(w-[^ ]+) \|/mg)].map(m => m[1]), ds = [...text.matchAll(/^(d-[^ ]+) \| ([^|\n]+)/mg)];
+    return JSON.stringify({ retail: [{ id: ws[0], price: 20 }, { id: 'w-nothing', price: 9 }], missing_dishes: [{ wine: ws[1], dish: 'Grilled sardines on toast', why: 'Its salt and acidity want oily fish.' }, { wine: ws[1], dish: ds[0][2].split(',')[0].trim(), why: 'Already here.' }, { wine: 'w-nothing', dish: 'Soup', why: 'x' }],
+      weak_dishes: [{ dish: ds[1][1], why: 'Nothing on the list has the weight for it.', wants: 'a ripe, fuller white with some oak' }, { dish: 'd-nothing', why: 'x', wants: 'y' }], gaps: [{ what: 'A red under £45', why: 'The cheapest red is a jump from the house pour.' }], cut: [{ wine: ws[2], why: 'It overlaps and hasn\'t sold.' }] }); } });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('console-nav-wines').click();
+  await page.getByTestId('c2-buyer-ask').click(); await expect(page.getByTestId('c2-buyer-error')).toBeVisible();
+  await page.getByTestId('c2-buyer-ask').click(); const res = page.getByTestId('c2-buyer-result'); await expect(res).toBeVisible();
+  await expect(res).toContainText('Grilled sardines on toast'); await expect(res).toContainText('Wants a ripe, fuller white with some oak'); await expect(res).toContainText('A red under £45');
+  const sent = reqs.filter(r => r.purpose === 'team_buyer'); expect(sent).toHaveLength(2); expect(sent[0].messages[0].content).toContain('The Larkspur');
+  const kept = await page.evaluate(() => { const r = TeamBuyer.reviewed(), id = Object.keys(r.retail)[0]; return { retail: Object.keys(r.retail).length, missing: r.missing.length, weak: r.weak.length, cut: r.cut.length, source: TeamBuyer.markups().source, shop: TeamBuyer.retail(TeamData.wine(id)) }; });
+  expect(kept).toMatchObject({ retail: 1, missing: 1, weak: 1, cut: 1, source: 'estimate', shop: { price: 20 } });
+  await expect(page.getByTestId('c2-kpi-markup')).toContainText('Vinny');
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// "Pairings" means the wine for the dish, never the menu on its own: Vinny's test and a bespoke plan asked for
+// pairings ask only pairing questions, and a written question about a dish that names no wine is dropped.
+test('a request for pairings is about the wine for each dish, not the menu', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, dish = /^(\S+) \| DISH: ([^|\n,]+)/m.exec(text), pour = /pour with: ([^(]+) \(/.exec(text.slice(text.indexOf(dish[0])));
+    const wines = [...text.matchAll(/^\S+ \| WINE: (.+?) (?:\d{4}|NV) \|/gm)].map((m) => m[1]);
+    return JSON.stringify({ title: 'Pairings', summary: 's', parts: [{ title: 'The wine for the dish', why: 'w', qs: [
+      { on: dish[1], q: `A guest orders the ${dish[2].trim()}. Which wine do you pour?`, opts: [pour[1].trim(), ...wines.filter((w) => w !== pour[1].trim()).slice(0, 3)], a: 0, why: 'y', covers: '' },
+      { on: dish[1], q: `What is the ${dish[2].trim()} served with?`, opts: ['Chips', 'Rice', 'Salad', 'Bread'], a: 0, why: 'menu, not pairing', covers: '' },
+      { on: dish[1], q: `Which wine by the glass suits the ${dish[2].trim()}?`, opts: [wines[1], wines[2], wines[3], wines[4]], a: 0, why: 'y', covers: '' }] }] }); };
+  const reqs = []; await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const out = await page.evaluate(async () => { const p = TeamLearn.people().find((x) => x.name.startsWith('Priya')), ask = 'Priya needs custom training on pairings';
+    const t = TeamVinny.test(p.id, { ask: 'pairings' }), s = TeamPlans.subjects(p.id, ask), plan = await TeamPlans.write(p.id, ask, null), cards = TeamPlans.fromCards(p.id, ask, null);
+    return { test: t.qs.length, testAll: t.qs.every((q) => TeamLearn.isPairing(q)), dishes: s.dishes.length, wines: s.wines.length, pairing: s.pairing, written: plan.parts[0].qs.map((q) => q.q), cards: cards.parts.flatMap((x) => x.qs).every((q) => TeamLearn.isPairing({ ...q, id: q.covers })) }; });
+  expect(out.test).toBeGreaterThan(3); expect(out.testAll).toBe(true);
+  expect(out.pairing).toBe(true); expect(out.dishes).toBeGreaterThan(2); expect(out.wines).toBeGreaterThan(2);
+  expect(out.written).toHaveLength(2); expect(out.written.join(' ')).not.toContain('served with'); expect(out.cards).toBe(true);
+  const sent = reqs.find((r) => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('This is a PAIRING plan'); expect(sent).toContain('pour with:'); expect(sent).not.toMatch(/#know \|/);
+  await ctx.close();
+});
+
+// A demo restaurant kept on a device for days stays as of today: without that its invented answers fade by the
+// clock and its sales end last week, and the whole team reads as slipping.
+test('a demo restaurant held for days is brought forward to today', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } }); await stubNetwork(ctx);
+  const page = await ctx.newPage(); await page.clock.install({ time: new Date('2026-11-10T16:00:00') });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const read = () => page.evaluate(() => ({ avg: TeamReport.overview().avg, ready: TeamReport.overview().ready, week: Math.round(TeamReport.salesSummary(7).revenue), fresh: TeamData.get().venue.fresh }));
+  const day0 = await read(); expect(day0.ready).toBeGreaterThan(0);
+  // Five days on, untouched, the team has faded and the week's sales have thinned out.
+  await page.clock.setFixedTime(new Date('2026-11-15T16:00:00'));
+  const stale = await read(); expect(stale.avg).toBeLessThan(day0.avg - 10);
+  // Opening the app again brings it forward.
+  await page.reload(); await page.getByTestId('team-console').waitFor();
+  const fresh = await read(); expect(Math.abs(fresh.avg - day0.avg)).toBeLessThanOrEqual(3); expect(fresh.ready).toBe(day0.ready);
+  expect(Math.abs(fresh.week - day0.week)).toBeLessThan(day0.week * 0.25); expect(fresh.fresh).toBeGreaterThan(day0.fresh || 0);
+  await ctx.close();
 });
