@@ -367,6 +367,13 @@ footer a { text-decoration: none; }
 .split .pts div::before, .test .pts div::before { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--cr)); margin-top: 8px; }
 .dark .split .pts div { color: var(--dim); }
 .shot { border-radius: 14px; overflow: hidden; border: 1px solid var(--dline); background: #0f0f0f; box-shadow: 0 40px 80px -36px rgba(15, 15, 15, .7); }
+/* A plan for each person: the console's cards for one server, and the plan as it sits on her phone. */
+.plan .split { grid-template-columns: .85fr 1.15fr; }
+.plan h2 { font-size: clamp(28px, 3.1vw, 40px); }
+.plan .viz { position: relative; padding: 0 9% 72px 0; }
+.plan .viz .con { display: block; width: 100%; height: auto; border-radius: 14px; background: #0f0f0f; border: 1px solid #2a2a2a; box-shadow: 0 40px 80px -36px rgba(15, 15, 15, .55); }
+.plan .viz .ph { position: absolute; right: 0; bottom: 0; width: 31%; aspect-ratio: 390 / 470; height: auto; object-fit: cover; object-position: 50% 62%; border-radius: 18px; border: 5px solid #1a1a1a; box-shadow: 0 30px 60px -24px rgba(15, 15, 15, .7); }
+@media (max-width: 980px) { .plan .split { grid-template-columns: 1fr; } .plan .viz { padding: 0 0 64px; } .plan .viz .ph { width: 40%; right: 8px; } }
 .dark.band { position: relative; overflow: clip; }
 .dark.band::before { content: ''; position: absolute; left: 50%; top: -35%; width: 80vw; height: 70%; transform: translateX(-50%); background: radial-gradient(ellipse at center, rgba(232, 83, 107, .2), transparent 60%); pointer-events: none; }
 .dark.band .wrap { position: relative; }

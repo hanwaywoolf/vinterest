@@ -84,6 +84,7 @@ test('the console scenes play at the size their pictures are', async ({ page }) 
   for (const [k, w] of [['dash', 1440], ['sales', 1440], ['team', 1440], ['training', 1440], ['wines', 1440], ['menu', 1440], ['card', sizes.cardW], ['dish', sizes.dishW], ['mgr', sizes.mgrW]]) expect(dims(k + '.jpg'), k).toEqual([w, sizes[k]]);
   for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) expect(dims('nav-' + k + '.jpg'), k).toEqual([1440, sizes.nav]);
   expect(dims('nav-mgr.jpg')).toEqual([sizes.mgrW, sizes.mgrNav]);
+  expect(dims('plan.jpg'), 'one person\'s plan on the Team page').toEqual(sizes.plan); expect(dims('plan-phone.jpg')).toEqual([390, 844]);
   for (const k of ['card', 'dish']) { expect(dims(k + '-bg.jpg'), k).toEqual([1440, 900]); expect(sizes[k + 'X'] + sizes[k + 'W']).toBe(1440);
     expect(sizes[k + 'Tap'].y, 'the row is on screen, under the bar').toBeGreaterThan(sizes.nav); expect(sizes[k + 'Tap'].y).toBeLessThan(840); expect(sizes[k + 'At']).toBeLessThanOrEqual(1); }
   await page.goto(BASE + '/');

@@ -10,6 +10,7 @@
 //   <section>.jpg       the section's whole page under the bar (dash, sales, team, training, wines, menu)
 //   card-bg, dish-bg    the laptop's screen with a wine's or a dish's drawer open; card, dish: the drawer's whole text
 //   mgr.jpg             the Dashboard at a tablet's width, for the strip that scrolls it
+//   plan, plan-phone    one person's next step, Ask Vinny and bespoke training on the Team page; that plan on their phone
 // sizes.json holds each picture's height, the bar's height (nav), and for each drawer the row that opens it:
 // how far down its page the scene scrolls first (cardAt, dishAt, a share of the scroll), where the tap lands
 // (cardTap, dishTap) and where the drawer sits (cardX, cardW).
@@ -91,6 +92,21 @@ try {
   // The Dashboard at a tablet's width, for the strip that scrolls through it.
   await size(MW, SH); await nav('dash');
   sizes.mgrW = MW; sizes.mgrNav = await bar(); await shot('nav-mgr', { x: 0, y: 0, width: MW, height: sizes.mgrNav }); await whole('mgr', 0, MW, [MW / 2, SH * 0.6], sizes.mgrNav);
+
+  // A plan for one person: on the Team page, the person a manager pushed bespoke training to, from their next step
+  // down to Ask Vinny and the training being tracked (plan.jpg); then that plan as it sits on their own phone (plan-phone.jpg).
+  await size(SW, SH); await nav('team');
+  const who = await page.evaluate(() => { const pl = TeamPlans.get().plans.find((p) => p.status === 'pushed'), p = pl && TeamLearn.person(pl.person || pl.pid || pl.for); return p ? { id: p.id, name: p.name } : null; });
+  if (who) {
+    await page.getByTestId('c2-team-row').filter({ hasText: who.name.split(' ')[0] }).first().click(); await page.waitForTimeout(500);
+    await size(SW, 2600); const a = await page.getByTestId('c2-next').boundingBox(), b = await page.getByTestId('c2-bespoke').boundingBox(), c = await page.getByTestId('c2-vinny').boundingBox();
+    const y0 = Math.round(a.y) - 8, y1 = Math.round(Math.max(b.y + b.height, c.y + c.height)) + 8, x0 = Math.round(a.x) - 8, w = Math.round(a.width) + 16;
+    await shot('plan', { x: x0, y: y0, width: w, height: y1 - y0 }); sizes.plan = [w, y1 - y0]; console.log(`plan.jpg ${w}×${y1 - y0}`);
+    const ph = await ctx.newPage(); await ph.setViewportSize({ width: 390, height: 844 });
+    await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.waitForFunction(() => window.TeamLearn && TeamLearn.people().length);
+    await ph.evaluate((id) => TeamLearn.setMe(id), who.id); await ph.reload(); const card = ph.getByTestId('today-plan').first(); await card.waitFor(); await card.scrollIntoViewIfNeeded(); await ph.waitForTimeout(400);
+    await ph.screenshot({ path: path.join(OUT, 'plan-phone.jpg'), type: 'jpeg', quality: 88 }); console.log('plan-phone.jpg 390×844'); await ph.close();
+  } else console.log('no pushed plan in this demo: plan.jpg not taken');
 
   fs.writeFileSync(path.join(OUT, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
   console.log('sizes.json', JSON.stringify(sizes));
