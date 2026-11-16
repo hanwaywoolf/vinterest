@@ -2685,6 +2685,10 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // The search box and the filters are locked with the title, above the header.
   await expect(page.getByTestId('c2-list')).toHaveAttribute('data-stuck', '');
   expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none', !!el.querySelector('[data-testid="c2-wine-find"]'), !!el.querySelector('[data-testid="c2-wine-filter-glass"]')]; })).toEqual([0, true, true, true]);
+  // A wine opened while the header is locked lies over it: the locked header never shows through a drawer or a dialog.
+  await page.getByTestId('c2-list').locator('tbody tr').nth(8).click(); await expect(page.getByTestId('console-panel')).toBeVisible();
+  expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const r = el.getBoundingClientRect(), p = document.querySelector('[data-testid="console-panel"]').getBoundingClientRect(), x = Math.max(r.left, p.left) + 20, top = document.elementFromPoint(x, r.top + 10); return !!top.closest('[data-testid="console-panel"]'); })).toBe(true);
+  await page.getByTestId('console-scrim').click();
   await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
   await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
   // Training: everything about training in one place. Each person's areas and next step, pushed from here; a person opens on Team.
