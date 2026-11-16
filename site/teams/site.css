@@ -105,6 +105,7 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
 .tabs button i { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--neon); transform: scaleX(0); transform-origin: 0 50%; }
 .tabs button[aria-selected="true"] i { animation: fill var(--dwell, 8s) linear forwards; }
+.tabs.wait button i { animation: none !important; }
 @keyframes fill { to { transform: scaleX(1); } }
 .laptop { position: relative; max-width: 1040px; margin: 0 auto; }
 /* The laptop fits the window's height with its tabs and caption: the screen is 0.625 of its width

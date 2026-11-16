@@ -355,8 +355,12 @@ async function play(name) {
   if (!held && inView) play(order[(order.indexOf(name) + 1) % order.length]);
 }
 tabs.forEach((t) => t.addEventListener('click', () => { held = false; play(t.dataset.scene); }));
-new IntersectionObserver((es) => es.forEach((e) => { inView = e.isIntersecting; if (inView && !playing) play(cur); })).observe(document.getElementById('demo'));
-play(cur);
+// Nothing counts down until the laptop is properly on screen (most of its screen showing): until then it rests on
+// the first page with its tab's line empty, so a reader arriving from the headline starts at the first section.
+// Scrolled away, the scene in hand finishes and waits; back in view it plays again from its top.
+const tabBox = document.getElementById('tabs'); tabBox.classList.add('wait');
+{ const sel = tabs.find((t) => t.dataset.scene === cur); cap.innerHTML = `<b>${sel.querySelector('b').textContent}.</b> ${sel.querySelector('span').textContent}`; lap.play([{ ...SCENES[cur].steps[0], pan: { ...SCENES[cur].steps[0].pan, ms: 0 } }]); }
+new IntersectionObserver((es) => es.forEach((e) => { inView = e.intersectionRatio >= .7; if (inView && !playing) { tabBox.classList.remove('wait'); play(cur); } }), { threshold: [0, .7] }).observe(stage);
 
 // The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
 const PW = 390, PH = 844, PHEAD = 57, PTAB = 58, pstage = document.getElementById('pstage');

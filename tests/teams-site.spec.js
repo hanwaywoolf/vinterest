@@ -224,7 +224,13 @@ test('each console scene, and the wine card, opens at the top of its page', asyn
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":""}' }));
   await page.goto(BASE + '/');
-  await page.locator('#demo').scrollIntoViewIfNeeded();
+  // Until the laptop is on screen nothing counts down: it rests on the first section however long the headline is read.
+  await page.waitForTimeout(1500);
+  expect(await page.getAttribute('[data-scene=dash]', 'aria-selected')).toBe('true');
+  expect(await page.evaluate(() => document.getElementById('tabs').classList.contains('wait'))).toBe(true);
+  await page.locator('#stage').scrollIntoViewIfNeeded();
+  await expect.poll(() => page.evaluate(() => document.getElementById('tabs').classList.contains('wait'))).toBe(false);
+  expect(await page.getAttribute('[data-scene=dash]', 'aria-selected')).toBe('true');
   const pan = () => page.evaluate(() => { const e = document.querySelector('#stage .ly[data-pan]'); return e && { img: e.src.split('/').pop().split('?')[0], y: e.style.transform || 'none' }; });
   for (const k of ['sales', 'team', 'training', 'cards', 'dash', 'menu']) {
     await page.click(`[data-scene=${k}]`);
