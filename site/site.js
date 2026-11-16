@@ -192,11 +192,34 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(reserveSteps);
   reserveSteps();
   var ease = function (k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; };
+  // The hero's camera: null when it's away, 'scan' while it covers the phone, 'lift' once the story has been started under it.
+  function heroCam() { var el = document.getElementById('hero-cam'); return el && !reduced && getComputedStyle(el).display !== 'none' ? el : null; }
+  function heroFeature() { for (var i = 0; i < features.length; i++) if (features[i].carousel) return features[i]; return null; }
+  function camPlay(f) {
+    var el = document.getElementById('hero-cam');
+    if (!el || reduced) return;
+    var fresh = el.cloneNode(true);
+    fresh.hidden = false; fresh.classList.remove('wait');
+    el.parentNode.replaceChild(fresh, el);
+    f.cam = 'scan';
+  }
+  function camStop(f) { var el = document.getElementById('hero-cam'); if (el) el.hidden = true; f.cam = null; }
+  function camHandOver(f) {
+    var el = document.getElementById('hero-cam');
+    if (el) el.classList.remove('wait');
+    f.cam = 'lift';
+    f.demos.forEach(function (d) { if (d.api && d.api.restart) d.api.restart(); });
+    hold(f, 0, false);
+  }
   // Stops the autoplay and shows caption i (playing what it plays, if it plays something).
   // `byReader` is a person choosing it: the front page's carousel then stops turning by itself.
   function hold(f, i, byReader) {
     var li = f.steps[i];
     if (byReader) f.auto = false;
+    if (f.carousel) {
+      if (i !== 0) { if (f.cam) camStop(f); }
+      else if (f.started && (byReader || !f.cam)) camPlay(f);
+    }
     f.wait = 0;
     f.phase = 'held';
     f.p = li.holdAt;
@@ -252,11 +275,19 @@
         if (!f.started) {
           // Once its phone is drawn (or, if that's failing, after a few seconds, so the captions still turn).
           f.seen = (f.seen || 0) + dt;
-          if (f.demos.every(function (d) { return d.api; }) || f.seen > 4000) { f.started = true; hold(f, 0, false); }
+          if (f.demos.every(function (d) { return d.api; }) || f.seen > 4000) {
+            // The hero's camera is already over the phone when the page opens: it isn't played again here, and if it was
+            // waiting for the story to be drawn, it lifts now.
+            var cam = f.carousel ? heroCam() : null;
+            if (cam && !cam.hidden) f.cam = 'scan';
+            f.started = true;
+            if (cam && cam.classList.contains('wait')) camHandOver(f); else hold(f, 0, false);
+          }
           return;
         }
         if (f.auto) {
-          f.wait += dt;
+          // While the camera is scanning, the first part's reading time hasn't begun.
+          f.wait = f.cam === 'scan' ? 0 : f.wait + dt;
           var dwell = f.steps[f.step].dwell / speed;
           f.nav.segs[f.step].firstChild.firstChild.style.setProperty('--f', clamp(f.wait / dwell, 0, 1).toFixed(3));
           if (f.wait > dwell) {
@@ -315,16 +346,20 @@
   } else {
     reveals.forEach(function (el) { el.classList.add('in'); });
   }
-  /* The hero opens on the camera (drawn in the page, see .hero-cam); as it lifts away the story underneath starts
-     again from its first scene, so the visitor sees the scan and then what it found, in order. */
-  var heroCam = document.getElementById('hero-cam');
-  if (heroCam && !reduced) {
-    heroCam.addEventListener('animationend', function (e) {
-      if (e.animationName !== 'camOut') return;
-      heroCam.hidden = true;
-      features.forEach(function (f) { if (!f.carousel || !f.auto) return; f.demos.forEach(function (d) { if (d.api && d.api.restart) d.api.restart(); }); hold(f, 0, false); });
-    });
-  }
+  /* The hero's first part is the scan itself: the camera (drawn in the page, see .hero-cam) over the phone, then the
+     story of what it found. The camera's own timeline is CSS; just before it lifts away (the camCue animation) the story
+     underneath is started from its first scene, while the camera still covers it, so what the fade uncovers is the label
+     scene already in place. Choosing the first part again, or the carousel coming back round to it, plays the scan again
+     (camPlay swaps the camera for a fresh copy, which restarts its timeline); choosing another part puts it away. */
+  document.addEventListener('animationend', function (e) {
+    if (!e.target || e.target.id !== 'hero-cam') return;
+    var f = heroFeature();
+    if (e.animationName === 'camCue') {
+      // Not drawn yet (a slow connection): the camera waits, covering the phone, and lifts once the story is there.
+      if (!f || !f.started) { e.target.classList.add('wait'); return; }
+      camHandOver(f);
+    } else if (e.animationName === 'camOut') { e.target.hidden = true; if (f) f.cam = null; }
+  });
   /* On a phone a section's caption floats at the foot of the screen; it shows once the section's phone is on
      screen (before that it would sit over the section's own heading). Without an observer it always shows. */
   var capStages = Array.prototype.slice.call(document.querySelectorAll('.feature .stage'));

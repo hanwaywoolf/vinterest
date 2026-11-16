@@ -88,7 +88,8 @@ test.describe('desktop', () => {
   test('the front page is a carousel of the app that turns by itself until someone touches it', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
     await expect(page.locator('.hero .stage .cap')).toHaveText("Scan a bottle. See if it's for you.");
-    await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 6000 });
+    // The first part's reading time starts once the camera has scanned the bottle (the camera keeps its own time).
+    await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 14000 });
     await expect(page.locator('.hero .phone-app')).toContainText('WineDNA');
     await page.locator('.hero .arrow.next').click();
     const at = await page.locator('.hero .stage .cap').textContent();
@@ -471,6 +472,30 @@ test.describe('trying it', () => {
     await expect(page.locator('.hero .phone-app')).toContainText('Likely a favourite', { timeout: 6000 });
     await page.waitForTimeout(3000);
     await expect(scene).toHaveAttribute('data-scene', 'match');
+  });
+
+  test('choosing the hero\'s first part plays the scan again, and the camera lifts onto the label scene', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const cam = page.locator('#hero-cam');
+    const scene = page.locator('.hero [data-testid="reveal-scene"]');
+    await expect(cam).toBeHidden({ timeout: 14000 });
+    // What the fade uncovered was the story's first scene, not one it had already moved on to.
+    await expect(scene).toHaveAttribute('data-scene', 'label');
+    const pills = page.locator('.hero [role="group"][aria-label="Steps"] button');
+    // Another part puts the camera away; the first brings the scan back, from its start.
+    await pills.nth(2).click();
+    await expect(cam).toBeHidden();
+    await pills.nth(0).click();
+    await expect(cam).toBeVisible();
+    await expect(cam.locator('.cam-pill .a')).toHaveCSS('opacity', '1');
+    // Leaving mid-scan puts it away at once.
+    await pills.nth(1).click();
+    await expect(cam).toBeHidden();
+    await pills.nth(0).click();
+    await expect(cam).toBeVisible();
+    await expect(cam).toBeHidden({ timeout: 12000 });
+    await expect(scene).toHaveAttribute('data-scene', 'label');
+    await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: 9000 });
   });
 
   test('the hero\'s entrance leaves everything in place, and sections arrive as they are reached', async ({ page }) => {
