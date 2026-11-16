@@ -132,6 +132,13 @@ const _HERO_WINE = { name: 'Viña Ardanza Reserva', alternative: '', producer: '
   country: 'Spain', type: 'red', grapes: ['Tempranillo', 'Garnacha'], blend: true, grapes_basis: 'known', grape_shares: null, body: 0.62, tannins: 0.5, acidity: 0.62, sweetness: 0.03,
   texture: null, effervescence: null, abv: 13.5, tasting_notes: ['Dried cherry', 'Vanilla', 'Tobacco'], food_pairings: ['Roast lamb', 'Manchego', 'Chorizo'], price_usd: 38,
   description: 'A classic Reserva from La Rioja Alta.' };
+/* The hero's grape and region pages read which grape and region from the session handoff on every render, and every
+   demo starting puts the shared store back as seeded (session handoff emptied): keep the two names there through a reset,
+   or those pages would lose their subject mid-visit. */
+const _HERO_GRAPE = 'Tempranillo', _HERO_REGION = 'Rioja';
+const _heroPages = () => { Handoff.grapePage.set(_HERO_GRAPE); Handoff.regionPage.set(_HERO_REGION); };
+{ const reset0 = DemoPersona.reset; DemoPersona.reset = () => { reset0(); _heroPages(); }; }
+
 function _openScan(view, unlock, fresh, scanned) {
   DemoPersona.reset();
   const wine = { ...(scanned || DemoPersona.user.scanned), confidence: 'high' };
@@ -308,17 +315,24 @@ const _DEMO_SCREENS = {
       const w = _HERO_WINE;
       setTimeout(() => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* the bottle stays */ } }, 700);
     } },
+    // Going deeper from the bottle: its grape's own page and its region's (each opened afresh, `fresh`, so it reads its handoff again).
+    { id: 'grape', nav: 'learn', Screen: GrapeScreen, setup: _heroPages },
+    { id: 'region', nav: 'learn', Screen: RegionPageScreen, setup: _heroPages },
     { id: 'dna', nav: 'profile', Screen: WineDNAScreen },
     { id: 'vinny', nav: 'home', Screen: _VinnyScreen },
-    { id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } },
     { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
   ], steps: [
-    // The label scene long enough to read, then the match, which the carousel holds on until its ring has filled and its reasons are read.
-    { at: 0, layer: 'scan', do: [{ story: 4800, until: 'match' }] },
-    { at: 0.2, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
-    { at: 0.4, layer: 'vinny', do: [{ vinny: true }] },
-    { at: 0.6, layer: 'article', to: 'top', drift: 0.6, ms: 9000 },
-    { at: 0.8, layer: 'wines', to: 'top', drift: 0.6, ms: 7000 },
+    // One bottle from the scan to what it teaches. The camera (drawn by the page) reads the label, and the story opens on its label scene.
+    { at: 0, layer: 'scan', do: [{ story: 4800, until: 'label' }] },
+    // The story carries on from there: the match, held until its ring has filled and its reason is read, then how the wine will feel.
+    { at: 0.125, layer: 'scan', follows: [0], do: [{ story: 6500, from: 'match', until: 'taste' }] },
+    // Its end: the dial turned to a rating.
+    { at: 0.25, layer: 'scan', follows: [0, 1], do: [{ rate: 94 }] },
+    { at: 0.375, layer: 'grape', fresh: true, to: 'top', drift: 1.1, ms: 7000 },
+    { at: 0.5, layer: 'region', fresh: true, to: 'top', drift: 1.1, ms: 7000 },
+    { at: 0.625, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
+    { at: 0.75, layer: 'vinny', do: [{ vinny: true }] },
+    { at: 0.875, layer: 'wines', to: 'top', drift: 0.6, ms: 7000 },
   ] },
 };
 
@@ -500,25 +514,51 @@ const VinterestDemo = {
       }, 40));
     };
     const enterStep = (k) => {
-      const st = d.steps[k];
-      const again = stepAt !== -1 && (st.do || []).some((a) => a.story);   // coming back round: play the story from its first scene
+      const st = d.steps[k], prev = stepAt;
+      // A part of the scan story starts the story over unless it carries on from the part before it (`follows`); a `fresh` part always opens anew.
+      const again = st.fresh || (prev !== -1 && (st.do || []).some((a) => a.story || a.rate) && !(st.follows || []).includes(prev));
       stopAll();
       stepAt = k;
       if (again && ctl.restart) ctl.restart(st.layer);
       if (ctl.setLayer && st.layer) ctl.setLayer(st.layer);
       (st.do || []).forEach((a) => {
         const root = layerEl(a.layer);
+        // A layer started over is a new element a moment later: the story's parts look it up each time.
+        const R = () => layerEl(st.layer);
         if (a.story) {
-          // The scan story, a scene every a.story ms (up to the scene named in a.until, if any): held on one scene and turned by a swipe, as the Scan section does.
+          // The scan story, a scene every a.story ms (from the scene named in a.from, reached at once, up to the one in a.until, if any): held on one scene and turned by a swipe, as the Scan section does.
           const go = (n) => {
+            const root = R();
             const st2 = root.querySelector('.rv-stage');
             if (!st2 || root.querySelector('[data-testid="reveal-tips"]')) return later(() => go(n - 1), 150);
             if (!root.querySelector('[data-testid="reveal-paused"]')) { rvTouchIn(root, 0); return later(() => go(n - 1), 150); }
-            const sc = root.querySelector('[data-testid="reveal-scene"]');
-            if (sc && (sc.getAttribute('data-scene') === 'end' || sc.getAttribute('data-scene') === a.until)) return;
-            later(() => { rvTouchIn(root, -140); later(() => go(1), 500); }, a.story);   // look again once the new scene is up
+            const sc = root.querySelector('[data-testid="reveal-scene"]'), at = sc && sc.getAttribute('data-scene');
+            if (at === 'end' || at === a.until) return;
+            const early = a.from && RV_KEYS.indexOf(at) > -1 && RV_KEYS.indexOf(at) < RV_KEYS.indexOf(a.from);
+            later(() => { rvTouchIn(R(), -140); later(() => go(1), 500); }, early ? 350 : a.story);   // look again once the new scene is up
           };
-          later(() => go(60), 400);
+          later(() => go(60), again ? 400 : 60);
+        } else if (a.rate) {
+          // The story's end sheet: Skip takes it there, then the dial is turned up to the rating, a point at a time.
+          live.push(_until(() => {
+            const root = R(), stage = root.querySelector('.rv-stage');
+            if (!stage || root.querySelector('[data-testid="reveal-tips"]')) return false;
+            const skip = root.querySelector('[data-rv-stop]');
+            if (skip && /Skip/.test(skip.textContent)) skip.click();
+            live.push(_until(() => {
+              const sl = _scoreSlider(R());
+              if (!sl) return false;
+              const from = 80, t0 = performance.now(), MS = 2600;
+              const turn = (now) => {
+                const q = Math.min(1, (now - t0) / MS), v = Math.round(from + (a.rate - from) * _ease(q)), dial = _scoreSlider(R());
+                if (dial && _scoreNow(dial) !== v) _setScore(dial, v);
+                if (q < 1) driftRaf = requestAnimationFrame(turn);
+              };
+              later(() => { driftRaf = requestAnimationFrame(turn); }, 900);
+              return true;
+            }, 60));
+            return true;
+          }, 60));
         } else if (a.type) typeInto(root, a.type[0], a.type[1]);
         else if (a.open) [].concat(a.open).forEach((sel) => live.push(_until(() => { const t = root.querySelector(sel + ' [role="button"]'); if (!t) return false; t.click(); return true; }, 40)));
         else if (a.vinny) {
