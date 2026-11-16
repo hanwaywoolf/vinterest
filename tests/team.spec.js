@@ -2658,6 +2658,11 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-list')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-list')).toContainText('Bottles sold');
   expect(await page.getByTestId('c2-wine-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
   await expect(page.getByTestId('c2-list-known').getByTestId('c2-spread')).toHaveCount(2);
+  // The list's header row stays in view as the list scrolls under it.
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 1500; });
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(4);
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
   await page.getByTestId('c2-wine-needs').getByTestId('c2-need').first().click(); await expect(page.getByTestId('c2-plan')).toBeVisible(); await page.getByTestId('c2-plan-close').click();
   await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
@@ -2694,6 +2699,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // Pick a person: their areas against the minimum, what they sell, and a next step to push.
   await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click();
   await expect(page.getByTestId('c2-stands')).toContainText('to go'); await expect(page.getByTestId('c2-sells')).toContainText('a week');
+  await expect(page.getByTestId('c2-sells')).toContainText('About Priya'); expect(await page.getByTestId('c2-about-row').count()).toBeGreaterThan(4);
   await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
   await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
   await expect(page.getByTestId('c2-mins')).toContainText('Server');
@@ -2783,5 +2789,23 @@ test('a request for pairings is about the wine for each dish, not the menu', asy
   expect(out.written).toHaveLength(2); expect(out.written.join(' ')).not.toContain('served with'); expect(out.cards).toBe(true);
   const sent = reqs.find((r) => r.purpose === 'team_plan').messages[0].content;
   expect(sent).toContain('This is a PAIRING plan'); expect(sent).toContain('pour with:'); expect(sent).not.toMatch(/#know \|/);
+  await ctx.close();
+});
+
+// A demo restaurant kept on a device for days stays as of today: without that its invented answers fade by the
+// clock and its sales end last week, and the whole team reads as slipping.
+test('a demo restaurant held for days is brought forward to today', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } }); await stubNetwork(ctx);
+  const page = await ctx.newPage(); await page.clock.install({ time: new Date('2026-11-10T16:00:00') });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const read = () => page.evaluate(() => ({ avg: TeamReport.overview().avg, ready: TeamReport.overview().ready, week: Math.round(TeamReport.salesSummary(7).revenue), fresh: TeamData.get().venue.fresh }));
+  const day0 = await read(); expect(day0.ready).toBeGreaterThan(0);
+  // Five days on, untouched, the team has faded and the week's sales have thinned out.
+  await page.clock.setFixedTime(new Date('2026-11-15T16:00:00'));
+  const stale = await read(); expect(stale.avg).toBeLessThan(day0.avg - 10);
+  // Opening the app again brings it forward.
+  await page.reload(); await page.getByTestId('team-console').waitFor();
+  const fresh = await read(); expect(Math.abs(fresh.avg - day0.avg)).toBeLessThanOrEqual(3); expect(fresh.ready).toBe(day0.ready);
+  expect(Math.abs(fresh.week - day0.week)).toBeLessThan(day0.week * 0.25); expect(fresh.fresh).toBeGreaterThan(day0.fresh || 0);
   await ctx.close();
 });

@@ -901,3 +901,16 @@ rule out, at least two of them the right one's kind. Otherwise, where the dish's
 "Everyone at a table of four would like the … with the …. What do you do?", offering the bottle at its price against
 three ways of leaving the sale on the table. A dish whose first pick is already bottle-only has "which wine suits it
 best" for that. In the new console every table centres its data under its headers; the first column reads from the left.
+
+### A demo stays as of today
+
+A demo restaurant's team and sales are invented when it's first opened, and answers fade by the clock, so a browser
+that kept the demo for a few days showed a team that had forgotten the menu and sales that ended last week.
+`TeamDemo.keepFresh` runs when the app opens: for a restaurant loaded from a seed it moves everything invented
+forward by the days gone by (answers and their review dates, assignments, plans, sales rows and nights, when wines
+joined the list). What someone did in the demo moves with it. A real restaurant's dates are never touched.
+
+"About Priya" on the Team page (`TeamReport.about`) adds to her sales: her strongest area and the one furthest
+behind, what she sells most, how much of it is wine she's trained on, what she sells without training, the team's
+best sellers she hasn't sold, answers fading, when she last practised, and her surprise re-checks. The Wines list
+keeps its header row in view while it scrolls.

@@ -243,6 +243,24 @@ const TeamReport = {
     return {person:p,part,label:TeamLearn.PART_LABEL[part],ready:r.state==='ready',stretch:!under.length,items:pick.map(y=>({id:y.id,name:name(y)})),pre:PRE[part],known:pt.known,to:Math.min(pt.total,pt.known+pick.length),total:pt.total,needs,pct:r.pct,pctAfter:Math.max(r.pct,Math.round(100*after)),drills:Math.max(1,Math.ceil(qs/5)),extra}; },
   /* Push that step: its things go first in the person's drills, due in three days. Returns how many. */
   pushPlan(pid){ const t=this.trainingPlan(pid); if(!t||!t.items.length) return 0; return TeamLearn.prioritise(pid,t.items.map(y=>y.id),3,Date.now(),t.pre); },
+  /* About one person, for the Team page: short findings a manager can act on, from their training and their sales.
+     {rows:[{label, text, tone, open?}]} in a fixed order; a row with nothing to say is left out. */
+  about(pid){ const x=this.people().find(y=>y.person.id===pid); if(!x) return {rows:[]}; const p=x.person, f=p.name.split(' ')[0], r=x.r, m=n=>TeamData.money(Math.round(n)), rows=[], all=TeamLearn._all(), items=(all[pid]||{items:{}}).items||{};
+    const add=(label,text,tone,open)=>{ if(text) rows.push({label,text,tone:tone||null,open:open||null}); }, sc=TeamLearn.scope(p.role), mine=[...sc.glass,...sc.bottle], trained=w=>TeamLearn.knowsWine(pid,p.role,w.id,items);
+    const areas=Object.entries(r.parts).map(([k,q])=>({k,label:TeamLearn.PART_LABEL[k],gap:q.need-q.share,share:q.share})), strong=[...areas].sort((a,b)=>b.share-a.share)[0], weak=[...areas].filter(a=>a.gap>1e-9).sort((a,b)=>b.gap-a.gap)[0];
+    if(strong&&strong.share>0) add('Strongest',`${strong.label}: trained on ${Math.round(100*strong.share)}% of it.`,'good');
+    if(weak) add('Furthest behind',`${weak.label}: ${Math.round(100*weak.share)}% against the ${Math.round(100*(weak.share+weak.gap))}% a ${TeamLearn.ROLES[p.role].label.toLowerCase()} needs.`,'bad');
+    if(TeamSales.has()){ const rows28=TeamSales.rows(28).filter(y=>y.v===pid&&y.w), by={}; rows28.forEach(y=>{ by[y.w]=(by[y.w]||0)+y.q*y.p; });
+      const top=Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([id,rev])=>({w:TeamData.wine(id),rev})).filter(y=>y.w), tot=top.reduce((a,y)=>a+y.rev,0), tr=top.filter(y=>trained(y.w)).reduce((a,y)=>a+y.rev,0);
+      if(top.length) add('Sells most',top.slice(0,3).map(y=>`${TeamData.nick(y.w)} (${m(y.rev/4)} a week)`).join(', ')+'.',null,{view:'wine',id:top[0].w.id});
+      if(tot>0) add('From wines trained on',`${Math.round(100*tr/tot)}% of what ${f} sells is wine ${f} is trained on.`,tr/tot>=0.6?'good':'note');
+      const blind=top.filter(y=>!trained(y.w)).slice(0,3); if(blind.length) add('Sells without training',`${blind.map(y=>TeamData.nick(y.w)).join(', ')}: ${f} already sells ${blind.length===1?'it':'them'}, and trained servers sell about ${(this.trainedLift(28).x||0)>=1.95?Math.round(this.trainedLift(28).x):this.trainedLift(28).x||2} times as much.`,'note',{view:'plan',kind:'person',id:pid});
+      const team=this.salesByWine(28).slice(0,8).map(y=>y.wine), never=team.filter(w=>mine.some(y=>y.id===w.id)&&!by[w.id]).slice(0,2); if(never.length) add('Hasn\'t sold',`${never.map(w=>TeamData.nick(w)).join(' or ')}, though ${never.length===1?'it\'s':'they\'re'} among the team's best sellers.`,'note'); }
+    if(r.due) add('Fading',`${r.due} answer${r.due===1?' has':'s have'} faded and ${r.due===1?'needs':'need'} a refresh: about ${Math.max(1,Math.ceil(r.due/5))} drill${r.due>5?'s':''}.`,'note');
+    const days=x.lastDrill?Math.floor((Date.now()-x.lastDrill)/this.DAY):null, wk=Object.entries((all[pid]||{}).drills||{}).length;
+    add('Practice',days==null?`${f} hasn't done a drill yet.`:`Last drill ${days===0?'today':days===1?'yesterday':`${days} days ago`}${wk?`; ${wk} day${wk===1?'':'s'} with a drill so far`:''}.`,days!=null&&days<=2?'good':'bad');
+    if(x.checks&&x.checks.asked) add('Re-checks',`${x.checks.right} of ${x.checks.asked} surprise re-checks right in the last month: what ${f} learns ${x.checks.right/x.checks.asked>=0.8?'is sticking':'isn\'t sticking yet'}.`,x.checks.right/x.checks.asked>=0.8?'good':'note');
+    return {rows}; },
   /* The Team page's table: each person with their areas against the minimum, what they sell and their next step. */
   teamRows(){ const srv=TeamSales.has()?Object.fromEntries(this.salesByServer(28).map(y=>[y.person.id,y])):{}, weeks=Math.max(1,TeamSales.nights(28).length/7);
     return this.people().map(x=>{ const s=srv[x.person.id], peers=Object.values(srv).filter(y=>y.shifts>0&&y.person.role===x.person.role), avg=peers.length?peers.reduce((a,y)=>a+(y.revenuePerShift||0),0)/peers.length:null;

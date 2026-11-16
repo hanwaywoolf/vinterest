@@ -693,6 +693,21 @@ const TeamSample = {
 /* The demo's staff at different stages of training (docs/business.md), seeded with dated answers so
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
+  /* A demo restaurant stays as of today. Its team's answers and its sales are invented at the moment it's first
+     opened, and answers fade by the clock: a browser that kept the demo for a few days showed a team that had
+     forgotten the menu and sales that ended last week. So once a day, everything invented moves forward by the days
+     gone by (answers, review dates, assignments, plans, sales rows and nights, when wines joined the list), and what
+     someone did in the demo moves with it. Only for a restaurant loaded from a seed (`venue.sample`); a real
+     restaurant's dates are never touched. */
+  keepFresh(now=Date.now()){ const d=TeamData.get(), v=d.venue||{}; if(!v.sample) return false; const DAY=86400000, sod=t=>new Date(t).setHours(0,0,0,0), today=sod(now), from=sod(v.fresh||v.created||now), days=Math.round((today-from)/DAY);
+    if(days<=0){ if(!v.fresh){ v.fresh=today; TeamData.save(d); } return false; } const by=days*DAY, mv=t=>t?Math.min(now,t+by):t;
+    const all=TeamLearn._all(); Object.values(all).forEach(m=>{ Object.values(m.items||{}).forEach(it=>{ if(it.last) it.last=mv(it.last); if(it.due) it.due+=by; if(it.first&&it.first.at) it.first.at=mv(it.first.at); });
+      Object.values(m.assigned||{}).forEach(a=>{ ['at','from','done'].forEach(k=>{ if(a[k]) a[k]=mv(a[k]); }); if(a.due) a.due+=by; }); (m.checks||[]).forEach(c=>{ if(c.at) c.at=mv(c.at); }); if(m.wasReady) m.wasReady=mv(m.wasReady);
+      if(m.drills){ const day=k=>{ const [y,mo,dd]=String(k).split('-').map(Number), t=new Date(y,mo-1,dd,12).getTime(); return isNaN(t)?k:TeamLearn._day(t+by); }; m.drills=Object.fromEntries(Object.entries(m.drills).map(([k,x])=>[day(k),x])); } });
+    TeamLearn._saveAll(all);
+    if(typeof TeamSales!=='undefined'&&TeamSales.demo()){ const sd=TeamSales.get(); sd.rows.forEach(r=>{ r.t+=by; }); sd.nights=Object.fromEntries(Object.entries(sd.nights||{}).map(([k,n])=>{ const [y,mo,dd]=k.split('-').map(Number); return [TeamSales.night(new Date(y,mo-1,dd,12).getTime()+by),n]; })); TeamSales.save(sd); }
+    if(typeof TeamPlans!=='undefined'){ const pd=TeamPlans.get(); pd.plans.forEach(p=>{ p.at=mv(p.at); if(p.pushedAt) p.pushedAt=mv(p.pushedAt); }); if(pd.plans.length) TeamPlans.save(pd); }
+    Object.values(d.wines||{}).forEach(w=>{ if(w.addedAt) w.addedAt=mv(w.addedAt); }); v.fresh=today; TeamData.save(d); return true; },
   /* The demo restaurant's Tonight, set once a day where the console's new look opens on an empty one, so the Tonight
      tile shows what a manager's four o'clock looks like: a bottle to push, a dish that's off and a note. Never for a
      real restaurant, and never again that day once the manager has changed or cleared it. */
