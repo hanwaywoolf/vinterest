@@ -41,8 +41,8 @@ const TeamData = {
     return this.offersNewLook()?'preview':'classic'; },
   /* Whether this restaurant is offered the new look: its stored details say so, or its seed's list file does (a device
      that opened the seed before the file asked for it keeps its old copy of the details until the training changes). */
-  offersNewLook(){ const v=this.get().venue||{}; if(v.console==='preview') return true;
-    try{ return !!v.sample&&((TeamSample.list(v.sample)||{}).venue||{}).console==='preview'; }catch(e){ return false; } },
+  offersNewLook(){ const v=this.get().venue||{}, asks=c=>c==='preview'||!!(c&&c.look==='preview'); if(asks(v.console)) return true; // a string, or {look:'preview'} beside other console settings (Eloise's `hide`)
+    try{ return !!v.sample&&asks(((TeamSample.list(v.sample)||{}).venue||{}).console); }catch(e){ return false; } },
   /* The new console's navigation: 'side' is hidden at the left edge and slides over the page; 'top' runs along the top. */
   navStyle(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_NAV; if(o==='side'||o==='top') return o; }catch(e){} return Store.get('vbiz_console_nav')==='top'?'top':'side'; },
   setNavStyle(v){ Store.set('vbiz_console_nav',v==='top'?'top':'side'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },

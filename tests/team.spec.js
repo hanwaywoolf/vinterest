@@ -2927,6 +2927,23 @@ test('the new console on a touch screen: a tab on the left edge opens the naviga
   expect(errors).toEqual([]); await ctx.close();
 });
 
+// The Social Corner and Eloise are offered the new console by their own files, as The Larkspur is; every page opens
+// for each with its own currency, and Eloise's file keeps its other console setting beside it.
+for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=${seed}&view=console`);
+  await expect(page.getByTestId('team-console')).toHaveAttribute('data-look', 'preview', { timeout: 30000 });
+  expect(await page.evaluate(() => [TeamData.offersNewLook(), TeamData.consoleLook()])).toEqual([true, 'preview']);
+  for (const [k, tid] of [['dash', 'console-dash'], ['sales', 'console-sales'], ['team', 'c2-team'], ['training', 'c2-training'], ['wines', 'console-wines'], ['menu', 'c2-dishes']]) {
+    await page.getByTestId('console-nav-' + k).click(); await expect(page.getByTestId(tid)).toBeVisible(); await expect(page.getByTestId('c2-head')).toBeVisible();
+  }
+  await page.getByTestId('console-nav-sales').click(); await expect(page.getByTestId('sales-revenue')).toContainText(money);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
 // Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
 // exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
 test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
