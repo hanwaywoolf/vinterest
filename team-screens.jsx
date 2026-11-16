@@ -6,6 +6,24 @@ const _tState={ready:{label:'Ready',col:'#5FD48F'},slipping:{label:'Slipping',co
 const _tH=(T,t,sub)=><div style={{marginBottom:10}}><div style={{fontSize:22,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
 const _tLabel=(T,t)=><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'16px 0 8px'}}>{t}</div>;
 const _tTypeCol=(T,t)=>T.lift(_TYPE_COLORS[String(t||'red').toLowerCase().replace('é','e')]||C.cr);
+/* A wine shown as a pill or a container of its own carries its colour as the consumer app does (_TYPE_COLORS): a red
+   crimson, a white gold, a rosé pink, a sparkling blue, an orange amber, a sweet or fortified brown. A pill is outlined
+   in it (never filled; the text stays the page's own), so the kind of wine reads at a glance; a row in a list takes the colour as a rule down its
+   left edge. Cocktails have no wine colour. Never on a quiz option, where the colour would give the kind of wine away. */
+const _tWineKey=w=>{ if(!w||TeamData.isDrink(w)) return null; const k=String(TeamLearn.kindOf(w)||w.type||'red').toLowerCase().replace('é','e'); return k==='sweet'?'dessert':_TYPE_COLORS[k]?k:'red'; };
+const _tLum=h=>{ const n=parseInt(String(h).slice(1),16), f=v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }; return 0.2126*f(n>>16&255)+0.7152*f(n>>8&255)+0.0722*f(n&255); };
+const _tContrast=(a,b)=>{ const x=_tLum(a), y=_tLum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); };
+const _tWineTone=w=>{ const k=_tWineKey(w); if(!k) return null; const bg=_TYPE_COLORS[k]; return {key:k,bg,fg:_tContrast(bg,'#FFFFFF')>=_tContrast(bg,'#15110A')?'#FFFFFF':'#15110A'}; };
+const _tWineRule=(T,w)=>{ const t=_tWineTone(w); return t?{boxShadow:`inset 3px 0 0 ${T.lift(t.bg)}`}:{}; };
+/* The wine pill: its name (and a price, and a glass when it's poured by the glass) inside an outline in its wine's
+   colour, never filled: the text stays the page's own, so it reads on any background. `pressed` false (a toggle that's
+   off) draws the outline faint. */
+function TeamWineChip({w,price,glass,onClick,testid,pressed,name,style:st}){ const T=useTheme(), t=_tWineTone(w), on=pressed!==false, label=name||TeamData.short(w);
+  const col=t?T.lift(t.bg):T.line, line=on?col:_alpha(col,0.45);
+  return <span role={onClick?'button':undefined} data-testid={testid||'team-wine-chip'} data-kind={t?t.key:'drink'} aria-pressed={pressed===undefined?undefined:pressed} title={TeamData.short(w)} onClick={onClick}
+    style={{display:'inline-flex',alignItems:'center',gap:7,maxWidth:'100%',padding:'5px 10px',borderRadius:9,background:'transparent',border:`1.5px solid ${line}`,color:on?T.ink:T.mid,fontFamily:C.P,cursor:onClick?'pointer':'default',...st}}>
+    {glass&&<span aria-label="Also by the glass" style={{display:'inline-flex',flexShrink:0}}><Icon n="glass" sz={13} col={col}/></span>}
+    <span style={{minWidth:0,fontSize:13,fontWeight:500,lineHeight:1.3}}>{label}</span>{price&&<span style={{fontSize:13,fontWeight:400,color:T.mid,flexShrink:0}}>{price}</span>}</span>; }
 /* Pills in a cluster each say what they are by their accent: a glass price in the wine's colour, a bottle price
    filled, a grape in green, anything else plain. */
 /* Anything that stands on its own on screen (a pill, a label, a line under a name, an item in a list) starts
@@ -114,7 +132,7 @@ function TeamTonightCard({pid,open,manage}){ const T=useTheme(), cr=T.lift(C.cr)
   const off=tn.off.map(id=>TeamData.dish(id)).filter(Boolean), feat=tn.feature.map(id=>TeamData.wine(id)||TeamData.cocktail(id)).filter(Boolean);
   const say=(x)=>{ TeamVoice.unlock(); TeamVoice.speak(x.name&&!x.producer?x.name:TeamData.short(x),{pace:'slow'}); };
   const line=w=>{ const c=TeamData.card(w.id)||TeamData.cocktailCard(w.id); const p=c&&c.pitch?String(c.pitch).split(/(?<=[.!?])\s+/)[0]:''; return p; };
-  const wineRow=(w,why,key)=><div key={key} role="button" onClick={()=>open({view:TeamLearn.isCocktail(w.id)?'cocktail':'wine',id:w.id})} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'10px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+  const wineRow=(w,why,key)=><div key={key} role="button" onClick={()=>open({view:TeamLearn.isCocktail(w.id)?'cocktail':'wine',id:w.id})} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'10px 0 10px 12px',borderTop:`1px solid ${T.line}`,cursor:'pointer',..._tWineRule(T,w)}}>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{TeamData.short(w)}{why&&<span style={{fontSize:13,fontWeight:600,color:T.amber,marginLeft:8}}>{why}</span>}</div>
       {line(w)&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{line(w)}</div>}</div>
     <div role="button" aria-label={`Say ${TeamData.short(w)}`} onClick={e=>{ e.stopPropagation(); say(w); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>🔊</div></div>;
@@ -137,7 +155,7 @@ function TeamTonightCard({pid,open,manage}){ const T=useTheme(), cr=T.lift(C.cr)
 /* The manager's editor for tonight: tap a dish to 86 it, a wine or cocktail to put it on feature. Clears itself tomorrow. */
 function TeamTonightEdit({back,pid,open}){ const T=useTheme(), cr=T.lift(C.cr), [,bump]=React.useReducer(x=>x+1,0), [q,setQ]=React.useState('');
   const tn=TeamData.tonight(), norm=x=>String(x||'').toLowerCase(), hit=x=>!q.trim()||norm(x).includes(norm(q.trim()));
-  const row=(kind,id,name,sub,on,col)=><div key={kind+id} role="button" data-testid={`tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer',background:on?_alpha(col,0.12):'transparent'}}>
+  const row=(kind,id,name,sub,on,col)=><div key={kind+id} role="button" data-testid={`tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer',background:on?_alpha(col,0.12):'transparent',...(kind==='feature'?_tWineRule(T,TeamData.wine(id)):{})}}>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{name}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{sub}</div>}</div>
     <span style={{fontSize:13,fontWeight:700,fontFamily:C.P,color:on?col:T.mid,padding:'4px 10px',borderRadius:10,border:`1px solid ${on?col:T.line}`}}>{on?(kind==='off'?"86'd":'On feature'):(kind==='off'?'86 it':'Feature')}</span></div>;
   return <div data-testid="team-tonight-edit">{_tH(T,'Tonight',"What's 86'd, the specials and what's on feature. Send it as the briefing everyone accepts before their shift.")}
@@ -447,7 +465,7 @@ function TeamDrink({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>The menu doesn't say how ours is made: check with the bar.</div></Card></div>}
       {sh.story&&c.story&&<>{_tcLabel(T,'The story')}<Card><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{c.story}</div></Card></>}
       {c.dishes&&c.dishes.length>0&&<>{_tcLabel(T,'With our menu')}<Card style={{padding:0}}>{c.dishes.map((x,i)=><div key={i} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none'}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>{x.why}</div></div>)}</Card></>}
-      {sh.alts&&c.alts&&c.alts.length>0&&<>{_tcLabel(T,'Offer instead')}<Card style={{padding:0}}>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; })}</Card></>}
+      {sh.alts&&c.alts&&c.alts.length>0&&<>{_tcLabel(T,'Offer instead')}<Card style={{padding:0}}>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer',..._tWineRule(T,o)}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; })}</Card></>}
       <Btn primary full style={{marginTop:16,..._TC_BTN}} onClick={()=>open({view:'drill',only:id})}>Practise this drink</Btn></>}
     {!c&&<Card><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>This drink's card is written when the list is published.</div></Card>}
   </div>; }
@@ -549,7 +567,7 @@ function TeamMenu({open,selected}){ const T=useTheme(), cr=T.lift(C.cr), xs=Team
 function TeamDish({id,open,pid}){ const T=useTheme(), cr=T.lift(C.cr), x=TeamData.dish(id), p=TeamData.pairing(id), c=TeamData.dishCard(id);
   if(!x) return null;
   const conf=TeamData.allergensOf(id), off=TeamData.isOff(id), price=x.price?(/^[0-9]/.test(String(x.price))?(TeamData.currency().sym||'')+x.price:x.price):'';
-  const row=(b,i,label,steer)=>{ const w=b&&TeamData.wine(b.id); return w&&<div key={label+i} role="button" onClick={()=>open({view:'wine',id:w.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
+  const row=(b,i,label,steer)=>{ const w=b&&TeamData.wine(b.id); return w&&<div key={label+i} role="button" onClick={()=>open({view:'wine',id:w.id})} style={{padding:'11px 14px',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer',..._tWineRule(T,w)}}>
     <div style={{fontSize:14,fontWeight:500,color:steer?T.amber:T.ink,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}><Flag wine={w} size={14}/><span>{steer?'Steer away: ':''}{TeamData.short(w)}</span> <span style={{fontWeight:400,color:T.mid,fontSize:14}}>{[w.glass&&`glass ${w.glass}`,w.bottle&&`bottle ${w.bottle}`].filter(Boolean).join(' · ')}</span></div>
     <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{b.why}</div></div>; };
   const can={yes:['Yes','#5FD48F'],no:['No','#F28B7D'],ask:['Ask the kitchen','#F2B84B']};

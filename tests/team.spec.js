@@ -2944,6 +2944,29 @@ for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new co
   expect(errors).toEqual([]); await ctx.close();
 });
 
+// A wine shown as a pill is outlined in its colour as the consumer app does (a red crimson, a white gold…), never filled,
+// so its text stays readable: every wine pill on the price ladder and the menu is unfilled with 4.5:1 text, and its kind matches its wine.
+test('wine pills are outlined in the wine\'s colour, never filled', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const check = () => page.evaluate(() => [...document.querySelectorAll('[data-kind]')].filter(el => el.getAttribute('data-kind') !== 'drink').map(el => {
+    const cs = getComputedStyle(el), rgb = c => c.match(/\d+/g).slice(0, 3).map(Number), L = a => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(a[0]) + 0.7152 * f(a[1]) + 0.0722 * f(a[2]); };
+    const a = L(rgb(cs.backgroundColor)), b = L(rgb(cs.color)); return { kind: el.getAttribute('data-kind'), ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }; }));
+  await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('c2-ladder-chip').first()).toBeVisible();
+  const ladder = await check(); expect(ladder.length).toBeGreaterThan(20);
+  expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)').length)).toBe(0);
+  expect(await page.locator('[data-kind="red"]').first().evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(await page.locator('[data-kind="white"]').first().evaluate(el => getComputedStyle(el).borderTopColor));
+  expect(new Set(ladder.map(x => x.kind))).toEqual(new Set(['red', 'white', 'sparkling', 'dessert', 'rose']));
+  expect(ladder.filter(x => x.ratio < 4.5)).toEqual([]);
+  expect(await page.evaluate(() => [_tWineKey(TeamData.wines().find(w => /Malbec/.test(w.name))), _tWineKey(TeamData.wines().find(w => /Chablis/.test(w.name))), _tWineKey(TeamData.wines().find(w => /Taylor/.test(w.producer || '')))])).toEqual(['red', 'white', 'dessert']);
+  await page.getByTestId('console-nav-menu').click(); await expect(page.getByTestId('c2-dish-wine').first()).toBeVisible();
+  expect((await check()).filter(x => x.ratio < 4.5)).toEqual([]);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
 // Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
 // exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
 test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
