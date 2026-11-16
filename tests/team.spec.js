@@ -2670,7 +2670,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // The list's header row stays in view as the list scrolls under it.
   expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-list"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 600; });
-  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(4);
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(70);
   await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
   await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
   // Training: everything about training in one place. Each person's areas and next step, pushed from here; a person opens on Team.
@@ -2695,7 +2695,9 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // Every table's header stays in view as it scrolls, and the side column scrolls by itself beside the long table.
   expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-dishes"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 500; });
-  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(el.getBoundingClientRect().top - s.top); })).toBeLessThan(4);
+  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(el.getBoundingClientRect().top - s.top); })).toBeLessThan(70);
+  // The card's title is locked above the header, so the header never floats alone.
+  expect(await page.getByTestId('c2-dishes').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), Math.abs(th.top - r.bottom) < 3]; })).toEqual([0, true]);
   expect(await page.getByTestId('c2-side').evaluate(el => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'); return [getComputedStyle(el).overflowY, el.clientHeight <= sc.clientHeight, el.scrollHeight > el.clientHeight]; })).toEqual(['auto', true, true]);
   await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
   // Under every header but the first, the data is centred beneath it.

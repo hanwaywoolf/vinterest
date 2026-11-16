@@ -25,9 +25,12 @@ function _c2Width(){ const ref=React.useRef(null), [w,setW]=React.useState(0);
   React.useLayoutEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>setW(el.clientWidth); m(); if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(m); ro.observe(el); return ()=>ro.disconnect(); },[]);
   return [ref,w]; }
 
-function _C2Card({title,right,children,feat,style,testid,onClick}){ const T=useTheme(), acc=_c2Acc(T);
-  return <div data-testid={testid} onClick={onClick} style={{background:feat?`linear-gradient(160deg, ${_alpha(acc,0.13)}, ${_alpha(acc,0.02)} 70%)`:'rgba(255,255,255,0.035)',border:`1px solid ${feat?_alpha(acc,0.34):'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'18px 20px',cursor:onClick?'pointer':'default',minWidth:0,...style}}>
-    {(title||right)&&<div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:10}}>{_c2Lab(T,title,feat?acc:null)}<span style={{..._c2Mut,color:T.mid,display:'flex',alignItems:'center',gap:8}}>{right}</span></div>}
+function _C2Card({title,right,children,feat,style,testid,onClick}){ const T=useTheme(), acc=_c2Acc(T), ref=React.useRef(null), head=React.useRef(null), [stick,setStick]=React.useState(false);
+  // A card that holds a table keeps its title locked above the table's header as the page scrolls under them.
+  React.useLayoutEffect(()=>{ const el=ref.current, h=head.current; if(!el||!h) return; const has=!!el.querySelector('table.c2sticky'); if(has!==stick) setStick(has); if(!has) return;
+    const set=()=>el.style.setProperty('--c2th',h.offsetHeight+'px'); set(); if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(set); ro.observe(h); return ()=>ro.disconnect(); });
+  return <div ref={ref} data-testid={testid} onClick={onClick} style={{background:feat?`linear-gradient(160deg, ${_alpha(acc,0.13)}, ${_alpha(acc,0.02)} 70%)`:'rgba(255,255,255,0.035)',border:`1px solid ${feat?_alpha(acc,0.34):'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'18px 20px',cursor:onClick?'pointer':'default',minWidth:0,...style}}>
+    {(title||right)&&<div ref={head} data-testid="c2-card-head" style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:10,...(stick?{position:'sticky',top:0,zIndex:4,background:'#0b0b0c',margin:'-18px -20px 0',padding:'18px 20px 10px',borderRadius:'18px 18px 0 0'}:{})}}>{_c2Lab(T,title,feat?acc:null)}<span style={{..._c2Mut,color:T.mid,display:'flex',alignItems:'center',gap:8}}>{right}</span></div>}
     {children}</div>; }
 /* One standout fact, three quick ones beneath it, and the page's actions on the right. */
 function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h=TeamReport.headline(section);
@@ -536,7 +539,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   const venue=TeamData.get().venue;
   // Every table in the new look: the first column (the wine, dish or person) reads from the left, and everything
   // under the other headers sits centred beneath them.
-  const css=`.c2t th:not(:first-child),.c2t td:not(:first-child){text-align:center !important;padding-left:8px !important;padding-right:8px !important}.c2t td:not(:first-child)>div{justify-content:center !important}.c2t td:not(:first-child) [data-testid="c2-knowers"]{display:inline-flex}.c2sticky thead th{position:sticky;top:0;z-index:3;background:#0b0b0c;box-shadow:0 1px 0 rgba(255,255,255,0.12);padding-top:12px !important}`;
+  const css=`.c2t th:not(:first-child),.c2t td:not(:first-child){text-align:center !important;padding-left:8px !important;padding-right:8px !important}.c2t td:not(:first-child)>div{justify-content:center !important}.c2t td:not(:first-child) [data-testid="c2-knowers"]{display:inline-flex}.c2sticky thead th{position:sticky;top:var(--c2th,0px);z-index:3;background:#0b0b0c;box-shadow:0 1px 0 rgba(255,255,255,0.12);padding-top:12px !important}`;
   return <div data-testid="team-console" data-look="preview" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:'#000',color:T.ink}}>
     <style>{css}</style>
     <div data-testid="c2-top" style={{display:'flex',alignItems:'center',gap:22,padding:'10px 28px',borderBottom:'1px solid rgba(255,255,255,0.08)',flexShrink:0}}>
