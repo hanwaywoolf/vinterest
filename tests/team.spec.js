@@ -2882,6 +2882,20 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   // A mistake is one step back: Undo (or Ctrl+Z) puts the card where it was, and the move can be made again.
   await expect(page.getByTestId('c2-board-note')).toContainText('Card moved');
   await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['sales-brief', 'c2-upside']);
+  // Undone back to the page's own layout, the pill says so and fades by itself.
+  await expect(page.getByTestId('c2-board-note')).toContainText('Move undone'); await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 });
+  // A move asks: Undo, Default layout or Save. Save keeps it and the pill fades away; the way back to the default stays at the foot.
+  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id; window.__pid = pid; });
+  { const g5 = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g5.scrollIntoViewIfNeeded(); const a = await g5.boundingBox(), t = await page.locator('[data-k="sales-servers"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 200, Math.min(880, Math.max(90, t.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
+  await expect(page.getByTestId('c2-note-save')).toBeVisible(); await expect(page.getByTestId('c2-note-reset')).toBeVisible();
+  await page.waitForTimeout(3500); await expect(page.getByTestId('c2-board-note')).toContainText('Card moved'); // it waits for an answer
+  await page.getByTestId('c2-note-save').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Layout saved');
+  await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toBeVisible();
+  expect((await order()).right[1]).toBe('c2-upside');
+  await page.getByTestId('c2-board-reset').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Back to the default layout');
+  await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toHaveCount(0);
   expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] };
     TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-servers', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
   await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
@@ -2917,7 +2931,7 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   { const g4 = page.locator('[data-k="c2-trains"] [data-testid="c2-grip"]'); await g4.scrollIntoViewIfNeeded(); const a = await g4.boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(150);
     await expect(page.getByTestId('c2-stack-side')).toHaveCount(1); await page.mouse.up(); await page.keyboard.press('Escape'); }
-  await page.getByTestId('c2-board-reset').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  await page.getByTestId(await page.getByTestId('c2-note-reset').count() ? 'c2-note-reset' : 'c2-board-reset').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
   // The navigation can go back along the top, and be hidden again.
@@ -2956,6 +2970,37 @@ for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new co
     await page.getByTestId('console-nav-' + k).click(); await expect(page.getByTestId(tid)).toBeVisible(); await expect(page.getByTestId('c2-head')).toBeVisible();
   }
   await page.getByTestId('console-nav-sales').click(); await expect(page.getByTestId('sales-revenue')).toContainText(money);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// Cocktails in the new look: every cocktail on the list with who is trained on it and the dishes its card pours it with,
+// the bar team's progress, what needs the manager, and a cocktail opening its card in the drawer; its cards move like the rest.
+test('the new console\'s Cocktails page', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=social&view=console`);
+  await expect(page.getByTestId('team-console')).toHaveAttribute('data-look', 'preview', { timeout: 30000 });
+  await page.getByTestId('console-nav-cocktails').click(); await expect(page.getByTestId('console-cocktails')).toBeVisible();
+  const n = await page.evaluate(() => TeamData.cocktails().length); expect(n).toBeGreaterThan(10);
+  await expect(page.getByTestId('c2-mix-row')).toHaveCount(n);
+  await expect(page.getByTestId('c2-head')).toContainText('Cocktails'); await expect(page.getByTestId('c2-fact')).toContainText('cocktails have most of the team trained');
+  // Who is trained on each, as the wines show it; the figures are TeamReport's.
+  expect(await page.getByTestId('c2-mix-list').getByTestId('c2-knowers').count()).toBe(n);
+  const most = await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.kb.of && x.kb.people.length >= Math.ceil(x.kb.of / 2)).length);
+  await expect(page.getByTestId('c2-kpi-mix-most')).toContainText(String(most));
+  expect(await page.getByTestId('c2-mix-dishes').filter({ hasNotText: '—' }).count()).toBe(await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.dishes.length).length));
+  await expect(page.getByTestId('c2-mix-spread').getByTestId('c2-spread')).toHaveCount(1);
+  expect(await page.getByTestId('c2-mix-person').count()).toBe(await page.evaluate(() => TeamReport.cocktailPeople().length));
+  // A filter narrows the list; a cocktail opens its card; a person opens theirs.
+  await page.getByTestId('c2-mix-filter-few').click();
+  expect(await page.getByTestId('c2-mix-row').count()).toBe(await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.kb.of && x.kb.people.length < Math.ceil(x.kb.of / 2)).length));
+  await page.getByTestId('c2-mix-filter-all').click();
+  await page.getByTestId('c2-mix-row').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  await page.getByTestId('c2-mix-person').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  expect(await page.locator('[data-testid="c2-stack-side"] > [data-testid="c2-drag"]').count()).toBe(3);
+  expect((await page.getByTestId('console-cocktails').innerText()).match(/know(s|n)? it|known by|the floor|overdue/i)).toBe(null);
   expect(errors).toEqual([]); await ctx.close();
 });
 
