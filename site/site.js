@@ -322,7 +322,7 @@
     heroCam.addEventListener('animationend', function (e) {
       if (e.animationName !== 'camOut') return;
       heroCam.hidden = true;
-      features.forEach(function (f) { if (f.carousel && f.auto) hold(f, 0, false); });
+      features.forEach(function (f) { if (!f.carousel || !f.auto) return; f.demos.forEach(function (d) { if (d.api && d.api.restart) d.api.restart(); }); hold(f, 0, false); });
     });
   }
   /* On a phone a section's caption floats at the foot of the screen; it shows once the section's phone is on

@@ -677,6 +677,8 @@ const VinterestDemo = {
         scrollTo(p);
       },
       replay() { stepAt = -1; },
+      // Starts the part that's showing from its very beginning (the scan story back at its first scene): the hero does this as its camera lifts away.
+      restart() { const st = d.steps && d.steps[stepAt]; if (st && ctl.restart) ctl.restart(st.layer); stepAt = -1; },
       unmount() { cancel(); cancelGo(); glide.stop(); if (d.steps) stopAll(); root.unmount(); },
     };
     return api;

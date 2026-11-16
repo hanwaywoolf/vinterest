@@ -451,6 +451,15 @@ test.describe('trying it', () => {
     await expect(page.locator('#dial-a')).toContainText('92 · Outstanding');
   });
 
+  test('the hero opens on the camera with a bottle in the frame, then lifts away to the story the scan found', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const cam = page.locator('#hero-cam');
+    await expect(cam).toBeVisible();
+    await expect(cam.locator('svg.cam-bottle')).toContainText('Crozes-');
+    await expect(cam).toBeHidden({ timeout: 9000 });
+    await expect(page.locator('.hero .phone-app')).toContainText('Crozes-Hermitage 2021');
+  });
+
   test('the hero\'s entrance leaves everything in place, and sections arrive as they are reached', async ({ page }) => {
     await page.goto(BASE + '/');
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
