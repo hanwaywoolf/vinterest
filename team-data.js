@@ -27,9 +27,24 @@ const TeamData = {
     const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
   _fresh:false,
   save(d){ this._relist(); Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
-  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined') TeamBuyer.clear(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
+  setting(k,def){ const v=(this.get().settings||{})[k]; return v===undefined?def:v; },
+  /* Whether this restaurant trains allergens here. Off where they're managed in the kitchen's own system: nobody is
+     asked about one and no dish counts for it (allergensOf answers none confirmed). On unless switched off. */
+  trainsAllergens(){ return this.setting('allergens',true)!==false; },
+  /* Which console a manager gets: the new look (team-console2.jsx) where the restaurant's file asks for it
+     (venue.console 'preview', as The Larkspur's does), unless this device chose the other; tests pin it with
+     window.VINTEREST_CONSOLE ('classic' or 'preview'). */
+  consoleLook(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_CONSOLE; if(o==='classic'||o==='preview') return o; }catch(e){}
+    const mine=Store.get('vbiz_console_look'); if(mine==='classic'||mine==='preview') return mine;
+    return this.offersNewLook()?'preview':'classic'; },
+  /* Whether this restaurant is offered the new look: its stored details say so, or its seed's list file does (a device
+     that opened the seed before the file asked for it keeps its old copy of the details until the training changes). */
+  offersNewLook(){ const v=this.get().venue||{}; if(v.console==='preview') return true;
+    try{ return !!v.sample&&((TeamSample.list(v.sample)||{}).venue||{}).console==='preview'; }catch(e){ return false; } },
+  setConsoleLook(v){ Store.set('vbiz_console_look',v==='preview'?'preview':'classic'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the
      floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
@@ -95,7 +110,7 @@ const TeamData = {
   allergenList(){ return this.ALLERGENS[this.allergenCountry()].map(([code,name])=>({code,name})); },
   allergenName(code){ const a=this.allergenList().find(x=>x.code===code); return a?a.name:code; },
   /* The allergens a server is taught for a dish: only what the kitchen confirmed. null until then. */
-  allergensOf(id){ const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
+  allergensOf(id){ if(!this.trainsAllergens()) return null; const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
   confirmAllergens(id,codes,by){ const doc=this.get(); doc.dishCards=doc.dishCards||{}; const c=doc.dishCards[id]||{say:'',allergens:{draft:[],note:''},mods:[],ask:[]};
     doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc);
     if(typeof TeamLearn!=='undefined') TeamLearn.assignAllergen(id); },
@@ -633,7 +648,7 @@ const TeamSample = {
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined') TeamBuyer.clear();
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     applyTier();
@@ -686,6 +701,28 @@ const TeamSample = {
 /* The demo's staff at different stages of training (docs/business.md), seeded with dated answers so
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
+  /* A demo restaurant stays as of today. Its team's answers and its sales are invented at the moment it's first
+     opened, and answers fade by the clock: a browser that kept the demo for a few days showed a team that had
+     forgotten the menu and sales that ended last week. So once a day, everything invented moves forward by the days
+     gone by (answers, review dates, assignments, plans, sales rows and nights, when wines joined the list), and what
+     someone did in the demo moves with it. Only for a restaurant loaded from a seed (`venue.sample`); a real
+     restaurant's dates are never touched. */
+  keepFresh(now=Date.now()){ const d=TeamData.get(), v=d.venue||{}; if(!v.sample) return false; const DAY=86400000, sod=t=>new Date(t).setHours(0,0,0,0), today=sod(now), from=sod(v.fresh||v.created||now), days=Math.round((today-from)/DAY);
+    if(days<=0){ if(!v.fresh){ v.fresh=today; TeamData.save(d); } return false; } const by=days*DAY, mv=t=>t?Math.min(now,t+by):t;
+    const all=TeamLearn._all(); Object.values(all).forEach(m=>{ Object.values(m.items||{}).forEach(it=>{ if(it.last) it.last=mv(it.last); if(it.due) it.due+=by; if(it.first&&it.first.at) it.first.at=mv(it.first.at); });
+      Object.values(m.assigned||{}).forEach(a=>{ ['at','from','done'].forEach(k=>{ if(a[k]) a[k]=mv(a[k]); }); if(a.due) a.due+=by; }); (m.checks||[]).forEach(c=>{ if(c.at) c.at=mv(c.at); }); if(m.wasReady) m.wasReady=mv(m.wasReady);
+      if(m.drills){ const day=k=>{ const [y,mo,dd]=String(k).split('-').map(Number), t=new Date(y,mo-1,dd,12).getTime(); return isNaN(t)?k:TeamLearn._day(t+by); }; m.drills=Object.fromEntries(Object.entries(m.drills).map(([k,x])=>[day(k),x])); } });
+    TeamLearn._saveAll(all);
+    if(typeof TeamSales!=='undefined'&&TeamSales.demo()){ const sd=TeamSales.get(); sd.rows.forEach(r=>{ r.t+=by; }); sd.nights=Object.fromEntries(Object.entries(sd.nights||{}).map(([k,n])=>{ const [y,mo,dd]=k.split('-').map(Number); return [TeamSales.night(new Date(y,mo-1,dd,12).getTime()+by),n]; })); TeamSales.save(sd); }
+    if(typeof TeamPlans!=='undefined'){ const pd=TeamPlans.get(); pd.plans.forEach(p=>{ p.at=mv(p.at); if(p.pushedAt) p.pushedAt=mv(p.pushedAt); }); if(pd.plans.length) TeamPlans.save(pd); }
+    Object.values(d.wines||{}).forEach(w=>{ if(w.addedAt) w.addedAt=mv(w.addedAt); }); v.fresh=today; TeamData.save(d); return true; },
+  /* The demo restaurant's Tonight, set once a day where the console's new look opens on an empty one, so the Tonight
+     tile shows what a manager's four o'clock looks like: a bottle to push, a dish that's off and a note. Never for a
+     real restaurant, and never again that day once the manager has changed or cleared it. */
+  seedTonight(){ if(!TeamData.isDemo()) return false; const t=TeamData.tonight(), day=t.day; if(t.off.length||t.feature.length||t.note||Store.get('vbiz_tonight_demo')===day) return false;
+    const ws=TeamData.wines().filter(w=>!TeamData.isDrink(w)), ds=TeamData.dishes(), push=ws.find(w=>/barolo/i.test(TeamData.label(w)))||ws.find(w=>!TeamData.byGlass(w))||ws[0], off=ds.find(x=>/sole|scallop/i.test(x.name))||ds[ds.length-1];
+    Store.set('vbiz_tonight_demo',day); if(!push) return false;
+    TeamData.setTonight({feature:[push.id],off:off?[off.id]:[],note:`Two large tables at 7:30. Lead with the ${TeamData.nick(push)} for the red meat.`}); return true; },
   DAY:86400000,
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a

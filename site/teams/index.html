@@ -32,12 +32,12 @@
     <div class="demo dgrid" id="demo">
       <div class="dside">
         <div class="tabs" role="tablist" id="tabs" aria-label="The management console">
-          <button role="tab" aria-selected="true" data-scene="tonight"><b>Tonight</b><span>What's 86'd and what's on feature, set before service. It lands on every phone's Today with the two wines each person should look at first.</span><i></i></button>
-          <button role="tab" data-scene="ready"><b>Readiness</b><span>One figure per person against the minimum for their role, who's behind or slipping, and exactly what each is short of.</span><i></i></button>
-          <button role="tab" data-scene="sales"><b>Sales Insights</b><span>What you need to know from your POS in plain sentences: your best-selling wines and whether the team knows them, wine per guest, slow glasses, and what training is worth.</span><i></i></button>
-          <button role="tab" data-scene="team"><b>Team</b><span>Each person's readiness, days behind, fading answers and surprise re-checks. Set the training level per role, the minimum to work the floor, and sign off allergens.</span><i></i></button>
-          <button role="tab" data-scene="cards"><b>Wines and cards</b><span>Every wine with who knows it, what it sold and its drinking window. Open one for the card your staff learn from, and rewrite any line.</span><i></i></button>
-          <button role="tab" data-scene="menu"><b>Menu and allergens</b><span>Every dish with its wine by the glass and by the bottle. Allergens are drafted from the menu and count only once the kitchen confirms them.</span><i></i></button>
+          <button role="tab" aria-selected="true" data-scene="dash"><b>Dashboard</b><span>The week in one line, then what's behind it: wine sales, wine per guest, how often the pairing sold, your best sellers and who's trained on them, and what needs you before service.</span><i></i></button>
+          <button role="tab" data-scene="sales"><b>Sales Insights</b><span>Your POS in plain sentences: glass against bottle, sales week by week, who sells it, which nights sell wine, and where the next sales are.</span><i></i></button>
+          <button role="tab" data-scene="team"><b>Team</b><span>Who's ready for service tonight, furthest from ready first. Pick a person for where they stand against their role's minimum, what they train on next, and a plan written for them.</span><i></i></button>
+          <button role="tab" data-scene="training"><b>Training</b><span>Everyone's readiness on glasses, bottles, pairings and the menu, each with a next step. Push one person's, or everyone's, to their phone.</span><i></i></button>
+          <button role="tab" data-scene="cards"><b>Wines and cards</b><span>The buyer's page: the balance of your list against what sells, the price ladder and its gaps, markup and drinking windows. Open a wine for the card your staff learn from.</span><i></i></button>
+          <button role="tab" data-scene="menu"><b>Menu and allergens</b><span>Every dish with its glass and its bottle, and how often tables took them. Allergens count only once the kitchen confirms them.</span><i></i></button>
         </div>
         <p class="cap" id="cap"></p>
         <button class="btn ghost small explore" type="button" data-demo-open>Explore it yourself →</button>
@@ -229,7 +229,7 @@
         <div><span>Dishes with allergens still to confirm</span><b>27</b></div>
       </div>
     </div>
-    <div><div class="mwin"><div class="stage mstage" id="mstage" role="img" aria-label="The console's dashboard scrolling: tonight's 86'd and feature wines, the team at a glance, what needs attention, sales at a glance, readiness by person and what to learn first"></div></div></div>
+    <div><div class="mwin"><div class="stage mstage" id="mstage" role="img" aria-label="The console's dashboard scrolling: the week's wine sales, best sellers and who is trained on them, what training is worth, what needs you, the team and tonight"></div></div></div>
   </div>
 </section>
 
@@ -320,24 +320,31 @@ function player(stage, W, H, dir, mode) {
 }
 
 // The laptop: the console's pages, one scene per tab.
-const SW = 1440, SH = 900, SB = 220;
-const side = (k) => [{ img: 'sidebar-' + k, x: 0, w: SB, h: SH }];
+const SW = 1440, SH = 900;
 // Every scene and every card that opens rests on the top of its page first (TOP ms), then scrolls.
 const TOP = 2200;
-// The pictures' heights and the two taps come from the pictures themselves (scripts/site-teams-shots.mjs writes
-// img/scenes/sizes.json and the build puts it here), so retaking them needs no edit to this page.
+// The pictures' heights, the bar's height and the two taps come from the pictures themselves
+// (scripts/site-teams-shots.mjs writes img/scenes/sizes.json and the build puts it here), so retaking them
+// needs no edit to this page.
 const SZ = %%SCENE_SIZES%%;
+// A page of the console: its bar across the top stays put (nav-<k>) while the page (k) scrolls under it.
+const page = (k, from, to, ms) => ({ pan: { img: k, x: 0, y: SZ.nav, w: SW, h: SZ[k], from, to, ms }, over: [{ img: 'nav-' + k, x: 0, y: 0, w: SW, h: SZ.nav }] });
+const scroll = (k, to, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, to, ms), keep: true }];
+// A drawer: the page scrolled to the row, the row tapped, the screen with the drawer open, then the drawer read down.
+const drawer = (k, name, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, SZ[name + 'At'], 3200), keep: true, tap: SZ[name + 'Tap'] },
+  { frames: [{ img: name + '-bg', x: 0, w: SW, h: SH }], pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 0, ms: TOP } },
+  { pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 1, ms }, keep: true }];
 const SCENES = {
-  tonight: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: 0, ms: 7000 } }] },
-  ready: { steps: [{ frames: side('dash'), pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dash', x: SB, w: SW - SB, h: SZ.dash, from: 0, to: .58, ms: 8000 }, keep: true }] },
-  sales: { steps: [{ frames: side('sales'), pan: { img: 'sales', x: SB, w: SW - SB, h: SZ.sales, from: 0, to: 0, ms: TOP + 800 } }, { pan: { img: 'sales', x: SB, w: SW - SB, h: SZ.sales, from: 0, to: 1, ms: 9000 }, keep: true }] },
-  team: { steps: [{ frames: side('team'), pan: { img: 'team', x: SB, w: SW - SB, h: SZ.team, from: 0, to: 0, ms: TOP } }, { pan: { img: 'team', x: SB, w: SW - SB, h: SZ.team, from: 0, to: 1, ms: 6000 }, keep: true }] },
-  cards: { steps: [{ frames: side('wines'), pan: { img: 'wines', x: SB, w: SW - SB, h: SZ.wines, from: 0, to: 0, ms: TOP }, tap: SZ.cardTap }, { frames: [{ img: 'card-bg', x: 0, w: SW, h: SH }], pan: { img: 'card', x: 840, w: 600, h: SZ.card, from: 0, to: 0, ms: TOP } }, { pan: { img: 'card', x: 840, w: 600, h: SZ.card, from: 0, to: 1, ms: 8000 }, keep: true }] },
-  menu: { steps: [{ frames: side('menu'), pan: { img: 'menu', x: SB, w: SW - SB, h: SZ.menu, from: 0, to: 0, ms: TOP }, tap: SZ.dishTap }, { frames: [{ img: 'dish-bg', x: 0, w: SW, h: SH }], pan: { img: 'dish', x: 840, w: 600, h: SZ.dish, from: 0, to: 0, ms: TOP } }, { pan: { img: 'dish', x: 840, w: 600, h: SZ.dish, from: 0, to: 1, ms: 6000 }, keep: true }] },
+  dash: { steps: scroll('dash', 1, 9000) },
+  sales: { steps: scroll('sales', 1, 10000) },
+  team: { steps: scroll('team', 1, 7000) },
+  training: { steps: scroll('training', 1, 8000) },
+  cards: { steps: drawer('wines', 'card', 8000) },
+  menu: { steps: drawer('menu', 'dish', 6000) },
 };
 const stage = document.getElementById('stage'), tabs = Array.from(document.querySelectorAll('#tabs [role=tab]')), cap = document.getElementById('cap');
 const order = tabs.map((t) => t.dataset.scene), lap = player(stage, SW, SH, 'img/scenes/', 'wheel');
-let cur = 'ready', held = reduced, inView = false, playing = false;
+let cur = 'dash', held = reduced, inView = false, playing = false;
 async function play(name) {
   cur = name; playing = true; const sc = SCENES[name];
   { const sel = tabs.find((t) => t.dataset.scene === name), box = sel.parentElement; if (box.scrollWidth > box.clientWidth) box.scrollTo({ left: sel.offsetLeft - (box.clientWidth - sel.offsetWidth) / 2, behavior: reduced ? 'auto' : 'smooth' }); }
@@ -440,12 +447,13 @@ fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersectin
   show('hub');
 })();
 
-// The manager's dashboard: readiness, what needs attention, learn first and new on the list, scrolled
+// The manager's dashboard, scrolled
 // through while the section is on screen, then back to the top.
 (function () {
-  const el = document.getElementById('mstage'), MW = 584, MH = 720;
+  const el = document.getElementById('mstage'), MW = SZ.mgrW, MH = Math.round(MW * 720 / 584);
   const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
-  const steps = [{ pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 0, to: 0, ms: 2200 } }, { pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 0, to: 1, ms: 26000 }, keep: true }, { pan: { img: 'mgr', x: 0, w: MW, h: SZ.mgr, from: 1, to: 1, ms: 2200 }, keep: true }];
+  const at = (from, to, ms) => ({ pan: { img: 'mgr', x: 0, y: SZ.mgrNav, w: MW, h: SZ.mgr, from, to, ms }, over: [{ img: 'nav-mgr', x: 0, y: 0, w: MW, h: SZ.mgrNav }] });
+  const steps = [at(0, 0, 2200), { ...at(0, 1, 26000), keep: true }, { ...at(1, 1, 2200), keep: true }];
   let on = false;
   async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }
   if (reduced) { mp.play([steps[0]]); return; }

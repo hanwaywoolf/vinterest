@@ -41,6 +41,8 @@ function TeamApp(){
     const seed=q.get('seed'); if(!seed&&TeamSample.retire()) refresh();
     // The Social Corner is a demo install: a device holding an older copy of its files takes the new one, with or without ?seed.
     const held=(TeamData.get().venue||{}).sample; if(!seed&&(TeamSample.social(held)||held==='demo')&&!TeamSample.current(held)){ TeamSample.load(held); refresh(); } if(seed){ if(!TeamLearn.me()||!TeamSample.current(seed)) TeamSample.load(seed); q.delete('seed'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:'')); refresh(); } }catch(e){} },[]);
+  // A demo restaurant held for days is brought forward to today, so its team hasn't forgotten everything and its sales don't end last week.
+  try{ TeamDemo.keepFresh(); }catch(e){} // once a day; everything read below is already as of today
   TeamBrand.apply(); // again after a seed may have just loaded a restaurant
   const me=TeamLearn.me(), set=!!me, brand=TeamData.brand();
   const manager=me&&TeamLearn.canConsole(me);
@@ -55,7 +57,7 @@ function TeamApp(){
     posRef.current[stack.length]=scrollNow(); pendRef.current=0; setStack(s=>[...s,v]); };
   const consoleOn=set&&manager&&(forceConsole||wantConsole||size!=='phone')&&!phoneView;
   const toPhone=v=>{ setPhoneView(true); setWantConsole(false); setStack([]); if(v&&v.pid&&TeamLearn.person(v.pid)) TeamLearn.setMe(v.pid); if(v&&v.tab) setTab(v.tab); else setTab('today'); if(v&&v.view==='drill') setStack([{view:'drill',only:v.only,part:v.part}]); refresh(); };
-  if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary><TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/></ScreenErrorBoundary></div></DeckTheme.Provider>;
+  if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary>{TeamData.consoleLook()==='preview'?<TeamConsole2 me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>:<TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>}</ScreenErrorBoundary></div></DeckTheme.Provider>;
   const back=()=>{ pendRef.current=posRef.current[stack.length-1]||0; setStack(s=>s.slice(0,-1)); };
   const top=stack[stack.length-1];
   let body;

@@ -1,18 +1,29 @@
 {
- "dash": 2279,
- "sales": 2352,
- "team": 1970,
- "wines": 2465,
- "menu": 2870,
+ "look": "preview",
+ "nav": 75,
+ "dash": 1936,
+ "sales": 2387,
+ "team": 1824,
+ "training": 2123,
+ "wines": 4424,
+ "menu": 4349,
+ "cardAt": 0.3512,
  "cardTap": {
-  "x": 399,
-  "y": 316
+  "x": 159,
+  "y": 415
  },
- "card": 1492,
+ "cardX": 840,
+ "cardW": 600,
+ "card": 1395,
+ "dishAt": 0.1612,
  "dishTap": {
-  "x": 383,
-  "y": 434
+  "x": 588,
+  "y": 426
  },
- "dish": 1160,
- "mgr": 3133
+ "dishX": 840,
+ "dishW": 600,
+ "dish": 1082,
+ "mgrW": 820,
+ "mgrNav": 75,
+ "mgr": 3342
 }

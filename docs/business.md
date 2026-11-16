@@ -342,6 +342,13 @@ Wave 1 and 2 of its roadmap are built, on The Social Corner and the demo alike.
   the reasons first and the dish to steer away from, the alternatives with their price, then where
   they stand and the reference material.
 
+### One size on the cards (built)
+
+A wine's, a cocktail's and a dish's card had text at seven sizes between 11 and 22 and four weights up to 800, so
+nothing led. Every line is now 14px, the size of the sentence in Where you stand, and only the name is larger (20px).
+Weights are light: the name 600, labels and anything emphasised 500, the rest 400. It's the same on the phone and in
+the console's drawer, on every restaurant, and a test fails if a card strays from it.
+
 ## The pre-shift briefing and specials (built, November 2026)
 
 What management decides before service reaches every member of staff as one page they read and accept before
@@ -806,3 +813,171 @@ No shop is lined up yet.
    too much of one style).
 4. Till and stock-system connections (the plan above); billing per site through Stripe (Apple 3.1.3(c) lets an app
    sold to businesses for their staff take payment outside the App Store).
+
+## The console's new look (a preview on The Larkspur)
+
+A second console shell, `team-console2.jsx`, shown where a restaurant's list file sets `venue.console` to `preview`
+(The Larkspur's does) and switchable from its header ("Classic view") and back from the classic sidebar ("Try the new
+look"); the choice is kept on the device (`TeamData.consoleLook`, `vbiz_console_look`). Every other restaurant keeps
+the classic console until the look is signed off.
+
+What it is for: the console's job is to sell more wine by having the floor know the list and the pairings, so every
+page opens on that, never on specials or allergens.
+
+- Black, with the restaurant's accent as the only colour that isn't a status. Navigation runs along the top under the
+  restaurant's own logo; the person signed in sits on the right.
+- Each page opens on one standout fact in light Poppins (300, bundled for this) with at most three quick facts
+  beneath (`TeamReport.headline`): "A wine sells 3× better with a server who knows it." Never a paragraph.
+- Who can sell a wine is the faces of the people who hold it with "5 of 7" (`TeamReport.knownBy`), never a grid of
+  dots. "The floor can sell" a wine or offer a pairing when at least half the people who serve it know it.
+- Dashboard: best sellers and who can sell them, wine per guest, sales, readiness and what's still on the table
+  (`TeamReport.upside`), sales as the team learnt the list, the floor as faces in readiness rings, then Needs you,
+  Selling the pairing and Tonight as a small tile that opens the Tonight editor in the drawer.
+- Sales Insights: what you need to know, where the next money is and glass against bottle on the left; the figures, a
+  white line for sales by week (bottles dashed) and who sells it on the right; best sellers across the foot.
+- Wines: how well the list is known, drinking windows and new arrivals beside the whole list with its sales and faces.
+- Menu: every dish with its wine and who can offer it. Allergens are a switch here (`TeamData.setSetting('allergens')`,
+  `trainsAllergens`): off, `allergensOf` answers nothing, so no question, readiness part or column mentions them, for a
+  restaurant that manages allergens in its kitchen's own system.
+- Team, Cocktails, Upload, Integrations and Admin are the classic sections inside the new shell, and Wines and Menu
+  keep the classic editor under "Edit" at their foot, so nothing the console could do is lost.
+
+Two figures the console can't know yet are drawn for a demo restaurant only, tagged Demo data: how often a dish goes
+out with its wine (`TeamReport.pairings().sold`, which needs check-level sales) and readiness week by week
+(`readinessTrend`). The demo's Tonight is set once a day where it's empty (`TeamDemo.seedTonight`).
+
+### The new look after Carey's first review
+
+- One term: someone is **trained on** a wine once they've passed its questions in the drill. The new look never says
+  "knows" or "known", and says "the team", not "the floor".
+- Every problem it shows comes with what to do. "What you need to know" and "Needs you" are a fact, then an arrowed
+  action (`TeamReport.salesActions`, `dashActions`); a line about a person behind, a slow wine or a top seller few are
+  trained on opens a plan (`TeamReport.plan(kind, id)`, `_C2Plan`): where things stand, then numbered steps, with a
+  button where the console can do one (`TeamLearn.prioritise` puts wines first in someone's drills; feature a wine
+  tonight). "Do today's drill" is never the advice: everyone does that anyway.
+- What training is worth (`TeamReport.trainingWorth`) is in weeks like the rest: the multiple, what one server sells
+  of a wine in a week trained and not, the total a week still to gain, and each top seller with who isn't trained on
+  it, what a week would add and "Put it first in their drills". Only wines with two servers on each side are shown.
+- How far training has spread (`TeamReport.spread`, `_C2Spread`) is one bar in three parts (whole team, at least half,
+  fewer) with the gaps named, so there's somewhere to go after "at least half".
+- A figure on the dashboard opens the card it summarises on its own page (`jump` in `TeamConsole2`).
+- Every page of the new look has the same top: the sentence, then five figures. Team (`_C2Team`) follows it: who is
+  ready, training finished, Train next (the wine worth most, opening its plan), Needs a plan (the person furthest
+  from ready, opening theirs) and what's still on the table. Its table (`TeamReport.teamRows`) gives each person
+  their readiness, every area as "9 of 15 · needs 12: 3 to go", the wine they sell a week and a shift against their
+  role's average, and one next step (`TeamReport.trainingPlan`: the first area under its minimum in the order the
+  role learns them, the next few things in it, best sellers first, with what it moves: the area's count, readiness
+  before and after, the drills it takes, what a week it's worth). "Push to Priya" (`pushPlan`) puts that step first
+  in her drills; "Push everyone's next step" does it for the team. Readiness is explained beside it with one person
+  worked through: ready is every area at its minimum, and the percentage is the average of each area's progress
+  towards its own minimum. The classic team tools sit under Manage.
+
+## Bespoke training (a paid add-on)
+
+A manager asks Vinny, in their own words, for a training plan for one person ("Priya is struggling with her reds,
+mostly the prices and the pairings: a three-part quiz"), reads the draft, and pushes it. `TeamPlans` (`team-plans.js`,
+`vbiz_plans_v1`, prompt `prompts/team-plan.txt`, purpose `team_plan`) owns it.
+
+- **What Vinny is given.** The person's standing in each area, the request, and up to eight wines and five dishes it is
+  about (`subjects`: a colour, the glass list, the bottles or the menu read from the request as Vinny's test reads
+  one, else the person's own gaps, best sellers first), each with what the team is taught about it and the person's
+  existing questions marked known or not.
+- **What comes back.** Two to four parts of four-option questions, each about one wine or dish. Vinny writes new
+  questions; `_q` drops any that isn't about something on the list, hasn't four distinct options or names no right one.
+- **How it counts.** Each new question says which of the person's own questions teaches the same fact (`covers`). A
+  bespoke question answered right is recorded for itself and for the one it covers (`TeamLearn.record`), so the wine
+  or dish moves towards trained in whichever area it sits in: by the glass, bottles or pairings. One that covers
+  nothing is extra practice. A miss marks only the bespoke question.
+- **On the phone.** A pushed plan is its own card on Today ("From Elena · your own training"), a part at a time, apart
+  from the daily drill.
+- **Tracking.** The Team page shows each plan's parts and questions done (`progress`), and the fifth figure is how many
+  are running.
+- **With no connection** the manager can build the same shape from the questions the person already has
+  (`fromCards`, no call). The demo opens with two such plans in flight (`seedDemo`).
+- **Not yet:** a plan's new questions don't go through the sommelier review before the manager reads them; the manager
+  is the review. Worth adding before this is sold.
+
+Cost: one call per plan, about 5,000 to 9,000 tokens in and 2,500 to 4,000 out with thinking. At the prices in
+`scripts/model-trial.mjs` that is roughly 10 to 12 cents a plan on Opus and about half that on Sonnet.
+
+## The Team page (layout B)
+
+Pick a person on the left (furthest from ready first, with their weekly sales and any plan's progress), see
+everything on the right: where they stand in each area with a white line at its minimum, what they sell against
+their role's average, their next step as four figures with Push, then Ask Vinny and their bespoke training. The
+minimum for each role sits under the list. The classic tools stay under Manage.
+
+### Pairings are the wine for the dish
+
+Asked for "pairings", Vinny's test and a bespoke plan used to return questions about the menu (what a dish is, what
+can change), because the request was read as "the menu". Now `TeamVinny.narrow` reads pairing words apart from menu
+words (`pairing`, and `mixed` when prices, grapes or places are asked for too), and `TeamLearn.isPairing` says what a
+pairing question is: a dish's "which wine suits it" and "name a wine by the glass", and a wine's question at the
+table. Vinny's test on pairings asks those alone. A bespoke plan on pairings starts from the dishes whose pairing the
+person doesn't hold, brings the wines poured with them, tells Vinny every question is a pairing question (defined in
+`prompts/team-plan.txt`), and drops any written question about a dish that names no wine (`TeamPlans.isPairText`).
+
+### Four areas of readiness
+
+Readiness for the list and menu is four areas: **glasses, bottles, pairings and menu** (`TeamLearn.AREAS`, plus
+cocktails and allergens where a restaurant has them). The old single "Menu pairings" area mixed two things, so it is
+split: Pairings is each dish's wine questions (`TeamLearn.isPairing`), Menu is what a dish is and how it can change
+(`dishAreaQs`, `knowsDishArea`). Each takes its minimum from the role's old `dishes` minimum until one is set apart
+in the console (`need(role).pairings`, `.menu`). Assignments and training waves still key a dish as one thing
+(`d:<id>`, the `dishes` wave). The phone's Today, the console's person panel, minimums card and Team page all read
+the four from `readiness().parts`; "Practise pairings" and "Practise menu" drill each alone.
+
+The Team page's Bespoke training figure opens every track at once (`_C2Tracks`): who it's for, who sent it, what it
+covers by area, each part's progress and its status; a row opens that person.
+
+### The Wines page
+
+Same top as the others: the sentence, then five figures (Team trained on, Sold by trained staff, Train next, Not
+selling, At their peak). A figure filters the list to what it counts and scrolls to it, or opens a plan. On the left,
+"Needs you on the list" (`TeamReport.wineActions`: a top seller few are trained on, a new arrival, a slow glass,
+bottles with no sale in four weeks, wines past their best; one of each kind first, each a fact then an action that
+opens a plan) and how far training has spread by the glass and by the bottle. On the right, the whole list with its
+drinking window, glasses and bottles sold this week apart, sales, and who is trained on it, with filters to match
+the figures. The classic editor stays under Manage.
+
+### The Menu page: a glass and a bottle for every dish
+
+Every dish shows two pairings (`TeamReport.pairings`): its wine by the glass (the pairing's own glass pick) and the
+bottle to offer (its first pick sold by the bottle alone, the step up for a table sharing; else its first pick,
+shown as "The same wine" with its bottle price). Each carries who is trained on it. The five figures, the training
+spread (`spread('pairGlass')`, `spread('pairBottle')`) and the filters are split the same way, and "Needs you on the
+menu" (`menuActions`) leads with the popular dish whose bottle few can offer. How often a dish goes out with its
+glass or its bottle is still demo data.
+
+### The bottle question
+
+Selling the bottle is the upsell, so every dish that can have one asks for it (`#2` in `TeamLearn._dishQs`, a pairing
+question, so it counts in the Pairings area). Where the dish has a pick sold by the bottle alone that isn't its first
+pick: "A table sharing the … would like a bottle. Which do you offer?", that pick against three bottles the pairings
+rule out, at least two of them the right one's kind. Otherwise, where the dish's wine is poured by the glass:
+"Everyone at a table of four would like the … with the …. What do you do?", offering the bottle at its price against
+three ways of leaving the sale on the table. A dish whose first pick is already bottle-only has "which wine suits it
+best" for that. In the new console every table centres its data under its headers; the first column reads from the left.
+
+### A demo stays as of today
+
+A demo restaurant's team and sales are invented when it's first opened, and answers fade by the clock, so a browser
+that kept the demo for a few days showed a team that had forgotten the menu and sales that ended last week.
+`TeamDemo.keepFresh` runs when the app opens: for a restaurant loaded from a seed it moves everything invented
+forward by the days gone by (answers and their review dates, assignments, plans, sales rows and nights, when wines
+joined the list). What someone did in the demo moves with it. A real restaurant's dates are never touched.
+
+"About Priya" on the Team page (`TeamReport.about`) adds to her sales: her strongest area and the one furthest
+behind, what she sells most, how much of it is wine she's trained on, what she sells without training, the team's
+best sellers she hasn't sold, answers fading, when she last practised, and her surprise re-checks. The Wines list
+keeps its header row in view while it scrolls.
+
+## The buyer's Wines page and the Training page
+
+In the console's new look the Wines page is written for whoever buys and prices the list, and training has a page of its own.
+
+Wines opens on how much of wine sales the top five bring in, then five figures: the top five's share, wines with no sale in four weeks, wines to sell through before their drinking window closes, the usual markup against a shop price, and gaps in the price ladder. Under them: what needs the buyer (each a fact, then what to do), the list's balance by colour, country, region or grape against each one's share of sales, the price ladder for each colour with its gaps and crowded prices, and the list itself with drinking window, dishes on the menu, glasses and bottles sold, shop price and markup. All of it is worked out on the device by `TeamBuyer` with no call.
+
+"Ask Vinny to review the list" is one call. Vinny reads the list against the menu and the sales as a buyer would and returns an estimate of each bottle's shop price, dishes the menu lacks that a wine on the list could sell, dishes the list serves badly with the style of wine they want, what a guest would look for and not find, and wines worth cutting. Only wines and dishes that exist are kept. Shop prices are estimates and the page says so; in a demo restaurant they're invented until Vinny is asked, and a live restaurant has no markup column until then.
+
+Training gathers what was spread over Team, Wines and Menu: who is ready, each person's glasses, bottles, pairings and menu against their minimum, their next step with Push (and Push everyone's), what training is worth from the restaurant's own sales, how far training has spread, and the bespoke tracks. Team keeps the person-by-person view, where Vinny writes a plan.

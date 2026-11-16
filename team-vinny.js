@@ -36,7 +36,7 @@ const TeamVinny = {
   },
   _price(s){ const m=String(s||'').replace(/,/g,'').match(/(\d+(?:\.\d+)?)/); return m?Number(m[1]):null; },
   _words(s){ return TeamLearn._norm(s).split(' ').filter(w=>w.length>3&&!this._STOP.has(w)); },
-  _STOP:new Set(['what','which','with','that','this','from','have','about','wine','wines','glass','bottle','bottles','under','over','than','less','more','test','quiz','tonight','list','menu','dish','dishes','food','some','them','they','their','does','should','would','could','there','here','into','your','ours','best','good']),
+  _STOP:new Set(['what','which','with','that','this','from','have','about','wine','wines','glass','bottle','bottles','under','over','than','less','more','test','quiz','tonight','list','menu','dish','dishes','food','some','them','they','their','does','should','would','could','there','here','into','your','ours','best','good','pairing','pairings','paired','pair','pour','goes','match','matching','struggling','struggles','help','needs','need','quiz','course','part','parts','three','make','build','create','training','plan','often','mostly','their','reds','whites']),
   TYPE_NAME:{red:'the reds',white:'the whites','rosé':'the rosés',sparkling:'the sparkling wines',sweet:'the sweet wines',fortified:'the fortified wines',orange:'the orange wines'},
   TYPES:{red:/\breds?\b/,white:/\bwhites?\b/,'rosé':/\bros[eé]s?\b/,sparkling:/\b(sparkling|fizz|bubbles|champagne)\b/,sweet:/\b(sweet|dessert|pudding)\b/,fortified:/\b(fortified|port|sherry|madeira)\b/,orange:/\borange wines?\b/},
   /* What a request asks to be tested on, read without a call: {wines, dishes, label} or null for no request. */
@@ -44,7 +44,11 @@ const TeamVinny = {
     const a=String(ask||'').toLowerCase().trim(); if(!a) return null;
     let wines=[...c.wines], dishes=[...c.dishes], label=[];
     const types=Object.entries(this.TYPES).filter(([,re])=>re.test(a)).map(([t])=>t);
-    const wantMenu=/\b(menu|food|dish|dishes|pairings?|starters?|mains?|desserts?|snacks?)\b/.test(a)&&!types.length;
+    // "Pairings" is the wine for each dish, never the menu on its own: it keeps the wines and the dishes, and the test
+    // or plan then asks pairing questions only (TeamLearn.isPairing). A request that also names prices, grapes or
+    // places is mixed: pairings plus those facts, still no questions about what a dish is.
+    const wantPair=/\bpair(ing|ings|ed|s)?\b|\bwhat to pour\b|\bgo(es)? with\b|\bmatch(es|ing)?\b/.test(a), mixed=/pric|cost|grape|region|where .* from|taste|flavou?r|style/.test(a);
+    const wantMenu=/\b(menu|food|dish|dishes|starters?|mains?|desserts?|snacks?)\b/.test(a)&&!types.length&&!wantPair;
     if(types.length){ wines=wines.filter(w=>types.includes(w.type)||(types.includes('sweet')&&/sweet|dessert/i.test(w.section||''))||(types.includes('fortified')&&/fortified|port|sherry/i.test(w.section||''))); dishes=[]; label.push(types.map(t=>this.TYPE_NAME[t]||t).join(' and ')); }
     if(/\bby the glass\b|\bglass(es)?\b/.test(a)){ wines=wines.filter(w=>TeamData.byGlass(w)); dishes=[]; label.push('by the glass'); }
     else if(/\bbottles?\b/.test(a)){ wines=wines.filter(w=>!TeamData.byGlass(w)); dishes=[]; label.push('the bottles'); }
@@ -54,17 +58,20 @@ const TeamVinny = {
     if(over){ wines=wines.filter(w=>cost(w)!=null&&cost(w)>=+over[1]); dishes=[]; label.push(`over ${TeamData.money(+over[1])}`); }
     if(/\bnew\b|\bassigned\b|\bjust arrived\b/.test(a)){ const as=new Set(TeamLearn.assignments(c.person.id).map(x=>x.id)); wines=wines.filter(w=>as.has(w.id)); dishes=dishes.filter(x=>as.has(x.id)); label.push('what\'s new'); }
     if(wantMenu){ wines=[]; label.push('the menu'); }
+    if(wantPair){ const ids=new Set(wines.map(w=>w.id)), all=wines.length===c.wines.length;
+      dishes=c.dishes.filter(x=>{ const p=TeamData.pairing(x.id); return p&&(all||[...(p.best||[]),p.glass].filter(Boolean).some(y=>ids.has(y.id))); }); label.push('pairings'); }
     // Names: a producer, wine, grape, region, country or section word; a dish's words.
     const words=this._words(a);
     if(words.length&&!types.length&&!under&&!over){
       const hitW=w=>words.some(x=>TeamLearn._norm([w.producer,w.name,(w.grapes||[]).join(' '),w.region,w.country,w.section].join(' ')).split(' ').includes(x));
       const hitD=x=>words.some(y=>TeamLearn._norm([x.name,x.section,x.desc].join(' ')).split(' ').includes(y));
       const nw=wines.filter(hitW), nd=dishes.filter(hitD);
-      if(nw.length||nd.length){ wines=nw; dishes=wantMenu?dishes:nd; label.push(ask.trim()); }
+      if(wantPair&&!nw.length&&!nd.length){ /* "pairings" alone names no wine or dish: keep what the request already chose */ }
+      else if(nw.length||nd.length){ wines=nw; dishes=wantMenu?dishes:nd; label.push(ask.trim()); }
       else if(!label.length){ wines=[]; dishes=[]; } // names nothing on the list or menu
     }
     if(!label.length) label.push(ask.trim());
-    return {wines,dishes,label:label.join(', ')};
+    return {wines,dishes,label:label.join(', '),pairing:wantPair,mixed:wantPair&&mixed};
   },
   /* The test: {qs, title, why, none}. Questions round-robin across the wines and dishes in it, so ten
      questions don't all land on one bottle; faded and missed answers lead. */
@@ -73,13 +80,13 @@ const TeamVinny = {
     const n=this.narrow(c,ask), wines=n?n.wines:c.wines, dishes=n?n.dishes:c.dishes;
     if(n&&!wines.length&&!dishes.length) return {qs:[],none:true,title:'Vinny\'s test',why:`Nothing you sell matches "${ask.trim()}". Try a type, a price, a grape or a dish.`};
     const r=TeamLearn.readiness(pid), short=Object.entries(r.parts).filter(([k,p])=>p.share<p.need&&k!=='cocktails').map(([k])=>k); // Vinny's test is the wine list and menu; cocktails drill on Today
-    const inShort=x=>!n&&short.length?(short.includes('dishes')&&x.dish)||(x.wine&&((short.includes('glass')&&TeamData.byGlass(x.wine))||(short.includes('bottle')&&!TeamData.byGlass(x.wine)))):true;
+    const inShort=x=>!n&&short.length?((short.includes('pairings')||short.includes('menu'))&&x.dish)||(x.wine&&((short.includes('glass')&&TeamData.byGlass(x.wine))||(short.includes('bottle')&&!TeamData.byGlass(x.wine)))):true;
     const assigned=new Set(TeamLearn.assignments(pid).map(a=>a.id));
     const sells=(!n&&typeof TeamSales!=='undefined'&&TeamSales.has()&&typeof TeamReport!=='undefined')?TeamReport.priority(28,10).map(x=>x.wine.id):[];
     // Each wine or dish with its questions, ranked: faded or missed first, then the till's priorities and
     // what's assigned, then the parts of the minimum they're short of, then the rest of the list in order.
     const things=[...wines.map(w=>({wine:w,id:w.id})),...dishes.map(x=>({dish:x,id:x.id}))].map((t,order)=>{
-      const {unknown,known}=this._qsFor(c,t);
+      const got=this._qsFor(c,t), keep=q=>!(n&&n.pairing&&!n.mixed)||TeamLearn.isPairing(q), unknown=got.unknown.filter(keep), known=got.known.filter(keep);
       const faded=[...unknown,...known].filter(q=>{ const it=c.items[q.id]; return it&&it.reps&&(it.wrong||it.due<=c.now); });
       const rank=(faded.length?0:sells.includes(t.id)?1:assigned.has(t.id)?2:inShort(t)?3:4)*1000+order;
       return {...t,faded,unknown:unknown.filter(q=>!faded.includes(q)),known,rank};

@@ -6,7 +6,7 @@
    so it can be checked on a phone. Sales figures are labelled "Demo data" while the till is the
    demo's invented sales (TeamSales.demo). */
 const CONSOLE_SECTIONS=[
-  {k:'dash',label:'Dashboard',icon:'home'},{k:'sales',label:'Sales Insights',icon:'cart'},{k:'team',label:'Team',icon:'user'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
+  {k:'dash',label:'Dashboard',icon:'home'},{k:'sales',label:'Sales Insights',icon:'cart'},{k:'team',label:'Team',icon:'user'},{k:'training',label:'Training',icon:'bolt',only:()=>TeamData.consoleLook()==='preview'},{k:'wines',label:'Wines',icon:'wine'},{k:'cocktails',label:'Cocktails',icon:'wine',only:()=>TeamData.cocktails().length>0},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera'},{k:'pos',label:'Integrations',icon:'bolt'},{k:'admin',label:'Admin',icon:'edit'},
 ];
 // Money on the console is written in full with its thousands grouped ("$12,480"), never shortened to "12.5k".
@@ -125,6 +125,7 @@ function TeamConsole({me,onPhone,refresh,section,setSection,open,tour}){ const T
       <div style={{display:'flex',alignItems:'center',gap:8,paddingTop:12,borderTop:`1px solid ${T.line}`}}><TeamFace person={me} size={30}/><div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{me.name}</div><div style={{fontSize:11,color:T.mid,fontFamily:C.P}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
       <_CViewToggle phone={false} onPhone={()=>onPhone({tab:'today'})}/>
       <div role="button" data-testid="console-tour-start" onClick={()=>{ setPanel(null); setTouring(true); }} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'12px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Take the tour</div>
+      {TeamData.offersNewLook()&&<div role="button" data-testid="console-new-look" onClick={()=>TeamData.setConsoleLook('preview')} style={{fontSize:12,color:T.mid,fontFamily:C.P,padding:'8px 2px 0',cursor:'pointer',textDecoration:'underline',textUnderlineOffset:3}}>Try the new look</div>}
       {TeamData.brand()&&<div data-testid="console-powered" style={{display:'flex',alignItems:'center',gap:8,padding:'14px 2px 0'}}><span style={{fontSize:11,color:T.mid,fontFamily:C.P,whiteSpace:"nowrap"}}>Powered by</span><TeamLogo size={14}/></div>}
 </div>}
   </div>;
@@ -199,8 +200,8 @@ function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr
 function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
   const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='cocktail'?<TeamCocktail id={panel.id} pid={me.id} open={open}/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
   // A wider drawer over a dimmed page: the content behind it isn't meant to be read while it's open, and a tap on the dim closes it.
-  return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.45)'}}/>
-  <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px'}} data-scroll>
+  return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,zIndex:20,background:'rgba(0,0,0,0.45)'}}/>
+  <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px',zIndex:21}} data-scroll>
     <div style={{display:'flex',justifyContent:'flex-end',marginBottom:6}}><div role="button" aria-label="Close" data-testid="console-panel-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:T.ink,fontFamily:C.P,fontSize:16}}>×</div></div>
     {body}
   </div></>; }
@@ -433,7 +434,7 @@ function TeamLevelCard({changed}){ const T=useTheme(), lv=TeamLearn.level(), tr=
     </div></Card>}
   </>; }
 function TeamMinimumsCard({changed}){ const T=useTheme(), phone=useLayoutSize()==='phone';
-  const parts=Object.keys(TeamLearn.PART_LABEL).filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
+  const parts=TeamLearn.AREAS.filter(k=>(k!=='cocktails'||TeamData.cocktails().length)&&(k!=='allergens'||TeamData.dishes().some(x=>TeamData.allergensOf(x.id)!=null)));
   const step=(rk,k,d)=>{ const v=Math.round(Math.max(0.5,Math.min(1,TeamLearn.need(rk)[k]+d))*10)/10; TeamLearn.setNeed(rk,k,v); changed(); };
   const cellBtn=(label,onClick,off)=><div role="button" aria-label={label} onClick={off?undefined:onClick} style={{width:26,height:26,borderRadius:13,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:off?'default':'pointer',color:off?T.line:T.ink,fontSize:15,fontFamily:C.P,userSelect:'none'}}>{label==='Lower'?'−':'+'}</div>;
   const th={fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',padding:'0 8px 8px',textAlign:'center',whiteSpace:'nowrap'};
