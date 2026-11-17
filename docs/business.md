@@ -183,9 +183,11 @@ pours are 175ml and 125ml (ounces only where the venue counts in dollars), and t
 venue's own `offList` ("House Prosecco 125 (Events)"). Its training (`data/team-princess-royal.json`) was written through
 the branch preview's Worker on Claude Opus 5.5 by `npm run team:write -- princess-royal` (`scripts/team-write.mjs`: the
 app's own writers for cards, cocktail cards, pairings, drinking windows and dish notes, saved after each step), then put
-through `npm run team:audit` and `npm run team:review -- princess-royal`. Its demo address is
-princessroyal.vinterest.team (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), a custom domain on the vinterest Pages
-project.
+through `npm run team:audit` and `npm run team:review -- princess-royal`. Its address is
+princessroyal.vinterest.team, a custom domain on the vinterest Pages project, set up as Eloise's is (the Worker's
+`VENUE_PAGES`): the root is the page written for them (`site/teams/for/princess-royal.html`) and the demo is at
+princessroyal.vinterest.team/demo/ (`TeamSample.HOSTS` opens The Princess Royal from the address). Its console opens on the new look (`venue.console: "preview"` in its list file), as The Larkspur's, The Social
+Corner's and Eloise's do.
 
 ## The Eloise install
 

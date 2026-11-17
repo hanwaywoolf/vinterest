@@ -2909,12 +2909,15 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(700, 450);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
+  // With no bar across the top, the restaurant's logo sits top right of the page.
+  await expect(page.getByTestId('c2-page-venue').getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.getByTestId('c2-page-venue').evaluate(el => el.getBoundingClientRect().left > innerWidth / 2)).toBe(true);
   const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
   await page.mouse.move(500, 400); await page.mouse.move(3, 400); await expect(drawer).toHaveAttribute('data-open', '1');
   expect(await left()).toBe(before); // a layer over the page: nothing moved across
   await page.getByTestId('console-nav-sales').click(); await expect(drawer).toHaveAttribute('data-open', '0');
   await expect(page.getByTestId('console-sales')).toBeVisible();
-  // No bar across the top: the page runs full height, and the section's name leads the sentence at its head.
+  // No bar across the top: the page runs full height, the logo sits top right and the section's name leads the sentence at its head.
   await expect(page.getByTestId('c2-top')).toHaveCount(0); await expect(page.getByTestId('c2-head')).toContainText('Sales Insights');
   expect(await page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(60);
   // The mouse leaving the open drawer closes it; the small tab on the edge opens it too, and the drawer says who is signed in.
@@ -3006,9 +3009,9 @@ test('the new console on a touch screen: a tab on the left edge opens the naviga
   expect(errors).toEqual([]); await ctx.close();
 });
 
-// The Social Corner and Eloise are offered the new console by their own files, as The Larkspur is; every page opens
+// The Social Corner, Eloise and The Princess Royal are offered the new console by their own files, as The Larkspur is; every page opens
 // for each with its own currency, and Eloise's file keeps its other console setting beside it.
-for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
+for (const [seed, money] of [['social', '$'], ['eloise', '$'], ['princess', '£']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });

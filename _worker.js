@@ -174,14 +174,14 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
 
 // A restaurant's address that opens the page written for it, with its demo beside it (eloise.vinterest.team): the root
 // is the Teams site's private page (site/teams/for/<name>.html, fetched from TEAMS_SITE_ORIGIN, default vinterest.team,
 // with the stylesheet, script, images and cards it asks for by path; fonts and the logo are this project's own, the same
 // files), and /demo/ is the staff app (dist/team/), which opens that restaurant from the address (TeamSample.HOSTS).
 // The API routes answer as on any other address.
-const VENUE_PAGES = { "eloise.vinterest.team": "eloise" };
+const VENUE_PAGES = { "eloise.vinterest.team": "eloise", "princessroyal.vinterest.team": "princess-royal" };
 const VENUE_PAGE_FILE = /^\/(site\.css$|site\.js$|for\/|img\/)/;
 async function serveVenuePage(request, url, env) {
   const name = VENUE_PAGES[url.hostname], site = (env.TEAMS_SITE_ORIGIN || "https://vinterest.team").replace(/\/+$/, ""), p = url.pathname;
