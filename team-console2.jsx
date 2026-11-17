@@ -678,6 +678,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   React.useEffect(()=>{ const a=TeamDemo.seedTonight(), b=TeamPlans.seedDemo(); if(a||b) bump(); },[]);
   const pageRef=React.useRef(null); _c2Pid=me.id;
   // The side navigation is a layer: it opens when the mouse reaches the left edge (or from the menu button) and closes once the mouse leaves it.
+  // Only a mouse that has moved there opens it: a pointer that merely starts at the edge as the page loads (as a browser reports one at 0,0) leaves it shut.
   const showNav=()=>{ clearTimeout(navT.current); setNavOpen(true); }, hideNav=(ms=220)=>{ clearTimeout(navT.current); navT.current=setTimeout(()=>setNavOpen(false),ms); };
   React.useEffect(()=>{ if(!navOpen) return; const k=e=>{ if(e.key==='Escape') setNavOpen(false); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[navOpen]);
   // A figure on the dashboard opens the card it's a summary of: the section, then that card brought into view and lit.
@@ -700,7 +701,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
       {(!side)&&<div role="button" data-testid="console-to-phone" onClick={()=>onPhone({tab:'today'})} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',textDecoration:'underline',textUnderlineOffset:3}}>{phone?'Staff app':w>=1280?'Phone view':'Phone'}</div>}
       <div style={{display:'flex',alignItems:'center',gap:8,border:'1px solid rgba(255,255,255,0.12)',borderRadius:999,padding:'4px 12px 4px 4px',flexShrink:0}}><TeamFace person={me} size={28}/><span style={{fontSize:14,color:T.ink2,fontFamily:C.P,whiteSpace:'nowrap'}}>{me.name.split(' ')[0]}{phone||w<1280?'':` · ${TeamLearn.ROLES[me.role].label}`}</span></div>
     </div>}
-    {side&&<><div data-testid="c2-nav-edge" onMouseEnter={showNav} style={{position:'absolute',left:0,top:0,bottom:0,width:10,zIndex:30}}/>
+    {side&&<><div data-testid="c2-nav-edge" onMouseMove={e=>{ if(e.movementX||e.movementY) showNav(); }} style={{position:'absolute',left:0,top:0,bottom:0,width:10,zIndex:30}}/>
       {/* With no mouse to reach the edge with, a small tab on it opens the navigation, and a touch anywhere else closes it. */}
       {!navOpen&&!touring&&<div className="c2navtab" role="button" data-testid="c2-nav-tab" aria-label="Open the navigation" onClick={showNav} style={{position:'absolute',left:0,top:'50%',transform:'translateY(-50%)',width:22,height:72,zIndex:30,alignItems:'center',justifyContent:'center',borderRadius:'0 12px 12px 0',background:'#1b1b1d',border:'1px solid rgba(255,255,255,0.16)',borderLeft:'none',cursor:'pointer'}}><span style={{width:7,height:7,borderRight:`2px solid ${acc}`,borderBottom:`2px solid ${acc}`,transform:'rotate(-45deg)',marginLeft:-3}}/></div>}
       {navOpen&&!touring&&<div data-testid="c2-nav-scrim" onClick={()=>setNavOpen(false)} style={{position:'absolute',inset:0,zIndex:30}}/>}
