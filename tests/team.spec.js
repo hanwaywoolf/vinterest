@@ -2909,14 +2909,16 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(700, 450);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
+  // With no bar across the top, the restaurant's logo leads the page, top left.
+  await expect(page.getByTestId('c2-page-venue').getByTestId('team-venue-logo')).toBeVisible();
   const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
   await page.mouse.move(500, 400); await page.mouse.move(3, 400); await expect(drawer).toHaveAttribute('data-open', '1');
   expect(await left()).toBe(before); // a layer over the page: nothing moved across
   await page.getByTestId('console-nav-sales').click(); await expect(drawer).toHaveAttribute('data-open', '0');
   await expect(page.getByTestId('console-sales')).toBeVisible();
-  // No bar across the top: the page runs full height, and the section's name leads the sentence at its head.
+  // No bar across the top: the page runs full height, the logo leads it and the section's name leads the sentence under it.
   await expect(page.getByTestId('c2-top')).toHaveCount(0); await expect(page.getByTestId('c2-head')).toContainText('Sales Insights');
-  expect(await page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(60);
+  expect(await page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(130);
   // The mouse leaving the open drawer closes it; the small tab on the edge opens it too, and the drawer says who is signed in.
   await page.getByTestId('c2-nav-tab').click(); await expect(page.getByTestId('c2-nav-me')).toContainText('Elena'); await expect(drawer).toHaveAttribute('data-open', '1');
   await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
