@@ -2904,6 +2904,9 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  // The mouse starts in the middle of the page, as a person's would: Playwright parks it at (0, 0), on the strip at the
+  // left edge that opens the navigation, and whether that counts as reaching the edge depends on timing.
+  await page.mouse.move(700, 450);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
   const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
@@ -2993,6 +2996,7 @@ test('the new console on a touch screen: a tab on the left edge opens the naviga
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.mouse.move(700, 450); // off the left edge's strip, which a parked mouse at (0, 0) can open
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'), tab = page.getByTestId('c2-nav-tab');
   await expect(tab).toBeVisible(); expect((await tab.boundingBox()).x).toBe(0);
