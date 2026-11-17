@@ -186,7 +186,8 @@ app's own writers for cards, cocktail cards, pairings, drinking windows and dish
 through `npm run team:audit` and `npm run team:review -- princess-royal`. Its address is
 princessroyal.vinterest.team, a custom domain on the vinterest Pages project, set up as Eloise's is (the Worker's
 `VENUE_PAGES`): the root is the page written for them (`site/teams/for/princess-royal.html`) and the demo is at
-princessroyal.vinterest.team/demo/ (`TeamSample.HOSTS` opens The Princess Royal from the address).
+princessroyal.vinterest.team/demo/ (`TeamSample.HOSTS` opens The Princess Royal from the address). Its console opens on the new look (`venue.console: "preview"` in its list file), as The Larkspur's, The Social
+Corner's and Eloise's do.
 
 ## The Eloise install
 
