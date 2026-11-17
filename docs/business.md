@@ -152,6 +152,15 @@ opens Eloise from the address). A new prospect who should get the same is a row 
 `venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
 (our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
 training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
+It opens on the console's new look (`venue.console.look: "preview"` in its list file). Its training file also carries
+`buyer`, Vinny's read of the list as a buyer (`npm run team:buyer -- eloise`, one call through the production Worker,
+billed): shop prices in Ontario for 44 of the 76 wines (a usual markup of 3.2×), dishes the list could sell that the
+menu lacks, the two desserts it serves thinly, and four gaps (Champagne by the glass, a Niagara glass, a New World
+Cabernet under $200, a second sweet pour). Its "what to cut" was left out, since it argued from the invented sales.
+`TeamSample.load` puts `buyer` in place, so the Wines page opens with markups and Vinny's read rather than a blank.
+The page written for them has a section on the console (`#console`), with two screenshots of their own console
+(`site/teams/img/for/eloise-console.jpg` and `-wines.jpg`, taken from the build at 1320×840); retake them when the
+console changes.
 
 ## The console's first-use tour (built)
 

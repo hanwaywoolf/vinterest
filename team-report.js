@@ -241,7 +241,11 @@ const TeamReport = {
     const list=up.rows.map(x=>{ const w=x.wine, k=on.filter(p=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=on.filter(p=>!k.includes(p)); if(k.length<2||u.length<2) return null;
       const money=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0);
       return {wine:w,trained:money(k)/k.length/weeks,untrained:money(u)/u.length/weeks,k:k.length,u:u.length,missing:u,extra:x.extra}; }).filter(Boolean).slice(0,n);
-    return {x:lift.x,trained:lift.known*perWeek,untrained:lift.unknown*perWeek,total:up.total,rows:list}; },
+    // With the top sellers covered, the next wines worth training on: what sells, with at least two who serve it not yet trained.
+    const sold={}; rows.forEach(r=>{ sold[r.w]=(sold[r.w]||0)+r.q*r.p; });
+    const next=list.length?[]:TeamData.wines().filter(w=>sold[w.id]).map(w=>{ const k=on.filter(p=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=on.filter(p=>!k.includes(p)&&rows.some(r=>r.v===p.id));
+      return u.length>=2?{wine:w,k:k.length,of:k.length+u.length,missing:u,perWeek:sold[w.id]/weeks}:null; }).filter(Boolean).sort((a,b)=>b.perWeek-a.perWeek).slice(0,4);
+    return {x:lift.x,trained:lift.known*perWeek,untrained:lift.unknown*perWeek,total:up.total,rows:list,next}; },
   /* How far training on a set of things has spread, with room to grow: how many the whole team is trained on, how many
      at least half, how many fewer; `few` are the ones to act on. kind 'glass' (wines by the glass) or 'pairings'. */
   spread(kind){ if(kind==='pairGlass'||kind==='pairBottle'){ const g=kind==='pairGlass', its=this.pairings().filter(x=>x.first&&(g?x.glassBy:x.bottleBy)&&(g?x.glassBy:x.bottleBy).of).map(x=>{ const k=g?x.glassBy:x.bottleBy, w=g?x.glass:x.bottle; return {name:`${x.dish.name.split(',')[0]} (${TeamData.nick(w)})`,n:k.people.length,of:k.of,open:{view:'dish',id:x.dish.id},wine:w}; });

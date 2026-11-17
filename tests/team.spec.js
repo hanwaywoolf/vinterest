@@ -2970,6 +2970,12 @@ for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new co
     await page.getByTestId('console-nav-' + k).click(); await expect(page.getByTestId(tid)).toBeVisible(); await expect(page.getByTestId('c2-head')).toBeVisible();
   }
   await page.getByTestId('console-nav-sales').click(); await expect(page.getByTestId('sales-revenue')).toContainText(money);
+  // The ladder's bands follow the list's prices, so no band holds most of it, and two bottles from one producer are named apart.
+  expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return Math.max(...b.totals.map((t) => t.n)) / b.listed; })).toBeLessThan(0.5);
+  expect(await page.evaluate(() => { const ns = TeamBuyer.bands().rows.flatMap((r) => r.cells.flat().map((y) => TeamData.nick(y.w))); return ns.length - new Set(ns).size; })).toBe(0);
+  // Eloise's file carries Vinny's buyer review, so the Wines page opens with shop prices and his read of the list.
+  if (seed === 'eloise') { expect(await page.evaluate(() => [!!TeamBuyer.reviewed(), TeamBuyer.markups() && TeamBuyer.markups().source])).toEqual([true, 'estimate']);
+    await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toContainText('times their shop price'); }
   expect(errors).toEqual([]); await ctx.close();
 });
 
