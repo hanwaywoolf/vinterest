@@ -41,6 +41,20 @@ const TeamReport = {
   cocktailCoverage(){ const all=TeamLearn._all(), ppl=TeamLearn.people().filter(p=>TeamLearn.need(p.role).cocktails>0);
     return TeamData.cocktails().map(c=>({cocktail:c,of:ppl.length,card:!!TeamData.cocktailCard(c.id),
       knows:ppl.filter(p=>TeamLearn.knowsWine(p.id,p.role,c.id,(all[p.id]||{}).items||{})).length})); },
+  /* The cocktail list for the new console: each cocktail with its card's base spirit, who of the people who serve it is
+     trained on it, and the dishes its card pours it with. */
+  cocktailRows(){ const all=TeamLearn._all(), ppl=TeamLearn.people().filter(p=>TeamLearn.need(p.role).cocktails>0);
+    return TeamData.cocktails().map(c=>{ const k=TeamData.cocktailCard(c.id), names=((k&&k.dishes)||[]).map(x=>x.dish);
+      return {cocktail:c,card:k,spirit:(k&&k.spirit)||c.spirit||'',kb:{of:ppl.length,people:ppl.filter(p=>TeamLearn.knowsWine(p.id,p.role,c.id,(all[p.id]||{}).items||{}))},
+        dishes:TeamData.dishes().filter(d=>names.includes(d.name))}; }); },
+  /* Each person who serves cocktails, with their cocktail part: how many they're trained on against their minimum. */
+  cocktailPeople(){ return this.people().filter(x=>x.r&&x.r.parts&&x.r.parts.cocktails).map(x=>({...x,part:x.r.parts.cocktails})).sort((a,b)=>b.part.partial-a.part.partial); },
+  /* What needs the manager on the cocktail list: a fact, then an action. */
+  cocktailActions(){ const rows=this.cocktailRows(), out=[], few=rows.filter(x=>x.kb.of&&x.kb.people.length<Math.ceil(x.kb.of/2)).sort((a,b)=>a.kb.people.length-b.kb.people.length);
+    few.slice(0,3).forEach(x=>out.push({tag:'Train',tone:'bad',fact:`${x.cocktail.name}: ${x.kb.people.length} of ${x.kb.of} trained on it.`,act:'Open its card and give the team the line to say.',open:{view:'cocktail',id:x.cocktail.id}}));
+    const nocard=rows.filter(x=>!x.card); if(nocard.length) out.push({tag:'Cards',tone:'note',fact:`${nocard.length} cocktail${nocard.length===1?' has':'s have'} no card yet: ${nocard.slice(0,3).map(x=>x.cocktail.name).join(', ')}${nocard.length>3?' and more':''}.`,act:'Publish the list again to write them.'});
+    const lone=rows.filter(x=>x.card&&!x.dishes.length); if(lone.length) out.push({tag:'Menu',tone:'note',fact:`${lone.length} cocktail${lone.length===1?' is':'s are'} poured with no dish: ${lone.slice(0,3).map(x=>x.cocktail.name).join(', ')}${lone.length>3?' and more':''}.`,act:'Nobody has a dish to offer it with. Open its card to see what it suits.',open:{view:'cocktail',id:lone[0].cocktail.id}});
+    return out; },
   /* A person's ladder: every wine their role sells with the rungs done, and every dish. */
   ladder(pid){ const p=TeamLearn.person(pid); if(!p) return {wines:[],dishes:[]}; const sc=TeamLearn.scope(p.role);
     return {wines:[...sc.glass,...sc.bottle].map(w=>({wine:w,...TeamLearn.progress(pid,w.id)})),dishes:sc.dishes.map(x=>({dish:x,...TeamLearn.progress(pid,x.id,{dish:true})}))}; },
@@ -231,6 +245,8 @@ const TeamReport = {
   /* How far training on a set of things has spread, with room to grow: how many the whole team is trained on, how many
      at least half, how many fewer; `few` are the ones to act on. kind 'glass' (wines by the glass) or 'pairings'. */
   spread(kind){ if(kind==='pairGlass'||kind==='pairBottle'){ const g=kind==='pairGlass', its=this.pairings().filter(x=>x.first&&(g?x.glassBy:x.bottleBy)&&(g?x.glassBy:x.bottleBy).of).map(x=>{ const k=g?x.glassBy:x.bottleBy, w=g?x.glass:x.bottle; return {name:`${x.dish.name.split(',')[0]} (${TeamData.nick(w)})`,n:k.people.length,of:k.of,open:{view:'dish',id:x.dish.id},wine:w}; });
+      const all=its.filter(x=>x.n>=x.of), few=its.filter(x=>x.n<Math.ceil(x.of/2)), most=its.filter(x=>x.n<x.of&&x.n>=Math.ceil(x.of/2)); return {total:its.length,all:all.length,most:most.length,few:few.length,gaps:[...few,...most].sort((a,b)=>a.n/a.of-b.n/b.of)}; }
+    if(kind==='cocktails'){ const its=this.cocktailRows().filter(x=>x.kb.of).map(x=>({name:x.cocktail.name,n:x.kb.people.length,of:x.kb.of,open:{view:'cocktail',id:x.cocktail.id}}));
       const all=its.filter(x=>x.n>=x.of), few=its.filter(x=>x.n<Math.ceil(x.of/2)), most=its.filter(x=>x.n<x.of&&x.n>=Math.ceil(x.of/2)); return {total:its.length,all:all.length,most:most.length,few:few.length,gaps:[...few,...most].sort((a,b)=>a.n/a.of-b.n/b.of)}; }
     const items=kind==='pairings'?this.pairings().filter(x=>x.first&&x.of).map(x=>({name:x.dish.name.split(',')[0],n:x.people.length,of:x.of,open:{view:'dish',id:x.dish.id},wine:x.first}))
       :this.coverage().rows.filter(x=>x.of>0&&TeamData.byGlass(x.wine)===(kind!=='bottle')).map(x=>({name:TeamData.nick(x.wine),n:x.knows,of:x.of,open:{view:'wine',id:x.wine.id},wine:x.wine}));
@@ -430,6 +446,11 @@ const TeamReport = {
       else { out.pre='Every dish has a wine by the glass and a bottle: '; out.strong=`${ps.length} of ${TeamData.dishes().length}`; out.post=' paired.'; }
       add(gOk===ps.length?'good':'note',`Team trained to offer the glass for ${gOk} of ${ps.length} dishes`);
       add(bOk===ps.length?'good':bOk<ps.length/2?'bad':'note',`And the bottle for ${bOk} of ${ps.length}`); }
+    else if(section==='cocktails'){ const rows=this.cocktailRows(), most=rows.filter(x=>x.kb.of&&x.kb.people.length>=Math.ceil(x.kb.of/2)), low=[...rows].filter(x=>x.kb.of).sort((a,b)=>a.kb.people.length-b.kb.people.length)[0], bar=this.cocktailPeople().filter(x=>x.person.role==='bartender');
+      out.strong=`${most.length} of ${rows.length}`; out.post=` cocktails have most of the team trained on them.`;
+      if(low&&low.kb.people.length<low.kb.of) add(low.kb.people.length<Math.ceil(low.kb.of/2)?'bad':'note',`${low.cocktail.name}: ${low.kb.people.length} of ${low.kb.of} trained`);
+      if(bar.length) add(bar.every(x=>x.part.share>=x.part.need)?'good':'note',`Behind the bar: ${bar.map(x=>`${x.person.name.split(' ')[0]} trained on ${x.part.known} of ${x.part.total}`).join(', ')}`);
+      const paired=rows.filter(x=>x.dishes.length).length; add('good',`${paired} of ${rows.length} poured with a dish on the menu`); }
     return out; },
 };
 Object.assign(window,{TeamReport});

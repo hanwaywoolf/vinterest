@@ -981,3 +981,13 @@ Wines opens on how much of wine sales the top five bring in, then five figures: 
 "Ask Vinny to review the list" is one call. Vinny reads the list against the menu and the sales as a buyer would and returns an estimate of each bottle's shop price, dishes the menu lacks that a wine on the list could sell, dishes the list serves badly with the style of wine they want, what a guest would look for and not find, and wines worth cutting. Only wines and dishes that exist are kept. Shop prices are estimates and the page says so; in a demo restaurant they're invented until Vinny is asked, and a live restaurant has no markup column until then.
 
 Training gathers what was spread over Team, Wines and Menu: who is ready, each person's glasses, bottles, pairings and menu against their minimum, their next step with Push (and Push everyone's), what training is worth from the restaurant's own sales, how far training has spread, and the bespoke tracks. Team keeps the person-by-person view, where Vinny writes a plan.
+
+## The console on a phone
+
+Most console use is on a large screen, but a manager will open it on a phone. In the new look a phone gets one page instead of the sections: this week's wine sales, wine per guest, glasses and bottles sold, who is ready, what needs them, Tonight, the team furthest from ready first, the best sellers with who is trained on each, the list's key figures and the menu's. A person, a wine and Tonight open from it. Writing a training plan, editing the list or the menu, uploads and settings need a tablet or a computer, and the page says so at its foot.
+
+## Moving cards, and the navigation at the left edge
+
+A tester asked to arrange the console's pages themselves. On Dashboard, Sales Insights, Wines and Training each card shows a grip at its top edge on hover; drag it up or down its column or across into the other one. The arrangement is kept per person on the device, and "Reset this page's layout" puts it back. The five figures at the top of a page and the full-width tables stay where they are.
+
+The navigation is on trial as a layer at the left edge: hidden until the mouse reaches the edge (or the menu button is tapped, on an iPad), sliding over the page without moving it across, and gone again when the mouse leaves. "Keep the navigation along the top" in the drawer goes back to the row of sections, and a link at the foot of the page hides it again.

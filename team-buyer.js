@@ -28,6 +28,17 @@ const TeamBuyer = {
       for(let i=1;i<xs.length;i++) if(xs[i].p>=xs[i-1].p*this.GAP_X&&xs[i].p-xs[i-1].p>=10) gaps.push({from:xs[i-1],to:xs[i]});
       for(let i=0;i<xs.length;i++){ const run=xs.filter(y=>y.p>=xs[i].p&&y.p<=xs[i].p*1.1); if(run.length>=3&&!piles.some(p=>p.some(y=>run.includes(y)))) piles.push(run); }
       return {colour,wines:xs,min:xs[0].p,max:xs[xs.length-1].p,gaps,piles}; }).filter(l=>l.wines.length>1).sort((a,b)=>b.wines.length-a.wines.length); },
+  /* The ladder as a grid: price bands across (one scale for every colour, at most BANDS_MAX of them), a lane per
+     colour, each cell the bottles priced there; `hollow` marks an empty band inside a colour's own range; under each
+     band, how many bottles are listed there and how many sold in four weeks. */
+  BANDS_MAX:6,
+  bands(){ const lanes=this.ladder(); if(!lanes.length) return null; const lo0=Math.min(...lanes.map(l=>l.min)), hi=Math.max(...lanes.map(l=>l.max));
+    const step=[5,10,20,25,50,100,200,250,500,1000].find(st=>Math.floor(hi/st)-Math.floor(lo0/st)+1<=this.BANDS_MAX)||1000, lo=Math.floor(lo0/step)*step, n=Math.floor(hi/step)-Math.floor(lo0/step)+1, at=p=>Math.min(n-1,Math.floor((p-lo)/step));
+    const edges=Array.from({length:n},(_,i)=>({lo:lo+i*step,hi:lo+(i+1)*step-1,label:`${TeamData.money(lo+i*step)} to ${TeamData.money(lo+(i+1)*step-1)}`})), sold=this._sold(28);
+    const rows=lanes.map(l=>{ const cells=edges.map(()=>[]); l.wines.forEach(y=>cells[at(y.p)].push(y)); const first=cells.findIndex(c=>c.length), last=n-1-[...cells].reverse().findIndex(c=>c.length);
+      return {...l,cells,hollow:cells.map((c,i)=>!c.length&&i>first&&i<last)}; });
+    const totals=edges.map((e,i)=>{ const ws=rows.flatMap(r=>r.cells[i]); return {n:ws.length,sold:sold?ws.reduce((a,y)=>a+((sold[y.w.id]||{}).bottles||0),0):null}; });
+    return {step,edges,rows,totals,maxSold:Math.max(1,...totals.map(t=>t.sold||0)),listed:totals.reduce((a,t)=>a+t.n,0),soldAll:sold?totals.reduce((a,t)=>a+t.sold,0):null}; },
   /* A glass priced out of line with its own bottle: most lists keep one ratio, so one far from it is a slip. */
   glassOdd(){ const xs=this.wines().filter(w=>this._m(w.glass)&&this._m(w.bottle)).map(w=>({w,r:this._m(w.bottle)/this._m(w.glass)})); if(xs.length<4) return [];
     const s=xs.map(x=>x.r).sort((a,b)=>a-b), med=s[Math.floor(s.length/2)]; return xs.filter(x=>Math.abs(x.r-med)/med>0.2).map(x=>({...x,med,dear:x.r<med})).sort((a,b)=>Math.abs(b.r-b.med)-Math.abs(a.r-a.med)); },
