@@ -408,18 +408,8 @@ test.describe('reduced motion', () => {
   });
 });
 
-test.describe('trying it', () => {
+test.describe('the hero\'s opening', () => {
   test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false });
-
-  test('the dial by the sign-up is the app\'s own and answers a finger', async ({ page }) => {
-    await page.goto(BASE + '/');
-    await show(page, 'beta');
-    const dial = page.locator('#try-dial [role="slider"]');
-    await expect(dial).toBeVisible();
-    await dial.focus();
-    for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
-    await expect(page.locator('#dial-a')).toContainText('92 · Outstanding');
-  });
 
   test('the hero opens on the camera with a bottle in the frame, then lifts away to the story the scan found', async ({ page }) => {
     await page.goto(BASE + '/');

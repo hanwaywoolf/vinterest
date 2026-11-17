@@ -381,26 +381,6 @@
     hero.addEventListener('pointerleave', function () { heroSlot.style.setProperty('--tx', 0); heroSlot.style.setProperty('--ty', 0); });
   }
 
-  /* ── The dial beside the sign-up: the app's own, for the visitor's finger ── */
-  var dialBox = document.getElementById('try-dial');
-  if (dialBox) {
-    var dialSay = document.getElementById('dial-a');
-    var SAY = function (n, band) {
-      return n + ' · ' + band + '. ' + (n >= 90 ? 'A wine you loved: Vinterest looks for more like it.' : n >= 80 ? 'A good bottle. It would count in every match from here.' : 'Not for you, and worth knowing: Vinterest steers you away from wines like it.');
-    };
-    var mountDial = function () {
-      loadDemoScript().then(function () {
-        if (dialBox._dial) return;
-        dialBox.hidden = false;
-        dialBox._dial = window.VinterestDemo.mountDial(document.getElementById('dial-mount'), function (n, band) { dialSay.textContent = SAY(n, band); });
-      }, function () {});
-    };
-    if ('IntersectionObserver' in window) {
-      var dio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { dio.disconnect(); mountDial(); } }); }, { rootMargin: '100% 0px' });
-      dio.observe(document.getElementById('beta'));
-    } else mountDial();
-  }
-
   /* ── The stores ──
      Once the apps are listed (the build fills data-ios-url / data-android-url from APP_STORE_URL and
      PLAY_STORE_URL), the page stops asking for beta sign-ups: the form gives way to the two store

@@ -729,20 +729,4 @@ const VinterestDemo = {
   },
 };
 
-/* ── The page's own interactive piece ──
-   The dial beside the sign-up is the app's RatingDial, so it can't drift from the app. Nothing here reads or writes the store. */
-function _SiteDial({ onChange }) {
-  // It opens on a rating, not the app's "tap a rating" prompt: there are no preset buttons beside it here.
-  const [v, setV] = React.useState(88);
-  return <DeckTheme.Provider value={_DECK_DARK}>
-    <RatingDial min={ParkerScale.MIN} value={v} size={232}
-      onChange={(n) => { setV(n); if (onChange) onChange(n, ParkerScale.label(n)); }} />
-  </DeckTheme.Provider>;
-}
-/* The app's rating dial, for a visitor's own finger. onChange(rating, band). */
-VinterestDemo.mountDial = function (el, onChange) {
-  const root = ReactDOM.createRoot(el);
-  root.render(<_SiteDial onChange={onChange} />);
-  return { unmount() { root.unmount(); } };
-};
 window.VinterestDemo = VinterestDemo;
