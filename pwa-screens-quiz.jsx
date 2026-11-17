@@ -36,7 +36,7 @@ function LearnJumpRow({sections,onJump,active}){ const T=useTheme(), cr=T.lift(C
     {sections.map(x=>{ const on=x.id===active;
       return <div key={x.id} role="button" aria-current={on?'true':undefined} onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:on?(T.dark?_alpha(cr,0.25):cr):T.glass,border:`1px solid ${on?cr:T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,transition:'background .25s, border-color .25s'}}>
         <span style={{fontSize:14,fontWeight:600,color:on?'#fff':T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
-        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:cr,background:on&&!T.dark?'#fff':T.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
+        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:on&&!T.dark?C.cr:'#fff',background:on&&!T.dark?'#fff':C.cr,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
       </div>; })}
   </div>;
 }
@@ -577,7 +577,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</div>
                 <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
-                <span style={{display:'inline-block',marginTop:6,fontSize:'10px',fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',padding:'3px 7px',borderRadius:999,background:_alpha(T.amber,0.15),whiteSpace:'nowrap',lineHeight:1.2}}>Coming soon</span>
+                <span style={{display:'inline-block',marginTop:6,fontSize:'10px',fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',padding:'3px 7px',borderRadius:999,background:_alpha(T.amber,0.22),whiteSpace:'nowrap',lineHeight:1.2}}>Coming soon</span>
               </div>
             </div>
           ))}

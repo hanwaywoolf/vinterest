@@ -101,6 +101,63 @@ Princess Royal's list that is about 50 calls on Sonnet against about 500 on Opus
 carries `teaser` {wines, at}. Once the restaurant signs, the same command without `--teaser` brings the rest of the list
 back and writes what's missing on `TEAM_MODEL`, keeping the teaser's cards, then `team:review` runs as for any install.
 
+## Pitch demos
+
+A pitch demo is the cheapest install that still carries a sales pitch: a private page on the website for one prospect and
+a demo behind it that is mostly the console, with a light drill for one member of staff. `npm run team:write -- <restaurant>
+--pitch` (`scripts/team-write.mjs`) writes it from the same list file a full install uses:
+
+- the WHOLE list stays on, since the pitch is about the bottle-only wines (a teaser's by-the-glass slice hides them);
+- a short card for every wine (`prompts/team-pitch-cards.txt`, `TeamData.writeCards(ids, onStep, {short: true})`, eight wines
+  a call): hook, pitch, how to say it, taste, style, serving, dishes and what to offer instead, with no written questions.
+  The app builds its Essentials questions from such a card itself (which line you'd say, which dish, the price);
+- pairings for every dish;
+- full cards with questions for the wines the pairings lean on most (`--featured` 8, half of them bottle only, or `--wines
+  id,…` picked by hand), put through the app's own question check, so those wines have an at-the-table question to show;
+- nothing else: no cocktail cards (`--cocktails`), dish notes (`--dish-notes`), drinking windows or sommelier review.
+
+It starts from the restaurant's own files: `npm run team:intake -- <restaurant> --name "…" --list wine-list.pdf --menu
+menu.pdf` (`scripts/team-intake.mjs`) reads them through the app's reader (`team_list`, `team_menu`) into
+`data/team-<restaurant>-list.json`. A PDF is cut into two-page files first (poppler's `pdfseparate`), because a reader handed
+the whole file and told which pages to read lost count; a glass reading joins its bottle (same vintage, `_same`, one of the
+two without a bottle price). Check every price against the PDF before writing from it (`pdftotext -layout` and a line count
+is enough), join by hand what the by-the-glass page spells differently, and add the seed's row.
+
+Measured on The Barbary (London, November 2026: 314 wines, 32 dishes, the list far larger than the menu, which changes
+daily): intake 9 calls, 45k tokens in and 42k out; the pitch write 70 calls, 145k in, 208k out, 1.1M read from the cache and
+396k written to it, all on Sonnet 5.5. About $4 at list prices, most of it the short cards' output. Both scripts print
+their tokens when they end. A menu that changes daily costs little to keep paired (a dish is a few cents); what it needs is
+someone to send it each day, which is the pre-shift briefing's job more than the drill's.
+
+Every call is a draft (the Worker's `TEAM_DRAFT_MODEL`). The training file carries `pitch` {featured, at}. The restaurant's
+list file should set `venue.training` to `{"tier": "essentials"}`, since only the featured wines have anything to ask above
+Essentials. On The Social Corner's list (41 wines, 62 dishes) a pitch run is 23 calls; budget a few dollars a restaurant,
+against the full install's several hundred calls on `TEAM_MODEL`. `--fresh` with `--out` tries a run again from the list
+alone without touching the file in `data/`.
+
+Then `npm run team:audit -- <restaurant>` (free), and `npm run site:teams:for -- <restaurant>` (`scripts/site-teams-for.mjs`)
+drafts the prospect's page, `site/teams/for/<slug>.html`, with no call: the headline, the facts worth a tile, the
+calculator's moves at the restaurant's own prices (trading up to a bottle-only wine, a larger pour, a sparkling glass to
+start, a sweet glass with dessert, each only where the list has it), four dishes with the wine and the line from its card,
+and what the demo holds. It is a draft to read and edit by hand. The page names its seed (`<meta name="seed">`), and the
+site build fills its bottles and their cards from the seed's own files. Once the restaurant signs, `team:write` without
+`--pitch` writes what's missing on `TEAM_MODEL`; delete a short card first to have it written in full.
+
+The page's argument is chosen for the restaurant, not fixed. `analyse` works out a pool of stories from the two files and
+keeps those the list really has: mains cut for the table (a weight, "for two", or twice the least expensive main) with the
+bottle to pour against a glass each; the glass-to-bottle ladder (only where a bottle is priced at five glasses or more);
+bottles twenty years old or more, counted by the week; a larger pour; trading up to bottle only (only where the two
+medians sit a tenth apart); then sparkling to start, a sweet glass and a better glass. The calculator takes up to three of
+the restaurant's own, the most valuable a day first, and fills to four with the standard ones. The facts are weighted the
+same way. Two things only a person knows go in the list file: `venue.menu: "daily"` adds a section on pairing each day's
+menu before service, and `venue.home` {label, countries, regions} names the wines from where the food is from. The Barbary
+is the case that made this: its by-the-glass wines are already dear bottles, so trading up was worth £10 and said nothing,
+while its sharing mains, a bottle priced at 5.4 glasses and fourteen bottles from 2006 or earlier are the pitch.
+
+A new restaurant still needs its seed rows before either command: its list file `data/team-<name>-list.json`, an empty
+training file, a row in `TeamSample.SEEDS` with its `_loadJSON` pair, and a `HOSTS` and `VENUE_HOSTS` entry if it gets an
+address of its own.
+
 ## Prompt caching
 
 Every Teams prompt that writes or checks a restaurant's training (`prompts/team-cards.txt`, `team-fix`, `team-review`,

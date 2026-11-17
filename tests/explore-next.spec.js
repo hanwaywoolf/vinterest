@@ -107,3 +107,23 @@ test('Explore Next rotates picks they keep passing over', async ({ page }) => {
   expect(r.back).toBe(false);
   expect(r.opened).toBe(false);
 });
+
+// Your rules and Explore Next read the same ratings: a grape Your rules says to skip (it holds their
+// ratings back) is never Explore Next's suggestion, which once said "Skip Syrah" above a Northern
+// Rhône Syrah pick.
+test('Explore Next never suggests the grape Your rules says to skip', async ({ page }) => {
+  await page.goto(`${BASE}/?demo=1#learn`);
+  const out = await page.evaluate(() => {
+    const firm = (i, rating) => ({ name: `Firm Red ${i}`, producer: `House ${i}`, vintage: 2015 + (i % 6), type: 'red', region: ['Priorat', 'Rioja', 'Navarra', 'Barolo'][i % 4], country: ['Spain', 'Spain', 'Spain', 'Italy'][i % 4],
+      grapes: [['Grenache', 'Tempranillo', 'Grenache', 'Nebbiolo'][i % 4]], body: 0.65, tannins: 0.65, acidity: 0.65, sweetness: 0.05, rating, scanned_at: Date.now() - i * 864e5 });
+    const wines = [...Array(16)].map((_, i) => firm(i, 91 + (i % 4)));
+    for (let i = 0; i < 4; i++) wines.push({ name: `Syrah Bottle ${i}`, producer: ['Torbreck', 'Craggy Range', 'Cayuse', 'Falernia'][i], vintage: 2018, type: 'red', region: ['Barossa Valley', 'Hawke\'s Bay', 'Walla Walla', 'Elqui'][i], country: ['Australia', 'New Zealand', 'USA', 'Chile'][i], grapes: ['Syrah'], body: 0.85, tannins: 0.8, acidity: 0.5, sweetness: 0.05, rating: 84 + i % 2, scanned_at: Date.now() - (20 + i) * 864e5 });
+    const p = WineDNA.profile('red', wines, 'red');
+    const down = (p.loves.down || []).filter((x) => x.kind === 'Grape').map((x) => x.name);
+    const picks = ExploreNext.suggest('red', wines, 'Reds').picks;
+    return { down, all: (p.loves.down || []).map((x) => x.kind + ':' + x.name), picks: picks.map((a) => ({ id: a.style.id, grapes: a.style.grapes.map((g) => WineDNA.grape(g) || g) })) };
+  });
+  expect(out.down, out.all.join(', ')).toContain('Syrah');
+  expect(out.picks.length).toBeGreaterThan(0);
+  for (const p of out.picks) expect(p.grapes, p.id).not.toContain('Syrah');
+});

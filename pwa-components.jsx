@@ -312,9 +312,20 @@ function ProGate({feature,onClose}){
   );
 }
 
+/* The text colour for a solid fill: white or near-black, whichever reads better on it, so a filled
+   pill never has white on yellow or a colour on its own colour. Tinted pills (a wash of a colour) use
+   the screen's own text colour (T.ink) instead; the colour stays in the wash and the border. */
+function inkOn(bg){
+  const m=String(bg||'').match(/^#([0-9a-f]{6})$/i), p=m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):(String(bg).match(/\d+(\.\d+)?/g)||[]).slice(0,3).map(Number);
+  if(p.length<3) return '#fff';
+  const L=p.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }), lum=0.2126*L[0]+0.7152*L[1]+0.0722*L[2];
+  return (1.05/(lum+0.05))>=((lum+0.05)/(0.0075+0.05))?'#fff':'#151515';
+}
 function Pill({children,active,sm,style:s}){
-  const T=typeof useTheme==='function'?useTheme():null, cr=T?T.lift(C.cr):C.cr, mid=T?T.mid:C.mid, line=T?T.line:C.line;
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?cr:'transparent',color:active?'#fff':mid,border:`1px solid ${active?cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  const T=typeof useTheme==='function'?useTheme():null, mid=T?T.mid:C.mid, line=T?T.line:C.line;
+  // Filled, it's brand crimson (never the lifted pink, which white can't be read on) with the text that contrasts with the fill.
+  const fill=(s&&s.background)||C.cr;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?inkOn(fill):mid,border:`1px solid ${active?C.cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
   const T=typeof useTheme==='function'?useTheme():null;

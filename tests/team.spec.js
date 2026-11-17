@@ -67,6 +67,22 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 // The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
 // (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
 // with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
+// A browser already holding the consumer app's data has little room left on this address. The venue and team fit; the
+// sales, written last, once didn't, and Sales Insights said "No sales yet" with no word of why.
+test('a nearly full browser still opens The Princess Royal with its sales', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=sample`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  // Fill the device until about 2.2MB is left: enough for the venue and the team, not for the sales as well.
+  await page.evaluate(() => { localStorage.clear(); const chunk = 'x'.repeat(100000); let i = 0; try { for (;; i++) localStorage.setItem('vinterest_fill_' + i, chunk); } catch (e) {} for (let k = 0; k < 11; k++) localStorage.removeItem('vinterest_fill_' + (i - 1 - k)); });
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('console-nav-sales')).toBeVisible();
+  const st = await page.evaluate(() => ({ rows: (TeamSales.get().rows || []).length, held: Store.full(), wines: TeamData.wines().length, people: TeamLearn.people().length }));
+  expect(st.wines).toBeGreaterThan(100); expect(st.people).toBe(7);
+  expect(st.held).toBe(true);                                                                   // the test really did run out of room
+  expect(st.rows).toBeGreaterThan(1000);
+});
+
 test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -2491,6 +2507,34 @@ test('the pre-shift briefing: a special read, paired and approved, a gate everyo
   // and nobody is held at yesterday's briefing.
   const r = await page.evaluate(() => { const t = Date.now() + 86400000, me = TeamLearn.me().id; return { live: TeamShift.specials(t).map((s) => s.name), past: TeamShift.past(t).map((s) => s.name), gate: TeamShift.needsAck(me, t), far: TeamShift.specials(Date.now() + 8 * 86400000).length }; });
   expect(r.live).not.toContain('Halibut'); expect(r.past).toContain('Halibut'); expect(r.gate).toBe(false); expect(r.far).toBe(0);
+  expect(errors).toEqual([]);
+});
+
+// A pitch demo's short card (docs/business.md "Pitch demos"): written from its own prompt with no questions, more wines a
+// call, and enough for the app to build its Essentials questions, so every wine on the list still counts and can be drilled.
+test('a short card has no written questions and the app still builds Essentials questions from it', async ({ context, page }) => {
+  const asked = [];
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (body) => {
+    const text = JSON.stringify(body), ids = [...new Set((text.slice(text.lastIndexOf('Write a card for EACH of these wines')).match(/w-[a-z0-9-]+(?= \|)/g)) || [])];
+    return JSON.stringify({ cards: ids.map((id) => ({ id, hook: 'From the house on the list.', pitch: 'It is fresh and bright. You will enjoy it with the fish.', say: '', taste: 'Fresh, bright and dry.', style: { body: 2, acid: 4, tannin: 0, sweet: 1 }, serve: { temp: '8-10°C', glass: 'white wine glass', decant: 'no' }, dishes: [], alts: [] })) }); } });
+  const out = await page.evaluate(async () => {
+    const ids = TeamData.wines().map((w) => w.id), d = TeamData.get(), dishes = {};
+    ids.forEach((id) => { dishes[id] = (d.cards[id] || {}).dishes || []; }); d.cards = {}; TeamData.save(d);
+    await TeamData.writeCards(ids, null, { short: true });
+    const now = TeamData.get(); ids.forEach((id) => { now.cards[id].dishes = dishes[id]; }); TeamData.save(now); // the dishes a real answer would carry
+    TeamLearn.setTier('essentials');
+    const server = TeamLearn.people().find((p) => p.role === 'server') || TeamLearn.me();
+    return { wines: ids.length, cards: Object.keys(TeamData.get().cards).length, written: Object.values(TeamData.get().cards).reduce((n, c) => n + (c.qs || []).length, 0),
+      built: ids.map((id) => TeamLearn.qsFor(server.role, id).length), drill: TeamLearn.drill(server.id).length, readiness: !!TeamLearn.readiness(server.id) };
+  });
+  expect(out.cards).toBe(out.wines);
+  expect(out.written).toBe(0);                                   // nothing written to ask
+  expect(Math.min(...out.built)).toBeGreaterThanOrEqual(1);      // and still something to ask of every wine
+  expect(out.drill).toBeGreaterThan(0);
+  expect(out.readiness).toBe(true);
+  const calls = asked.filter((b) => b.purpose === 'team_cards');
+  expect(calls.length).toBe(Math.ceil(out.wines / 8));           // eight wines a call, not four
+  expect(JSON.stringify(calls[0])).toContain('Write nothing else for a wine');
   expect(errors).toEqual([]);
 });
 

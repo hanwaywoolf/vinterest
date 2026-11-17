@@ -89,7 +89,8 @@ async function buildLive() {
 export function cellarOf(list, train) {
   const num = (s) => { const m = /[£$€]([\d,.]+)/.exec(s || ''); return m ? +m[1].replace(',', '') : 0; };
   const KIND = { sparkling: 's', white: 'w', orange: 'w', 'rosé': 'p', red: 'r', dessert: 'd', fortified: 'd' };
-  const all = list.wines.map((w) => {
+  // A bottle under an Alcohol Free heading isn't part of the argument (site-teams-for.mjs leaves it out of every figure).
+  const all = list.wines.filter((w) => !/alcohol[- ]free/i.test(`${w.section} ${w.name}`)).map((w) => {
     const mag = /Magnum/.test(w.other || '') && !w.bottle, bottle = num(w.bottle) || (mag ? num(w.other) : 0), c = (train.cards || {})[w.id] || {};
     const row = [(w.name.includes(w.producer) ? w.name : `${w.producer}, ${w.name}`) + (w.vintage ? ` ${w.vintage}` : ''), bottle, num(w.glass), KIND[w.type] || 'r']; if (mag) row.push(1);
     const serve = c.serve || {};
@@ -116,10 +117,8 @@ export async function build() {
       : '',
   };
   vars.DEMO_PHONE_URL = demo.replace('view=console', 'view=phone').replace(/&/g, '&amp;'); // the same demo as the staff see it, to try by hand
-  const lark = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, 'data/team-demo-list.json'), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, 'data/team-demo.json'), 'utf8')));
-  vars.LARKSPUR_LIST = JSON.stringify(lark.rows).replace(/</g, '\\u003c');
-  fs.writeFileSync(path.join(OUT, 'larkspur.cards.json'), JSON.stringify(lark.cards));
-  vars.LARKSPUR_V = hash(JSON.stringify(lark.cards));
+  // The console scenes' sizes, as scripts/site-teams-shots.mjs measured them when it took the pictures.
+  vars.SCENE_SIZES = JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROOT, 'site/teams/img/scenes/sizes.json'), 'utf8')));
   const live = await buildLive();
   fs.writeFileSync(path.join(OUT, 'live.js'), live);
   vars.LIVE_V = hash(live);
@@ -154,7 +153,18 @@ export async function build() {
   const forDir = path.join(SRC, 'for'), priv = fs.existsSync(forDir) ? fs.readdirSync(forDir).filter((f) => f.endsWith('.html')).sort() : [];
   if (priv.length) fs.mkdirSync(path.join(OUT, 'for'), { recursive: true });
   for (const f of priv) {
-    const html = fill(fs.readFileSync(path.join(forDir, f), 'utf8'), vars);
+    // A page for a restaurant whose demo is in the repo names its seed (<meta name="seed" content="social">) and takes
+    // its list and cards from that seed's own files, data/team-<seed>-list.json and data/team-<seed>.json: %%LIST%% is
+    // the bottles' rows, and <name>.cards.json is written beside the page (%%CARDS_V%%). scripts/site-teams-for.mjs
+    // drafts such a page from the same two files.
+    const src = fs.readFileSync(path.join(forDir, f), 'utf8');
+    const name = f.replace(/\.html$/, ''), seed = (/<meta name="seed" content="([a-z0-9-]+)">/.exec(src) || [])[1], own = {};
+    if (seed) {
+      const made = cellarOf(JSON.parse(fs.readFileSync(path.join(ROOT, `data/team-${seed}-list.json`), 'utf8')), JSON.parse(fs.readFileSync(path.join(ROOT, `data/team-${seed}.json`), 'utf8')));
+      own.LIST = JSON.stringify(made.rows).replace(/</g, '\\u003c'); own.CARDS_V = hash(JSON.stringify(made.cards));
+      fs.writeFileSync(path.join(OUT, 'for', `${name}.cards.json`), JSON.stringify(made.cards));
+    }
+    const html = fill(src, { ...vars, ...own });
     if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
     fs.writeFileSync(path.join(OUT, 'for', f), html);
   }

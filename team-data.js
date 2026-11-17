@@ -10,6 +10,7 @@
 const TeamData = {
   KEY:'vbiz_venue_v1',
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
+  PITCH_BATCH:8,      // wines per short-card call (a pitch demo's cards carry no questions)
   PAIR_BATCH:12,      // dishes per pairing call
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
@@ -301,12 +302,16 @@ const TeamData = {
       catch(e){ last=e; if(e&&(e.code==='pro'||e.status===402||e.status===429||e.code==='refused')) throw e; if(i<this.RETRY_WAITS.length) await new Promise(r=>setTimeout(r,(window.VINTEREST_RETRY_FAST?10:this.RETRY_WAITS[i]))); } }
     throw last; },
   /* Staff cards and their questions for these wines, a few a call (prompts/team-cards.txt). */
-  async writeCards(ids,onStep){
-    const tpl=_loadTextSync('prompts/team-cards.txt');
+  /* opts.short: the pitch demo's short card (prompts/team-pitch-cards.txt, docs/business.md "Pitch demos"): what a server
+     reads and says, with no written questions, so more wines fit a call (PITCH_BATCH). The app builds its Essentials
+     questions from such a card itself (TeamLearn.lightQs). */
+  async writeCards(ids,onStep,opts){
+    const short=!!(opts&&opts.short), size=short?this.PITCH_BATCH:this.CARD_BATCH;
+    const tpl=short?_loadTextSync('prompts/team-pitch-cards.txt'):_loadTextSync('prompts/team-cards.txt');
     const venue=this.get().venue.name||'the restaurant';
     let done=0; onStep&&onStep(0,ids.length);
-    for(let i=0;i<ids.length;i+=this.CARD_BATCH){
-      const ws=ids.slice(i,i+this.CARD_BATCH).map(id=>this.wine(id)).filter(Boolean);
+    for(let i=0;i<ids.length;i+=size){
+      const ws=ids.slice(i,i+size).map(id=>this.wine(id)).filter(Boolean);
       const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',ws.map(w=>this.facts(w)).join('\n'))
         .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
         .replace('{{wines}}',ws.map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} (${w.grapes_basis}) | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'))
@@ -446,7 +451,10 @@ const TeamData = {
       catch(e){ if(xs.length<2) throw e; j={pairings:[]}; for(const one of xs){ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); } }
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
-        const x=xs.find(x=>x.name===p.dish); if(!x) return;
+        // The answer's dish is found by its name as sent, else by the same letters (a curly apostrophe typed straight,
+        // the description added after the name): ten of a 32-dish menu once came back unmatched and stayed unpaired.
+        const nm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,''), pn=nm(p.dish);
+        const x=xs.find(x=>x.name===p.dish)||xs.find(x=>nm(x.name)===pn)||(pn&&xs.find(x=>pn.startsWith(nm(x.name))||nm(x.name+x.desc).startsWith(pn))); if(!x) return;
         const ok=id=>id&&d.wines[id]&&d.wines[id].onList;
         const wine=id=>ok(id)&&!this.isDrink(d.wines[id]), drink=id=>!!(d.cocktails||{})[id];
         d.pairings[x.id]={best:(p.best||[]).filter(b=>wine(b.id)),glass:p.glass&&wine(p.glass.id)?p.glass:null,avoid:p.avoid&&wine(p.avoid.id)?p.avoid:null,cocktail:p.cocktail&&drink(p.cocktail.id)?p.cocktail:null,at:Date.now()};
@@ -591,12 +599,12 @@ const TeamSample = {
      `eloise`: Eloise, Toronto, the same again from its site's menus and drink menu (intake/eloise/), in Canadian dollars. */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
      paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'},eloise:{kind:'social',label:'Eloise'}},
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'},eloise:{kind:'social',label:'Eloise'},barbary:{kind:'social',label:'The Barbary'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):which==='eloise'?_loadJSON('data/team-eloise.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):which==='eloise'?_loadJSON('data/team-eloise.json'):which==='barbary'?_loadJSON('data/team-barbary.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):which==='eloise'?_loadJSON('data/team-eloise-list.json'):null; },
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):which==='eloise'?_loadJSON('data/team-eloise-list.json'):which==='barbary'?_loadJSON('data/team-barbary-list.json'):null; },
   // ?seed=perse was The Social Corner's first name on another branch; ?seed=princess is The Princess Royal's short address.
   ALIAS:{perse:'social',princess:'princess-royal'},
   load(which='sample'){ which=this.ALIAS[which]||which;

@@ -125,7 +125,7 @@ test('a prompt marked [[cache-above]] is sent with its unchanging part cached an
 // above is the same for every call of a publish; a placeholder above it would make every call a cache miss.
 test('every Teams prompt that is cached keeps the per-call parts below its marker', async () => {
   const fs = require('node:fs'), dir = path.join(__dirname, '..', 'prompts');
-  const perCall = { 'team-cards.txt': ['facts', 'wines', 'example'], 'team-fix.txt': ['facts', 'items'], 'team-review.txt': ['items'],
+  const perCall = { 'team-cards.txt': ['facts', 'wines', 'example'], 'team-pitch-cards.txt': ['facts', 'wines'], 'team-fix.txt': ['facts', 'items'], 'team-review.txt': ['items'],
     'team-pairings.txt': ['dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'] };
   for (const [f, keys] of Object.entries(perCall)) {
     const t = fs.readFileSync(path.join(dir, f), 'utf8'), at = t.indexOf('[[cache-above]]');

@@ -497,7 +497,7 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
     <div style={{padding:'6px 2px 2px',...rise(0)}}>
       <WineIdentity wine={wine}/>
       <div style={{display:'flex',alignItems:'center',gap:10,marginTop:10,flexWrap:'wrap'}}>
-        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:T.green,background:T.greenBg,border:`1px solid ${_alpha(T.green,0.3)}`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
+        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:T.ink,background:T.greenBg,border:`1px solid ${_alpha(T.green,0.3)}`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
         <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
       </div>
     </div>
@@ -712,7 +712,7 @@ function CardFace({card,ctx}){ const T=useTheme();
       {w&&<div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
         <span style={{fontSize:16,fontWeight:800,color:a,fontFamily:P}}>{w.word}</span>
         <span style={{fontSize:14,color:T.mid,fontFamily:P}}>{w.line}{w.source==='estimate'?' · a rough estimate':''}</span>
-        {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:a,fontFamily:P,padding:'2px 9px',borderRadius:12,background:T.tint(card.accent)}}>{r} vintage</span>}
+        {r&&r!=='Unknown'&&<span style={{fontSize:12.5,fontWeight:700,color:T.ink,fontFamily:P,padding:'2px 9px',borderRadius:12,background:T.tint(card.accent)}}>{r} vintage</span>}
       </div>}
       <Deep f="year" fallback={y?`The ${y} in ${facts.region||wine.region||wine.country}.`:'A blend of years, made to taste the same every time.'}/>
     </div>;
@@ -749,7 +749,7 @@ function CardFace({card,ctx}){ const T=useTheme();
           </div>)}
           {pairs.length>2&&<More/>}
         </div>
-        :plain.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:7}}>{plain.map((f,i)=><span key={i} style={{padding:'5px 12px',borderRadius:20,background:T.tint(card.accent),color:a,fontSize:14,fontWeight:600,fontFamily:P,border:`1px solid ${a}33`}}>{f}</span>)}</div>:null}
+        :plain.length>0?<div style={{display:'flex',flexWrap:'wrap',gap:7}}>{plain.map((f,i)=><span key={i} style={{padding:'5px 12px',borderRadius:20,background:T.tint(card.accent),color:T.ink,fontSize:14,fontWeight:600,fontFamily:P,border:`1px solid ${a}33`}}>{f}</span>)}</div>:null}
         {facts.food&&<Facts rows={[[`${facts.grape} and food`,facts.food]]}/>}
       </>}
     </div>;

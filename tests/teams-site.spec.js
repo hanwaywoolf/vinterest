@@ -69,15 +69,25 @@ test('the calculator follows the inputs', async ({ browser }) => {
   await expect(five).not.toHaveText(before);
   // 300 covers × (0.5 × £9 + 0.1 × £42) × 6 nights × 52 weeks × 5%
   await expect(five).toHaveText('£40,716');
-  // The demo restaurant's list beside it, as bottles, made at build time from the app's own files; a bottle opens its card.
-  const list = page.locator('.calc .cellar');
-  await expect(list.locator('.cellar-grid i')).toHaveCount(30);
-  await list.locator('.cellar-tabs [data-mode="bottle"]').click();
-  await expect(list.locator('.cellar-cap')).toContainText('15 are bottle only');
-  await list.locator('.cellar-grid i').last().click();
-  await expect(page.locator('dialog.wcard h3')).toBeVisible();
-  await expect(page.locator('dialog.wcard')).toContainText('What to say at the table');
+  // The bottle list is for a prospect's own page only (/for/…), never the public site.
+  await expect(page.locator('.cellar')).toHaveCount(0);
   await page.close();
+});
+
+// The console's pictures and the sizes the page plays them at are taken together (npm run site:teams:shots): a
+// picture retaken by hand, or a size edited without its picture, would scroll the laptop to the wrong place.
+test('the console scenes play at the size their pictures are', async ({ page }) => {
+  const fs = require('node:fs'), path = require('node:path'), dir = path.join(__dirname, '..', 'site', 'teams', 'img', 'scenes');
+  const sizes = JSON.parse(fs.readFileSync(path.join(dir, 'sizes.json'), 'utf8'));
+  const dims = (f) => { const d = fs.readFileSync(path.join(dir, f)); for (let i = 2; i < d.length;) { if (d[i] !== 0xff) { i++; continue; } const m = d[i + 1]; if (m >= 0xc0 && m <= 0xc2) return [d.readUInt16BE(i + 7), d.readUInt16BE(i + 5)]; i += 2 + d.readUInt16BE(i + 2); } };
+  expect(sizes.look, 'taken from the console the demo restaurant opens on').toBe('preview');
+  for (const [k, w] of [['dash', 1440], ['sales', 1440], ['team', 1440], ['training', 1440], ['wines', 1440], ['menu', 1440], ['card', sizes.cardW], ['dish', sizes.dishW], ['mgr', sizes.mgrW]]) expect(dims(k + '.jpg'), k).toEqual([w, sizes[k]]);
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) expect(dims('nav-' + k + '.jpg'), k).toEqual([1440, sizes.nav]);
+  expect(dims('nav-mgr.jpg')).toEqual([sizes.mgrW, sizes.mgrNav]);
+  for (const k of ['card', 'dish']) { expect(dims(k + '-bg.jpg'), k).toEqual([1440, 900]); expect(sizes[k + 'X'] + sizes[k + 'W']).toBe(1440);
+    expect(sizes[k + 'Tap'].y, 'the row is on screen, under the bar').toBeGreaterThan(sizes.nav); expect(sizes[k + 'Tap'].y).toBeLessThan(840); expect(sizes[k + 'At']).toBeLessThanOrEqual(1); }
+  await page.goto(BASE + '/');
+  expect(await page.content()).toContain(`const SZ = ${JSON.stringify(sizes)};`);
 });
 
 test('the sitemap lists every page', async ({ request }) => {
@@ -216,13 +226,13 @@ test('each console scene, and the wine card, opens at the top of its page', asyn
   await page.goto(BASE + '/');
   await page.locator('#demo').scrollIntoViewIfNeeded();
   const pan = () => page.evaluate(() => { const e = document.querySelector('#stage .ly[data-pan]'); return e && { img: e.src.split('/').pop().split('?')[0], y: e.style.transform || 'none' }; });
-  for (const k of ['sales', 'team', 'cards', 'ready', 'menu']) {
+  for (const k of ['sales', 'team', 'training', 'cards', 'dash', 'menu']) {
     await page.click(`[data-scene=${k}]`);
     await page.waitForTimeout(1200);
     expect((await pan()).y, k).toMatch(/^(none|translateY\(0px\))$/);
   }
   await page.click('[data-scene=cards]');
-  await expect.poll(async () => (await pan()).img, { timeout: 6000 }).toBe('card.jpg');
+  await expect.poll(async () => (await pan()).img, { timeout: 12000 }).toBe('card.jpg');
   await page.waitForTimeout(800);
   expect((await pan()).y).toMatch(/^(none|translateY\(0px\))$/);
   await page.close();
@@ -238,9 +248,9 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
   expect(await (await request.get(BASE + '/robots.txt')).text()).toContain('Disallow: /for/');
   const box = page.locator('#prCalc');
-  await expect(box.locator('[data-t="day"]')).toHaveText('£203');       // 3 × £27 + 5 × £14 + 4 × £13
-  await expect(box.locator('[data-t="week"]')).toHaveText('£1,421');
-  await expect(box.locator('[data-t="year"]')).toHaveText('£73,892');
+  await expect(box.locator('[data-t="day"]')).toHaveText('£191');       // 3 × £23 + 5 × £14 + 4 × £13
+  await expect(box.locator('[data-t="week"]')).toHaveText('£1,337');
+  await expect(box.locator('[data-t="year"]')).toHaveText('£69,524');
   await box.locator('[data-in="up"]').fill('0');
   await expect(box.locator('[data-t="day"]')).toHaveText('£122');
   // the list as bottles: one per wine, and the filters count what the page says
@@ -405,6 +415,13 @@ test('on a phone the floor carousel runs the real drill', async ({ page }) => {
   const full = page.locator('.live-full');
   await expect(full.getByText('Hi Dani')).toBeVisible();
   await expect(page.locator('#fstage .live-app')).toHaveCount(0);                   // the playing phone has stopped
+  // It opens on what to try (a sheet on a phone), which names only what runs here and sends the rest to the full demo.
+  const guide = full.locator('.live-guide');
+  await expect(guide).toBeVisible(); await expect(guide.locator('li')).toHaveCount(5);
+  await expect(guide.locator('.lg-more a')).toHaveAttribute('href', /demo\.vinterest\.team/);
+  await guide.locator('[data-live-guide-close]').click(); await expect(guide).toBeHidden();
+  await full.locator('[data-live-guide]').click(); await expect(guide).toBeVisible();   // and comes back from the bar
+  await guide.locator('[data-live-guide-close]').click();
   await full.getByText(/Start today's drill|Practise · 5/).first().click();
   await full.locator('[data-testid=drill-opt]').first().click();
   await full.getByText('Check', { exact: true }).click();
@@ -451,4 +468,65 @@ test('the table plays its lines and ends on the mark', async ({ page, request })
   await expect(table.locator('[data-table-play] .lbl')).toHaveText('Play it again');
   await expect(table.locator('.t-mark')).toContainText('That landed');
   expect(errors).toEqual([]);
+});
+
+// The Social Corner's page takes its list and cards from the seed's own files at build time, in Canadian dollars.
+test("The Social Corner's private page is built from its seed and adds up", async ({ page, request }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(BASE + '/for/social-corner');
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.locator('h1')).toContainText('41 wines');
+  expect(await (await request.get(BASE + '/sitemap.xml')).text()).not.toContain('/for/');
+  const list = page.locator('.cellar');
+  await expect(list.locator('.cellar-grid i')).toHaveCount(41);
+  await list.locator('.cellar-tabs [data-mode="bottle"]').click();
+  await expect(list.locator('.cellar-tabs [data-mode="bottle"] b')).toHaveText('18');
+  await expect(list.locator('.cellar-tabs [data-mode="top"] b')).toHaveText('13');
+  await list.locator('.cellar-grid i').last().click();
+  const card = page.locator('dialog.wcard');
+  await expect(card.locator('h3')).toContainText('Tignanello');
+  await expect(card.locator('.price')).toHaveText('$350 a bottle · bottle only');
+  await card.locator('.wcard-x').click();
+  const box = page.locator('#scCalc');
+  await expect(box.locator('[data-t="day"]')).toHaveText('$359');        // 3 × $42 + 10 × $11 + 5 × $15 + 4 × $12
+  await expect(box.locator('[data-t="year"]')).toHaveText('$130,676');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});
+
+// A prospect's page is drafted from its seed's two files (scripts/site-teams-for.mjs); the analysis holds to them.
+test('the page generator reads a seed and drafts a page the build accepts', async () => {
+  const fs = require('node:fs'), path = require('node:path'), root = path.join(__dirname, '..');
+  const { analyse, render } = await import(require('node:url').pathToFileURL(path.join(root, 'scripts', 'site-teams-for.mjs')).href);
+  const read = (f) => JSON.parse(fs.readFileSync(path.join(root, f), 'utf8'));
+  const a = analyse(read('data/team-social-list.json'), read('data/team-social.json'));
+  expect([a.figures.wines, a.figures.bottleOnly, a.figures.byGlass]).toEqual([41, 18, 23]);
+  expect(a.moves.map((m) => [m.k, m.price])).toEqual([['up', 42], ['pour', 11], ['fizz', 15], ['sweet', 12]]);
+  expect(a.facts.length).toBeGreaterThanOrEqual(6);
+  expect(a.picks).toHaveLength(4);
+  for (const p of a.picks) expect(p.line.length).toBeGreaterThan(20);                       // each dish has the line from its wine's card
+  const html = render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
+  expect(html).toContain('<meta name="robots" content="noindex, nofollow">');
+  expect(html).toContain('<meta name="seed" content="social">');
+  expect(html).toContain('41 wines. <em>18 need a recommendation.</em>');
+  expect(html).not.toMatch(/undefined|NaN/);
+  // A list of non-alcoholic bottles and magnums doesn't bend the figures (The Princess Royal's has both).
+  const b = analyse(read('data/team-princess-royal-list.json'), read('data/team-princess-royal.json'));
+  expect(b.moves.find((m) => m.k === 'fizz').why).not.toMatch(/non-alc/i);
+  // The stories are chosen per restaurant. The Barbary's glass list is already dear bottles, so trading up tells nothing;
+  // its own stories are its mains cut for the table, a bottle priced at 5.4 glasses, and its bottles with age (by the week).
+  const c = analyse(read('data/team-barbary-list.json'), read('data/team-barbary.json'));
+  expect(c.moves.map((m) => [m.k, m.price, m.per || 'day'])).toEqual([['share', 65, 'day'], ['size', 20, 'day'], ['aged', 200, 'week'], ['fizz', 17, 'day']]);
+  expect(c.facts.slice(0, 4).map((x) => x.title)).toEqual(['Bottle only', 'Wines from where your food is from', 'Mains cut for the table', 'From two glasses each to the bottle']);
+  expect(c.dailyMenu).toBe(true);
+  expect(c.picks[0]).toMatchObject({ dish: 'Hereford Côte De Boeuf' });
+  const page = render(c, { seed: 'barbary', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 });
+  expect(page).toContain('48 questions (about 1,880 across all 313 in a full install)');       // eight wines trained in full, six questions each
+  // Over 80 wines the bottles go under the copy, across the page, with the buttons after them: 313 in six rows of 53, 30 across on a phone.
+  expect(page).toContain('<section class="pr-hero pour-wait stack">'); expect(page).toContain('--cols: 53; --cols-m: 30');
+  expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).toContain('<section class="pr-hero pour-wait">');
+  expect(page).toContain('data-per="week"'); expect(page).toContain("Today's menu, paired before service."); expect(page).not.toMatch(/undefined|NaN/);
+  expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).not.toContain('paired before service');
 });

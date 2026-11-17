@@ -80,7 +80,7 @@ function RegionScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
               <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>Key Varietals</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.key_varietals.map((g,i)=>(
-                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?T.crSoft:T.soft,color:i===0?cr:T.ink2,fontSize:15,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?_alpha(cr,0.4):T.line}`,cursor:'pointer'}}>{g}</span>
+                  <span key={i} onClick={()=>nav('varietal')} style={{padding:'5px 14px',borderRadius:20,background:i===0?T.crSoft:T.soft,color:i===0?T.ink:T.ink2,fontSize:15,fontWeight:i===0?600:500,fontFamily:C.P,border:`1px solid ${i===0?_alpha(cr,0.4):T.line}`,cursor:'pointer'}}>{g}</span>
                 ))}
               </div>
             </Card>
@@ -213,7 +213,7 @@ function VarietalScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
               <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P,marginBottom:8}}>If You Like This, Try…</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {data.similar_varietals.map((g,i)=>(
-                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:T.crSoft,color:cr,fontSize:15,fontWeight:600,fontFamily:C.P,border:`1px solid ${_alpha(cr,0.4)}`}}>{g}</span>
+                  <span key={i} style={{padding:'5px 13px',borderRadius:20,background:T.crSoft,color:T.ink,fontSize:15,fontWeight:600,fontFamily:C.P,border:`1px solid ${_alpha(cr,0.4)}`}}>{g}</span>
                 ))}
               </div>
             </Card>
