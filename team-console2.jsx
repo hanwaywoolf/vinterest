@@ -688,6 +688,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   React.useEffect(()=>{ const a=TeamDemo.seedTonight(), b=TeamPlans.seedDemo(); if(a||b) bump(); },[]);
   const pageRef=React.useRef(null); _c2Pid=me.id;
   // The side navigation is a layer: it opens when the mouse reaches the left edge (or from the menu button) and closes once the mouse leaves it.
+  // Only a mouse that has moved there opens it: a pointer that merely starts at the edge as the page loads (as a browser reports one at 0,0) leaves it shut.
   const showNav=()=>{ clearTimeout(navT.current); setNavOpen(true); }, hideNav=(ms=220)=>{ clearTimeout(navT.current); navT.current=setTimeout(()=>setNavOpen(false),ms); };
   React.useEffect(()=>{ if(!navOpen) return; const k=e=>{ if(e.key==='Escape') setNavOpen(false); }; window.addEventListener('keydown',k); return ()=>window.removeEventListener('keydown',k); },[navOpen]);
   // A figure on the dashboard opens the card it's a summary of: the section, then that card brought into view and lit.

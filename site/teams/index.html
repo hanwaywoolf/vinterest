@@ -40,11 +40,11 @@
           <button role="tab" data-scene="menu"><b>Menu and allergens</b><span>Every dish with its glass and its bottle, and how often tables took them. Allergens count only once the kitchen confirms them.</span><i></i></button>
         </div>
         <p class="cap" id="cap"></p>
-        <button class="btn ghost small explore" type="button" data-demo-open>Explore it yourself →</button>
       </div>
       <div class="laptop">
-        <div class="lid" role="button" tabindex="0" data-demo-open aria-label="Open the demo restaurant's console full screen"><div class="stage" id="stage" aria-hidden="true"></div><span class="hint">Click to explore the demo</span></div>
+        <div class="lid" role="button" tabindex="0" data-demo-open aria-label="Open the demo restaurant's console full screen"><div class="stage" id="stage" aria-hidden="true"></div></div>
         <div class="base"></div>
+        <button class="btn ghost small lhint" type="button" data-demo-open>Click to explore the demo</button>
       </div>
     </div>
     </div>
@@ -233,6 +233,26 @@
   </div>
 </section>
 
+<section class="band alt plan" id="plans">
+  <div class="wrap split" style="--c:var(--gold)">
+    <div>
+      <div class="eyebrow">Training that fits the person</div>
+      <h2>A plan for each person, not one course for everyone.</h2>
+      <p class="lead">Readiness shows where each person is short. Your sales data shows what that costs. Each person's training is built from both.</p>
+      <div class="pts">
+        <div>Every daily drill is dealt for the person taking it: what they got wrong, what has faded, and the wines that sell most and they don't know yet.</div>
+        <div>Vinny works out each person's next step and what it's worth: which wines, how far it moves their readiness, how many drills it takes. One tap puts it first in their drills.</div>
+        <div>Seen something on the floor? Say it in your own words: "Priya is struggling with her reds, mostly prices and pairings." Vinny writes a plan from your list and menu, or suggests one from where she's furthest behind. You read it, then push it.</div>
+        <div>It lands on her phone as her own training, apart from the daily drill, and you watch it through to the last part.</div>
+      </div>
+    </div>
+    <div class="viz">
+      <img class="con" src="img/scenes/plan.jpg?v=%%IMG_V%%" width="929" height="606" alt="The console's Team page for one server: her next step with what it moves, Ask Vinny for a plan with three suggestions, and the bespoke training already pushed to her, 7 of 20 done" loading="lazy">
+      <img class="ph" src="img/scenes/plan-phone.jpg?v=%%IMG_V%%" width="390" height="844" alt="The same plan on her phone: From Elena, your own training, part 1 of 3" loading="lazy">
+    </div>
+  </div>
+</section>
+
 <section class="rooms">
   <div class="wrap">
     <div class="head" style="max-width:700px">
@@ -285,7 +305,8 @@ function player(stage, W, H, dir, mode) {
   const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg?v=%%IMG_V%%'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
   async function step(st, token) {
     let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
-    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { delete o.dataset.pan; o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach((l) => { layer(l).dataset.over = '1'; }); old.forEach((o) => { delete o.dataset.pan; o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    if (st.keep && st.clear) stage.querySelectorAll('.ly[data-over]').forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); });
     const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
     const { from, to, ms } = st.pan;
     const setY = (f) => { pan.style.transform = `translateY(${-f * travel}px)`; };
@@ -323,15 +344,17 @@ function player(stage, W, H, dir, mode) {
 const SW = 1440, SH = 900;
 // Every scene and every card that opens rests on the top of its page first (TOP ms), then scrolls.
 const TOP = 2200;
-// The pictures' heights, the bar's height and the two taps come from the pictures themselves
+// The pictures' heights, the navigation's width and every tap come from the pictures themselves
 // (scripts/site-teams-shots.mjs writes img/scenes/sizes.json and the build puts it here), so retaking them
 // needs no edit to this page.
 const SZ = %%SCENE_SIZES%%;
-// A page of the console: its bar across the top stays put (nav-<k>) while the page (k) scrolls under it.
-const page = (k, from, to, ms) => ({ pan: { img: k, x: 0, y: SZ.nav, w: SW, h: SZ[k], from, to, ms }, over: [{ img: 'nav-' + k, x: 0, y: 0, w: SW, h: SZ.nav }] });
-const scroll = (k, to, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, to, ms), keep: true }];
+// A page of the console (k), and how a manager gets to it: the navigation slid out from the left edge with that
+// section lit (nav-<k>), its row tapped, the navigation gone, then the page read.
+const page = (k, from, to, ms) => ({ pan: { img: k, x: 0, y: 0, w: SW, h: SZ[k], from, to, ms } });
+const arrive = (k) => [{ ...page(k, 0, 0, 1500), over: [{ img: 'nav-' + k, x: 0, y: 0, w: SZ.navW, h: SH }], tap: SZ.navTap[k] }, { ...page(k, 0, 0, TOP), keep: true, clear: true }];
+const scroll = (k, to, ms) => [...arrive(k), { ...page(k, 0, to, ms), keep: true }];
 // A drawer: the page scrolled to the row, the row tapped, the screen with the drawer open, then the drawer read down.
-const drawer = (k, name, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, SZ[name + 'At'], 3200), keep: true, tap: SZ[name + 'Tap'] },
+const drawer = (k, name, ms) => [...arrive(k), { ...page(k, 0, SZ[name + 'At'], 3200), keep: true, tap: SZ[name + 'Tap'] },
   { frames: [{ img: name + '-bg', x: 0, w: SW, h: SH }], pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 0, ms: TOP } },
   { pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 1, ms }, keep: true }];
 const SCENES = {
@@ -355,8 +378,12 @@ async function play(name) {
   if (!held && inView) play(order[(order.indexOf(name) + 1) % order.length]);
 }
 tabs.forEach((t) => t.addEventListener('click', () => { held = false; play(t.dataset.scene); }));
-new IntersectionObserver((es) => es.forEach((e) => { inView = e.isIntersecting; if (inView && !playing) play(cur); })).observe(document.getElementById('demo'));
-play(cur);
+// Nothing counts down until the laptop is properly on screen (most of its screen showing): until then it rests on
+// the first page with its tab's line empty, so a reader arriving from the headline starts at the first section.
+// Scrolled away, the scene in hand finishes and waits; back in view it plays again from its top.
+const tabBox = document.getElementById('tabs'); tabBox.classList.add('wait');
+{ const sel = tabs.find((t) => t.dataset.scene === cur); cap.innerHTML = `<b>${sel.querySelector('b').textContent}.</b> ${sel.querySelector('span').textContent}`; lap.play([{ ...SCENES[cur].steps[0], pan: { ...SCENES[cur].steps[0].pan, ms: 0 }, tap: null }]); }
+new IntersectionObserver((es) => es.forEach((e) => { inView = e.intersectionRatio >= .7; if (inView && !playing) { tabBox.classList.remove('wait'); play(cur); } }), { threshold: [0, .7] }).observe(stage);
 
 // The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
 const PW = 390, PH = 844, PHEAD = 57, PTAB = 58, pstage = document.getElementById('pstage');
@@ -452,7 +479,7 @@ fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersectin
 (function () {
   const el = document.getElementById('mstage'), MW = SZ.mgrW, MH = Math.round(MW * 720 / 584);
   const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
-  const at = (from, to, ms) => ({ pan: { img: 'mgr', x: 0, y: SZ.mgrNav, w: MW, h: SZ.mgr, from, to, ms }, over: [{ img: 'nav-mgr', x: 0, y: 0, w: MW, h: SZ.mgrNav }] });
+  const at = (from, to, ms) => ({ pan: { img: 'mgr', x: 0, y: 0, w: MW, h: SZ.mgr, from, to, ms } });
   const steps = [at(0, 0, 2200), { ...at(0, 1, 26000), keep: true }, { ...at(1, 1, 2200), keep: true }];
   let on = false;
   async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }
