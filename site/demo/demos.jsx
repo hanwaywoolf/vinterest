@@ -232,12 +232,16 @@ const _DEMO_SCREENS = {
   // One part per caption, each scrolled to the section it talks about, then reading gently on.
   dna: { nav: 'profile', Screen: WineDNAScreen, steps: [
     { at: 0, to: 'top', drift: 0.2 },
-    { at: 0.143, to: '[data-testid="dna-rules"]', drift: 0.25 }, // Next time you're buying: reach for, skip, try
-    { at: 0.286, to: '[data-testid="dna-taste-tiles"]', drift: 0.3 }, // the portrait: a tile per trait
-    { at: 0.429, to: '[data-section="knows"]', drift: 0.7, ms: 9000 }, // How Well We Know You, then on into the “house” wines
-    { at: 0.571, to: '[data-section="value"]', drift: 0.3 },
-    { at: 0.714, to: '[data-section="explore"]', drift: 0.3 },
-    { at: 0.857, to: '[data-section="scripts"]', drift: 0.4 },
+    { at: 0.125, to: '[data-testid="dna-rules"]', drift: 0.25 }, // Next time you're buying: reach for, skip, try
+    { at: 0.25, to: '[data-testid="dna-taste-tiles"]', drift: 0.3 }, // the portrait: a tile per trait
+    // The script sits straight under the portrait it's written from: the short one, then a tap on Long.
+    { at: 0.375, to: '[data-section="scripts"]', drift: 0.1, do: [{ tap: /^Short$/ }] },
+    { at: 0.5, to: '[data-section="scripts"]', drift: 0.2, do: [{ tap: /^Long$/ }] },
+    // On down the screen in its own order: the “house” wines, value, where to look next.
+    { at: 0.625, to: '[data-section="house"]', drift: 0.3 },
+    { at: 0.7, to: '[data-section="value"]', drift: 0.3 },
+    { at: 0.775, to: '[data-section="explore"]', drift: 0.3 },
+    { at: 0.875, to: '[data-section="knows"]', drift: 0.5, ms: 8000 }, // How Well We Know You, last
   ] },
   // WineDNA for the film (site/video/winedna-demo.html): red from the top down, then a tap on White and the same for it. One part per
   // beat; the film moves p to a part's `at` when its time comes.
@@ -725,27 +729,8 @@ const VinterestDemo = {
   },
 };
 
-/* ── The page's own interactive pieces ──
-   Built from the app's code and data, so the words on the page are the app's own and can't drift:
-   the taste sliders use WineDNA's scale steps and meanings and the Explore Next catalogue, the dial
-   is the app's RatingDial, and the grape is its GrapeSketch. Nothing here reads or writes the store. */
-const _SITE_TASTE_AXES = { red: ['body', 'tannins', 'acidity'], white: ['body', 'acidity', 'sweetness'] };
-/* What three sliders say: each trait's step word and meaning, and the catalogue's nearest styles. */
-VinterestDemo.taste = function (type, vals) {
-  const axes = _SITE_TASTE_AXES[type] || _SITE_TASTE_AXES.red;
-  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-  const rows = axes.map((k) => {
-    const v = Math.max(0, Math.min(1, vals && typeof vals[k] === 'number' ? vals[k] : 0.5)), st = WineDNA.stepAt(v);
-    return { axis: k, name: WineDNA.AXES[k].name, steps: WineDNA.STEPS[k], step: st, word: WineDNA.STEPS[k][st], value: v,
-      meaning: cap(String(WineDNA.STEP_MEANING[k][st] || '').replace(/^[^:]+:\s*/, '')) };
-  });
-  const picks = _loadJSON('data/explore-styles.json').filter((x) => x.type === type).map((x) => {
-    const ks = axes.filter((k) => typeof x.profile[k] === 'number');
-    const d = Math.sqrt(ks.reduce((a, k) => a + Math.pow(x.profile[k] - rows.find((r) => r.axis === k).value, 2), 0) / (ks.length || 1));
-    return { d, name: x.name, country: x.country, region: x.region, grapes: x.grapes || [], adds: x.adds, taste: x.learn && x.learn.taste, ask: x.learn && x.learn.ask };
-  }).sort((a, b) => a.d - b.d).slice(0, 3);
-  return { type, col: _DECK_DARK.lift(_TYPE_COLORS[type] || C.cr), rows, picks, words: rows.map((r) => r.word) };
-};
+/* ── The page's own interactive piece ──
+   The dial beside the sign-up is the app's RatingDial, so it can't drift from the app. Nothing here reads or writes the store. */
 function _SiteDial({ onChange }) {
   // It opens on a rating, not the app's "tap a rating" prompt: there are no preset buttons beside it here.
   const [v, setV] = React.useState(88);
@@ -759,14 +744,5 @@ VinterestDemo.mountDial = function (el, onChange) {
   const root = ReactDOM.createRoot(el);
   root.render(<_SiteDial onChange={onChange} />);
   return { unmount() { root.unmount(); } };
-};
-/* A grape's bunch, drawn by the pen as it is in the scan story. False when the guide has no such grape. */
-VinterestDemo.mountSketch = function (el, grape) {
-  let info = null;
-  try { info = GrapeInfo.get(WineDNA.grape(grape), []); } catch (e) { info = null; }
-  if (!info || !info.look) return null;
-  const root = ReactDOM.createRoot(el);
-  root.render(<GrapeSketch key={info.name} info={info} animate ink="rgba(255,255,255,0.85)" />);
-  return { name: info.name, unmount() { root.unmount(); } };
 };
 window.VinterestDemo = VinterestDemo;

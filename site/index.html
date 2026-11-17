@@ -34,7 +34,6 @@
   <div class="wrap">
     <a href="/" aria-label="Vinterest home"><img class="logo" src="/logo.png" alt="Vinterest" width="115" height="24"/></a>
     <nav aria-label="Main">
-      <a class="link" href="#taste">Try it</a>
       <a class="btn primary small cta-main" href="#beta" data-live-text="Get the app">Join the beta</a>
     </nav>
   </div>
@@ -51,7 +50,7 @@
       <p class="lead">Just scan a bottle or a wine list<sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> to see how well it matches your taste and WineDNA. Then rate it and go deeper: pick a grape, a region or a skill and learn more about it with short quizzes and articles written for you.</p>
       <div class="cta">
         <a class="btn primary cta-main" href="#beta" data-live-text="Download the app">Join the beta</a>
-        <a class="btn ghost" href="#taste">Find your taste in 20 seconds</a>
+        <a class="btn ghost" href="#scan">See how it works</a>
       </div>
       <p class="note">Free to start. <sup class="pro" title="Included in Vinterest Pro" aria-label="Pro feature">$</sup> marks a Pro feature. <span data-live-text="On iPhone and Android.">iPhone and Android apps are on their way.</span></p>
     </div>
@@ -82,33 +81,6 @@
             <span class="cam-shutter"><i></i></span>
           </div></div>
         <span class="island"></span></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- Try it: three sliders, a first portrait and what to try (the app's own words and catalogue, via demo.js) -->
-<section class="dark taste" id="taste" aria-labelledby="taste-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <p class="eyebrow">Try it</p>
-      <h2 id="taste-h">What do you <strong>like</strong> in a wine?</h2>
-      <p class="lead">Move the sliders to how you like it. This is a first sketch of your WineDNA: in the app it's worked out for you, from the bottles you rate.</p>
-    </div>
-    <div class="taste-grid reveal">
-      <div class="taste-card" id="taste-controls">
-        <div class="seg" role="group" aria-label="Wine type">
-          <button type="button" data-type="red" aria-pressed="true">Red</button>
-          <button type="button" data-type="white" aria-pressed="false">White</button>
-        </div>
-        <div id="taste-rows" class="taste-rows"><div class="taste-skel"></div><div class="taste-skel"></div><div class="taste-skel"></div></div>
-      </div>
-      <div class="taste-card result" id="taste-result">
-        <p class="eyebrow" id="taste-words" aria-live="polite">Your taste</p>
-        <div id="taste-picks" class="taste-picks" aria-live="polite"><div class="taste-skel tall"></div></div>
-        <div class="taste-sketch" id="taste-sketch" aria-hidden="true"></div>
-        <a class="btn primary cta-main" href="#beta" data-live-text="Download the app">Get your real WineDNA</a>
-        <p class="fine">A first guess from three sliders. The app learns from what you actually rate, and matches every bottle you scan to it.</p>
-      </div>
     </div>
   </div>
 </section>
@@ -194,15 +166,16 @@
       <p class="lead">Your ratings add up to a profile of the grapes, regions, styles and prices you love.</p>
       <ol class="steps">
         <li data-at="0"><h3>A profile for each kind of wine</h3><p>Reds, whites, rosé and sparkling each get their own read. This drinker's reds come out Classic &amp; Balanced, and the full profile in words is one tap away.</p></li>
-        <li data-at="0.143"><h3>What to buy next time</h3><p>Three rules written from your own ratings: reach for the grape or region that lifts them most, skip what holds them back, and try one new style.</p></li>
-        <li data-at="0.286"><h3>Your taste, visualized</h3><p>Where the wines you choose sit on each scale, from light to full, soft to grippy, with what each word means and how to notice it in the glass.</p></li>
-        <li data-at="0.429"><h3>How well it knows you</h3><p>It re-predicts your ratings to show how close it got, then lists your “house” wines: the bottles you keep coming back to.</p></li>
-        <li data-at="0.571" data-anim-to="0.714" data-anim-ms="9000" data-anim-linear data-dwell="11"><h3>Value, and where to look next</h3><p>Your sweet spot and the bottles that beat their price, then styles just outside your comfort zone.</p></li>
-        <li data-at="0.857"><h3>Your sommelier script</h3><p>A short, quick version or a longer, more detailed one when you need it: lines to say to a restaurant sommelier, written from your WineDNA.</p></li>
+        <li data-at="0.125"><h3>What to buy next time</h3><p>Three rules written from your own ratings: reach for the grape or region that lifts them most, skip what holds them back, and try one new style.</p></li>
+        <li data-at="0.25"><h3>Your taste, visualized</h3><p>Where the wines you choose sit on each scale, from light to full, soft to grippy, with what each word means and how to notice it in the glass.</p></li>
+        <li data-at="0.375" data-dwell="9"><h3>Your sommelier script, in short</h3><p>A few lines to say to a sommelier or a shopkeeper, written from your WineDNA: what you like, in words they can act on.</p></li>
+        <li data-at="0.5" data-dwell="10"><h3>And the long version</h3><p>One tap gives the fuller script for when there's time to talk: the styles, the regions, what to steer clear of and what you'd like to try.</p></li>
+        <li data-at="0.625" data-anim-to="0.79" data-anim-ms="13000" data-anim-linear data-dwell="15"><h3>What you'd buy again, and where to look next</h3><p>Your “house” wines, the bottles you keep coming back to, then your sweet spot on price and styles just outside your comfort zone.</p></li>
+        <li data-at="0.875"><h3>How well it knows you</h3><p>It re-predicts every rating you've given from your other bottles alone, and shows how close it got.</p></li>
       </ol>
     </div>
     <div class="stage">
-      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the WineDNA screen for reds: the profile, three rules for next time you're buying, your taste as pictures, how well it knows you, your house wines, value, where to look next and a sommelier script.">
+      <div class="phone-slot"><div class="phone" role="img" aria-label="A tour of the WineDNA screen for reds: the profile, three rules for next time you're buying, your taste as pictures, the sommelier script short and long, your house wines, value, where to look next, and how well it knows you.">
         <div class="phone-screen" aria-hidden="true" inert><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app" data-demo="dna"></div></div>
         <span class="island"></span></div></div>
     </div>

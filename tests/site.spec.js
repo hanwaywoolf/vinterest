@@ -411,46 +411,6 @@ test.describe('reduced motion', () => {
 test.describe('trying it', () => {
   test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false });
 
-  test('the taste sliders say each step in the app\'s own words and suggest styles from its catalogue', async ({ page }) => {
-    const errors = [];
-    page.on('pageerror', (e) => errors.push(e.message));
-    await page.goto(BASE + '/');
-    await show(page, 'taste');
-    const body = page.locator('#taste-body');
-    await expect(body).toBeVisible();
-    // Where it starts: a medium red, said in WineDNA's words.
-    await expect(page.locator('#taste-words')).toHaveText('Medium-full · Medium · Fresh');
-    await expect(page.locator('#taste .trow[data-axis="tannins"] .means')).toContainText('Medium. A clear, dry grip on the gums');
-    const first = await page.locator('#taste-picks .pick.first h3').textContent();
-    // Full and grippy: the words and the picks follow the sliders.
-    await body.fill('100');
-    await page.locator('#taste-tannins').fill('100');
-    await expect(page.locator('#taste-words')).toHaveText('Full · Grippy · Fresh');
-    await expect(page.locator('#taste .trow[data-axis="body"] .means')).toContainText('Full. Coats the mouth like cream');
-    await expect(page.locator('#taste-picks .pick')).toHaveCount(3);
-    await expect(page.locator('#taste-picks .pick.first h3')).not.toHaveText(first);
-    await expect(page.locator('#taste-picks .pick.first')).toContainText('Ask for it');
-    // A named stop is a button to that step.
-    await page.locator('#taste .trow[data-axis="body"] .stops button', { hasText: /^Light$/ }).click();
-    await expect(page.locator('#taste-words')).toHaveText('Light · Grippy · Fresh');
-    // White has its own traits and its own styles.
-    await page.locator('#taste .seg button', { hasText: 'White' }).click();
-    await expect(page.locator('#taste .trow')).toHaveCount(3);
-    await expect(page.locator('#taste .trow[data-axis="sweetness"] .name')).toHaveText('Sweetness');
-    await expect(page.locator('#taste-picks .pick')).toHaveCount(3);
-    expect(errors).toEqual([]);
-  });
-
-  test('a pick whose grape is in the guide is drawn by the app\'s pen', async ({ page }) => {
-    await page.goto(BASE + '/');
-    await show(page, 'taste');
-    await expect(page.locator('#taste-body')).toBeVisible();
-    // Full, grippy and fresh is Cabernet country.
-    await page.locator('#taste-body').fill('95');
-    await page.locator('#taste-tannins').fill('90');
-    await expect(page.locator('#taste-sketch svg')).toBeVisible({ timeout: 8000 });
-  });
-
   test('the dial by the sign-up is the app\'s own and answers a finger', async ({ page }) => {
     await page.goto(BASE + '/');
     await show(page, 'beta');
@@ -518,14 +478,12 @@ test.describe('trying it', () => {
     await expect(page.locator('.hero [data-layer="scan"] [role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', '94', { timeout: 9000 });
   });
 
-  test('the hero\'s entrance leaves everything in place, and sections arrive as they are reached', async ({ page }) => {
+  test('the hero\'s entrance leaves everything in place', async ({ page }) => {
     await page.goto(BASE + '/');
     await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
     await page.waitForTimeout(2600);
     const seen = await page.evaluate(() => [...document.querySelectorAll('.hero h1 .w, .hero .lead, .hero .cta, .hero .phone-slot')].every((el) => getComputedStyle(el).opacity === '1'));
     expect(seen).toBe(true);
-    await show(page, 'taste');
-    await expect(page.locator('#taste .section-head')).toHaveClass(/in/);
   });
 });
 
