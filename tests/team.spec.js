@@ -2712,11 +2712,13 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('c2-balance-grape').click(); expect(await page.getByTestId('c2-balance').innerText()).not.toBe(colours);
   expect(await page.getByTestId('c2-ladder-rung').count()).toBe(await page.evaluate(() => TeamBuyer.bands().edges.length));
   // No bottle's name is cut off: the chips wrap instead of squeezing into columns.
-  expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth + 1).length)).toBe(0); await expect(page.getByTestId('c2-ladder')).toContainText('Gap in');
+  expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth + 1).length)).toBe(0); await expect(page.getByTestId('c2-ladder-sum')).toContainText('No step up');
   // The ladder is a grid on one price scale: every bottle named in its band, and under each band what's listed against what sells.
   expect(await page.getByTestId('c2-ladder-chip').count()).toBe(await page.evaluate(() => TeamBuyer.bands().listed));
   expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return [b.edges.length <= TeamBuyer.BANDS_MAX, b.rows.every(r => r.cells.every((c, i) => c.every(y => y.p >= b.edges[i].lo && y.p <= b.edges[i].hi))), b.totals.length === b.edges.length]; })).toEqual([true, true, true]);
-  await expect(page.getByTestId('c2-ladder-act')).toContainText('bottle sales');
+  await expect(page.getByTestId('c2-ladder-sum')).toContainText('bottle sales');
+  // The summary under the ladder is three lines at most, however long the list.
+  expect(await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').count()).toBeLessThanOrEqual(3);
   await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
   // What the page says is what TeamBuyer worked out: the list's shares add up, and a markup is the bottle over its shop price.
   expect(await page.evaluate(() => { const b = TeamBuyer.balance('colour'), m = TeamBuyer.markups(), w = TeamBuyer.wines()[0], k = TeamBuyer.markup(w); return [Math.round(100 * b.reduce((a, g) => a + g.share, 0)), Math.abs(k.x - TeamBuyer._m(w.bottle) / k.retail) < 0.01, m.source]; })).toEqual([100, true, 'demo']);
@@ -2902,6 +2904,9 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  // The mouse starts in the middle of the page, as a person's would: Playwright parks it at (0, 0), on the strip at the
+  // left edge that opens the navigation, and whether that counts as reaching the edge depends on timing.
+  await page.mouse.move(700, 450);
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
   const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
@@ -2991,6 +2996,7 @@ test('the new console on a touch screen: a tab on the left edge opens the naviga
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.mouse.move(700, 450); // off the left edge's strip, which a parked mouse at (0, 0) can open
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   const drawer = page.getByTestId('c2-nav-drawer'), tab = page.getByTestId('c2-nav-tab');
   await expect(tab).toBeVisible(); expect((await tab.boundingBox()).x).toBe(0);
@@ -3014,6 +3020,12 @@ for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new co
     await page.getByTestId('console-nav-' + k).click(); await expect(page.getByTestId(tid)).toBeVisible(); await expect(page.getByTestId('c2-head')).toBeVisible();
   }
   await page.getByTestId('console-nav-sales').click(); await expect(page.getByTestId('sales-revenue')).toContainText(money);
+  // The ladder's bands follow the list's prices, so no band holds most of it, and two bottles from one producer are named apart.
+  expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return Math.max(...b.totals.map((t) => t.n)) / b.listed; })).toBeLessThan(0.5);
+  expect(await page.evaluate(() => { const ns = TeamBuyer.bands().rows.flatMap((r) => r.cells.flat().map((y) => TeamData.nick(y.w))); return ns.length - new Set(ns).size; })).toBe(0);
+  // Eloise's file carries Vinny's buyer review, so the Wines page opens with shop prices and his read of the list.
+  if (seed === 'eloise') { expect(await page.evaluate(() => [!!TeamBuyer.reviewed(), TeamBuyer.markups() && TeamBuyer.markups().source])).toEqual([true, 'estimate']);
+    await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toContainText('times their shop price'); }
   expect(errors).toEqual([]); await ctx.close();
 });
 

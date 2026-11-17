@@ -15971,7 +15971,7 @@
    "at": 1794332013282
   }
  },
- "exported": "2026-11-11T21:04:12.935Z",
+ "exported": "2026-11-17T00:06:22.000Z",
  "reviewed": {
   "at": 1794336015887,
   "asked": 695,
@@ -16686,5 +16686,108 @@
    "read": 210,
    "back": 70
   }
+ },
+ "buyer": {
+  "at": 1794873915229,
+  "retail": {
+   "w-tarlant-brut-reserve": 68,
+   "w-bollinger-special-cuvee": 105,
+   "w-ca-del-bosco-franciacorta-cuvee-prestige-brut": 58,
+   "w-feudi-di-san-gregorio-ros-aura": 22,
+   "w-two-sisters-margo-rose": 30,
+   "w-domaine-huet-vouvray-le-haut-lieu-sec": 62,
+   "w-pascal-jolivet-sancerre": 37,
+   "w-olivier-leflaive-bourgogne-les-setilles": 38,
+   "w-jean-luc-colombo-la-belle-de-mai-saint-peray": 45,
+   "w-tiefenbrunner-pinot-grigio": 22,
+   "w-manni-nossing-gruner-veltliner": 35,
+   "w-lis-neris-jurosa-chardonnay": 50,
+   "w-ottella-lugana-le-creete": 30,
+   "w-tiberio-trebbiano-d-abruzzo": 27,
+   "w-feudi-di-san-gregorio-greco-di-tufo": 27,
+   "w-antonella-corda-vermentino-di-sardegna": 30,
+   "w-vietti-roero-arneis": 32,
+   "w-two-sisters-riesling": 28,
+   "w-nautilus-sauvignon-blanc": 25,
+   "w-pewsey-vale-riesling": 27,
+   "w-olivier-leflaive-volnay-premier-cru-clos-des-angles": 110,
+   "w-domaine-m-c-lapierre-chateau-cambon": 40,
+   "w-chateau-le-crock-saint-estephe": 45,
+   "w-chateau-grand-puy-ducasse-pauillac": 85,
+   "w-jean-luc-colombo-cornas-terres-brulees": 65,
+   "w-domaine-roger-perrin-chateauneuf-du-pape": 55,
+   "w-paul-jaboulet-aine-hermitage-la-chapelle": 350,
+   "w-fontodi-flaccianello-della-pieve": 190,
+   "w-scarpetta-barbera-del-monferrato": 25,
+   "w-produttori-del-barbaresco-barbaresco": 60,
+   "w-borgogno-no-name": 55,
+   "w-pio-cesare-barolo": 95,
+   "w-vietti-barolo-monvigliero": 250,
+   "w-travignoli-chianti-rufina": 20,
+   "w-fontodi-chianti-classico": 50,
+   "w-valdicava-brunello-di-montalcino-riserva-madonna-del-piano": 450,
+   "w-masciarelli-marina-cvetic-montepulciano-d-abruzzo": 40,
+   "w-antonella-corda-cannonau-di-sardegna": 30,
+   "w-envinate-lousas-vina-de-aldea": 45,
+   "w-envinate-la-santa-de-ursula": 45,
+   "w-staglin-family-cabernet-sauvignon": 300,
+   "w-two-sisters-eleventh-post": 50,
+   "w-two-sisters-cabernet-franc": 55,
+   "w-stratus-syrah": 45
+  },
+  "missing": [
+   {
+    "wine": "w-domaine-roger-perrin-chateauneuf-du-pape",
+    "dish": "Charcoal-roasted lamb shoulder for two with white beans, rosemary and black olive jus",
+    "why": "The menu has no lamb at all, and Grenache-led Châteauneuf's garrigue and soft tannin are made for slow-roasted lamb off the same grill that already cooks the chicken and côte de boeuf."
+   },
+   {
+    "wine": "w-domaine-huet-vouvray-le-haut-lieu-sec",
+    "dish": "Grilled bone-in pork chop with roasted apples, cider jus and mustard",
+    "why": "Dry Chenin's acidity and quince-and-apple fruit cut pork fat and echo the cider, giving the team a reason to hand-sell a $152 white that currently has no pairing."
+   },
+   {
+    "wine": "w-jean-luc-colombo-la-belle-de-mai-saint-peray",
+    "dish": "Roasted halibut with brown butter, chanterelles and leeks",
+    "why": "Roussanne's weight and nutty, waxy texture need a rich, buttery fish, which the lean trout and scallop dishes are not."
+   },
+   {
+    "wine": "w-manni-nossing-gruner-veltliner",
+    "dish": "Veal Milanese with lemon, capers and arugula",
+    "why": "Grüner's peppery lift and crisp acidity are the classic match for crumbed, fried veal, a dish that fits a grill-and-roast menu as a lunch main."
+   }
+  ],
+  "weak": [
+   {
+    "dish": "d-chocolate-tart",
+    "why": "Sauternes fights dark chocolate and a dry Malbec turns bitter against the sugar, so neither suggested wine actually flatters the tart.",
+    "wants": "A fortified red by the glass in a 2oz or 3oz pour, such as a ten-year tawny port, Banyuls or Maury, around $14 to $18."
+   },
+   {
+    "dish": "d-sticky-coffee-pudding",
+    "why": "The Sauternes works with caramel but the coffee and dark toffee notes want something nuttier and darker, and the dry-ish Two Sisters Riesling is lost against it.",
+    "wants": "An oloroso, Pedro Ximénez or tawny port by the 2oz glass, which also gives the team a second sweet pour to sell with desserts that serve two."
+   }
+  ],
+  "gaps": [
+   {
+    "what": "Champagne or traditional-method sparkling by the glass, around $24 to $30 for 5oz",
+    "why": "Six traditional-method bottles sell in steady numbers but nobody can order a single glass of Champagne with the scallop or carpaccio, and the Prosecco at $16 is the only bubble poured."
+   },
+   {
+    "what": "Niagara wine by the glass, ideally a Chardonnay or Cabernet Franc at $16 to $19, plus a Niagara Chardonnay by the bottle",
+    "why": "A Toronto guest expects to find a local glass, yet every Ontario wine is bottle only and Niagara Chardonnay, the region's strongest white, is absent altogether."
+   },
+   {
+    "what": "California or Washington Cabernet Sauvignon between $120 and $200 a bottle",
+    "why": "The only American Cabernets are $460 and $930, which leaves steak frites and côte de boeuf guests who want New World Cabernet with nothing they will actually order."
+   },
+   {
+    "what": "A fortified or sweet wine by the glass beyond the Sauternes: tawny port, oloroso or Moscato d'Asti",
+    "why": "There are three desserts and a single sweet pour, so the team has no after-dinner upsell for the chocolate tart, the coffee pudding or a guest who skips dessert."
+   }
+  ],
+  "cut": [],
+  "note": "what to cut left out: it is argued from the demo sales"
  }
 }

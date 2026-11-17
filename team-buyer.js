@@ -33,8 +33,13 @@ const TeamBuyer = {
      band, how many bottles are listed there and how many sold in four weeks. */
   BANDS_MAX:6,
   bands(){ const lanes=this.ladder(); if(!lanes.length) return null; const lo0=Math.min(...lanes.map(l=>l.min)), hi=Math.max(...lanes.map(l=>l.max));
-    const step=[5,10,20,25,50,100,200,250,500,1000].find(st=>Math.floor(hi/st)-Math.floor(lo0/st)+1<=this.BANDS_MAX)||1000, lo=Math.floor(lo0/step)*step, n=Math.floor(hi/step)-Math.floor(lo0/step)+1, at=p=>Math.min(n-1,Math.floor((p-lo)/step));
-    const edges=Array.from({length:n},(_,i)=>({lo:lo+i*step,hi:lo+(i+1)*step-1,label:`${TeamData.money(lo+i*step)} to ${TeamData.money(lo+(i+1)*step-1)}`})), sold=this._sold(28);
+    // Bands follow where the prices are, not even steps: a list whose bottles run $70 to $930 with half under $135 gets
+    // its bands down there, rather than one $0-$199 band holding most of the list. Each cut is the price a share of the
+    // way up the list, rounded to a round figure, so the labels read like a menu's.
+    const ps=lanes.flatMap(l=>l.wines.map(y=>y.p)).sort((a,b)=>a-b), nice=v=>{ const st=v<100?10:v<300?25:v<1000?50:100; return Math.round(v/st)*st; };
+    const cuts=[]; for(let i=1;i<this.BANDS_MAX;i++){ const c=nice(ps[Math.floor(i*ps.length/this.BANDS_MAX)]); if(c>lo0&&c<=hi&&(!cuts.length||c>cuts[cuts.length-1])) cuts.push(c); }
+    const lo=Math.floor(lo0/10)*10, bounds=[lo,...cuts,hi+1], n=bounds.length-1, at=p=>{ let i=0; while(i<n-1&&p>=bounds[i+1]) i++; return i; }, step=null;
+    const edges=Array.from({length:n},(_,i)=>{ const a=bounds[i], z=bounds[i+1]-1; return {lo:a,hi:z,label:i===n-1?`${TeamData.money(a)} and up`:`${TeamData.money(a)} to ${TeamData.money(z)}`}; }), sold=this._sold(28);
     const rows=lanes.map(l=>{ const cells=edges.map(()=>[]); l.wines.forEach(y=>cells[at(y.p)].push(y)); const first=cells.findIndex(c=>c.length), last=n-1-[...cells].reverse().findIndex(c=>c.length);
       return {...l,cells,hollow:cells.map((c,i)=>!c.length&&i>first&&i<last)}; });
     const totals=edges.map((e,i)=>{ const ws=rows.flatMap(r=>r.cells[i]); return {n:ws.length,sold:sold?ws.reduce((a,y)=>a+((sold[y.w.id]||{}).bottles||0),0):null}; });
@@ -77,7 +82,10 @@ const TeamBuyer = {
     if(gp.add[0]) out.push({tag:'Glass',tone:'good',fact:`${TeamData.short(gp.add[0].wine)} sells ${gp.add[0].perWeek.toFixed(1)} bottles a week at ${gp.add[0].wine.bottle} without being poured by the glass.`,act:'Try it by the glass for a fortnight: it already has takers.',open:{view:'wine',id:gp.add[0].wine.id}});
     if(mk&&mk.high[0]) out.push({tag:'Price',tone:'note',fact:`${TeamData.short(mk.high[0].wine)} is on at ${mk.high[0].wine.bottle}, about ${mk.high[0].x.toFixed(1)} times its ${m(mk.high[0].retail)} in a shop; your list's usual is ${mk.median.toFixed(1)} times.`,act:'A guest who has seen it in a shop will notice. Bring it nearer your usual, or make sure it sells on its story.',open:{view:'wine',id:mk.high[0].wine.id}});
     if(mk&&mk.low[0]) out.push({tag:'Price',tone:'good',fact:`${TeamData.short(mk.low[0].wine)} is ${mk.low[0].x.toFixed(1)} times its shop price at ${mk.low[0].wine.bottle}: the best value on your list.`,act:'Tell the team: it\'s the bottle to offer a guest who knows wine. Or there\'s room in its price.',open:{view:'wine',id:mk.low[0].wine.id}});
-    if(wl.orphans.length) out.push({tag:'Menu',tone:'note',fact:`${wl.orphans.length} wine${wl.orphans.length===1?' is':'s are'} suggested with no dish: ${list(wl.orphans.map(r=>r.wine))}.`,act:'Nobody has a reason to offer one. Ask Vinny below for a dish that would sell it, or give it a pairing on the Menu page.',open:{view:'wine',id:wl.orphans[0].wine.id}});
+    // A wine poured by the glass with no dish is a gap; on a long list most bottles have no dish of their own, which is
+    // only worth saying when it's a few of them.
+    const orph=wl.orphans.filter(r=>TeamData.byGlass(r.wine)||wl.orphans.length<=Math.max(3,wl.rows.length/4)).map(r=>r.wine);
+    if(orph.length) out.push({tag:'Menu',tone:'note',fact:`${orph.length} wine${orph.length===1?' is':'s are'}${orph.every(TeamData.byGlass)&&orph.length<wl.orphans.length?' poured by the glass but':''} suggested with no dish: ${list(orph)}.`,act:'Nobody has a reason to offer one. Ask Vinny below for a dish that would sell it, or give it a pairing on the Menu page.',open:{view:'wine',id:orph[0].id}});
     if(wl.heavy[0]) out.push({tag:'Menu',tone:'note',fact:`${TeamData.short(wl.heavy[0].wine)} is suggested with ${wl.heavy[0].dishes.length} dishes, more than any other wine.`,act:'If it runs out, a lot of the menu loses its pairing: keep it in depth, or spread the pairings on the Menu page.',open:{view:'wine',id:wl.heavy[0].wine.id}});
     if(ov[0]) out.push({tag:'Overlap',tone:'note',fact:`${ov[0].wines.map(nick).join(' and ')} are both ${ov[0].grape}${ov[0].country?` from ${ov[0].country}`:''} within a few pounds of each other.`.replace('a few pounds',TeamData.currency().code==='GBP'?'a few pounds':'a few dollars'),act:'They compete for the same guest. Keep the one that sells and use the place for something the list lacks.',open:{view:'wine',id:ov[0].wines[0].id}});
     return out; },

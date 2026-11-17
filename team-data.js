@@ -148,7 +148,11 @@ const TeamData = {
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
   /* A wine's name where a long one won't fit (a list row's "Best with", a suggestion): the producer when the full
      name runs past four words ("Mionetto" for "Mionetto Prosecco DOC Treviso"), else the short name. */
-  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer?String(w.producer):s; },
+  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer&&!this._twoBy(w.producer)?String(w.producer):s; },
+  /* Whether the list has two or more wines from one producer, so its name alone wouldn't say which ("Envínate" for two
+     bottles on Eloise's list). Counted once per list. */
+  _twoBy(producer){ const ws=this.wines(); if(this._byMemo!==ws){ this._byMemo=ws; this._byN={}; ws.forEach(w=>{ const k=String(w.producer||'').toLowerCase(); if(k) this._byN[k]=(this._byN[k]||0)+1; }); }
+    return (this._byN[String(producer).toLowerCase()]||0)>1; },
 
   // One id per wine whatever the vintage, so a new vintage on the list is the same wine moving on.
   _slug(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); },
@@ -640,6 +644,9 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    // Vinny's read of the list as a buyer (shop prices, gaps), when the file was handed over with one (npm run team:buyer);
+    // a restaurant loaded afresh never keeps another's, and a kept one keeps a newer review of its own.
+    if(typeof TeamBuyer!=='undefined'){ const mine=keep&&TeamBuyer.reviewed(); if(!keep) TeamBuyer.save(s.buyer&&s.buyer.at?s.buyer:{}); else if(s.buyer&&s.buyer.at&&!(mine&&mine.at>=s.buyer.at)) TeamBuyer.save(s.buyer); }
     // The install's training depth (venue.training in its list file: the tier, and a tier per role) applies to a
     // restaurant that hasn't set one yet, on a fresh load or a kept team alike; a manager's own choice is never undone.
     const training=meta.training||{}; const applyTier=()=>{ if(TeamLearn.team().tier!=null) return; if(training.tier) TeamLearn.setTier(training.tier); Object.entries(training.roleTiers||{}).forEach(([r,t])=>TeamLearn.setRoleTier(r,t)); };
@@ -651,7 +658,7 @@ const TeamSample = {
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined') TeamBuyer.clear();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined'){ TeamBuyer.clear(); if(s.buyer&&s.buyer.at) TeamBuyer.save(s.buyer); }
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     applyTier();
