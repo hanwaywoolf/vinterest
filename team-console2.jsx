@@ -306,8 +306,17 @@ const _c2Chip=(T,label,on,onClick,tid)=><span key={label} role="button" data-tes
    says what's listed there against what sells, then names its bottles colour by colour as chips that wrap, so the
    names fit on a laptop, an iPad or a phone. An empty band inside a colour's own range is said as a gap. */
 function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.bands(); if(!b) return null;
-  const line='1px solid rgba(255,255,255,0.08)', big=b.totals.reduce((a,t)=>t.n>a.n?t:a,b.totals[0]), top=b.soldAll?b.totals.reduce((a,t)=>t.sold>a.sold?t:a,b.totals[0]):null, notes=b.rows.filter(l=>l.gaps.length||l.piles.length);
+  const line='1px solid rgba(255,255,255,0.08)', big=b.totals.reduce((a,t)=>t.n>a.n?t:a,b.totals[0]), top=b.soldAll?b.totals.reduce((a,t)=>t.sold>a.sold?t:a,b.totals[0]):null;
   const chip=y=><TeamWineChip key={y.w.id} w={y.w} name={TeamData.nick(y.w)} price={TeamData.money(y.p)} glass={TeamData.byGlass(y.w)} testid="c2-ladder-chip" onClick={()=>open({view:'wine',id:y.w.id})}/>;
+  // What the ladder says, in three lines at most: where bottles sell, the gaps a guest can't step up through, and the
+  // prices where four or more bottles of one colour bunch together (three within a few dollars is ordinary on a long list).
+  const m=v=>TeamData.money(v), and=xs=>xs.length>1?xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1]:xs[0]||'', sum=[];
+  if(top){ const tl=b.edges[b.totals.indexOf(top)].label, bl=b.edges[b.totals.indexOf(big)].label;
+    sum.push({tag:'Sells',tone:'good',fact:`${tl} is where bottles sell: ${Math.round(100*top.sold/b.soldAll)}% of bottle sales from ${Math.round(100*top.n/b.listed)}% of the list.${big!==top?` Most of the list sits at ${bl}.`:''}`,act:big!==top?'When a place opens up, fill it where bottles sell.':null}); }
+  const gaps=b.rows.flatMap(l=>l.gaps.map(g=>({l,g})));
+  if(gaps.length) sum.push({tag:'Gap',tone:'note',fact:`No step up ${and(b.rows.filter(l=>l.gaps.length).slice(0,3).map(l=>`in ${l.colour.toLowerCase()} between ${l.gaps.slice(0,2).map(g=>`${g.from.w.bottle} and ${g.to.w.bottle}`).join(', or between ')}`))}.`,act:`${gaps.length===1?'A bottle':'Bottles'} near ${and(gaps.slice(0,3).map(({g})=>m(Math.round((g.from.p+g.to.p)/2/5)*5)))} would give a guest the next step.`});
+  const piles=b.rows.flatMap(l=>l.piles.map(r=>({l,r}))), big4=piles.filter(x=>x.r.length>=4).sort((x,y)=>y.r.length-x.r.length), crowd=(big4.length?big4:[...piles].sort((x,y)=>y.r.length-x.r.length).slice(0,1)).slice(0,4);
+  if(crowd.length) sum.push({tag:'Crowded',tone:'note',fact:`Bottles bunch up at ${and(crowd.map(({l,r})=>`${m(r[0].p)} in ${l.colour.toLowerCase()} (${r.length})`))}.`,act:'Guests choosing between near-identical prices take the one the server names, so make sure the team knows which.'});
   return <div data-testid="c2-ladder-grid">
     {b.edges.map((e,i)=>({e,i,t:b.totals[i]})).reverse().map(({e,i,t})=><div key={i} data-testid="c2-ladder-rung" style={{display:'grid',gridTemplateColumns:two?'190px minmax(0,1fr)':'minmax(0,1fr)',gap:two?18:8,padding:'14px 0',borderTop:line}}>
       <div data-testid="c2-ladder-total" style={{fontFamily:C.P,minWidth:0}}>
@@ -321,10 +330,7 @@ function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.b
           <div style={{flex:1,minWidth:0,display:'flex',flexWrap:'wrap',gap:6}}>{l.cells[i].map(chip)}
             {l.hollow[i]&&<div data-testid="c2-ladder-gap" style={{padding:'5px 10px',borderRadius:8,border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,fontSize:13,color:_C2_TONE.note,fontFamily:C.P}}>nothing at this price</div>}</div></div>)}
         {!t.n&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,paddingTop:6}}>No bottles at this price.</div>}</div></div>)}
-    {notes.length>0&&<div style={{borderTop:line,padding:'12px 0 0',fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>
-      {notes.map(l=><div key={l.colour} data-testid="c2-ladder-row">{l.gaps.map((g,k)=><div key={k}><span style={{color:_C2_TONE.note,fontWeight:500}}>Gap in {l.colour.toLowerCase()}:</span> nothing between {g.from.w.bottle} and {g.to.w.bottle}. <span style={{color:acc}}>→ A bottle near {TeamData.money(Math.round((g.from.p+g.to.p)/2/5)*5)} gives a guest a step up from the {TeamData.nick(g.from.w)}.</span></div>)}
-        {l.piles.map((r,k)=><div key={'p'+k}><span style={{color:T.mid,fontWeight:500}}>Crowded in {l.colour.toLowerCase()}:</span> {r.length} bottles around {TeamData.money(r[0].p)}, competing for the same guest.</div>)}</div>)}</div>}
-    {top&&<div data-testid="c2-ladder-act" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:12}}>{b.edges[b.totals.indexOf(top)].label} is where bottles sell: {Math.round(100*top.sold/b.soldAll)}% of bottle sales from {Math.round(100*top.n/b.listed)}% of the list.{big!==top&&<> Most of the list sits at {b.edges[b.totals.indexOf(big)].label} ({big.n} bottles, {Math.round(100*big.sold/b.soldAll)}% of sales). <span style={{color:acc,fontWeight:500}}>→ When a place opens up, fill it where bottles sell.</span></>}</div>}
+    {sum.length>0&&<div data-testid="c2-ladder-sum" style={{borderTop:line,paddingTop:6}}><_C2Needs items={sum} open={open} tagW={80}/></div>}
   </div>; }
 function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), B=TeamBuyer, ws=B.wines(), [q,setQ]=React.useState(''), [f,setF]=React.useState('all'), [dim,setDim]=React.useState('colour'), [,bump]=React.useReducer(x=>x+1,0), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(null), listRef=React.useRef(null);
   const has=TeamSales.has(), wk=has?Object.fromEntries(TeamReport.salesByWine(7).map(x=>[x.id,x])):{}, fresh=new Set(TeamReport.adoption().map(a=>a.wine.id)), c=B.concentration(), win=B.windows(), wl=B.workload(), mk=B.markups(), ladder=B.ladder(), bal=B.balance(dim), rv=B.reviewed(), odd=B.glassOdd();
