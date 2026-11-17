@@ -3006,9 +3006,9 @@ test('the new console on a touch screen: a tab on the left edge opens the naviga
   expect(errors).toEqual([]); await ctx.close();
 });
 
-// The Social Corner, Eloise and The Princess Royal are offered the new console by their own files, as The Larkspur is; every page opens
+// The Social Corner and Eloise are offered the new console by their own files, as The Larkspur is; every page opens
 // for each with its own currency, and Eloise's file keeps its other console setting beside it.
-for (const [seed, money] of [['social', '$'], ['eloise', '$'], ['princess', '£']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
+for (const [seed, money] of [['social', '$'], ['eloise', '$']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await stubNetwork(ctx);
   await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });

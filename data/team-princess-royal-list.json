@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-17-princess-console",
+ "rev": "2026-11-08-tiers",
  "venue": {
   "name": "The Princess Royal",
   "city": "London",
@@ -24,8 +24,7 @@
    "roleTiers": {
     "sommelier": "master"
    }
-  },
-  "console": "preview"
+  }
  },
  "wines": [
   {

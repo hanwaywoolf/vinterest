@@ -190,6 +190,11 @@ test('eloise.vinterest.team is the page written for them, with the staff app at 
     asked.length = 0;
     await worker.fetch(new Request('https://eloise.vinterest.team/'), { ...env, TEAMS_SITE_ORIGIN: 'https://x.vinterest-teams.pages.dev/' }, { waitUntil() {} });
     expect(asked).toEqual(['https://x.vinterest-teams.pages.dev/for/eloise']);
+    // The Princess Royal's address works the same way: its page at the root, its demo at /demo/.
+    asked.length = 0; assets.length = 0;
+    const pr = (path) => worker.fetch(new Request('https://princessroyal.vinterest.team' + path), env, { waitUntil() {} });
+    await pr('/'); await pr('/demo/?view=console');
+    expect(asked).toEqual(['https://vinterest.team/for/princess-royal']); expect(assets).toEqual(['/team/?view=console']);
   } finally { globalThis.fetch = realFetch; }
 });
 
