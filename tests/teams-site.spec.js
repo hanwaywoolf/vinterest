@@ -82,11 +82,9 @@ test('the console scenes play at the size their pictures are', async ({ page }) 
   const dims = (f) => { const d = fs.readFileSync(path.join(dir, f)); for (let i = 2; i < d.length;) { if (d[i] !== 0xff) { i++; continue; } const m = d[i + 1]; if (m >= 0xc0 && m <= 0xc2) return [d.readUInt16BE(i + 7), d.readUInt16BE(i + 5)]; i += 2 + d.readUInt16BE(i + 2); } };
   expect(sizes.look, 'taken from the console the demo restaurant opens on').toBe('preview');
   for (const [k, w] of [['dash', 1440], ['sales', 1440], ['team', 1440], ['training', 1440], ['wines', 1440], ['menu', 1440], ['card', sizes.cardW], ['dish', sizes.dishW], ['mgr', sizes.mgrW]]) expect(dims(k + '.jpg'), k).toEqual([w, sizes[k]]);
-  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) expect(dims('nav-' + k + '.jpg'), k).toEqual([1440, sizes.nav]);
-  expect(dims('nav-mgr.jpg')).toEqual([sizes.mgrW, sizes.mgrNav]);
-  expect(dims('plan.jpg'), 'one person\'s plan on the Team page').toEqual(sizes.plan); expect(dims('plan-phone.jpg')).toEqual([390, 844]);
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) { expect(dims('nav-' + k + '.jpg'), k).toEqual([sizes.navW, 900]); expect(sizes.navTap[k].x, 'the tap is on the navigation').toBeLessThan(sizes.navW); }
   for (const k of ['card', 'dish']) { expect(dims(k + '-bg.jpg'), k).toEqual([1440, 900]); expect(sizes[k + 'X'] + sizes[k + 'W']).toBe(1440);
-    expect(sizes[k + 'Tap'].y, 'the row is on screen, under the bar').toBeGreaterThan(sizes.nav); expect(sizes[k + 'Tap'].y).toBeLessThan(840); expect(sizes[k + 'At']).toBeLessThanOrEqual(1); }
+    expect(sizes[k + 'Tap'].y, 'the row is on screen').toBeGreaterThan(0); expect(sizes[k + 'Tap'].y).toBeLessThan(840); expect(sizes[k + 'At']).toBeLessThanOrEqual(1); }
   await page.goto(BASE + '/');
   expect(await page.content()).toContain(`const SZ = ${JSON.stringify(sizes)};`);
 });

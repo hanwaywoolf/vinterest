@@ -305,7 +305,8 @@ function player(stage, W, H, dir, mode) {
   const layer = (l) => { const img = document.createElement('img'); img.className = 'ly'; img.src = dir + l.img + '.jpg?v=%%IMG_V%%'; img.alt = ''; img.style.left = (l.x / W * 100) + '%'; img.style.top = ((l.y || 0) / H * 100) + '%'; img.style.width = (l.w / W * 100) + '%'; stage.appendChild(img); return img; };
   async function step(st, token) {
     let pan = st.keep ? stage.querySelector('.ly[data-pan]') : null;
-    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach(layer); old.forEach((o) => { delete o.dataset.pan; o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    if (!pan) { const old = Array.from(stage.querySelectorAll('.ly')); (st.frames || []).forEach(layer); pan = layer(st.pan); pan.dataset.pan = '1'; (st.over || []).forEach((l) => { layer(l).dataset.over = '1'; }); old.forEach((o) => { delete o.dataset.pan; o.classList.add('out'); setTimeout(() => o.remove(), 450); }); }
+    if (st.keep && st.clear) stage.querySelectorAll('.ly[data-over]').forEach((o) => { o.classList.add('out'); setTimeout(() => o.remove(), 450); });
     const scale = stage.clientWidth / W, top = (st.pan.y || 0) * scale, room = stage.clientHeight - top - (st.pan.below || 0) * scale, travel = Math.max(0, st.pan.h * scale - room);
     const { from, to, ms } = st.pan;
     const setY = (f) => { pan.style.transform = `translateY(${-f * travel}px)`; };
@@ -343,15 +344,17 @@ function player(stage, W, H, dir, mode) {
 const SW = 1440, SH = 900;
 // Every scene and every card that opens rests on the top of its page first (TOP ms), then scrolls.
 const TOP = 2200;
-// The pictures' heights, the bar's height and the two taps come from the pictures themselves
+// The pictures' heights, the navigation's width and every tap come from the pictures themselves
 // (scripts/site-teams-shots.mjs writes img/scenes/sizes.json and the build puts it here), so retaking them
 // needs no edit to this page.
 const SZ = %%SCENE_SIZES%%;
-// A page of the console: its bar across the top stays put (nav-<k>) while the page (k) scrolls under it.
-const page = (k, from, to, ms) => ({ pan: { img: k, x: 0, y: SZ.nav, w: SW, h: SZ[k], from, to, ms }, over: [{ img: 'nav-' + k, x: 0, y: 0, w: SW, h: SZ.nav }] });
-const scroll = (k, to, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, to, ms), keep: true }];
+// A page of the console (k), and how a manager gets to it: the navigation slid out from the left edge with that
+// section lit (nav-<k>), its row tapped, the navigation gone, then the page read.
+const page = (k, from, to, ms) => ({ pan: { img: k, x: 0, y: 0, w: SW, h: SZ[k], from, to, ms } });
+const arrive = (k) => [{ ...page(k, 0, 0, 1500), over: [{ img: 'nav-' + k, x: 0, y: 0, w: SZ.navW, h: SH }], tap: SZ.navTap[k] }, { ...page(k, 0, 0, TOP), keep: true, clear: true }];
+const scroll = (k, to, ms) => [...arrive(k), { ...page(k, 0, to, ms), keep: true }];
 // A drawer: the page scrolled to the row, the row tapped, the screen with the drawer open, then the drawer read down.
-const drawer = (k, name, ms) => [page(k, 0, 0, TOP), { ...page(k, 0, SZ[name + 'At'], 3200), keep: true, tap: SZ[name + 'Tap'] },
+const drawer = (k, name, ms) => [...arrive(k), { ...page(k, 0, SZ[name + 'At'], 3200), keep: true, tap: SZ[name + 'Tap'] },
   { frames: [{ img: name + '-bg', x: 0, w: SW, h: SH }], pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 0, ms: TOP } },
   { pan: { img: name, x: SZ[name + 'X'], w: SZ[name + 'W'], h: SZ[name], from: 0, to: 1, ms }, keep: true }];
 const SCENES = {
@@ -379,7 +382,7 @@ tabs.forEach((t) => t.addEventListener('click', () => { held = false; play(t.dat
 // the first page with its tab's line empty, so a reader arriving from the headline starts at the first section.
 // Scrolled away, the scene in hand finishes and waits; back in view it plays again from its top.
 const tabBox = document.getElementById('tabs'); tabBox.classList.add('wait');
-{ const sel = tabs.find((t) => t.dataset.scene === cur); cap.innerHTML = `<b>${sel.querySelector('b').textContent}.</b> ${sel.querySelector('span').textContent}`; lap.play([{ ...SCENES[cur].steps[0], pan: { ...SCENES[cur].steps[0].pan, ms: 0 } }]); }
+{ const sel = tabs.find((t) => t.dataset.scene === cur); cap.innerHTML = `<b>${sel.querySelector('b').textContent}.</b> ${sel.querySelector('span').textContent}`; lap.play([{ ...SCENES[cur].steps[0], pan: { ...SCENES[cur].steps[0].pan, ms: 0 }, tap: null }]); }
 new IntersectionObserver((es) => es.forEach((e) => { inView = e.intersectionRatio >= .7; if (inView && !playing) { tabBox.classList.remove('wait'); play(cur); } }), { threshold: [0, .7] }).observe(stage);
 
 // The phone in the hero: a bartender's Today, the drill answered, a card read through, on a loop.
@@ -476,7 +479,7 @@ fgo(0); new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersectin
 (function () {
   const el = document.getElementById('mstage'), MW = SZ.mgrW, MH = Math.round(MW * 720 / 584);
   const mp = player(el, MW, MH, 'img/scenes/', 'wheel');
-  const at = (from, to, ms) => ({ pan: { img: 'mgr', x: 0, y: SZ.mgrNav, w: MW, h: SZ.mgr, from, to, ms }, over: [{ img: 'nav-mgr', x: 0, y: 0, w: MW, h: SZ.mgrNav }] });
+  const at = (from, to, ms) => ({ pan: { img: 'mgr', x: 0, y: 0, w: MW, h: SZ.mgr, from, to, ms } });
   const steps = [at(0, 0, 2200), { ...at(0, 1, 26000), keep: true }, { ...at(1, 1, 2200), keep: true }];
   let on = false;
   async function loop() { while (on) { const ok = await mp.play(steps); if (!ok || reduced) return; } }

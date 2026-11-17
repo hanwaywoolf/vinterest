@@ -42,8 +42,11 @@ const TeamData = {
     return this.offersNewLook()?'preview':'classic'; },
   /* Whether this restaurant is offered the new look: its stored details say so, or its seed's list file does (a device
      that opened the seed before the file asked for it keeps its old copy of the details until the training changes). */
-  offersNewLook(){ const v=this.get().venue||{}; if(v.console==='preview') return true;
-    try{ return !!v.sample&&((TeamSample.list(v.sample)||{}).venue||{}).console==='preview'; }catch(e){ return false; } },
+  offersNewLook(){ const v=this.get().venue||{}, asks=c=>c==='preview'||!!(c&&c.look==='preview'); if(asks(v.console)) return true; // a string, or {look:'preview'} beside other console settings (Eloise's `hide`)
+    try{ return !!v.sample&&asks(((TeamSample.list(v.sample)||{}).venue||{}).console); }catch(e){ return false; } },
+  /* The new console's navigation: 'side' is hidden at the left edge and slides over the page; 'top' runs along the top. */
+  navStyle(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_NAV; if(o==='side'||o==='top') return o; }catch(e){} return Store.get('vbiz_console_nav')==='top'?'top':'side'; },
+  setNavStyle(v){ Store.set('vbiz_console_nav',v==='top'?'top':'side'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setConsoleLook(v){ Store.set('vbiz_console_look',v==='preview'?'preview':'classic'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the
@@ -811,7 +814,32 @@ const TeamLayout = {
   toggle(pid,ids,id){ const {order,folded}=this.get(pid,ids); folded.has(id)?folded.delete(id):folded.add(id); this._save(pid,order,folded); },
   reset(pid){ const all=this._all(); delete all[pid]; Store.setJSON(this.KEY,all); },
 };
-Object.assign(window,{TeamDemo,TeamJobs,TeamLayout});
+/* Where the cards of a console page sit, per person: {pid:{page:{stack:[card keys]}}}. A page has stacks (its columns);
+   a card can be moved within its stack or into another. `arrange` lays the saved order over the page's own: a card
+   the page no longer has is dropped, a new one joins the stack the page puts it in. */
+const TeamBoard = {
+  KEY:'vbiz_console_boards_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  saved(pid,page){ return ((this._all()[pid]||{})[page])||null; },
+  arrange(saved,def){ const ids=Object.keys(def), all=new Set(ids.flatMap(id=>def[id])), out={}, seen=new Set(); ids.forEach(id=>{ out[id]=((saved||{})[id]||[]).filter(k=>all.has(k)&&!seen.has(k)&&seen.add(k)); });
+    ids.forEach(id=>def[id].forEach((k,i)=>{ if(seen.has(k)) return; const before=def[id].slice(0,i).reverse().find(x=>out[id].includes(x)); out[id].splice(before?out[id].indexOf(before)+1:0,0,k); seen.add(k); })); return out; },
+  /* Every change keeps what was there before it (the last HIST of them), so a move or a reset can be undone. */
+  HKEY:'vbiz_console_boards_undo', HIST:20,
+  _set(pid,page,lay,keep=true){ const all=this._all(), h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page;
+    if(keep){ (h[k]=h[k]||[]).push(((all[pid]||{})[page])||null); h[k]=h[k].slice(-this.HIST); Store.setJSON(this.HKEY,h); }
+    if(lay) (all[pid]=all[pid]||{})[page]=lay; else if(all[pid]) delete all[pid][page]; Store.setJSON(this.KEY,all); },
+  /* Move a card to a stack, before `at` (a card key) or, with `after`, behind it; with no `at`, to the stack's end. */
+  move(pid,page,def,key,to,at,after){ const lay=this.arrange(this.saved(pid,page),def), was=JSON.stringify(lay); Object.keys(lay).forEach(id=>{ lay[id]=lay[id].filter(k=>k!==key); }); if(!lay[to]) return null;
+    const i=at&&at!==key?lay[to].indexOf(at):-1; lay[to].splice(i<0?lay[to].length:i+(after?1:0),0,key); if(JSON.stringify(lay)===was) return null; this._set(pid,page,lay); return lay; },
+  changed(pid,page,def){ const s=this.saved(pid,page); return !!s&&JSON.stringify(this.arrange(s,def))!==JSON.stringify(def); },
+  canUndo(pid,page){ return (((Store.getJSON(this.HKEY,{})||{})[pid+'|'+page])||[]).length>0; },
+  undo(pid,page){ const h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page; if(!(h[k]||[]).length) return false; const prev=h[k].pop(); Store.setJSON(this.HKEY,h); this._set(pid,page,prev,false); return true; },
+  /* Back to the page's own layout; that too can be undone. */
+  reset(pid,page){ if(this.saved(pid,page)) this._set(pid,page,null); },
+  /* Whether a card that needs `fit` pixels of width goes into a stack `width` wide laid `across` columns (a card that spans them all gets the whole width). */
+  fits(fit,width,across=1,span=1){ if(!fit) return true; const n=Math.max(1,across), cell=n>1&&span<n?(width-16*(n-1))/n:width; return cell>=fit-1; },
+};
+Object.assign(window,{TeamDemo,TeamJobs,TeamLayout,TeamBoard});
 Object.assign(window,{TeamData,TeamSample});
 
 /* A restaurant's own accent (venue.brand.accent, from its list file) in place of Vinterest's crimson. apply()
