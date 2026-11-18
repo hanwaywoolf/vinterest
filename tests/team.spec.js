@@ -2986,10 +2986,9 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.getByTestId(await page.getByTestId('c2-note-reset').count() ? 'c2-note-reset' : 'c2-board-reset').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
-  // The navigation can go back along the top, and be hidden again.
-  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('c2-nav-top').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(0);
-  await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toBeVisible();
-  await page.getByTestId('c2-nav-side').click(); await expect(page.getByTestId('c2-nav-drawer')).toHaveCount(1);
+  // The drawer offers no way to move the navigation to the top and no phone view.
+  await page.getByTestId('c2-nav-tab').click(); await expect(page.getByTestId('c2-classic-side')).toBeVisible();
+  await expect(page.getByTestId('c2-nav-top')).toHaveCount(0); await expect(page.getByTestId('console-to-phone-side')).toHaveCount(0);
   expect(errors).toEqual([]); await ctx.close();
 });
 
