@@ -2622,7 +2622,8 @@ for (const seed of CARD_SEEDS) {
       const bad = [], own = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
       root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
         const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
-        if (size !== (name ? 20 : 14) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+        // The name, the prices and the line to say are a card's display text (data-card-big); everything else is one size.
+        if ((!el.closest('[data-card-big]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
       return bad; });
     // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
