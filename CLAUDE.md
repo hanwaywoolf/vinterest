@@ -73,5 +73,5 @@ The repo is flat — file naming carries the separation that folders would norma
 - **Anthropic prompt-caching** for the consumer app: the Teams prompts are cached (a `[[cache-above]]` line in `prompts/team-*.txt` ends the part that's the same for every call of a publish or review; `cacheSplit` in `_worker.js` sends it as a block marked for the cache and drops the marker; `tests/worker-model.spec.js` fails if a per-call placeholder sits above the marker). The consumer purposes (`label_scan`, articles, quiz banks) are the same idea with mostly per-user prefixes; worth measuring before doing. 
 - **Teams tag lines to review** (Carey, 18 Nov 2026; candidates for the Teams site, none used yet, saved as written):
   - "Your team should know the difference between Rioja and Bordeaux"
-  - "Training before a shift should wine sales a lift"
+  - "Training before a shift should give wine sales a lift"
   - "A great team should be able to discuss wine with the table"
