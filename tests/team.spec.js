@@ -272,6 +272,17 @@ test('the setup screen offers The Social Corner and The Larkspur, a device left 
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
 });
 
+test('the console is gold for a restaurant with no accent of its own, and the staff app stays crimson', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } }); await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/team/?seed=princess&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  expect(await page.evaluate(() => [TeamData.brand().accent || null, C.cr])).toEqual([null, '#D4A84B']);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`); await expect(page.getByTestId('team-console')).toHaveCount(0);
+  expect(await page.evaluate(() => C.cr)).toBe('#8B1A2F');
+  await ctx.close();
+});
+
 test('?seed=perse opens The Social Corner in its own accent, prices in Canadian dollars, its description in what Claude writes from', async ({ context, page }) => {
   const reqs = [];
   await stubNetwork(context, { claudeRequests: reqs, claudeText: () => '{"cards":[]}' });

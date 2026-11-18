@@ -855,7 +855,10 @@ Object.assign(window,{TeamData,TeamSample});
 const TeamBrand = {
   _crimson:null,
   get(){ return TeamData.brand(); },
-  apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
+  /* The console is gold for a restaurant with no accent of its own: crimson there read as an alarm beside the
+     red of a fall or a gap. The staff app keeps Vinterest's crimson. */
+  GOLD:'#D4A84B',
+  apply(console){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:console?this.GOLD:this._crimson; return b; },
 };
 Object.assign(window,{TeamBrand});
 

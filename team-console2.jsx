@@ -13,7 +13,7 @@
    classic sections inside the new shell, and Wines and Menu keep the classic editor under "Edit and manage". Every
    figure is TeamReport's. Where the console can't know something yet (a dish going out with its wine, readiness week by
    week) only a demo restaurant draws it, tagged Demo data. */
-const _c2Acc=T=>(TeamData.brand()||{}).accent||T.lift(C.cr);
+const _c2Acc=T=>(TeamData.brand()||{}).accent||TeamBrand.GOLD;
 const _c2Ink=()=>(TeamData.brand()||{}).accent?'#15110A':'#fff';
 const _C2_TONE={good:'#6FD79C',note:'#F2B84B',bad:'#F58B7C',mut:'#8C8C92'};
 const _c2Lab=(T,t,col)=><div style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',color:col||T.mid,fontWeight:500,fontFamily:C.P}}>{t}</div>;
