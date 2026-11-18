@@ -75,3 +75,4 @@ The repo is flat — file naming carries the separation that folders would norma
   - "Your team should know the difference between Rioja and Bordeaux"
   - "Training before a shift should give wine sales a lift"
   - "A great team should be able to discuss wine with the table"
+  - "A menu with pairings is a pitch worth sharing"
