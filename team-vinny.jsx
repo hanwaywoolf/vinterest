@@ -3,7 +3,7 @@
    Vinny's test (a drill aimed at what this person needs, or at what they ask for). */
 
 /* The Vinny badge, as on the consumer app's Ask Vinny bar. */
-function TeamVinnyMark({size=28}){ return <div aria-hidden="true" style={{width:size,height:size,borderRadius:size/2,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><span style={{fontSize:Math.round(size*0.47)+'px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1}}>V</span></div>; }
+function TeamVinnyMark({size=28}){ return <div aria-hidden="true" style={{width:size,height:size,borderRadius:size/2,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><span style={{fontSize:Math.round(size*0.47)+'px',fontWeight:800,color:inkOn(C.cr),fontFamily:C.P,lineHeight:1}}>V</span></div>; }
 
 /* The chips under an answer: the wines and dishes it named, each opening its card. */
 function _TVChips({wines,dishes,open}){ const T=useTheme();
