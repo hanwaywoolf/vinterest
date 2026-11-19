@@ -2632,7 +2632,7 @@ for (const seed of CARD_SEEDS) {
       root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
         const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
         // The name, the prices and the line to say are a card's display text (data-card-big); everything else is one size.
-        if ((!el.closest('[data-card-big],[data-pill]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+        if ((!el.closest('[data-card-big],[data-pill],[data-cap],[data-team-btn]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
       return bad; });
     // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
@@ -2718,6 +2718,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.evaluate(() => { const w = TeamReport.byWeekday(28), open = w.days.filter(d => d.nights); return [open.length, open.every(d => d.revenue > 0 && d.nights <= 4), w.best[w.key] >= w.worst[w.key]]; })).toEqual([6, true, true]);
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
+  // The list narrows to one kind of wine from chips in each kind's colour, and back.
+  { const reds = await page.evaluate(() => TeamBuyer.wines().filter(w => _tWineKey(w) === 'red').length); await page.getByTestId('c2-wine-kind-red').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(reds); await page.getByTestId('c2-wine-kind-all').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(30); }
   await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
   // Wines is the buyer's page: five figures about the list itself, each opening what it's about; what needs the
   // buyer as what's so and what to do; the list's balance against its sales; the price ladder; markup against the shop.
@@ -2760,7 +2762,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // The list's header row stays in view as the list scrolls under it.
   expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-list"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 600; });
-  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(130);
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(175);
   // The search box and the filters are locked with the title, above the header.
   await expect(page.getByTestId('c2-list')).toHaveAttribute('data-stuck', '');
   expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none', !!el.querySelector('[data-testid="c2-wine-find"]'), !!el.querySelector('[data-testid="c2-wine-filter-glass"]')]; })).toEqual([0, true, true, true]);

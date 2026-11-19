@@ -48,21 +48,23 @@ function TeamBtn({children,primary,small,card,onClick,testid,disabled,style}){ c
     style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxSizing:'border-box',padding:small?'9px 13px':'12px 18px',borderRadius:0,border:`1px solid ${on?fill:line}`,background:on?fill:'transparent',color:on?inkOn(fill):primary?acc:T.ink,
       fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:1,transition:'background .12s, color .12s',userSelect:'none',...style}}>{children}</div>; }
 const _tcH=(T,t,sub)=><div style={{marginBottom:10}}><div data-card-name style={{fontSize:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
-const _tcLabel=(T,t)=><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'16px 0 8px'}}>{t}</div>;
+/* One scale on a card: its name 20, a figure 16, every line 14, and every caption, tab, pill and button 12px spaced capitals
+   (data-cap), with 8 to 12px between blocks. */
+const _tcLabel=(T,t)=><div data-cap style={{fontSize:'12px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontFamily:C.P,margin:'12px 0 6px'}}>{t}</div>;
 const _tcPill=(T,kind,text,col)=>_tPill(T,kind,text,col);
 const _tcSpk=(col,size=16)=><svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill={col}/><path d="M16 8.5a5 5 0 010 7M18.5 6a8.5 8.5 0 010 12" stroke={col} strokeWidth="1.8" fill="none" strokeLinecap="round"/></svg>;
 /* A style figure out of five as dots. */
 const _tcDots=(T,v,col)=><span aria-label={`${v} out of 5`} style={{display:'inline-flex',gap:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{width:9,height:9,borderRadius:5,background:i<=v?col:T.line}}/>)}</span>;
 /* The head of a card, in the console's own style: a light headline on the page, then figure tiles (a price, how many
    are trained on it). The name and the tiles are the card's display text (data-card-big); every other line keeps one size. */
-const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:16,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:manage?'8px 12px':'10px 13px'});
+const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:10,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:'7px 11px'});
 function _TcHead({manage,eye,eyeCol,meta=[],extra,name,under,tiles=[],note}){ const T=useTheme(), tile=_tcTile(T,manage), bits=[eye&&<span key="e" style={{color:eyeCol||T.ink2,fontWeight:500}}>{eye}</span>,...meta.filter(Boolean).map((m,i)=><span key={i}>{m}</span>)].filter(Boolean);
-  return <div data-testid="team-hero" data-card-big style={{marginBottom:10}}>
-    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',paddingRight:manage?40:0}}>{bits.map((b,i)=><React.Fragment key={i}>{i>0&&<span>·</span>}{b}</React.Fragment>)}{extra}</div>
-    <div data-card-name style={{fontSize:manage?24:26,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.15,letterSpacing:'-0.015em',marginTop:4}}>{name}</div>
-    {under&&<div data-testid="team-under-name" style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:8}}>{under}</div>}
-    {tiles.filter(Boolean).length>0&&<div data-testid="team-price-line" style={{display:'flex',gap:8,marginTop:10}}>{tiles.filter(Boolean).map((t,i,all)=><div key={t.cap} data-testid={t.testid} style={{...tile,...(all.length===1?{flex:'0 0 auto',minWidth:150}:{})}}>
-      <div style={{fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.cap}</div><div data-testid={t.bigTestid} style={{fontSize:manage?18:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.15,marginTop:3,whiteSpace:'nowrap'}}>{t.big}</div>
+  return <div data-testid="team-hero" data-card-big style={{marginBottom:8}}>
+    <div style={{fontSize:13,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',paddingRight:manage?40:0}}>{bits.map((b,i)=><React.Fragment key={i}>{i>0&&<span>·</span>}{b}</React.Fragment>)}{extra}</div>
+    <div data-card-name style={{fontSize:manage?20:22,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.2,letterSpacing:'-0.01em',marginTop:2}}>{name}</div>
+    {under&&<div data-testid="team-under-name" style={{display:'flex',gap:5,flexWrap:'wrap',marginTop:6}}>{under}</div>}
+    {tiles.filter(Boolean).length>0&&<div data-testid="team-price-line" style={{display:'flex',gap:6,marginTop:8}}>{tiles.filter(Boolean).map((t,i,all)=><div key={t.cap} data-testid={t.testid} style={{...tile,display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,flexWrap:'wrap',...(all.length===1?{flex:'0 0 auto',minWidth:150}:{})}}>
+      <div style={{fontSize:'11px',letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.cap}</div><div data-testid={t.bigTestid} style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.2,whiteSpace:'nowrap'}}>{t.big}</div>
       {t.small&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{t.small}</div>}</div>)}</div>}
     {note&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>{note}</div>}</div>; }
 /* Where the person stands on a wine, cocktail or drink, and the way into practising it, straight under the head. In the
@@ -73,25 +75,24 @@ function _TcStand({manage,st,col,what,onPractise}){ const T=useTheme(); if(!st||
   const line=st.state==='known'?`Every rung is right and fresh${st.nextDue?`; the first answer is due again ${_tDays(st.nextDue).replace('due ','')}`:''}.`:st.state==='fading'?`${st.due} answer${st.due===1?'':'s'} to refresh; a drill brings them back.`:st.next?`Next rung: ${st.next.label}.`:'Start with the first question.';
   const R=13, circ=2*Math.PI*R, part=Math.max(0,Math.min(1,st.known/st.total));
   const ring=sz=><svg width={sz} height={sz} viewBox="0 0 32 32" aria-hidden="true" style={{flexShrink:0}}><circle cx="16" cy="16" r={R} stroke={T.line} strokeWidth="3" fill="none"/><circle cx="16" cy="16" r={R} stroke={scol} strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray={`${circ*part} ${circ}`} transform="rotate(-90 16 16)"/></svg>;
-  const btn=<TeamBtn card small primary style={{flexShrink:0}} onClick={onPractise}>{st.state==='new'?'Start':'Practise'}</TeamBtn>;
+  const btn=<TeamBtn small primary style={{flexShrink:0,padding:'6px 11px',marginLeft:'auto'}} onClick={onPractise}>{st.state==='new'?'Start':'Practise'}</TeamBtn>;
   // A rung held is green text with a tick on the page, never green on a green wash.
-  const pills=st.rungs.map(rg=><span key={rg.k} data-pill style={{..._T_CAPS,fontFamily:C.P,fontWeight:500,padding:'3px 9px',whiteSpace:'nowrap',border:`1px solid ${rg.done?_alpha('#5FD48F',0.4):T.line}`,color:rg.done?T.green:st.next&&st.next.k===rg.k?T.ink:T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>);
+  const pills=<div data-cap style={{fontSize:'12px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',letterSpacing:'0.08em',fontFamily:C.P,display:'flex',gap:'2px 12px',flexWrap:'wrap'}}>{st.rungs.map(rg=><span key={rg.k} style={{whiteSpace:'nowrap',color:rg.done?T.green:st.next&&st.next.k===rg.k?T.ink:T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>;
   const text=<div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{word}</div>{st.state!=='known'&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.35,marginTop:1}}>{line}</div>}</div>;
-  return <div data-testid="team-standing" title={line} style={{...tile,flex:'none',margin:manage?'0 0 10px':'0 0 12px',padding:manage?'8px 12px':'10px 13px',borderColor:manage?T.line:_alpha(scol,0.45)}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>{ring(manage?28:30)}{text}
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',flex:'1 1 auto'}}>{pills}</div>{btn}</div></div>; }
+  return <div data-testid="team-standing" title={line} style={{...tile,flex:'none',margin:'0 0 8px',borderColor:manage?T.line:_alpha(scol,0.45)}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>{ring(26)}<div style={{flex:1,minWidth:0}}>{text}<div style={{marginTop:3}}>{pills}</div></div>{btn}</div></div>; }
 /* The line to say, set large and light on the page with the way to hear it. */
 function _TcSay({manage,text,label='Say it to a guest',right}){ const T=useTheme();
-  return <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>{label}</div>{right}</div>
-    <div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" style={{flex:1,fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{text}</div>
+  return <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div data-cap style={{fontSize:'12px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontFamily:C.P}}>{label}</div>{right}</div>
+    <div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:6}}><div data-testid="team-pitch" style={{flex:1,fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{text}</div>
       <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(text); }} style={{width:30,height:30,borderRadius:15,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),14)}</div></div></div>; }
 /* The name said aloud, as a quiet outlined pill. */
-const _tcSayIt=(T,onClick,words)=><div data-testid="team-say" role="button" onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'0 0 10px',padding:'3px 12px',borderRadius:0,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+const _tcSayIt=(T,onClick,words)=><div data-testid="team-say" role="button" onClick={onClick} style={{display:'flex',alignItems:'center',gap:7,margin:'0 0 8px',cursor:'pointer'}}>
   <span style={{flexShrink:0,display:'flex'}}>{_tcSpk(T.lift(C.cr),15)}</span><span style={{fontSize:14,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',flexShrink:0}}>Say it{words?':':''}</span>{words&&<span style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{words}</span>}</div>;
 const _tcQuiet=(T,g)=><span key={g} data-pill style={{..._T_CAPS,fontWeight:500,fontFamily:C.P,color:T.ink2,border:`1px solid ${T.line}`,padding:'3px 10px',whiteSpace:'nowrap'}}>{_tCap(g)}</span>;
 /* A style figure with its dots and what the word means, between hairlines. */
 const _tcBar=(T,k,label,v,how,col)=>v==null?null:<div key={k} style={{padding:'10px 0',borderTop:`1px solid ${T.line}`}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:14,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:500}}>{label}</span>{_tcDots(T,v,col)}</div>{how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{how}</div>}</div>;
-const _tcRow=(T,i,click)=>({padding:'10px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:click?'pointer':'default'});
+const _tcRow=(T,i,click)=>({padding:'8px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:click?'pointer':'default'});
 /* A person's face in a circle (team/faces/, served beside the app), else their initials. */
 function TeamFace({person,size=36,ring}){ const T=useTheme();
   const init=String(person&&person.name||'?').split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
@@ -522,8 +523,8 @@ function _TcFlat({children}){ return <div>{children}</div>; }
 function _TFold({k,title,summary,def=false,children,rule}){ const T=useTheme(), [shut,setShut]=React.useState(()=>TeamFold.folded(k,def));
   const flip=()=>{ TeamFold.set(k,!shut); setShut(!shut); };
   return <div data-testid={'fold-'+k} data-folded={shut?'1':'0'}>
-    <div role="button" aria-expanded={!shut} onClick={flip} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,cursor:'pointer',margin:rule?'0 0 8px':'18px 0 8px',...(rule?{borderTop:`1px solid ${T.line}`,paddingTop:16,marginTop:16}:{})}}>
-      <div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{title}</div>
+    <div role="button" aria-expanded={!shut} onClick={flip} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,cursor:'pointer',margin:rule?'0 0 6px':'18px 0 8px',...(rule?{borderTop:`1px solid ${T.line}`,paddingTop:12,marginTop:12}:{})}}>
+      <div data-cap={rule?'':undefined} style={rule?{fontSize:'12px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontFamily:C.P}:{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>{title}</div>
       <span style={{display:'inline-flex',transform:shut?'rotate(0deg)':'rotate(90deg)',transition:'transform .2s'}}><Icon n="chevron" sz={12} col={T.mid}/></span></div>
     {shut?(summary?<div role="button" onClick={flip} style={{fontSize:14,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',cursor:'pointer',marginTop:-2}}>{summary}</div>:null):children}</div>; }
 function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id), c=TeamData.card(id);
@@ -555,10 +556,10 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
         {err&&<div data-testid="team-card-error" style={{fontSize:14,color:'#F2B84B',fontFamily:C.P,marginTop:6}}>{err}</div>}
         {manager&&<div style={{marginTop:10}}><TeamBtn card small primary onClick={writeIt}>{err?'Try again':'Write it now'}</TeamBtn></div>}</>}</Card></div>:<>
       {/* Three tabs under the head, so nothing scrolls far: what to say, what to pour it with, what it is. */}
-      <div data-testid="wine-tabs" role="tablist" style={{display:'flex',margin:'2px 0 12px'}}>{TABS.map(([k,l],i)=>{ const on=tab===k, acc=T.lift(C.cr); return <div key={k} role="tab" aria-selected={on} data-testid={'wine-tab-'+k} onClick={()=>setTab(k)} style={{flex:1,textAlign:'center',fontSize:14,fontWeight:500,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:manage?'7px 0':'9px 0',borderRadius:0,cursor:'pointer',marginLeft:i?-1:0,position:'relative',zIndex:on?1:0,border:`1px solid ${on?acc:'rgba(255,255,255,0.22)'}`,background:on?acc:'transparent',color:on?inkOn(acc):T.ink2,transition:'background .12s'}}>{l}</div>; })}</div>
+      <div data-testid="wine-tabs" role="tablist" data-cap style={{display:'flex',margin:'0 0 10px'}}>{TABS.map(([k,l],i)=>{ const on=tab===k, acc=T.lift(C.cr); return <div key={k} role="tab" aria-selected={on} data-testid={'wine-tab-'+k} onClick={()=>setTab(k)} style={{flex:1,textAlign:'center',fontSize:'12px',fontWeight:500,letterSpacing:'0.12em',textTransform:'uppercase',fontFamily:C.P,padding:manage?'6px 0':'8px 0',borderRadius:0,cursor:'pointer',marginLeft:i?-1:0,position:'relative',zIndex:on?1:0,border:`1px solid ${on?acc:'rgba(255,255,255,0.22)'}`,background:on?acc:'transparent',color:on?inkOn(acc):T.ink2,transition:'background .12s'}}>{l}</div>; })}</div>
       {tab==='sell'&&<div data-testid="wine-pane-sell">
       {c.hook&&<div data-testid="team-hook" style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.4,padding:'2px 0 2px 12px',borderLeft:`2px solid ${col}`,marginBottom:12}}>{c.hook}</div>}
-      <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:14,fontWeight:500,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
+      <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div data-cap style={{fontSize:'12px',fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:14,fontWeight:500,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
         {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.55,outline:'none',resize:'vertical'}}/>
           <div style={{display:'flex',gap:8,marginTop:8}}><TeamBtn card small primary onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</TeamBtn><TeamBtn card small onClick={()=>setEditing(false)}>Cancel</TeamBtn></div>
           <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Your words replace the written line on every phone at once; the questions stay as they are.</div></div>
@@ -632,7 +633,7 @@ function TeamDish({id,open,pid,manage}){ const T=useTheme(), cr=T.lift(C.cr), x=
     <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:12}}>
       <div style={{marginBottom:-12}}>{_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name,{pace:'slow'}); })}</div>
       {practise&&<TeamBtn card small primary style={{marginLeft:'auto'}} onClick={()=>open({view:'drill',only:id})}>Practise</TeamBtn>}</div>
-    <div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest</div>
+    <div data-cap style={{fontSize:'12px',fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em'}}>Say it to a guest</div>
     <div style={{marginTop:8}}><div data-testid="dish-say" style={{fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{(c&&c.say)||x.desc||''}</div></div>
     {c&&c.say&&x.desc&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>The menu says: {x.desc}</div>}
     {/* Allergens: the kitchen's confirmed list as chips; before that, a plain line that it isn't confirmed, never the draft. */}
