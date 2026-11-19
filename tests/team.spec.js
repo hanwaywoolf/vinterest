@@ -3131,9 +3131,11 @@ test('the buyer\'s review: Vinny reads the list against the menu, and only what 
       weak_dishes: [{ dish: ds[1][1], why: 'Nothing on the list has the weight for it.', wants: 'a ripe, fuller white with some oak' }, { dish: 'd-nothing', why: 'x', wants: 'y' }], gaps: [{ what: 'A red under £45', why: 'The cheapest red is a jump from the house pour.' }], cut: [{ wine: ws[2], why: 'It overlaps and hasn\'t sold.' }] }); } });
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
   await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('console-nav-wines').click();
+  // Asked from a button in the page's head: a dialog says what it is, and the result is read in the same dialog.
+  await expect(page.getByTestId('c2-buyer-open')).toHaveText(/Ask Vinny to review the list/i); await page.getByTestId('c2-buyer-open').click(); await expect(page.getByTestId('c2-buyer-review')).toContainText('changes nothing on your list');
   await page.getByTestId('c2-buyer-ask').click(); await expect(page.getByTestId('c2-buyer-error')).toBeVisible();
   await page.getByTestId('c2-buyer-ask').click(); const res = page.getByTestId('c2-buyer-result'); await expect(res).toBeVisible();
-  await expect(res).toContainText('Grilled sardines on toast'); await expect(res).toContainText('Wants a ripe, fuller white with some oak'); await expect(res).toContainText('A red under £45');
+  await expect(res).toContainText('Grilled sardines on toast'); await page.getByTestId('c2-buyer-close').click(); await expect(page.getByTestId('c2-buyer-open')).toHaveText(/Vinny's review/i); await page.getByTestId('c2-buyer-open').click(); await expect(res).toBeVisible(); await expect(res).toContainText('Wants a ripe, fuller white with some oak'); await expect(res).toContainText('A red under £45');
   const sent = reqs.filter(r => r.purpose === 'team_buyer'); expect(sent).toHaveLength(2); expect(sent[0].messages[0].content).toContain('The Larkspur');
   const kept = await page.evaluate(() => { const r = TeamBuyer.reviewed(), id = Object.keys(r.retail)[0]; return { retail: Object.keys(r.retail).length, missing: r.missing.length, weak: r.weak.length, cut: r.cut.length, source: TeamBuyer.markups().source, shop: TeamBuyer.retail(TeamData.wine(id)) }; });
   expect(kept).toMatchObject({ retail: 1, missing: 1, weak: 1, cut: 1, source: 'estimate', shop: { price: 20 } });
