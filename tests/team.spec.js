@@ -2751,7 +2751,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
   // Any card folds to its title and opens again, and the device remembers which are folded.
   const bal = page.getByTestId('c2-balance'), foldBtn = bal.getByTestId('c2-card-fold');
-  await foldBtn.click(); await expect(foldBtn).toHaveAttribute('aria-expanded', 'false'); expect(await page.getByTestId('c2-balance-row').count()).toBe(0);
+  await foldBtn.click(); await expect(foldBtn).toHaveAttribute('aria-expanded', 'false'); expect(await page.getByTestId('c2-balance-row').count()).toBe(0); await expect(bal.getByTestId('c2-card-summary')).toContainText(/\w+ \d+ · \w+/); // folded, it says what it holds
   expect(await page.evaluate(() => TeamFold.folded('c2card-c2-balance'))).toBe(true);
   await page.reload(); await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('c2-balance').getByTestId('c2-card-fold')).toHaveAttribute('aria-expanded', 'false');
   await page.getByTestId('c2-balance').getByTestId('c2-card-fold').click(); expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
