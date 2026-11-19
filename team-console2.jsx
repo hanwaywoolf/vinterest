@@ -304,7 +304,7 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
 function _C2Manage({k,title,children}){ const T=useTheme(), acc=_c2Acc(T), [on,setOn]=React.useState(()=>!TeamFold.folded(k,true));
   return <div style={{marginTop:16}}><div role="button" data-testid={'c2-manage-'+k} aria-expanded={on} onClick={()=>setOn(v=>{ TeamFold.set(k,v); return !v; })} style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,cursor:'pointer',padding:'6px 0'}}>{on?'Hide':title} {on?'↑':'↓'}</div>{on&&<div style={{marginTop:10}}>{children}</div>}</div>; }
 const _C2_WIN={'At its peak':'#6FD79C','Drinking well':'#9CC9F5','Still young':'#F2B84B','Past its best':'#F58B7C'};
-const _c2Chip=(T,label,on,onClick,tid)=><span key={label} role="button" data-testid={tid} aria-pressed={on} onClick={onClick} style={{padding:'5px 12px',borderRadius:999,fontSize:13,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',border:`1px solid ${on?T.ink:'rgba(255,255,255,0.17)'}`,color:on?T.ink:T.mid}}>{label}</span>;
+const _c2Chip=(T,label,on,onClick,tid)=>{ const acc=_c2Acc(T); return <span key={label} role="button" data-testid={tid} aria-pressed={on} onClick={onClick} style={{padding:'6px 11px',borderRadius:0,fontSize:'12px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',border:`1px solid ${on?acc:'rgba(255,255,255,0.22)'}`,background:on?acc:'transparent',color:on?_c2Ink():T.ink2}}>{label}</span>; };
 
 /* ── Wines ── */
 /* ── Wines: the list as the sommelier and the buyer read it. Training lives on the Training page. ── */

@@ -53,13 +53,13 @@ const _tcSpk=(col,size=16)=><svg width={size} height={size} viewBox="0 0 24 24" 
 const _tcDots=(T,v,col)=><span aria-label={`${v} out of 5`} style={{display:'inline-flex',gap:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{width:9,height:9,borderRadius:5,background:i<=v?col:T.line}}/>)}</span>;
 /* The head of a card, in the console's own style: a light headline on the page, then figure tiles (a price, how many
    are trained on it). The name and the tiles are the card's display text (data-card-big); every other line keeps one size. */
-const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:16,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:manage?'11px 13px':'13px 15px'});
+const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:16,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:manage?'8px 12px':'10px 13px'});
 function _TcHead({manage,eye,eyeCol,meta=[],extra,name,tiles=[],note}){ const T=useTheme(), tile=_tcTile(T,manage), bits=[eye&&<span key="e" style={{color:eyeCol||T.ink2,fontWeight:500}}>{eye}</span>,...meta.filter(Boolean).map((m,i)=><span key={i}>{m}</span>)].filter(Boolean);
-  return <div data-testid="team-hero" data-card-big style={{marginBottom:14}}>
+  return <div data-testid="team-hero" data-card-big style={{marginBottom:10}}>
     <div style={{fontSize:14,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',paddingRight:manage?40:0}}>{bits.map((b,i)=><React.Fragment key={i}>{i>0&&<span>·</span>}{b}</React.Fragment>)}{extra}</div>
-    <div data-card-name style={{fontSize:manage?28:30,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.15,letterSpacing:'-0.015em',marginTop:6}}>{name}</div>
-    {tiles.filter(Boolean).length>0&&<div style={{display:'flex',gap:10,marginTop:16,flexWrap:'wrap'}}>{tiles.filter(Boolean).map((t,i,all)=><div key={t.cap} data-testid={t.testid} style={{...tile,...(all.length===1?{flex:'0 0 auto',minWidth:150}:{flex:t.wide?'1.3 1 0':tile.flex})}}>
-      <div style={{fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P}}>{t.cap}</div><div data-testid={t.bigTestid} style={{fontSize:manage?22:24,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.15,marginTop:5}}>{t.big}</div>
+    <div data-card-name style={{fontSize:manage?24:26,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.15,letterSpacing:'-0.015em',marginTop:4}}>{name}</div>
+    {tiles.filter(Boolean).length>0&&<div data-testid="team-price-line" style={{display:'flex',gap:8,marginTop:10}}>{tiles.filter(Boolean).map((t,i,all)=><div key={t.cap} data-testid={t.testid} style={{...tile,...(all.length===1?{flex:'0 0 auto',minWidth:150}:{})}}>
+      <div style={{fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{t.cap}</div><div data-testid={t.bigTestid} style={{fontSize:manage?18:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.15,marginTop:3,whiteSpace:'nowrap'}}>{t.big}</div>
       {t.small&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{t.small}</div>}</div>)}</div>}
     {note&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>{note}</div>}</div>; }
 /* Where the person stands on a wine, cocktail or drink, and the way into practising it, straight under the head. In the
@@ -71,22 +71,19 @@ function _TcStand({manage,st,col,what,onPractise}){ const T=useTheme(); if(!st||
   const R=13, circ=2*Math.PI*R, part=Math.max(0,Math.min(1,st.known/st.total));
   const ring=sz=><svg width={sz} height={sz} viewBox="0 0 32 32" aria-hidden="true" style={{flexShrink:0}}><circle cx="16" cy="16" r={R} stroke={T.line} strokeWidth="3" fill="none"/><circle cx="16" cy="16" r={R} stroke={scol} strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray={`${circ*part} ${circ}`} transform="rotate(-90 16 16)"/></svg>;
   const btn=<TeamBtn card small primary style={{flexShrink:0}} onClick={onPractise}>{st.state==='new'?`Start this ${what}`:`Practise this ${what}`}</TeamBtn>;
-  const pills=<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:12}}>{st.rungs.map(rg=><span key={rg.k} style={{fontSize:14,fontFamily:C.P,fontWeight:500,padding:'3px 11px',borderRadius:999,border:`1px solid ${rg.done?'transparent':T.line}`,color:rg.done?T.green:st.next&&st.next.k===rg.k?T.ink:T.mid,background:rg.done?_alpha('#5FD48F',0.12):'transparent'}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>;
-  return manage?<div data-testid="team-standing" style={{...tile,flex:'none',margin:'0 0 16px',padding:'14px 16px'}}>
-      <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>{ring(40)}
-        <div style={{flex:'1 1 150px',minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{word}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{line}</div></div>{btn}</div>{pills}</div>
-    :<div data-testid="team-standing" style={{...tile,flex:'none',borderColor:_alpha(scol,0.45),background:_alpha(scol,0.05),margin:'0 0 14px'}}>
-      <div style={{fontSize:14,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P}}>Where you stand</div>
-      <div style={{display:'flex',alignItems:'center',gap:11,marginTop:9}}>{ring(36)}
-        <div style={{flex:1,minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:scol,fontFamily:C.P,lineHeight:1.3}}>{word}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{line}</div></div></div>
-      {pills}<div style={{display:'flex',marginTop:12}}>{btn}</div></div>; }
+  // A rung held is green text with a tick on the page, never green on a green wash.
+  const pills=st.rungs.map(rg=><span key={rg.k} style={{fontSize:14,fontFamily:C.P,fontWeight:500,padding:'2px 10px',borderRadius:999,whiteSpace:'nowrap',border:`1px solid ${rg.done?_alpha('#5FD48F',0.4):T.line}`,color:rg.done?T.green:st.next&&st.next.k===rg.k?T.ink:T.mid}}>{rg.done?'✓ ':''}{rg.label}</span>);
+  const text=<div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{word}</div>{st.state!=='known'&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.35,marginTop:1}}>{line}</div>}</div>;
+  return <div data-testid="team-standing" title={line} style={{...tile,flex:'none',margin:manage?'0 0 10px':'0 0 12px',padding:manage?'8px 12px':'10px 13px',borderColor:manage?T.line:_alpha(scol,0.45)}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>{ring(manage?28:30)}{text}
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',flex:'1 1 auto'}}>{pills}</div>{btn}</div></div>; }
 /* The line to say, set large and light on the page with the way to hear it. */
 function _TcSay({manage,text,label='Say it to a guest',right}){ const T=useTheme();
   return <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>{label}</div>{right}</div>
-    <div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" data-card-big style={{flex:1,fontSize:manage?17:19,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.45,letterSpacing:'-0.005em'}}>{text}</div>
-      <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(text); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),16)}</div></div></div>; }
+    <div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" style={{flex:1,fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{text}</div>
+      <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(text); }} style={{width:30,height:30,borderRadius:15,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),14)}</div></div></div>; }
 /* The name said aloud, as a quiet outlined pill. */
-const _tcSayIt=(T,onClick,words)=><div data-testid="team-say" role="button" onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'0 0 12px',padding:'6px 14px',borderRadius:18,border:`1px solid ${T.line}`,cursor:'pointer'}}>
+const _tcSayIt=(T,onClick,words)=><div data-testid="team-say" role="button" onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'0 0 10px',padding:'3px 12px',borderRadius:18,border:`1px solid ${T.line}`,cursor:'pointer'}}>
   <span style={{flexShrink:0,display:'flex'}}>{_tcSpk(T.lift(C.cr),15)}</span><span style={{fontSize:14,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',flexShrink:0}}>Say it{words?':':''}</span>{words&&<span style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{words}</span>}</div>;
 const _tcQuiet=(T,g)=><span key={g} data-pill style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink2,border:`1px solid ${T.line}`,borderRadius:999,padding:'3px 12px'}}>{_tCap(g)}</span>;
 /* A style figure with its dots and what the word means, between hairlines. */
@@ -470,7 +467,7 @@ function TeamCocktail({id,pid,open,manage}){ const T=useTheme(), x=TeamData.cock
   const st=c&&TeamLearn.standing(pid,id), row=manage?TeamReport.cocktailRows().find(r=>r.cocktail.id===id):null, kb=row&&row.kb;
   return <div data-testid="team-cocktail">
     <_TcHead manage={manage} eye={x.section||'Cocktail'} eyeCol={col} meta={[c&&_tCap(c.spirit),x.by&&`By ${x.by}`]} name={x.name} note={x.note||null}
-      tiles={[x.price&&{cap:'Price',big:x.price},kb&&kb.of>0&&{cap:'Trained on it',big:`${kb.people.length} of ${kb.of}`,small:'know this cocktail',wide:true,testid:'team-known-tile'}]}/>
+      tiles={[x.price&&{cap:'Price',big:x.price},kb&&kb.of>0&&{cap:'Trained on it',big:`${kb.people.length} of ${kb.of}`,testid:'team-known-tile'}]}/>
     <_TcStand manage={manage} st={st} col={col} what="cocktail" onPractise={()=>open({view:'drill',only:id})}/>
     {c&&c.say&&_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name,{pace:'slow'}); },c.say)}
     {c&&<_TcSay manage={manage} text={c.pitch}/>}
@@ -500,7 +497,7 @@ function TeamDrink({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id
   const text=t=><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{t}</div>;
   return <div data-testid="team-drink">
     <_TcHead manage={manage} eye={w.section} eyeCol={cr} meta={[w.spirit,w.credit&&`created by ${w.credit}`]} name={w.name}
-      tiles={[w.glass&&{cap:'Price',big:w.glass},kb&&kb.of>0&&{cap:'Trained on it',big:`${kb.people.length} of ${kb.of}`,small:'know this drink',wide:true,testid:'team-known-tile'}]}/>
+      tiles={[w.glass&&{cap:'Price',big:w.glass},kb&&kb.of>0&&{cap:'Trained on it',big:`${kb.people.length} of ${kb.of}`,testid:'team-known-tile'}]}/>
     <_TcStand manage={manage} st={st} col={cr} what="drink" onPractise={()=>open({view:'drill',only:id})}/>
     {c&&c.say&&_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(c.say); },c.say)}
     {c&&<_TcSay manage={manage} text={c.pitch}/>}
@@ -541,51 +538,39 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   const TABS=[['sell','Sell it'],c&&(c.dishes||[]).length>0&&['pair','Pair it'],['know','Know it']].filter(Boolean);
   const bar=(k,label,v,how)=>v==null?null:<div key={k} style={{padding:'10px 0',borderTop:`1px solid ${T.line}`}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:14,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:500}}>{label}</span>{_tcDots(T,v,manage?C.cr:col)}</div>{how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{how}</div>}</div>;
   return <div data-testid="team-wine">
-    {/* The head in the console's own style: a light headline on the page, then figure tiles. The third tile is the
-        viewer's: their own standing on the staff app, how many of its sellers are trained on it in the console. */}
-    {(()=>{ const st=c?TeamLearn.standing(pid,id):null, has=st&&st.total, scol=!has?T.mid:st.state==='known'?T.green:st.state==='fading'?T.amber:st.state==='learning'?col:T.mid;
-      const word=!has?'':st.state==='known'?'You know this wine':st.state==='fading'?'Fading':st.state==='learning'?`Learning · ${st.known} of ${st.total}`:'Not started yet';
-      const line=!has?'':st.state==='known'?`Every rung is right and fresh${st.nextDue?`; the first answer is due again ${_tDays(st.nextDue).replace('due ','')}`:''}.`:st.state==='fading'?`${st.due} answer${st.due===1?'':'s'} to refresh; a drill brings them back.`:st.next?`Next rung: ${st.next.label}.`:'Start with the first question.';
-      const kb=manage&&c?TeamReport.knownBy(w):null, R=13, circ=2*Math.PI*R, part=has?Math.max(0,Math.min(1,st.known/st.total)):0;
-      const tile={flex:'1 1 0',minWidth:0,borderRadius:16,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:manage?'11px 13px':'13px 15px'}, cap={fontSize:12,letterSpacing:'0.12em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P}, big={fontSize:manage?22:24,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.15,marginTop:5}, small={fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35};
-      return <><div data-testid="team-hero" data-card-big style={{marginBottom:14}}>
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',paddingRight:manage?40:0}}><span style={{color:col,fontWeight:500}}>{_tCap(w.section||w.type||'Wine')}</span><span>·</span><span>{w.vintage||'NV'}</span><span>·</span><Flag wine={w} size={14}/><span>{[w.region,w.country].filter(Boolean).join(' · ')}</span></div>
-        <div data-card-name style={{fontSize:manage?28:30,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.15,letterSpacing:'-0.015em',marginTop:6}}>{TeamData.short(w)}</div>
-        <div data-testid="team-price-line" style={{display:'flex',gap:10,marginTop:16,flexWrap:'wrap'}}>
-          {w.glass&&<div style={tile}><div style={cap}>Glass</div><div style={big}>{w.glass}</div></div>}
-          {w.bottle&&<div style={tile}><div style={cap}>Bottle</div><div style={big}>{w.bottle}</div></div>}
-          {kb&&kb.of>0?<div data-testid="team-known-tile" style={{...tile,flex:'1.3 1 0'}}><div style={cap}>Trained on it</div><div style={big}>{kb.people.length} of {kb.of}</div><div style={small}>know this wine</div></div>
-          :null}</div>
-        {w.other&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>{w.other}</div>}</div>
-      {/* Practising the wine sits straight under the head: learning it is half of why a card is opened. */}
-      <_TcStand manage={manage} st={st} col={col} what="wine" onPractise={()=>open({view:'drill',only:id})}/></>; })()}
-    {c&&c.say&&<div data-testid="team-say" role="button" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(TeamData.short(w),{pace:'slow'}); }} style={{display:'inline-flex',alignItems:'center',gap:8,margin:'0 0 12px',padding:'6px 14px',borderRadius:18,border:`1px solid ${T.line}`,cursor:'pointer'}}>
-      <span style={{flexShrink:0,display:'flex'}}>{_tcSpk(T.lift(C.cr),15)}</span><span style={{fontSize:14,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',flexShrink:0}}>Say it:</span><span style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{c.say}</span></div>}
-    {sh.grapes&&(w.grapes||[]).length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>{(w.grapes||[]).map(g=><span key={g} style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink2,border:`1px solid ${T.line}`,borderRadius:999,padding:'3px 12px'}}>{g}</span>)}</div>}
+    {/* The head in the console's own style: a light headline, then figure tiles on one line (in the console's panel the
+        third says how many of its sellers are trained on it). Practising sits straight under it. */}
+    {(()=>{ const kb=manage&&c?TeamReport.knownBy(w):null;
+      return <_TcHead manage={manage} eye={_tCap(w.section||w.type||'Wine')} eyeCol={col} meta={[w.vintage||'NV',<span style={{display:'inline-flex',alignItems:'center',gap:6}}><Flag wine={w} size={14}/>{[w.region,w.country].filter(Boolean).join(' · ')}</span>]} name={TeamData.short(w)} note={w.other||null}
+        tiles={[w.glass&&{cap:'Glass',big:w.glass},w.bottle&&{cap:'Bottle',big:w.bottle},kb&&kb.of>0&&{cap:'Trained on it',big:`${kb.people.length} of ${kb.of}`,testid:'team-known-tile'}]}/>; })()}
+    <_TcStand manage={manage} st={c?TeamLearn.standing(pid,id):null} col={col} what="wine" onPractise={()=>open({view:'drill',only:id})}/>
+    {((c&&c.say)||(sh.grapes&&(w.grapes||[]).length>0))&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',marginBottom:10}}>
+      {c&&c.say&&<div style={{marginBottom:-10}}>{_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(TeamData.short(w),{pace:'slow'}); },c.say)}</div>}
+      {sh.grapes&&(w.grapes||[]).map(g=><span key={g} style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink2,border:`1px solid ${T.line}`,borderRadius:999,padding:'3px 12px'}}>{g}</span>)}</div>}
     {!c?<div data-testid="team-no-card"><Card>{busy?<WritingWait compact title="Writing this wine's staff card…" wine={{name:w.name,grapes:w.grapes,region:w.region}}/>:<>
         <div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>No staff card yet</div>
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>{manager?'Write it here, or write every missing card from the Upload tab.':'Your manager writes the staff cards from the Upload tab.'}</div>
         {err&&<div data-testid="team-card-error" style={{fontSize:14,color:'#F2B84B',fontFamily:C.P,marginTop:6}}>{err}</div>}
         {manager&&<div style={{marginTop:10}}><TeamBtn card small primary onClick={writeIt}>{err?'Try again':'Write it now'}</TeamBtn></div>}</>}</Card></div>:<>
       {/* Three tabs under the head, so nothing scrolls far: what to say, what to pour it with, what it is. */}
-      <div data-testid="wine-tabs" role="tablist" style={{display:'flex',gap:4,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',borderRadius:14,padding:4,margin:'4px 0 16px'}}>{TABS.map(([k,l])=>{ const on=tab===k; return <div key={k} role="tab" aria-selected={on} data-testid={'wine-tab-'+k} onClick={()=>setTab(k)} style={{flex:1,textAlign:'center',fontSize:14,fontWeight:500,fontFamily:C.P,padding:manage?'7px 0':'9px 0',borderRadius:10,cursor:'pointer',background:on?C.cr:'transparent',color:on?inkOn(C.cr):T.ink2,boxShadow:on?`0 2px 14px ${_alpha(C.cr,0.35)}`:'none',transition:'background .15s'}}>{l}</div>; })}</div>
+      <div data-testid="wine-tabs" role="tablist" style={{display:'flex',margin:'2px 0 12px'}}>{TABS.map(([k,l],i)=>{ const on=tab===k, acc=T.lift(C.cr); return <div key={k} role="tab" aria-selected={on} data-testid={'wine-tab-'+k} onClick={()=>setTab(k)} style={{flex:1,textAlign:'center',fontSize:14,fontWeight:500,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:manage?'7px 0':'9px 0',borderRadius:0,cursor:'pointer',marginLeft:i?-1:0,position:'relative',zIndex:on?1:0,border:`1px solid ${on?acc:'rgba(255,255,255,0.22)'}`,background:on?acc:'transparent',color:on?inkOn(acc):T.ink2,transition:'background .12s'}}>{l}</div>; })}</div>
       {tab==='sell'&&<div data-testid="wine-pane-sell">
-      {c.hook&&<div data-testid="team-hook" style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.4,padding:'2px 0 2px 12px',borderLeft:`2px solid ${col}`,marginBottom:16}}>{c.hook}</div>}
+      {c.hook&&<div data-testid="team-hook" style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.4,padding:'2px 0 2px 12px',borderLeft:`2px solid ${col}`,marginBottom:12}}>{c.hook}</div>}
       <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:14,fontWeight:500,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
         {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.55,outline:'none',resize:'vertical'}}/>
           <div style={{display:'flex',gap:8,marginTop:8}}><TeamBtn card small primary onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</TeamBtn><TeamBtn card small onClick={()=>setEditing(false)}>Cancel</TeamBtn></div>
           <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Your words replace the written line on every phone at once; the questions stay as they are.</div></div>
-        :<div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" data-card-big style={{flex:1,fontSize:manage?17:19,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.45,letterSpacing:'-0.005em'}}>{c.pitch}</div>
-          <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.pitch); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),16)}</div></div>}</div>
+        :<div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" style={{flex:1,fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{c.pitch}</div>
+          <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.pitch); }} style={{width:30,height:30,borderRadius:15,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),14)}</div></div>}</div>
       {fact&&<div data-testid="team-fact">{_tcLabel(T,'One thing to know')}<_TcFlat><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}}>{fact}</div></_TcFlat></div>}
       {sh.alts&&c.alts&&c.alts.length>0&&<_TFold rule k="wine-alts" title="If they want something else" def summary={c.alts.map(a=>{ const o=TeamData.wine(a.id); return o&&TeamData.short(o); }).filter(Boolean).join(', ')}><_TcFlat>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'10px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>{_tCap(a.when)}{o.glass?` · glass ${o.glass}`:o.bottle?` · bottle ${o.bottle}`:''}</div></div>; })}</_TcFlat></_TFold>}
       </div>}
       {tab==='pair'&&<div data-testid="wine-pane-pair">{_tcLabel(T,'With our menu')}
         <div data-testid="team-wine-dishes" style={{display:'flex',flexDirection:'column'}}>{(c.dishes||[]).map((x,i)=>{ const dish=TeamData.dishes().find(z=>z.name===x.dish); return <div key={i} role={dish?'button':undefined} onClick={()=>dish&&open({view:'dish',id:dish.id})} style={{display:'flex',gap:12,borderTop:i?`1px solid ${T.line}`:'none',padding:'12px 0',cursor:dish?'pointer':'default'}}>
-            <span style={{width:28,height:28,borderRadius:9,background:_alpha(manage?C.cr:col,0.16),color:manage?C.cr:col,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{i+1}</span>
+            <span style={{width:28,height:28,borderRadius:9,background:_alpha(manage?C.cr:col,0.16),border:`1px solid ${_alpha(manage?C.cr:col,0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{i+1}</span>
             <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{x.why}</div></div></div>; })}
           {TeamData.dishes().filter(d=>{ const pr=TeamData.pairing(d.id); return pr&&pr.avoid&&pr.avoid.id===id; }).slice(0,1).map(d=><div key={d.id} role="button" onClick={()=>open({view:'dish',id:d.id})} style={{display:'flex',gap:12,borderTop:`1px solid ${T.line}`,padding:'12px 0',cursor:'pointer'}}>
-            <span style={{width:28,height:28,borderRadius:9,background:_alpha('#F2B84B',0.16),color:T.amber,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>!</span>
+            <span style={{width:28,height:28,borderRadius:9,background:_alpha('#F2B84B',0.16),border:`1px solid ${_alpha('#F2B84B',0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>!</span>
             <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.amber,fontFamily:C.P}}>Steer away: {d.name}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{TeamData.pairing(d.id).avoid.why}</div></div></div>)}
         </div></div>}
       {tab==='know'&&<div data-testid="wine-pane-know">
@@ -641,12 +626,12 @@ function TeamDish({id,open,pid,manage}){ const T=useTheme(), cr=T.lift(C.cr), x=
   const can={yes:['Yes','#5FD48F'],no:['No','#F28B7D'],ask:['Ask the kitchen','#F2B84B']};
   return <div data-testid="team-dish">
     <_TcHead manage={manage} eye={x.section||'Menu'} eyeCol={T.ink2} extra={off&&<span data-testid="dish-off" style={{color:'#F28B7D',fontWeight:500,marginLeft:4}}>86'd tonight</span>} name={x.name}
-      tiles={[price&&{cap:'Price',big:price,bigTestid:'dish-price'},pr&&pr.first&&pr.of>0&&{cap:'Trained on its wine',big:`${pr.people.length} of ${pr.of}`,small:`know ${TeamData.nick(pr.first)}`,wide:true,testid:'team-known-tile'}]}/>
+      tiles={[price&&{cap:'Price',big:price,bigTestid:'dish-price'},pr&&pr.first&&pr.of>0&&{cap:'Trained on its wine',big:`${pr.people.length} of ${pr.of}`,testid:'team-known-tile'}]}/>
     <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:12}}>
       <div style={{marginBottom:-12}}>{_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name,{pace:'slow'}); })}</div>
       {practise&&<TeamBtn card small primary style={{marginLeft:'auto'}} onClick={()=>open({view:'drill',only:id})}>Practise this dish</TeamBtn>}</div>
     <div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest</div>
-    <div data-card-big style={{marginTop:8}}><div data-testid="dish-say" style={{fontSize:manage?17:19,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.45,letterSpacing:'-0.005em'}}>{(c&&c.say)||x.desc||''}</div></div>
+    <div style={{marginTop:8}}><div data-testid="dish-say" style={{fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{(c&&c.say)||x.desc||''}</div></div>
     {c&&c.say&&x.desc&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>The menu says: {x.desc}</div>}
     {/* Allergens: the kitchen's confirmed list as chips; before that, a plain line that it isn't confirmed, never the draft. */}
     <div data-testid="dish-allergens" style={{margin:'16px 0 0',borderTop:`1px solid ${T.line}`,paddingTop:16}}>{conf?<div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}><span style={{fontSize:14,fontWeight:500,color:'#F28B7D',fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase',marginRight:4}}>⚠ Allergens</span>{conf.length?conf.map(code=><span key={code} style={{display:'inline-flex',padding:'3px 11px',borderRadius:999,border:'1px solid #F28B7D88',background:_alpha('#F28B7D',0.12),color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P}}>{TeamData.allergenName(code)}</span>):<span style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>None of the listed allergens, as the kitchen confirmed.</span>}</div>
