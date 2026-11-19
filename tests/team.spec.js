@@ -683,6 +683,7 @@ test('the demo restaurant: 30 wines, photos, and a wine added from its label upd
   expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(1);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Prunotto Barolo Bussia').click();
+  await page.getByTestId('wine-tab-know').click(); // the taste, grape, life and serving are the card's third tab
   await expect(page.getByTestId('team-window')).toContainText('Still young'); // folded to its one line
   await page.getByTestId('fold-wine-life').getByRole('button').first().click();
   await expect(page.getByTestId('team-window')).toContainText('Best from 2027 to 2036');
@@ -1676,15 +1677,18 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   await expect(page.getByTestId('team-pitch')).toBeVisible();
   await expect(page.getByTestId('team-fact')).toBeVisible();
   await expect(page.getByTestId('team-grape-region')).toHaveCount(0);
-  await expect(page.getByTestId('team-window')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
+  await expect(page.getByTestId('team-grape-region')).toHaveCount(0); await expect(page.getByTestId('team-window')).toHaveCount(0);
+  await page.getByTestId('wine-tab-pair').click();
   await expect(page.locator('#root')).toContainText('With our menu');
   // Back to High: the full card again, and the answers held were never touched.
   await page.evaluate(() => TeamLearn.setLevel('high'));
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').first().click();
-  await expect(page.getByTestId('team-grape-region')).toBeVisible();
   await expect(page.getByTestId('team-fact')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
+  await expect(page.getByTestId('team-grape-region')).toBeVisible();
   expect(errors).toEqual([]);
   await ctx.close();
 });
@@ -2218,6 +2222,10 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   const top = async (id) => page.getByTestId(id).first().evaluate((el) => el.getBoundingClientRect().top);
   expect(await top('team-standing')).toBeLessThan(await top('team-pitch'));
   await expect(page.getByText('Practise this wine', { exact: true })).toHaveCount(0); // the standing card's button is the one
+  // Three tabs under the standing: the line to say, the dishes, then what the wine is.
+  await expect(page.getByTestId('wine-pane-sell')).toBeVisible(); expect(await top('team-standing')).toBeLessThan(await top('wine-tabs'));
+  await page.getByTestId('wine-tab-pair').click(); await expect(page.getByTestId('team-wine-dishes')).toBeVisible(); await expect(page.getByTestId('team-pitch')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
   const taste = page.getByTestId('fold-wine-taste');
   await expect(taste).toHaveAttribute('data-folded', '0');
   await taste.getByRole('button').first().click();
@@ -2225,6 +2233,7 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').nth(1).click();
+  await page.getByTestId('wine-tab-know').click();
   await expect(page.getByTestId('fold-wine-taste')).toHaveAttribute('data-folded', '1'); // remembered on this phone
 });
 
