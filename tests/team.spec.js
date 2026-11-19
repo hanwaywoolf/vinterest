@@ -2735,12 +2735,20 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // No bottle's name is cut off: the chips wrap instead of squeezing into columns.
   expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth + 1).length)).toBe(0); await expect(page.getByTestId('c2-ladder-sum')).toContainText('No step up');
   // The ladder is a grid on one price scale: every bottle named in its band, and under each band what's listed against what sells.
+  // A rung opens on a few bottles of each colour; the foot opens every one, and that is remembered.
+  if (await page.getByTestId('c2-ladder-all').count()) { expect(await page.getByTestId('c2-ladder-chip').count()).toBeLessThan(await page.evaluate(() => TeamBuyer.bands().listed)); await expect(page.getByTestId('c2-ladder-more').first()).toBeVisible(); await page.getByTestId('c2-ladder-all').click(); expect(await page.evaluate(() => TeamFold.folded('c2-ladder-all'))).toBe(true); }
   expect(await page.getByTestId('c2-ladder-chip').count()).toBe(await page.evaluate(() => TeamBuyer.bands().listed));
   expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return [b.edges.length <= TeamBuyer.BANDS_MAX, b.rows.every(r => r.cells.every((c, i) => c.every(y => y.p >= b.edges[i].lo && y.p <= b.edges[i].hi))), b.totals.length === b.edges.length]; })).toEqual([true, true, true]);
   await expect(page.getByTestId('c2-ladder-sum')).toContainText('bottle sales');
   // The summary under the ladder is three lines at most, however long the list.
   expect(await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').count()).toBeLessThanOrEqual(3);
   await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  // Any card folds to its title and opens again, and the device remembers which are folded.
+  const bal = page.getByTestId('c2-balance'), foldBtn = bal.getByTestId('c2-card-fold');
+  await foldBtn.click(); await expect(foldBtn).toHaveAttribute('aria-expanded', 'false'); expect(await page.getByTestId('c2-balance-row').count()).toBe(0);
+  expect(await page.evaluate(() => TeamFold.folded('c2card-c2-balance'))).toBe(true);
+  await page.reload(); await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('c2-balance').getByTestId('c2-card-fold')).toHaveAttribute('aria-expanded', 'false');
+  await page.getByTestId('c2-balance').getByTestId('c2-card-fold').click(); expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
   // What the page says is what TeamBuyer worked out: the list's shares add up, and a markup is the bottle over its shop price.
   expect(await page.evaluate(() => { const b = TeamBuyer.balance('colour'), m = TeamBuyer.markups(), w = TeamBuyer.wines()[0], k = TeamBuyer.markup(w); return [Math.round(100 * b.reduce((a, g) => a + g.share, 0)), Math.abs(k.x - TeamBuyer._m(w.bottle) / k.retail) < 0.01, m.source]; })).toEqual([100, true, 'demo']);
   // Training has left this page: who is trained on a wine is on the Training page.

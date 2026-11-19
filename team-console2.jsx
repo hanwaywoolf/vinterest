@@ -26,7 +26,10 @@ function _c2Width(){ const ref=React.useRef(null), [w,setW]=React.useState(0);
   React.useLayoutEffect(()=>{ const el=ref.current; if(!el) return; const m=()=>setW(el.clientWidth); m(); if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(m); ro.observe(el); return ()=>ro.disconnect(); },[]);
   return [ref,w]; }
 
-function _C2Card({title,right,children,feat,style,testid,onClick,sub}){ const T=useTheme(), acc=_c2Acc(T), ref=React.useRef(null), head=React.useRef(null), top=React.useRef(null), [stick,setStick]=React.useState(false);
+function _C2Card({title,right,children,feat,style,testid,onClick,sub,fold}){ const T=useTheme(), acc=_c2Acc(T), ref=React.useRef(null), head=React.useRef(null), top=React.useRef(null), [stick,setStick]=React.useState(false);
+  // Every titled card folds to its title and opens again, remembered on the device (TeamFold) under its own key.
+  const fk=fold===false||!title?null:'c2card-'+(fold||testid||(typeof title==='string'?title:'')), [shut,setShut]=React.useState(()=>!!fk&&fk!=='c2card-'&&TeamFold.folded(fk)), can=!!fk&&fk!=='c2card-';
+  const flip=e=>{ e.stopPropagation(); setShut(v=>{ TeamFold.set(fk,!v); return !v; }); };
   // A card that holds a table keeps its title locked above the table's header as the page scrolls under them.
   React.useLayoutEffect(()=>{ const el=ref.current; if(!el||!head.current) return; const has=!!el.querySelector('table.c2sticky'); if(has!==stick) setStick(has); });
   // Until they're actually stuck the title and header are part of the card; stuck, they take a solid band (data-stuck).
@@ -42,8 +45,11 @@ function _C2Card({title,right,children,feat,style,testid,onClick,sub}){ const T=
     return ()=>{ if(ro) ro.disconnect(); if(root) root.removeEventListener('scroll',on); if(raf) cancelAnimationFrame(raf); el.removeAttribute('data-stuck'); }; },[stick]);
   return <div ref={ref} data-testid={testid} onClick={onClick} style={{background:feat?`linear-gradient(160deg, ${_alpha(acc,0.13)}, ${_alpha(acc,0.02)} 70%)`:'rgba(255,255,255,0.035)',border:`1px solid ${feat?_alpha(acc,0.34):'rgba(255,255,255,0.09)'}`,borderRadius:18,padding:'18px 20px',cursor:onClick?'pointer':'default',minWidth:0,...style}}>
     {stick&&<div ref={top} style={{height:1,marginTop:-1}}/>}
-    {(title||right||sub)&&<div ref={head} data-testid="c2-card-head" style={{marginBottom:10,...(stick?{position:'sticky',top:0,zIndex:4,margin:'-18px -20px 0',padding:'18px 20px 10px'}:{})}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10}}>{_c2Lab(T,title,feat?acc:null)}<span style={{..._c2Mut,color:T.mid,display:'flex',alignItems:'center',gap:8}}>{right}</span></div>{sub}</div>}
-    {children}</div>; }
+    {(title||right||sub)&&<div ref={head} data-testid="c2-card-head" style={{marginBottom:shut?0:10,...(stick&&!shut?{position:'sticky',top:0,zIndex:4,margin:'-18px -20px 0',padding:'18px 20px 10px'}:{})}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10}}>
+      {can?<div role="button" tabIndex={0} data-testid="c2-card-fold" aria-expanded={!shut} aria-label={(shut?'Open ':'Fold away ')+(typeof title==='string'?title:'this card')} onClick={flip} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(e); } }} style={{display:'flex',alignItems:'center',gap:8,minWidth:0,cursor:'pointer'}}>
+        <svg width="10" height="10" viewBox="0 0 10 10" style={{flexShrink:0,transform:shut?'rotate(-90deg)':'none',transition:'transform .15s'}}><path d="M1.5 3.2 5 6.8l3.5-3.6" fill="none" stroke={feat?acc:T.mid} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>{_c2Lab(T,title,feat?acc:null)}</div>:_c2Lab(T,title,feat?acc:null)}
+      {!shut&&<span style={{..._c2Mut,color:T.mid,display:'flex',alignItems:'center',gap:8}}>{right}</span>}</div>{!shut&&sub}</div>}
+    {!shut&&children}</div>; }
 /* One standout fact, three quick ones beneath it, and the page's actions on the right. */
 function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h=TeamReport.headline(section);
   return <div data-testid="c2-head" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:24,flexWrap:'wrap',marginBottom:22}}>
@@ -306,7 +312,12 @@ const _c2Chip=(T,label,on,onClick,tid)=><span key={label} role="button" data-tes
 /* The price ladder as rungs: one price band a rung, dearest at the top, on one scale for every colour. Each rung
    says what's listed there against what sells, then names its bottles colour by colour as chips that wrap, so the
    names fit on a laptop, an iPad or a phone. An empty band inside a colour's own range is said as a gap. */
-function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.bands(); if(!b) return null;
+const _C2_LADDER_PREVIEW=6;
+function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.bands(), [more,setMore]=React.useState({}), [all,setAll]=React.useState(()=>TeamFold.folded('c2-ladder-all')); if(!b) return null;
+  // A rung opens on a few of its bottles, taken in turn from each colour (the chip's outline says which); "+N more"
+  // opens that rung colour by colour, and the foot opens or closes them all (remembered).
+  const short=i=>!all&&!more[i]&&b.totals[i].n>_C2_LADDER_PREVIEW+1, few=i=>{ const cs=b.rows.map(l=>l.cells[i]), out=[]; for(let k=0;out.length<_C2_LADDER_PREVIEW&&cs.some(c=>c.length>k);k++) for(const c of cs) if(c[k]&&out.length<_C2_LADDER_PREVIEW) out.push(c[k]); return out; };
+  const long=b.totals.some(t=>t.n>_C2_LADDER_PREVIEW+1), hid=b.totals.reduce((a,t,i)=>a+(short(i)?t.n-_C2_LADDER_PREVIEW:0),0);
   const line='1px solid rgba(255,255,255,0.08)', big=b.totals.reduce((a,t)=>t.n>a.n?t:a,b.totals[0]), top=b.soldAll?b.totals.reduce((a,t)=>t.sold>a.sold?t:a,b.totals[0]):null;
   const chip=y=><TeamWineChip key={y.w.id} w={y.w} name={TeamData.nick(y.w)} price={TeamData.money(y.p)} glass={TeamData.byGlass(y.w)} testid="c2-ladder-chip" onClick={()=>open({view:'wine',id:y.w.id})}/>;
   // What the ladder says, in three lines at most: where bottles sell, the gaps a guest can't step up through, and the
@@ -326,11 +337,15 @@ function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.b
         {t.sold!=null&&<><div style={{fontSize:13,color:T.ink2}}>{t.sold} sold in four weeks <span style={{color:T.mid}}>· {b.soldAll?Math.round(100*t.sold/b.soldAll):0}%</span></div>
           <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginTop:7,maxWidth:two?170:'none'}}><div style={{height:'100%',width:`${Math.round(100*t.sold/b.maxSold)}%`,background:acc,borderRadius:3}}/></div></>}</div>
       <div style={{display:'flex',flexDirection:'column',gap:8,minWidth:0}}>
-        {b.rows.filter(l=>l.cells[i].length||l.hollow[i]).map(l=><div key={l.colour} style={{display:'flex',gap:10,alignItems:'flex-start',minWidth:0}}>
+        {short(i)?<div data-testid="c2-ladder-few" style={{display:'flex',flexWrap:'wrap',gap:6,minWidth:0}}>{few(i).map(chip)}
+          <span role="button" data-testid="c2-ladder-more" onClick={()=>setMore(m=>({...m,[i]:true}))} style={{padding:'5px 10px',borderRadius:8,border:'1px solid rgba(255,255,255,0.17)',fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>+{t.n-_C2_LADDER_PREVIEW} more</span>
+          {b.rows.filter(l=>l.hollow[i]).map(l=><div key={l.colour} data-testid="c2-ladder-gap" style={{padding:'5px 10px',borderRadius:8,border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,fontSize:13,color:_C2_TONE.note,fontFamily:C.P}}>no {l.colour.toLowerCase()} at this price</div>)}</div>
+        :b.rows.filter(l=>l.cells[i].length||l.hollow[i]).map(l=><div key={l.colour} style={{display:'flex',gap:10,alignItems:'flex-start',minWidth:0}}>
           <div style={{width:76,flexShrink:0,fontSize:13,fontWeight:500,color:T.mid,fontFamily:C.P,paddingTop:6}}>{l.colour}</div>
           <div style={{flex:1,minWidth:0,display:'flex',flexWrap:'wrap',gap:6}}>{l.cells[i].map(chip)}
             {l.hollow[i]&&<div data-testid="c2-ladder-gap" style={{padding:'5px 10px',borderRadius:8,border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,fontSize:13,color:_C2_TONE.note,fontFamily:C.P}}>nothing at this price</div>}</div></div>)}
         {!t.n&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,paddingTop:6}}>No bottles at this price.</div>}</div></div>)}
+    {long&&<div style={{borderTop:line,padding:'10px 0'}}><span role="button" data-testid="c2-ladder-all" aria-expanded={!hid} onClick={()=>{ const v=hid>0; TeamFold.set('c2-ladder-all',v); setAll(v); setMore({}); }} style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,cursor:'pointer'}}>{hid>0?`Show every bottle · ${hid} more`:'Show fewer bottles'}</span></div>}
     {sum.length>0&&<div data-testid="c2-ladder-sum" style={{borderTop:line,paddingTop:6}}><_C2Needs items={sum} open={open} tagW={80}/></div>}
   </div>; }
 function _C2Wines({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), B=TeamBuyer, ws=B.wines(), [q,setQ]=React.useState(''), [f,setF]=React.useState('all'), [dim,setDim]=React.useState('colour'), [,bump]=React.useReducer(x=>x+1,0), [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(null), listRef=React.useRef(null);
