@@ -61,7 +61,7 @@ function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h
     {actions&&<div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>{actions}</div>}
   </div>; }
 function _C2Btn({children,primary,onClick,testid}){ const T=useTheme(), acc=_c2Acc(T);
-  return <div role="button" data-testid={testid} onClick={onClick} style={{padding:primary?'10px 18px':'9px 16px',borderRadius:12,fontSize:14,fontWeight:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',background:primary?acc:'transparent',color:primary?_c2Ink():T.ink2,border:primary?'none':'1px solid rgba(255,255,255,0.17)'}}>{children}</div>; }
+  return <div role="button" data-testid={testid} onClick={onClick} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',padding:primary?'10px 18px':'9px 16px',borderRadius:12,fontSize:14,fontWeight:500,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',background:primary?acc:'transparent',color:primary?_c2Ink():T.ink2,border:primary?'none':'1px solid rgba(255,255,255,0.17)'}}>{children}</div>; }
 function _C2Kpi({label,value,unit,delta,good=true,note,onClick,testid}){ const T=useTheme();
   return <_C2Card onClick={onClick} testid={testid} style={{padding:'20px 22px 20px',display:'flex',flexDirection:'column'}}>{_c2Lab(T,label)}
     <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap',marginTop:12}}><span style={{fontSize:String(value).length>9?24:32,fontWeight:600,lineHeight:1.15,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P}}>{value}</span>{unit&&<span style={{fontSize:14,fontWeight:400,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{unit}</span>}</div>
