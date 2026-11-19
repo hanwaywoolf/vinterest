@@ -36,6 +36,15 @@ const _tPill=(T,kind,text,col)=>{ const st={glass:{border:col,color:col,bg:_alph
    size of the sentence in Where you stand, and only the name is larger (20). Weights are light: the name 600, anything
    emphasised and every label 500, the rest 400. tests/team.spec.js fails if a card strays from it. */
 const _TC_BTN={fontSize:14,fontWeight:500};
+/* The Teams button (the new console and the cards): square and hollow, small spaced capitals in the accent, filling
+   solid with the accent while the pointer is on it or it is pressed. A secondary one takes a white hairline and white
+   text. It hugs its label, never a card's width. On a card its text is the card's own 14; in the console's pages 12. */
+function TeamBtn({children,primary,small,card,onClick,testid,disabled,style}){ const T=useTheme(), acc=T.lift?T.lift(C.cr):C.cr, [hot,setHot]=React.useState(false);
+  const line=primary?acc:'rgba(255,255,255,0.22)', fill=primary?acc:'#ffffff', on=hot&&!disabled;
+  return <div role="button" data-testid={testid} data-team-btn aria-disabled={disabled||undefined} onClick={disabled?undefined:onClick}
+    onPointerEnter={e=>{ if(e.pointerType==='mouse') setHot(true); }} onPointerLeave={()=>setHot(false)} onPointerDown={()=>setHot(true)} onPointerUp={e=>{ if(e.pointerType!=='mouse') setHot(false); }} onPointerCancel={()=>setHot(false)}
+    style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxSizing:'border-box',padding:small?'9px 13px':'12px 18px',borderRadius:0,border:`1px solid ${on?fill:line}`,background:on?fill:'transparent',color:on?inkOn(fill):primary?acc:T.ink,
+      fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:1,transition:'background .12s, color .12s',userSelect:'none',...style}}>{children}</div>; }
 const _tcH=(T,t,sub)=><div style={{marginBottom:10}}><div data-card-name style={{fontSize:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
 const _tcLabel=(T,t)=><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'16px 0 8px'}}>{t}</div>;
 const _tcPill=(T,kind,text,col)=>{ const el=_tPill(T,kind,text,col); return React.cloneElement(el,{style:{...el.props.style,fontSize:14,fontWeight:500}}); };
@@ -61,7 +70,7 @@ function _TcStand({manage,st,col,what,onPractise}){ const T=useTheme(); if(!st||
   const line=st.state==='known'?`Every rung is right and fresh${st.nextDue?`; the first answer is due again ${_tDays(st.nextDue).replace('due ','')}`:''}.`:st.state==='fading'?`${st.due} answer${st.due===1?'':'s'} to refresh; a drill brings them back.`:st.next?`Next rung: ${st.next.label}.`:'Start with the first question.';
   const R=13, circ=2*Math.PI*R, part=Math.max(0,Math.min(1,st.known/st.total));
   const ring=sz=><svg width={sz} height={sz} viewBox="0 0 32 32" aria-hidden="true" style={{flexShrink:0}}><circle cx="16" cy="16" r={R} stroke={T.line} strokeWidth="3" fill="none"/><circle cx="16" cy="16" r={R} stroke={scol} strokeWidth="3" fill="none" strokeLinecap="round" strokeDasharray={`${circ*part} ${circ}`} transform="rotate(-90 16 16)"/></svg>;
-  const btn=<Btn small primary style={{..._TC_BTN,flexShrink:0}} onClick={onPractise}>{st.state==='new'?`Start this ${what}`:`Practise this ${what}`}</Btn>;
+  const btn=<TeamBtn card small primary style={{flexShrink:0}} onClick={onPractise}>{st.state==='new'?`Start this ${what}`:`Practise this ${what}`}</TeamBtn>;
   const pills=<div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:12}}>{st.rungs.map(rg=><span key={rg.k} style={{fontSize:14,fontFamily:C.P,fontWeight:500,padding:'3px 11px',borderRadius:999,border:`1px solid ${rg.done?'transparent':T.line}`,color:rg.done?T.green:st.next&&st.next.k===rg.k?T.ink:T.mid,background:rg.done?_alpha('#5FD48F',0.12):'transparent'}}>{rg.done?'✓ ':''}{rg.label}</span>)}</div>;
   return manage?<div data-testid="team-standing" style={{...tile,flex:'none',margin:'0 0 16px',padding:'14px 16px'}}>
       <div style={{display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>{ring(40)}
@@ -503,7 +512,7 @@ function TeamDrink({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id
       {sh.story&&c.story&&sec('The story',text(c.story))}
       {c.dishes&&c.dishes.length>0&&sec('With our menu',c.dishes.map((x,i)=><div key={i} style={_tcRow(T,i)}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{x.why}</div></div>))}
       {sh.alts&&c.alts&&c.alts.length>0&&sec('Offer instead',c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{..._tcRow(T,i,true),paddingLeft:12,..._tWineRule(T,o)}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; }))}
-      {!(st&&st.total)&&<div style={{display:'flex',marginTop:16}}><Btn small primary style={_TC_BTN} onClick={()=>open({view:'drill',only:id})}>Practise this drink</Btn></div>}</>}
+      {!(st&&st.total)&&<div style={{display:'flex',marginTop:16}}><TeamBtn card small primary onClick={()=>open({view:'drill',only:id})}>Practise this drink</TeamBtn></div>}</>}
     {!c&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,borderTop:`1px solid ${T.line}`,paddingTop:14,marginTop:6}}>This drink's card is written when the list is published.</div>}
   </div>; }
 /* A section of a card that folds to its title and one line, remembered per person's device (TeamFold): open by
@@ -557,14 +566,14 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
         <div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>No staff card yet</div>
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4,lineHeight:1.5}}>{manager?'Write it here, or write every missing card from the Upload tab.':'Your manager writes the staff cards from the Upload tab.'}</div>
         {err&&<div data-testid="team-card-error" style={{fontSize:14,color:'#F2B84B',fontFamily:C.P,marginTop:6}}>{err}</div>}
-        {manager&&<div style={{marginTop:10}}><Btn small primary style={_TC_BTN} onClick={writeIt}>{err?'Try again':'Write it now'}</Btn></div>}</>}</Card></div>:<>
+        {manager&&<div style={{marginTop:10}}><TeamBtn card small primary onClick={writeIt}>{err?'Try again':'Write it now'}</TeamBtn></div>}</>}</Card></div>:<>
       {/* Three tabs under the head, so nothing scrolls far: what to say, what to pour it with, what it is. */}
       <div data-testid="wine-tabs" role="tablist" style={{display:'flex',gap:4,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',borderRadius:14,padding:4,margin:'4px 0 16px'}}>{TABS.map(([k,l])=>{ const on=tab===k; return <div key={k} role="tab" aria-selected={on} data-testid={'wine-tab-'+k} onClick={()=>setTab(k)} style={{flex:1,textAlign:'center',fontSize:14,fontWeight:500,fontFamily:C.P,padding:manage?'7px 0':'9px 0',borderRadius:10,cursor:'pointer',background:on?C.cr:'transparent',color:on?inkOn(C.cr):T.ink2,boxShadow:on?`0 2px 14px ${_alpha(C.cr,0.35)}`:'none',transition:'background .15s'}}>{l}</div>; })}</div>
       {tab==='sell'&&<div data-testid="wine-pane-sell">
       {c.hook&&<div data-testid="team-hook" style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.4,padding:'2px 0 2px 12px',borderLeft:`2px solid ${col}`,marginBottom:16}}>{c.hook}</div>}
       <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:14,fontWeight:500,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
         {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.55,outline:'none',resize:'vertical'}}/>
-          <div style={{display:'flex',gap:8,marginTop:8}}><Btn small primary style={_TC_BTN} onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</Btn><Btn small style={_TC_BTN} onClick={()=>setEditing(false)}>Cancel</Btn></div>
+          <div style={{display:'flex',gap:8,marginTop:8}}><TeamBtn card small primary onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</TeamBtn><TeamBtn card small onClick={()=>setEditing(false)}>Cancel</TeamBtn></div>
           <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Your words replace the written line on every phone at once; the questions stay as they are.</div></div>
         :<div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" data-card-big style={{flex:1,fontSize:manage?17:19,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.45,letterSpacing:'-0.005em'}}>{c.pitch}</div>
           <div role="button" aria-label="Hear it said" data-testid="team-pitch-say" onClick={()=>{ TeamVoice.unlock(); TeamVoice.speak(c.pitch); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}}>{_tcSpk(T.lift(C.cr),16)}</div></div>}</div>
@@ -635,7 +644,7 @@ function TeamDish({id,open,pid,manage}){ const T=useTheme(), cr=T.lift(C.cr), x=
       tiles={[price&&{cap:'Price',big:price,bigTestid:'dish-price'},pr&&pr.first&&pr.of>0&&{cap:'Trained on its wine',big:`${pr.people.length} of ${pr.of}`,small:`know ${TeamData.nick(pr.first)}`,wide:true,testid:'team-known-tile'}]}/>
     <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',marginBottom:12}}>
       <div style={{marginBottom:-12}}>{_tcSayIt(T,()=>{ TeamVoice.unlock(); TeamVoice.speak(x.name,{pace:'slow'}); })}</div>
-      {practise&&<Btn small primary style={{..._TC_BTN,marginLeft:'auto'}} onClick={()=>open({view:'drill',only:id})}>Practise this dish</Btn>}</div>
+      {practise&&<TeamBtn card small primary style={{marginLeft:'auto'}} onClick={()=>open({view:'drill',only:id})}>Practise this dish</TeamBtn>}</div>
     <div style={{fontSize:14,fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.1em'}}>Say it to a guest</div>
     <div data-card-big style={{marginTop:8}}><div data-testid="dish-say" style={{fontSize:manage?17:19,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.45,letterSpacing:'-0.005em'}}>{(c&&c.say)||x.desc||''}</div></div>
     {c&&c.say&&x.desc&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>The menu says: {x.desc}</div>}
