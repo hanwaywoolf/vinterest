@@ -2727,7 +2727,11 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
   await page.getByTestId('c2-wine-filter-all').click();
   for (const t of ['Glasses sold', 'Bottles sold', 'Drinking window', 'On the menu', 'Shop price', 'Markup']) await expect(page.getByTestId('c2-list')).toContainText(t);
-  expect(await page.getByTestId('c2-wine-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  // Needs you is a button with its count; the dialog lists them, Done clears one, and it stays cleared.
+  { const n = Number(await page.getByTestId('c2-needs-count').innerText()); expect(n).toBeGreaterThan(1); await page.getByTestId('c2-needs-btn').click();
+    expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1); await page.getByTestId('c2-need-done').first().click();
+    expect(await page.getByTestId('c2-needs').getByTestId('c2-need').count()).toBe(n - 1); await page.getByTestId('c2-needs-close').click(); await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n - 1));
+    await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs-restore').click(); await page.getByTestId('c2-needs-close').click(); await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n)); }
   expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
   const colours = await page.getByTestId('c2-balance').innerText();
   await page.getByTestId('c2-balance-grape').click(); expect(await page.getByTestId('c2-balance').innerText()).not.toBe(colours);
@@ -2784,7 +2788,7 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-dish-bottle').filter({ hasNotText: 'The same wine' }).count()).toBeGreaterThan(15);
   await expect(page.getByTestId('c2-kpi-pairglass')).toContainText('glass'); await expect(page.getByTestId('c2-kpi-pairbottle')).toContainText('bottle');
   await expect(page.getByTestId('c2-pair-spread').getByTestId('c2-spread')).toHaveCount(2);
-  expect(await page.getByTestId('c2-menu-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await page.getByTestId('c2-needs-btn').click(); expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1); await page.getByTestId('c2-needs-close').click();
   // Every table's header stays in view as it scrolls, and the side column scrolls by itself beside the long table.
   expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
   await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-dishes"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 500; });
@@ -2792,7 +2796,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // The card's title is locked above the header, so the header never floats alone.
   await expect(page.getByTestId('c2-dishes')).toHaveAttribute('data-stuck', '');
   expect(await page.getByTestId('c2-dishes').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none']; })).toEqual([0, true]);
-  expect(await page.getByTestId('c2-side').evaluate(el => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'); return [getComputedStyle(el).overflowY, el.clientHeight <= sc.clientHeight, el.scrollHeight > el.clientHeight]; })).toEqual(['auto', true, true]);
+  // The other cards sit under the table now, so the dishes run the page's width.
+  expect(await page.evaluate(() => { const h = document.querySelector('[data-testid="c2-head"]').parentElement.getBoundingClientRect(), d = document.querySelector('[data-k="c2-dishes"]').getBoundingClientRect(), sd = document.querySelector('[data-testid="c2-side"]').getBoundingClientRect(); return [d.width > h.width - 120, sd.top >= d.bottom - 1]; })).toEqual([true, true]);
   await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
   // Under every header but the first, the data is centred beneath it.
   expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(2)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
@@ -2998,21 +3003,21 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
     await page.mouse.move(t.x + 30, Math.min(880, Math.max(90, t.y + 80)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
   await expect.poll(async () => (await order()).detail.slice(0, 2)).toEqual(['c2-sells', 'c2-stands']);
-  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-pair-spread', 'c2-trains']);
   // The full-width tables move too: the dishes table on Menu and Best sellers on Sales Insights are cards like the rest.
   expect((await order()).main).toEqual(['c2-dishes']); await expect(page.locator('[data-k="c2-dishes"] [data-testid="c2-grip"]')).toHaveCount(1);
   expect(await page.evaluate(() => { const def = { top: ['c2-mix'], left: ['a'], right: ['b'], bottom: ['sales-wines'] }; return TeamBoard.arrange({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] }, def); })).toEqual({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] });
   // Every side card moved under the table: the empty column folds away and the table takes the page's width; a drag brings it back to drop into.
-  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { side: ['c2-menu-needs', 'c2-pair-spread', 'c2-trains'], main: ['c2-dishes'] };
+  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { side: ['c2-pair-spread', 'c2-trains'], main: ['c2-dishes'] };
     for (const k of def.side) TeamBoard.move(pid, 'menu', def, k, 'main', null, true); });
   await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-sales').click(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click();
-  expect((await order()).main).toEqual(['c2-dishes', 'c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  expect((await order()).main).toEqual(['c2-dishes', 'c2-pair-spread', 'c2-trains']);
   await expect(page.getByTestId('c2-side')).toHaveCount(0); await expect(page.getByTestId('c2-stack-side')).toHaveCount(0);
   expect(await page.evaluate(() => { const h = document.querySelector('[data-testid="c2-head"]').parentElement.getBoundingClientRect(), d = document.querySelector('[data-k="c2-dishes"]').getBoundingClientRect(); return d.width > h.width - 120; })).toBe(true);
   { const g4 = page.locator('[data-k="c2-trains"] [data-testid="c2-grip"]'); await g4.scrollIntoViewIfNeeded(); const a = await g4.boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(150);
     await expect(page.getByTestId('c2-stack-side')).toHaveCount(1); await page.mouse.up(); await page.keyboard.press('Escape'); }
-  await page.getByTestId(await page.getByTestId('c2-note-reset').count() ? 'c2-note-reset' : 'c2-board-reset').click(); expect((await order()).side).toEqual(['c2-menu-needs', 'c2-pair-spread', 'c2-trains']);
+  await page.getByTestId(await page.getByTestId('c2-note-reset').count() ? 'c2-note-reset' : 'c2-board-reset').click(); expect((await order()).side).toEqual(['c2-pair-spread', 'c2-trains']);
   // A new card the page gains later joins its own column, and one it loses is dropped.
   expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
   // The drawer offers no way to move the navigation to the top and no phone view.
@@ -3086,7 +3091,7 @@ test('the new console\'s Cocktails page', async ({ browser }) => {
   await page.getByTestId('c2-mix-filter-all').click();
   await page.getByTestId('c2-mix-row').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
   await page.getByTestId('c2-mix-person').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
-  expect(await page.locator('[data-testid="c2-stack-side"] > [data-testid="c2-drag"]').count()).toBe(3);
+  expect(await page.locator('[data-testid="c2-stack-side"] > [data-testid="c2-drag"]').count()).toBe(2);
   expect((await page.getByTestId('console-cocktails').innerText()).match(/know(s|n)? it|known by|the floor|overdue/i)).toBe(null);
   expect(errors).toEqual([]); await ctx.close();
 });
