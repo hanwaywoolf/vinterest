@@ -18,7 +18,7 @@ const _c2Acc=T=>(TeamData.brand()||{}).accent||TeamBrand.GOLD;
 const _c2Ink=()=>inkOn((TeamData.brand()||{}).accent||TeamBrand.GOLD);
 const _C2_TONE={good:'#6FD79C',note:'#F2B84B',bad:'#F58B7C',mut:'#8C8C92'};
 const _c2Lab=(T,t,col)=><div style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',color:col||T.mid,fontWeight:500,fontFamily:C.P}}>{t}</div>;
-const _c2Pill=(text,col)=><span style={{display:'inline-block',padding:'2px 9px',borderRadius:999,fontSize:12,fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',background:_alpha(col,0.14),color:col}}>{text}</span>;
+const _c2Pill=(text,col)=><span data-pill style={{display:'inline-block',padding:'3px 8px',fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',background:_alpha(col,0.14),border:`1px solid ${_alpha(col,0.5)}`,color:'#fff',..._T_CAPS,fontSize:'11px'}}>{text}</span>;
 const _c2Known=(n,of)=>_c2Pill(`${n} of ${of} trained`,of&&n>=of?_C2_TONE.good:n>=Math.ceil(of/2)?_C2_TONE.note:_C2_TONE.bad);
 const _c2Mut={fontSize:13,fontFamily:C.P};
 /* The page's own width, so a chart is drawn at the size it's shown and the layout folds to one column when narrow. */
@@ -337,12 +337,12 @@ function _C2Ladder({open,two}){ const T=useTheme(), acc=_c2Acc(T), b=TeamBuyer.b
           <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginTop:7,maxWidth:two?170:'none'}}><div style={{height:'100%',width:`${Math.round(100*t.sold/b.maxSold)}%`,background:acc,borderRadius:3}}/></div></>}</div>
       <div style={{display:'flex',flexDirection:'column',gap:8,minWidth:0}}>
         {short(i)?<div data-testid="c2-ladder-few" style={{display:'flex',flexWrap:'wrap',gap:6,minWidth:0}}>{few(i).map(chip)}
-          <span role="button" data-testid="c2-ladder-more" onClick={()=>setMore(m=>({...m,[i]:true}))} style={{padding:'5px 10px',borderRadius:8,border:'1px solid rgba(255,255,255,0.17)',fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>+{t.n-_C2_LADDER_PREVIEW} more</span>
-          {b.rows.filter(l=>l.hollow[i]).map(l=><div key={l.colour} data-testid="c2-ladder-gap" style={{padding:'5px 10px',borderRadius:8,border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,fontSize:13,color:_C2_TONE.note,fontFamily:C.P}}>no {l.colour.toLowerCase()} at this price</div>)}</div>
+          <span role="button" data-testid="c2-ladder-more" onClick={()=>setMore(m=>({...m,[i]:true}))} style={{padding:'5px 10px',border:'1px solid rgba(255,255,255,0.17)',color:T.ink2,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',..._T_CAPS}}>+{t.n-_C2_LADDER_PREVIEW} more</span>
+          {b.rows.filter(l=>l.hollow[i]).map(l=><div key={l.colour} data-testid="c2-ladder-gap" style={{padding:'5px 10px',border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,color:_C2_TONE.note,fontFamily:C.P,..._T_CAPS}}>no {l.colour.toLowerCase()} at this price</div>)}</div>
         :b.rows.filter(l=>l.cells[i].length||l.hollow[i]).map(l=><div key={l.colour} style={{display:'flex',gap:10,alignItems:'flex-start',minWidth:0}}>
           <div style={{width:76,flexShrink:0,fontSize:13,fontWeight:500,color:T.mid,fontFamily:C.P,paddingTop:6}}>{l.colour}</div>
           <div style={{flex:1,minWidth:0,display:'flex',flexWrap:'wrap',gap:6}}>{l.cells[i].map(chip)}
-            {l.hollow[i]&&<div data-testid="c2-ladder-gap" style={{padding:'5px 10px',borderRadius:8,border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,fontSize:13,color:_C2_TONE.note,fontFamily:C.P}}>nothing at this price</div>}</div></div>)}
+            {l.hollow[i]&&<div data-testid="c2-ladder-gap" style={{padding:'5px 10px',border:`1px dashed ${_alpha(_C2_TONE.note,0.55)}`,color:_C2_TONE.note,fontFamily:C.P,..._T_CAPS}}>nothing at this price</div>}</div></div>)}
         {!t.n&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,paddingTop:6}}>No bottles at this price.</div>}</div></div>)}
     {long&&<div style={{borderTop:line,padding:'10px 0'}}><span role="button" data-testid="c2-ladder-all" aria-expanded={!hid} onClick={()=>{ const v=hid>0; TeamFold.set('c2-ladder-all',v); setAll(v); setMore({}); }} style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,cursor:'pointer'}}>{hid>0?`Show every bottle · ${hid} more`:'Show fewer bottles'}</span></div>}
     {sum.length>0&&<div data-testid="c2-ladder-sum" style={{borderTop:line,paddingTop:6}}><_C2Needs items={sum} open={open} tagW={80}/></div>}
@@ -557,7 +557,7 @@ function _C2PlanDraft({plan,onPush,onDiscard,bump}){ const T=useTheme(), acc=_c2
       {open===i&&p.qs.map((q,k)=>{ const sub=q.wine?TeamData.wine(q.wine):TeamData.dish(q.dish), c=_c2Counts(q); return <div key={q.id} data-testid="c2-draft-q" style={{margin:'10px 0 0 0',padding:'10px 12px',borderRadius:12,background:'rgba(0,0,0,0.3)',border:'1px solid rgba(255,255,255,0.07)'}}>
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{sub?(q.wine?TeamData.short(sub):sub.name.split(',')[0]):''}{c?<span style={{color:_C2_TONE.good}}> · counts towards {c}</span>:<span> · extra practice</span>}</div>
         <div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{q.q}</div>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{q.opts.map((o,x)=><span key={x} style={{fontSize:13,fontFamily:C.P,padding:'3px 10px',borderRadius:999,border:`1px solid ${x===q.a?_alpha(_C2_TONE.good,0.5):'rgba(255,255,255,0.12)'}`,color:x===q.a?_C2_TONE.good:T.ink2}}>{x===q.a?'✓ ':''}{o}</span>)}</div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginTop:6}}>{q.opts.map((o,x)=><span key={x} style={{fontSize:13,fontFamily:C.P,padding:'3px 10px',borderRadius:0,border:`1px solid ${x===q.a?_alpha(_C2_TONE.good,0.5):'rgba(255,255,255,0.12)'}`,color:x===q.a?_C2_TONE.good:T.ink2}}>{x===q.a?'✓ ':''}{o}</span>)}</div>
         {q.why&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:6}}>{q.why}</div>}</div>; })}</div>)}</div>
     <div style={{display:'flex',gap:10,marginTop:12}}><_C2Btn primary testid="c2-draft-push" onClick={onPush}>Push to {f}</_C2Btn><_C2Btn testid="c2-draft-discard" onClick={onDiscard}>Discard</_C2Btn></div>
   </_C2Card>; }

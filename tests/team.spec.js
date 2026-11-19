@@ -240,7 +240,7 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   expect(lower).toEqual([]);
   await expect(page.getByTestId('team-cocktail')).toContainText('Gin');
   // The drill asks a cocktail question as four options.
-  await page.getByText(/Practise this cocktail|Start this cocktail/).click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   await expect(page.getByTestId('drill-opt')).toHaveCount(4);
   // The console has a Cocktails section beside Wines.
   await page.goto(`${BASE}/team/?view=console`);
@@ -781,7 +781,7 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
   await page.goto(`${BASE}/team/`);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Nyetimber Classic Cuvée').click();
-  await page.getByText('Practise this wine').first().click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   const seen = [];
   for (let i = 0; i < 5; i++) {
     const q = page.getByTestId('drill-q'); if (!(await q.isVisible().catch(() => false))) break;
@@ -2185,7 +2185,7 @@ test('a drill about one wine never asks which wine: its table question asks only
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').filter({ hasText: 'Tondonia' }).first().click();
-  await page.getByText(/Start this wine|Practise this wine/).click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
   const seen = await page.evaluate(() => [...document.querySelectorAll('[data-testid="team-drill"]')].length);
   expect(seen).toBe(1);
@@ -2632,7 +2632,7 @@ for (const seed of CARD_SEEDS) {
       root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
         const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
         // The name, the prices and the line to say are a card's display text (data-card-big); everything else is one size.
-        if ((!el.closest('[data-card-big]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+        if ((!el.closest('[data-card-big],[data-pill]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
       return bad; });
     // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
