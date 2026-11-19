@@ -162,7 +162,7 @@ function _CTour({narrow,setSection,onEnd}){ const T=useTheme(), cr=T.lift(C.cr);
   const pos=!rect?{left:Math.max(12,(vw-W)/2),top:Math.max(12,(vh-cardH)/2)}
     :narrow?{left:12,bottom:12}
     :{left:Math.min(vw-W-12,rect.x+rect.w+18),top:Math.max(12,Math.min(vh-cardH-12,rect.y-10))};
-  const btn=(label,click,primary,testid)=><div role="button" data-testid={testid} onClick={click} style={{padding:'9px 16px',borderRadius:10,background:primary?C.cr:'transparent',border:`1px solid ${primary?C.cr:T.line}`,color:primary?'#fff':T.ink2,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</div>;
+  const btn=(label,click,primary,testid)=><div role="button" data-testid={testid} onClick={click} style={{padding:'9px 16px',borderRadius:10,background:primary?C.cr:'transparent',border:`1px solid ${primary?C.cr:T.line}`,color:primary?inkOn(C.cr):T.ink2,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</div>;
   return <div data-testid="console-tour" role="dialog" aria-modal="true" aria-label="A tour of the console" style={{position:'fixed',inset:0,zIndex:60}}>
     {/* Takes every click meant for the page behind; the dimming is the lit control's own shadow, or this layer's when nothing is lit. */}
     <div style={{position:'absolute',inset:0,background:rect?'transparent':'rgba(0,0,0,0.62)'}}/>

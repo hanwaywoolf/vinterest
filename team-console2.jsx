@@ -14,7 +14,8 @@
    figure is TeamReport's. Where the console can't know something yet (a dish going out with its wine, readiness week by
    week) only a demo restaurant draws it, tagged Demo data. */
 const _c2Acc=T=>(TeamData.brand()||{}).accent||TeamBrand.GOLD;
-const _c2Ink=()=>(TeamData.brand()||{}).accent?'#15110A':'#fff';
+/* Text on a fill of the accent: dark or white, whichever reads (gold takes dark). */
+const _c2Ink=()=>inkOn((TeamData.brand()||{}).accent||TeamBrand.GOLD);
 const _C2_TONE={good:'#6FD79C',note:'#F2B84B',bad:'#F58B7C',mut:'#8C8C92'};
 const _c2Lab=(T,t,col)=><div style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',fontSize:12,letterSpacing:'0.09em',textTransform:'uppercase',color:col||T.mid,fontWeight:500,fontFamily:C.P}}>{t}</div>;
 const _c2Pill=(text,col)=><span style={{display:'inline-block',padding:'2px 9px',borderRadius:999,fontSize:12,fontWeight:500,fontFamily:C.P,whiteSpace:'nowrap',background:_alpha(col,0.14),color:col}}>{text}</span>;
