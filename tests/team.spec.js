@@ -2709,8 +2709,14 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-nav-sales').click();
   await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
   // Every line of the briefing is what the sales say, then what to do; nothing in the console's own shorthand.
+  // It sits behind a button in the page's head with its count, as Needs you does on the other pages.
+  await expect(page.getByTestId('sales-brief')).toHaveCount(0); await expect(page.getByTestId('c2-needs-btn')).toContainText('What you need to know');
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); await expect(page.getByTestId('sales-brief')).toContainText(/things? to know/);
   expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
-  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/); await page.getByTestId('c2-needs-close').click();
+  // Best sellers is the first card on the page, above Wine sales by week.
+  expect(await page.evaluate(() => { const y = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect().top; return y('sales-wines') < y('sales-trend') && y('sales-wines') < y('c2-upside') && y('c2-mix') > y('sales-trend'); })).toBe(true);
   await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
   const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
   await page.getByTestId('c2-chart-bottles').click();
@@ -2980,15 +2986,15 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
   // Drag "Where the next £ is" from the left column to the top of the right one.
   const order = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="c2-stack-"]')].map(s => [s.getAttribute('data-testid').slice(9), [...s.querySelectorAll(':scope>[data-testid="c2-drag"]')].map(d => d.getAttribute('data-k'))])));
-  expect(await order()).toEqual({ top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
   const g = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g.scrollIntoViewIfNeeded();
   const gb = await g.boundingBox(), tb = await page.locator('[data-k="sales-servers"]').boundingBox();
   await page.mouse.move(gb.x + 24, gb.y + 8); await page.mouse.down(); await page.mouse.move(gb.x + 60, gb.y + 30, { steps: 5 }); await page.waitForTimeout(80);
   await page.mouse.move(tb.x + 200, Math.min(880, Math.max(90, tb.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up();
-  await expect.poll(order).toEqual({ top: ['c2-mix'], left: ['sales-brief'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  await expect.poll(order).toEqual({ top: ['sales-wines'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] }); // the emptied left column folds away
   // A mistake is one step back: Undo (or Ctrl+Z) puts the card where it was, and the move can be made again.
   await expect(page.getByTestId('c2-board-note')).toContainText('Card moved');
-  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['sales-brief', 'c2-upside']);
+  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['c2-upside']);
   // Undone back to the page's own layout, the pill says so and fades by itself.
   await expect(page.getByTestId('c2-board-note')).toContainText('Move undone'); await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 });
   // A move asks: Undo, Default layout or Save. Save keeps it and the pill fades away; the way back to the default stays at the foot.
@@ -3003,20 +3009,21 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   expect((await order()).right[1]).toBe('c2-upside');
   await page.getByTestId('c2-board-reset').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Back to the default layout');
   await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toHaveCount(0);
-  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] };
+  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] };
     TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-servers', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
   await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
   expect((await order()).right[1]).toBe('c2-upside');
   // A card only goes where it fits: Best sellers needs the full width, so the narrow left column won't take it.
   expect(await page.evaluate(() => [TeamBoard.fits(860, 430), TeamBoard.fits(860, 1300), TeamBoard.fits(420, 900, 2), TeamBoard.fits(520, 900, 2), TeamBoard.fits(520, 900, 2, 2)])).toEqual([false, true, true, false, true]);
-  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="sales-brief"]').boundingBox();
+  await page.getByTestId('c2-board-reset').click(); // back to two columns, so there is a narrow one to refuse it
+  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="c2-upside"]').boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
     await page.mouse.move(t.x + 100, Math.min(880, Math.max(40, t.y + 40)), { steps: 10 }); await page.waitForTimeout(150);
     await expect(page.getByTestId('c2-stack-left')).toHaveAttribute('data-fits', 'no'); await expect(page.getByTestId('c2-stack-top')).toHaveAttribute('data-fits', 'yes');
     await page.mouse.up(); await page.waitForTimeout(200); }
-  expect((await order()).bottom).toEqual(['sales-wines']);
+  expect((await order()).top).toEqual(['sales-wines']);
   // It's kept: another section and back, and after a reload.
-  await page.getByTestId('c2-board-reset').click(); expect(await order()).toEqual({ top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
   // Team's cards for a person sit two across and move the same way: About swapped in front of Where they stand.
   await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-team').click();
   expect((await order()).detail).toEqual(['c2-stands', 'c2-sells', 'c2-next', 'c2-vinny', 'c2-bespoke']);
