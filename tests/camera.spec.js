@@ -219,3 +219,19 @@ test('a tap on the frame focuses there and shows a ring', async ({ context, page
   expect(f[0].pointsOfInterest[0].x).toBeLessThan(0.6);
   await expect(page.getByTestId('focus-ring')).toHaveCount(0, { timeout: 3000 });
 });
+
+// A vintage printed only on the neck or a seal was dropped as too new: the prompt says to look there
+// and carries this year.
+test('the label prompt sent with a photo asks for the neck and seal and carries this year', async ({ context, page }) => {
+  const reqs = [];
+  await stubNetwork(context, { claudeRequests: reqs, claudeText: () => new Promise(() => {}) });
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_region: 'uk' });
+  await page.goto(`${BASE}/#camera`);
+  await expect(page.locator('#root video')).toHaveCSS('opacity', '0.88');
+  await page.getByLabel('Take photo').click();
+  await expect.poll(() => reqs.filter((r) => r.purpose === 'label_scan').length).toBe(1);
+  const text = reqs.find((r) => r.purpose === 'label_scan').messages[0].content[1].text;
+  expect(text).toContain('neck label');
+  expect(text).toContain(`The current year is ${new Date().getFullYear()}`);
+  expect(text).not.toContain('{{');
+});

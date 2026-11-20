@@ -142,7 +142,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
     try{
       const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-        {type:'text',text:_loadTextSync('prompts/label-scan.txt')}
+        {type:'text',text:ScanFlow.labelPrompt()}
       ]}]});
       const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');

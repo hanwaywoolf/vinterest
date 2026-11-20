@@ -51,6 +51,10 @@ const ScanFlow = {
     return Object.keys(c).length?c:null;
   },
 
+  /* The label-reading prompt with this year filled in: a vintage on the neck or a seal is read even
+     when it's last year's or this year's, which the model otherwise took for too new and dropped. */
+  labelPrompt(){ return ContentEngine.fillTpl(_loadTextSync('prompts/label-scan.txt'),{year:new Date().getFullYear()}); },
+
   /* A wine saved from a wine list has no tasting notes or food pairings (the list prompt only reads
      name, type, region, grape and style), and often no grapes. Its screen fills them in once
      (purpose wine_details, prompts/wine-details.txt) and they're saved onto the wine, so it never
