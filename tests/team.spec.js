@@ -2677,7 +2677,11 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // needs the manager as what's so and what to do.
   await expect(page.getByTestId('c2-kpi-pairing')).toContainText('pairing');
   await expect(page.getByTestId('c2-lift')).toContainText('×'); expect(await page.getByTestId('c2-lift-row').count()).toBeGreaterThan(1);
-  expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  // Needs you is a button in the page's head with how many are left, as on Wines, Cocktails and Menu: no card on the page.
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); expect(Number(await page.getByTestId('c2-needs-count').innerText())).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('c2-needs')).not.toContainText(/know(s|n)? it|known by|the floor/i); await page.getByTestId('c2-needs-close').click();
   await expect(page.getByTestId('console-dash')).not.toContainText(/know(s|n)? it|known by/);
   await expect(page.getByTestId('console-dash')).not.toContainText(/the floor/i);
   // Training's worth is said in weeks, and a wine can be put first for the people not trained on it.
@@ -2686,8 +2690,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // How far training has spread leaves room to grow: whole team, at least half, fewer.
   await expect(page.getByTestId('c2-spread').first()).toContainText('whole team trained');
   // A line of Needs you opens a plan: where things stand, then steps, with a button where the console can do one.
-  await page.getByTestId('c2-needs').getByTestId('c2-need').first().click();
-  await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
+  await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs').getByTestId('c2-need').first().locator('[role="button"]').first().click();
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
   await page.getByTestId('c2-plan-do').first().click(); await expect(page.getByTestId('c2-plan-do').first()).toContainText('Done');
   await page.getByTestId('c2-plan-close').click();
   // A figure opens the card it summarises.
