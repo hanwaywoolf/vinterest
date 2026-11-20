@@ -162,7 +162,7 @@ function _CTour({narrow,setSection,onEnd}){ const T=useTheme(), cr=T.lift(C.cr);
   const pos=!rect?{left:Math.max(12,(vw-W)/2),top:Math.max(12,(vh-cardH)/2)}
     :narrow?{left:12,bottom:12}
     :{left:Math.min(vw-W-12,rect.x+rect.w+18),top:Math.max(12,Math.min(vh-cardH-12,rect.y-10))};
-  const btn=(label,click,primary,testid)=><div role="button" data-testid={testid} onClick={click} style={{padding:'9px 16px',borderRadius:10,background:primary?C.cr:'transparent',border:`1px solid ${primary?C.cr:T.line}`,color:primary?'#fff':T.ink2,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</div>;
+  const btn=(label,click,primary,testid)=><div role="button" data-testid={testid} onClick={click} style={{padding:'9px 16px',borderRadius:10,background:primary?C.cr:'transparent',border:`1px solid ${primary?C.cr:T.line}`,color:primary?inkOn(C.cr):T.ink2,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</div>;
   return <div data-testid="console-tour" role="dialog" aria-modal="true" aria-label="A tour of the console" style={{position:'fixed',inset:0,zIndex:60}}>
     {/* Takes every click meant for the page behind; the dimming is the lit control's own shadow, or this layer's when nothing is lit. */}
     <div style={{position:'absolute',inset:0,background:rect?'transparent':'rgba(0,0,0,0.62)'}}/>
@@ -197,11 +197,11 @@ function _CViewToggle({phone,onPhone,onConsole,compact}){ const T=useTheme(), cr
   const seg=(on,label,click,testid)=><div role="button" aria-pressed={on} data-testid={testid} onClick={click} style={{flex:1,textAlign:'center',padding:compact?'5px 10px':'6px 0',borderRadius:9,background:on?T.soft:'transparent',color:on?T.ink:T.mid,fontSize:12,fontWeight:on?700:500,fontFamily:C.P,cursor:on?'default':'pointer',whiteSpace:'nowrap',border:`1px solid ${on?cr:'transparent'}`}}>{label}</div>;
   return <div data-testid="console-view-toggle" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,marginTop:compact?0:12,flexShrink:0}}>{seg(!phone,'Console',onConsole,'view-console')}{seg(phone,'Phone view',onPhone,'console-who')}</div>; }
 /* A detail opened from a table or a bar: a wine's card, a dish's pairings or a person's ladder, in a drawer. */
-function _CPanel({panel,me,open,close,narrow}){ const T=useTheme();
-  const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='cocktail'?<TeamCocktail id={panel.id} pid={me.id} open={open}/>:panel.view==='dish'?<TeamDish id={panel.id} open={open}/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
+function _CPanel({panel,me,open,close,narrow,black}){ const T=useTheme();
+  const body=panel.view==='wine'?<TeamWine id={panel.id} pid={me.id} open={open} manage/>:panel.view==='cocktail'?<TeamCocktail id={panel.id} pid={me.id} open={open} manage/>:panel.view==='dish'?<TeamDish id={panel.id} open={open} manage/>:panel.view==='person'?<_CPerson id={panel.id} open={open}/>:null;
   // A wider drawer over a dimmed page: the content behind it isn't meant to be read while it's open, and a tap on the dim closes it.
   return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,zIndex:20,background:'rgba(0,0,0,0.45)'}}/>
-  <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:T.card,borderLeft:`1px solid ${T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:'16px 22px 40px',zIndex:21}} data-scroll>
+  <div data-testid="console-panel" style={{position:'absolute',top:0,right:0,bottom:0,width:narrow?'100%':'min(600px, 72%)',background:black?`radial-gradient(90% 320px at 60% 0%, ${_alpha(C.cr,0.09)}, transparent 70%), #000`:T.card,borderLeft:`1px solid ${black?'rgba(255,255,255,0.09)':T.line}`,boxShadow:T.shadow,overflowY:'auto',padding:black?'18px 28px 44px':'16px 22px 40px',zIndex:21}} data-scroll>
     <div style={{display:'flex',justifyContent:'flex-end',marginBottom:6}}><div role="button" aria-label="Close" data-testid="console-panel-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:T.ink,fontFamily:C.P,fontSize:16}}>×</div></div>
     {body}
   </div></>; }

@@ -855,7 +855,10 @@ Object.assign(window,{TeamData,TeamSample});
 const TeamBrand = {
   _crimson:null,
   get(){ return TeamData.brand(); },
-  apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
+  /* The console is gold for a restaurant with no accent of its own: crimson there read as an alarm beside the
+     red of a fall or a gap. The staff app keeps Vinterest's crimson. */
+  GOLD:'#D4A84B',
+  apply(console){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:console?this.GOLD:this._crimson; return b; },
 };
 Object.assign(window,{TeamBrand});
 
@@ -891,10 +894,23 @@ Object.assign(window,{TeamTour});
 /* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
    synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
    stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */
+/* What a console page's "Needs you" has had cleared (docs/business.md "Needs you"): each item is known by its tag and
+   what it says, so one that's been dealt with or dismissed stays away until the facts behind it change and it says
+   something new. Kept on the device, per page. */
+const TeamNeeds = {
+  KEY:'vbiz_needs_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  id(b){ const t=String(b.tag||'')+'|'+String(b.fact||b.title||''); let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  cleared(page){ return this._all()[page]||{}; },
+  left(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>!c[this.id(b)]); },
+  gone(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>c[this.id(b)]).length; },
+  clear(page,b){ const a=this._all(); a[page]={...(a[page]||{}),[this.id(b)]:Date.now()}; Store.setJSON(this.KEY,a); },
+  restore(page){ const a=this._all(); delete a[page]; Store.setJSON(this.KEY,a); },
+};
 const TeamFold = {
   KEY:'vbiz_fold_v1',
   _all(){ return Store.getJSON(this.KEY,{})||{}; },
   folded(k,def=false){ const v=this._all()[k]; return typeof v==='boolean'?v:def; },
   set(k,v){ const a=this._all(); a[k]=!!v; Store.setJSON(this.KEY,a); },
 };
-Object.assign(window,{TeamFold});
+Object.assign(window,{TeamFold,TeamNeeds});
