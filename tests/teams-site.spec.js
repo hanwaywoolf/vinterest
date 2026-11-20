@@ -535,3 +535,12 @@ test('the page generator reads a seed and drafts a page the build accepts', asyn
   expect(page).toContain('data-per="week"'); expect(page).toContain("Today's menu, paired before service."); expect(page).not.toMatch(/undefined|NaN/);
   expect(render(a, { seed: 'social', slug: 'x', demo: 'https://example.com/', source: '', logo: '', aspect: 0 })).not.toContain('paired before service');
 });
+
+// The pricing cards share their rows: a name that wraps in one card never drops its price line below its neighbours'.
+test('the pricing cards line up: price, list and button level across the row', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  await page.goto(BASE + '/pricing');
+  const tops = await page.evaluate(() => ['.price', 'ul', '.btn'].map((s) => Array.from(document.querySelectorAll('.tier ' + s)).map((e) => Math.round(e.getBoundingClientRect().top))));
+  for (const row of tops) { expect(row.length).toBe(4); expect(new Set(row).size, row.join(' ')).toBe(1); }
+  await page.close();
+});
