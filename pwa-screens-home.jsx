@@ -172,7 +172,7 @@ function WaitingOnYou({nav}){ const T=useTheme();
     {toScore.slice(0,3).map(w=>(
       <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
           <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not rated yet</div>
         </div>
         <span style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0}}>Rate it →</span>
@@ -298,7 +298,7 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Recently scanned */}
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),WineDNA.shownName(w),<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
             w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.tone[ParkerScale.tone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
               :<span style={{fontSize:13,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}

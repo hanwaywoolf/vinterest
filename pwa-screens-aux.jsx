@@ -187,7 +187,7 @@ function TasteProfileScreen({nav,back,showPro}){
                 <Icon n="wine" sz={14} col={c.col}/>
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
                 <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
                   {w.region&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region}</span>}
                   {w.rating>0&&<><span style={{fontSize:13,color:C.line,fontFamily:C.P}}>·</span><span style={{fontSize:13,fontWeight:700,color:C.amber,fontFamily:C.P}}>{w.rating}/100</span></>}
@@ -272,7 +272,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){ const T=useTh
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {saved&&<Icon n="bookmark" sz={14} col={T.mid}/>}
-          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
         </div>
         {/* Favourite (the heart on the wine's screen), the country's flag, then producer · region · year. */}
         <div style={{display:'flex',alignItems:'center',gap:5,marginTop:1,minWidth:0}}>
@@ -523,7 +523,7 @@ function RestaurantScript({back}){
                 <Icon n="wine" sz={14} col={C.cr}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</div>
+                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{WineDNA.shownName(w)}</div>
                 <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{w.sub}</div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
@@ -720,7 +720,7 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                    <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
+                    <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{WineDNA.shownName(w)}</div>
                     {m&&m.pct!=null
                       ?<div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:mCol+'14',flexShrink:0}}>
                         <span style={{fontSize:16,fontWeight:700,color:mCol,fontFamily:C.P}}>{m.pct}%</span>

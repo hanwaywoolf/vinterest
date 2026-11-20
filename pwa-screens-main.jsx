@@ -146,6 +146,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       ]}]});
       const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
+      // The year has its own place: a name read as "Viña Ardanza Reserva 2016" is saved without it.
+      if(wine.name&&wine.vintage) wine.name=WineDNA.shownName(wine);
       Handoff.openWine({demo:false,wine,confidence:0.95});
       Entitlement.addScan();
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a

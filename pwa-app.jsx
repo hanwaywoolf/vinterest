@@ -337,7 +337,7 @@ function DiscoverScreen({nav,back}){
               </div>
               <div style={{flex:1}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</span>
+                  <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{WineDNA.shownName(w)}</span>
                   <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
                     <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
                   </div>

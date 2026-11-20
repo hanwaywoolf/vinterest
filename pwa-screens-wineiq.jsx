@@ -941,7 +941,7 @@ function WineDNAScreen({nav,back,showPro}){
                     }} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
                       <span style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:C.P,width:22,flexShrink:0}}>#{i+1}</span>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                        <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
                         <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[w.region,w.vintage?String(w.vintage):null,ParkerScale.label(w.rating)].filter(Boolean).join(' · ')}</div>
                       </div>
                       <span style={{fontSize:15,fontWeight:800,color:T.lift(scoreCol(w.rating)),fontFamily:C.P,width:30,textAlign:'right',flexShrink:0}}>{w.rating}</span>
