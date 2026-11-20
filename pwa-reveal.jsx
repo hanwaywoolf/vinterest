@@ -24,7 +24,7 @@ const REVEAL_CSS=`
 @keyframes rvGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes rvFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes rvDrop{0%{opacity:0;transform:translateY(-46px)}60%{opacity:1;transform:translateY(4px)}80%{transform:translateY(-3px)}100%{transform:none}}
-@keyframes rvPulse{0%{transform:scale(.4);opacity:.8}100%{transform:scale(2.6);opacity:0}}
+@keyframes rvPulse{0%{transform:scale(.4);opacity:0}12%{opacity:.8}100%{transform:scale(2.6);opacity:0}}
 @keyframes rvGlow{from{opacity:0}to{opacity:1}}
 @keyframes rvSheet{from{transform:translateY(100%)}to{transform:none}}
 @keyframes rvPop{0%{opacity:0;transform:scale(.7)}70%{transform:scale(1.06)}100%{opacity:1;transform:none}}
@@ -42,7 +42,7 @@ const REVEAL_CSS=`
 .rv-stage .rv-bar{transform-origin:left center;animation:rvGrow .9s cubic-bezier(.3,.9,.4,1) both}
 .rv-stage .rv-pop{animation:rvPop .5s cubic-bezier(.2,.9,.3,1.2) both}
 .rv-stage .rv-pin{animation:rvDrop .7s cubic-bezier(.3,.8,.3,1) both}
-.rv-stage .rv-pulse{animation:rvPulse 1.4s ease-out infinite}
+.rv-stage .rv-pulse{animation:rvPulse 1.4s ease-out infinite backwards}
 .rv-stage .rv-seg{transform-origin:left center;animation:rvFill linear both}
 .rv-stage.rv-paused .rv-seg,.rv-stage.rv-paused .rv-pulse{animation-play-state:paused}
 .rv-stage .rv-sheet{animation:rvSheet .45s cubic-bezier(.2,.8,.3,1) both}
@@ -340,7 +340,14 @@ function _RvPlace({d,col}){
   // The map is a window onto the view around the pin, its edges faded so it sits in the stage
   // rather than cutting across it.
   const mask='radial-gradient(ellipse at 50% 50%, #000 40%, transparent 74%)';
-  const m=p.map, wide=m&&m.wide, z=wide?wide.z:1;
+  const m=p.map, w0=m&&m.wide;
+  // The wide shot stays inside the view's land (Europe's stops at the south of England), so it's
+  // never half empty: no wider than the view, its centre moved in from the edges. The country's
+  // name still sits on the country (nameAt).
+  const wide=w0&&m.view&&m.view.w?(()=>{ const z=Math.max(1.2,Math.min(w0.z,m.view.w/W,m.view.h/H)), hw=W*z/2, hh=H*z/2;
+    const cl=(v,lo,hi)=>lo>hi?(lo+hi)/2:Math.min(hi,Math.max(lo,v));
+    return {...w0,z,x:cl(w0.x,hw,m.view.w-hw),y:cl(w0.y,hh,m.view.h-hh)}; })():w0, z=wide?wide.z:1;
+  const nameAt=wide?{left:`${50+(w0.x-wide.x)/(W*z)*100}%`,top:`${50+(w0.y-wide.y)/(H*z)*100}%`}:null;
   // The wide shot shows a window z times the close one, centred on the country; the transform
   // that puts that window into the close box is what the zoom animates away from.
   // CSS transforms, so the translate arguments take commas (the SVG attribute form, with spaces,
@@ -349,13 +356,26 @@ function _RvPlace({d,col}){
   const from=`translate(${m.x+ox}px, ${m.y+oy}px) scale(${wide?1/z:1}) translate(${-m.x}px, ${-m.y}px)`;
   // Without a pin (a region the guide lacks) the country only eases in a little and stays named.
   const tight=`translate(${m.x}px, ${m.y}px) scale(${m.noPin?(1.25/z):RV_TIGHT}) translate(${-m.x}px, ${-m.y}px)`;
-  const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff',paintOrder:'stroke',stroke:'rgba(15,15,15,0.85)',strokeWidth:'4px',strokeLinejoin:'round'}}>{text}</text>;
+  // The region's name lifts off the map with a soft shadow (an SVG filter). A dark stroke behind the
+  // letters (paint-order) was drawn over them on an iPhone, which outlined the name in black.
+  const uid=React.useId().replace(/:/g,'');
+  const label=(x,y,text,cls,delay)=><text x={x} y={y} className={cls} filter={`url(#rvs${uid})`} style={{animationDelay:delay,fontSize:'13px',fontWeight:800,fontFamily:C.P,fill:'#fff'}}>{text}</text>;
+  // The map's land stops at its view's box (Europe's top runs through the south of England); its
+  // edges fade out inside the box, so the wide shot never shows a straight cut across the land.
+  const vw=m&&m.view&&m.view.w, vh=m&&m.view&&m.view.h, fe=vw?Math.round(Math.min(vw,vh)*0.09):0;
   return <div style={{display:'flex',flexDirection:'column',gap:12}}>
     {m&&<div className="rv-in" data-testid="reveal-map" style={{alignSelf:'center',width:'100%',maxWidth:360,aspectRatio:`${W}/${H}`,position:'relative',overflow:'hidden',WebkitMaskImage:mask,maskImage:mask}}>
       <svg viewBox={`${m.x-W/2} ${m.y-H*0.52} ${W} ${H}`} width="100%" height="100%" aria-hidden="true" style={{overflow:'hidden'}}>
+        <defs>
+          <filter id={`rvs${uid}`} x="-20%" y="-60%" width="140%" height="220%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" floodColor="#000" floodOpacity="0.85"/></filter>
+          {vw&&<filter id={`rvf${uid}`} x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation={fe*0.6}/></filter>}
+          {vw&&<mask id={`rvm${uid}`} maskUnits="userSpaceOnUse" x={-vw} y={-vh} width={vw*3} height={vh*3}><rect x={fe} y={fe} width={vw-2*fe} height={vh-2*fe} fill="#fff" filter={`url(#rvf${uid})`}/></mask>}
+        </defs>
         <g className="rv-zoom" style={{'--rv-from':from,'--rv-to':tight,animationDelay:'.7s'}}>
+          <g mask={vw?`url(#rvm${uid})`:undefined}>
           <path d={m.view.land} fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.35)" strokeWidth="0.8" vectorEffect="non-scaling-stroke"/>
           {m.view.borders&&<path d={m.view.borders} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="0.6" vectorEffect="non-scaling-stroke"/>}
+          </g>
         </g>
         {!m.noPin&&<g transform={`translate(${m.x} ${m.y})`}>
           <circle className="rv-pulse" r="9" fill="none" stroke={col} strokeWidth="1.5" style={{animationDelay:'2.6s'}}/>
@@ -363,7 +383,7 @@ function _RvPlace({d,col}){
           {label(10,5,p.name,'rv-in','3.2s')}
         </g>}
       </svg>
-      {wide&&wide.name&&<div className={m.noPin?undefined:'rv-out'} aria-hidden="true" style={{position:'absolute',left:0,right:0,top:'50%',transform:'translateY(-50%)',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
+      {wide&&wide.name&&<div className={m.noPin?undefined:'rv-out'} aria-hidden="true" style={{position:'absolute',left:nameAt.left,top:nameAt.top,transform:'translate(-50%,-50%)',whiteSpace:'nowrap',textAlign:'center',fontSize:'22px',fontWeight:800,color:'rgba(255,255,255,0.85)',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',textShadow:'0 2px 10px rgba(0,0,0,0.8)',animationDelay:'1.1s'}}>{wide.name}</div>}
     </div>}
     {_rvEyebrow('Where it\'s from','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{..._rvDelay(2.6),display:'flex',alignItems:'center',gap:10}}>
