@@ -2748,6 +2748,9 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-ladder-sum')).toContainText('bottle sales');
   // The summary under the ladder is three lines at most, however long the list.
   expect(await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').count()).toBeLessThanOrEqual(3);
+  // The ladder's tags are one width with their word centred, each level with the first line of its sentence.
+  const tags = await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').evaluateAll(els => els.map(el => { const t = el.querySelector('[data-pill]').getBoundingClientRect(), r = document.createRange(); r.selectNodeContents(el.children[1].firstElementChild); const l = r.getClientRects()[0]; return { w: Math.round(t.width), x: Math.round(t.left), off: Math.abs((t.top + t.bottom) / 2 - (l.top + l.bottom) / 2) }; }));
+  expect(new Set(tags.map(t => t.w)).size).toBe(1); expect(new Set(tags.map(t => t.x)).size).toBe(1); for (const t of tags) expect(t.off).toBeLessThan(2.5);
   await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
   // Any card folds to its title and opens again, and the device remembers which are folded.
   const bal = page.getByTestId('c2-balance'), foldBtn = bal.getByTestId('c2-card-fold');
@@ -2870,13 +2873,22 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   await page.getByTestId('console-nav-team').click();
   await page.getByTestId('c2-team-row').filter({ hasText: 'Amara' }).click();
-  await page.getByTestId('c2-vinny-sug').nth(1).click(); // a suggestion fills the box; only the arrow sends
+  // Vinny's suggestions are this person's own: built from their answers and sales, each with its evidence, and no two
+  // people are offered the same three.
+  const sugs = await page.evaluate(() => TeamLearn.people().map(p => ({ name: p.name.split(' ')[0], s: TeamPlans.suggest(p.id) })));
+  for (const p of sugs) { expect(p.s.length, p.name).toBeGreaterThan(0); expect(p.s.length).toBeLessThanOrEqual(3); expect(new Set(p.s.map(x => x.kind)).size).toBe(p.s.length);
+    for (const g of p.s) { expect(g.title + g.why + g.ask).not.toMatch(/undefined|NaN|\{\{/); expect(g.ask).toContain(p.name); expect(g.why).toMatch(/\d|everything|best sellers/); } }
+  expect(new Set(sugs.map(p => p.s.map(g => g.why.replaceAll(p.name, '')).join('|'))).size).toBeGreaterThan(sugs.length / 2);
+  const mine = sugs.find(p => p.name === 'Amara').s;
+  await expect(page.getByTestId('c2-vinny-sug')).toHaveCount(mine.length);
+  await expect(page.getByTestId('c2-vinny-why').first()).toHaveText(mine[0].why);
   expect(reqs.filter(r => r.purpose === 'team_plan')).toHaveLength(0);
-  await page.getByTestId('c2-vinny-send').click();
+  await page.getByTestId('c2-vinny-sug').first().getByTestId('c2-vinny-go').click(); // Write it starts the plan from that suggestion
   const draft = page.getByTestId('c2-plan-draft');
   await expect(draft).toContainText('Reds: prices and pairings'); await expect(draft).toContainText('2 parts · 4 questions · 1 count');
   const sent = reqs.find(r => r.purpose === 'team_plan').messages[0].content;
   expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
+  expect(sent).toContain(mine[0].ask);
   await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
   // Pushed: tracked on the console, and on Amara's phone as its own training.
   await draft.getByTestId('c2-draft-push').click();
@@ -3100,6 +3112,12 @@ test('the new console: Upload and Admin are one page in its own look', async ({ 
   await expect(page.getByTestId('c2-fact')).toContainText('waiting for you');
   expect(await page.getByTestId('team-review').locator('[data-team-btn]').evaluateAll(els => els.every(el => el.offsetWidth < 260))).toBe(true);
   await page.getByText('Discard').click();
+  // Every restaurant's logo takes one standard box in the drawer and at the page's corner, whatever its shape.
+  const boxes = {};
+  for (const seed of ['demo', 'eloise', 'social']) { await page.goto(`${BASE}/team/?seed=${seed}&view=console`); await expect(page.getByTestId('team-console')).toBeVisible({ timeout: 30000 }); await page.getByTestId('c2-nav-tab').click();
+    boxes[seed] = await page.evaluate(() => ['c2-nav-venue', 'c2-page-venue'].map(t => { const el = document.querySelector(`[data-testid="${t}"] [data-testid="team-venue-logo"]`), r = el.getBoundingClientRect(), nav = el.closest('[data-testid="c2-nav-venue"]'); return [Math.round(r.width), Math.round(r.height), nav ? r.right <= nav.getBoundingClientRect().right : true]; })); }
+  expect(boxes.eloise).toEqual(boxes.demo); expect(boxes.social).toEqual(boxes.demo); expect(boxes.demo[0][2]).toBe(true); expect(boxes.demo[0][1]).toBeLessThanOrEqual(36);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
   // The settings save, and the card folds to a line saying what it holds.
   await page.getByLabel('Days to learn').fill('9');
   await page.getByTestId('c2-admin-save').click();
