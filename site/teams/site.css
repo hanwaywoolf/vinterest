@@ -577,7 +577,7 @@ blockquote.typing::after { content: ''; display: inline-block; width: 2px; heigh
 .phone .scr .lstage { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #0f0f0f; display: flex; }
 .phone .scr .lstage > img { flex: 1; }
 .lstage.live-on > img { display: none; }
-.ftry { margin-top: 10px; font-size: 15px; color: var(--mute); } .ftry a { color: var(--cr); font-weight: 700; text-decoration: none; white-space: nowrap; } .ftry[hidden] { display: block; visibility: hidden; }
+.ftry { margin-top: 16px; } .ftry[hidden] { display: block; visibility: hidden; }
 /* The live phone, opened to use by hand (TeamsLive.open): the app at its real size over the page, a bar with Close above it. */
 .live-on { cursor: pointer; }
 .live-on::after { content: 'Tap to try it'; position: absolute; z-index: 6; left: 50%; bottom: 10px; transform: translateX(-50%); white-space: nowrap; font: 700 11px/1 var(--sans); letter-spacing: .04em; color: #fff; background: rgba(15, 15, 15, .78); border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px; padding: 7px 12px; pointer-events: none; }
