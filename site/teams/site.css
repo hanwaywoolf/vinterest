@@ -26,16 +26,18 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .dark .eyebrow { color: var(--neon); }
 .lead { font-size: 18px; color: var(--ink-2); max-width: 34em; margin-top: 16px; }
 .dark .lead { color: var(--dim); }
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 12px; font-size: 14px; font-weight: 500; white-space: nowrap; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .15s, border-color .15s, box-shadow .15s; white-space: nowrap; }
-/* The console's buttons (_C2Btn in team-console2.jsx): a medium weight at 14px, a 12px corner, flat, the second
-   button an outline with nothing behind it. The fill stays Vinterest's crimson: the console's gold is The Larkspur's. */
-.btn:active { transform: scale(.98); }
-.btn.primary { background: var(--cr); color: #fff; }
-.btn.primary:hover { background: var(--cr-l); }
-.btn.ghost { background: transparent; border-color: rgba(15, 15, 15, .17); color: var(--ink-2); }
-.btn.ghost:hover { border-color: var(--ink); color: var(--ink); }
-.dark .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .17); color: rgba(255, 255, 255, .86); }
-.btn.small { min-height: 36px; padding: 0 14px; font-size: 13px; border-radius: 10px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 0; font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; line-height: 1.2; white-space: nowrap; text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
+/* The Teams app's buttons (TeamBtn in team-screens.jsx): square, hollow, small capitals. A line and its label in
+   one colour; under the mouse or a finger it fills with that colour and the label turns to read against it. The
+   main button takes the brand's crimson (lifted on a dark ground, where crimson can't be read), the other the
+   ground's own ink. */
+.btn { --b-line: rgba(15, 15, 15, .22); --b-text: var(--ink); --b-fill: var(--ink); --b-on: #fff; border-color: var(--b-line); background: transparent; color: var(--b-text); }
+.btn.primary { --b-line: var(--cr); --b-text: var(--cr); --b-fill: var(--cr); --b-on: #fff; }
+.dark .btn, .top .btn, .pr-top .btn, .pr-hero .btn { --b-line: rgba(255, 255, 255, .22); --b-text: #fff; --b-fill: #fff; --b-on: #0f0f0f; }
+.dark .btn.primary, .top .btn.primary, .pr-top .btn.primary, .pr-hero .btn.primary { --b-line: var(--neon); --b-text: var(--neon); --b-fill: var(--neon); --b-on: #0f0f0f; }
+.btn:hover, .btn:active, .btn:focus-visible { background: var(--b-fill); border-color: var(--b-fill); color: var(--b-on); }
+.btn.small { min-height: 36px; padding: 0 13px; }
+@media (max-width: 560px) { .top .btn { padding: 0 11px; letter-spacing: .08em; font-size: 11px; } }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid; white-space: nowrap; }
 .chip.green { color: var(--green); border-color: rgba(30, 123, 75, .35); background: rgba(30, 123, 75, .08); }
 .chip.amber { color: var(--amber); border-color: rgba(196, 135, 10, .35); background: rgba(196, 135, 10, .08); }
@@ -68,7 +70,7 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .top nav .ddm b { font-size: 14px; color: var(--ink); font-weight: 600; }
 .top nav .ddm span { font-size: 12.5px; color: var(--mute); line-height: 1.4; }
 .top nav .dd:has(a[aria-current]) .ddb { color: var(--ink); font-weight: 600; }
-.top .menub { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: #fff; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.top .menub { display: none; flex: none; width: 44px; height: 44px; border-radius: 0; border: 1px solid var(--line); background: #fff; cursor: pointer; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
 .top .menub i { display: block; width: 18px; height: 2px; border-radius: 1px; background: var(--ink); transition: transform .2s, opacity .2s; }
 .top.open .menub i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
 .top.open .menub i:nth-child(2) { opacity: 0; }
@@ -523,8 +525,6 @@ html.dlg-open, html.dlg-open body { overflow: hidden; }
 .top nav .ddm b { color: #fff; }
 .top nav .ddm span { color: rgba(255, 255, 255, .55); }
 .top nav .ddm a[aria-current="page"] b { color: var(--neon); }
-.top .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .17); color: rgba(255, 255, 255, .86); }
-.top .btn.ghost:hover { border-color: #fff; }
 .top .menub { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .18); }
 .top .menub i { background: #fff; }
 @media (max-width: 860px) {
@@ -720,7 +720,6 @@ blockquote.typing::after { content: ''; display: inline-block; width: 2px; heigh
 .pr-top { position: sticky; top: 0; z-index: 40; background: rgba(12, 12, 12, .94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
 .pr-top .wrap { height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .pr-top .tlogo .mark img { filter: invert(1); } .pr-top .tlogo .word { color: var(--neon); }
-.pr-top .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .17); color: rgba(255, 255, 255, .86); }
 .pr-hero { background: #0F0F0F; color: #fff; padding: 72px 0 80px; position: relative; overflow: clip; }
 .pr-hero::before { content: ''; position: absolute; right: -10%; top: -20%; width: 60%; height: 140%; background: radial-gradient(50% 50% at 50% 50%, rgba(232, 83, 107, .22), transparent 70%); pointer-events: none; }
 .pr-hero .wrap { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 64px; align-items: center; }
@@ -737,7 +736,6 @@ blockquote.typing::after { content: ''; display: inline-block; width: 2px; heigh
 .pr-hero h1 em { font-style: normal; color: var(--neon); }
 .pr-hero .lead { color: rgba(255, 255, 255, .72); max-width: 40em; font-size: 19px; }
 .pr-hero .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
-.pr-hero .btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .17); color: rgba(255, 255, 255, .86); }
 .pr-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 40px; }
 .pr-fact { border: 1px solid var(--line); border-radius: 16px; padding: 22px; background: #fff; border-top: 3px solid var(--c, var(--cr)); }
 .pr-fact b { display: block; font-size: 40px; font-weight: 800; letter-spacing: -.02em; line-height: 1; color: var(--ink); }

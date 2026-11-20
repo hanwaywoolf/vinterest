@@ -279,7 +279,7 @@ test('a private page is hidden from search and adds up', async ({ page, request 
   await expect(card.getByText('What to say at the table')).toBeVisible();
   await card.locator('.wcard-x').click();
   await expect(card).toBeHidden();
-  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', /seed=princess-royal/);
+  for (const a of await page.locator('a[data-demo]').all()) await expect(a).toHaveAttribute('href', 'https://princessroyal.vinterest.team/demo/?view=console'); // their own address: the page at its root, the demo beside it
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });

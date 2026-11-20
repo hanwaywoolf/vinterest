@@ -1,5 +1,5 @@
 {
- "rev": "2026-11-11-eloise-manager",
+ "rev": "2026-11-17-eloise-gold",
  "venue": {
   "name": "Eloise",
   "city": "Toronto",
@@ -11,7 +11,8 @@
   },
   "brand": {
    "logo": "brand/eloise/wordmark-white.svg",
-   "source": "eloiserestaurant.ca (supplied by Carey)"
+   "source": "eloiserestaurant.ca (supplied by Carey)",
+   "accent": "#D4A84B"
   },
   "about": "Eloise is a restaurant and bar in Toronto (eloiserestaurant.ca) serving lunch and dinner from one short menu: appetizers (seared scallop, mushroom parfait, tuna carpaccio, burrata, a wedge and a Caesar), three pastas, and mains built around the grill and the roast (a 10oz steak frites, a 42oz côte de boeuf to share, charcoal roasted chicken, seared rainbow trout, roasted cauliflower), with desserts that serve two. The bar pours four house cocktails, four classics and two zero-proof drinks; cocktails are half price Monday to Saturday, 5pm to 7pm. The wine list leans to Italy and France (Piedmont, Tuscany, Bordeaux, Burgundy, the Rhône and Champagne) with Spain, Ontario's Niagara and a few bottles from the United States, New Zealand, Australia and Argentina. Eleven wines are poured by the glass in two sizes, 5oz and 8oz (the Prosecco 5oz only); the Sauternes is a 2oz glass. Three wines come as 1.5L magnums. Corkage is $50. Staff are in Ontario, Canada: write in Canadian English, and give prices in Canadian dollars exactly as the list prints them.",
   "offList": {

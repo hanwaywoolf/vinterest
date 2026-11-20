@@ -183,9 +183,11 @@ pours are 175ml and 125ml (ounces only where the venue counts in dollars), and t
 venue's own `offList` ("House Prosecco 125 (Events)"). Its training (`data/team-princess-royal.json`) was written through
 the branch preview's Worker on Claude Opus 5.5 by `npm run team:write -- princess-royal` (`scripts/team-write.mjs`: the
 app's own writers for cards, cocktail cards, pairings, drinking windows and dish notes, saved after each step), then put
-through `npm run team:audit` and `npm run team:review -- princess-royal`. Its demo address is
-princessroyal.vinterest.team (`TeamSample.HOSTS`, the Worker's `VENUE_HOSTS`), a custom domain on the vinterest Pages
-project.
+through `npm run team:audit` and `npm run team:review -- princess-royal`. Its address is
+princessroyal.vinterest.team, a custom domain on the vinterest Pages project, set up as Eloise's is (the Worker's
+`VENUE_PAGES`): the root is the page written for them (`site/teams/for/princess-royal.html`) and the demo is at
+princessroyal.vinterest.team/demo/ (`TeamSample.HOSTS` opens The Princess Royal from the address). Its console opens on the new look (`venue.console: "preview"` in its list file), as The Larkspur's, The Social
+Corner's and Eloise's do.
 
 ## The Eloise install
 
@@ -209,6 +211,15 @@ opens Eloise from the address). A new prospect who should get the same is a row 
 `venue.console.hide: ["sommelier"]`, so the console's Wines section opens on the wines without the Sommelier review card
 (our own check, whose held questions stay held); any install can set it. The allergens drafted from its menu are accepted in its
 training file (`allergens.confirmed`, by "Demo data") so Menu shows nothing to confirm; the kitchen hasn't confirmed them.
+It opens on the console's new look (`venue.console.look: "preview"` in its list file), in gold (`venue.brand.accent` `#D4A84B`, Carey's choice over the crimson). Its training file also carries
+`buyer`, Vinny's read of the list as a buyer (`npm run team:buyer -- eloise`, one call through the production Worker,
+billed): shop prices in Ontario for 44 of the 76 wines (a usual markup of 3.2×), dishes the list could sell that the
+menu lacks, the two desserts it serves thinly, and four gaps (Champagne by the glass, a Niagara glass, a New World
+Cabernet under $200, a second sweet pour). Its "what to cut" was left out, since it argued from the invented sales.
+`TeamSample.load` puts `buyer` in place, so the Wines page opens with markups and Vinny's read rather than a blank.
+The page written for them has a section on the console (`#console`), with two screenshots of their own console
+(`site/teams/img/for/eloise-console.jpg` and `-wines.jpg`, taken from the build at 1320×840); retake them when the
+console changes.
 
 ## The console's first-use tour (built)
 
@@ -990,4 +1001,4 @@ Most console use is on a large screen, but a manager will open it on a phone. In
 
 A tester asked to arrange the console's pages themselves. On Dashboard, Sales Insights, Wines and Training each card shows a grip at its top edge on hover; drag it up or down its column or across into the other one. The arrangement is kept per person on the device, and "Reset this page's layout" puts it back. The five figures at the top of a page and the full-width tables stay where they are.
 
-The navigation is on trial as a layer at the left edge: hidden until the mouse reaches the edge (or the menu button is tapped, on an iPad), sliding over the page without moving it across, and gone again when the mouse leaves. "Keep the navigation along the top" in the drawer goes back to the row of sections, and a link at the foot of the page hides it again.
+The navigation is on trial as a layer at the left edge: hidden until the mouse reaches the edge (or the menu button is tapped, on an iPad), sliding over the page without moving it across, and gone again when the mouse leaves. The drawer no longer offers to move the navigation back along the top, and the console has no Phone view link except on a phone, where "Staff app" is the way back.

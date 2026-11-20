@@ -28,31 +28,31 @@
   }
  },
  "navW": 249,
- "dash": 1871,
- "sales": 2387,
+ "dash": 2085,
+ "sales": 2382,
  "team": 1840,
- "training": 2225,
- "wines": 4916,
- "menu": 4487,
- "cardAt": 0.4186,
+ "training": 2284,
+ "wines": 5161,
+ "menu": 3237,
+ "cardAt": 0.4513,
  "cardTap": {
-  "x": 165,
-  "y": 416
+  "x": 179,
+  "y": 415
  },
  "cardX": 840,
  "cardW": 600,
- "card": 1395,
- "dishAt": 0.143,
+ "card": 900,
+ "dishAt": 0.1549,
  "dishTap": {
-  "x": 589,
-  "y": 426
+  "x": 165,
+  "y": 416
  },
  "dishX": 840,
  "dishW": 600,
- "dish": 1082,
+ "dish": 1105,
  "mgrW": 820,
  "mgrNav": 0,
- "mgr": 3319,
+ "mgr": 3646,
  "plan": [
   921,
   606

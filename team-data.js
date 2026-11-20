@@ -148,7 +148,11 @@ const TeamData = {
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
   /* A wine's name where a long one won't fit (a list row's "Best with", a suggestion): the producer when the full
      name runs past four words ("Mionetto" for "Mionetto Prosecco DOC Treviso"), else the short name. */
-  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer?String(w.producer):s; },
+  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer&&!this._twoBy(w.producer)?String(w.producer):s; },
+  /* Whether the list has two or more wines from one producer, so its name alone wouldn't say which ("Envínate" for two
+     bottles on Eloise's list). Counted once per list. */
+  _twoBy(producer){ const ws=this.wines(); if(this._byMemo!==ws){ this._byMemo=ws; this._byN={}; ws.forEach(w=>{ const k=String(w.producer||'').toLowerCase(); if(k) this._byN[k]=(this._byN[k]||0)+1; }); }
+    return (this._byN[String(producer).toLowerCase()]||0)>1; },
 
   // One id per wine whatever the vintage, so a new vintage on the list is the same wine moving on.
   _slug(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); },
@@ -640,6 +644,9 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    // Vinny's read of the list as a buyer (shop prices, gaps), when the file was handed over with one (npm run team:buyer);
+    // a restaurant loaded afresh never keeps another's, and a kept one keeps a newer review of its own.
+    if(typeof TeamBuyer!=='undefined'){ const mine=keep&&TeamBuyer.reviewed(); if(!keep) TeamBuyer.save(s.buyer&&s.buyer.at?s.buyer:{}); else if(s.buyer&&s.buyer.at&&!(mine&&mine.at>=s.buyer.at)) TeamBuyer.save(s.buyer); }
     // The install's training depth (venue.training in its list file: the tier, and a tier per role) applies to a
     // restaurant that hasn't set one yet, on a fresh load or a kept team alike; a manager's own choice is never undone.
     const training=meta.training||{}; const applyTier=()=>{ if(TeamLearn.team().tier!=null) return; if(training.tier) TeamLearn.setTier(training.tier); Object.entries(training.roleTiers||{}).forEach(([r,t])=>TeamLearn.setRoleTier(r,t)); };
@@ -651,7 +658,7 @@ const TeamSample = {
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined') TeamBuyer.clear();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined'){ TeamBuyer.clear(); if(s.buyer&&s.buyer.at) TeamBuyer.save(s.buyer); }
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     applyTier();
@@ -848,7 +855,10 @@ Object.assign(window,{TeamData,TeamSample});
 const TeamBrand = {
   _crimson:null,
   get(){ return TeamData.brand(); },
-  apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
+  /* The console is gold for a restaurant with no accent of its own: crimson there read as an alarm beside the
+     red of a fall or a gap. The staff app keeps Vinterest's crimson. */
+  GOLD:'#D4A84B',
+  apply(console){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:console?this.GOLD:this._crimson; return b; },
 };
 Object.assign(window,{TeamBrand});
 
@@ -884,10 +894,23 @@ Object.assign(window,{TeamTour});
 /* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
    synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
    stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */
+/* What a console page's "Needs you" has had cleared (docs/business.md "Needs you"): each item is known by its tag and
+   what it says, so one that's been dealt with or dismissed stays away until the facts behind it change and it says
+   something new. Kept on the device, per page. */
+const TeamNeeds = {
+  KEY:'vbiz_needs_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  id(b){ const t=String(b.tag||'')+'|'+String(b.fact||b.title||''); let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  cleared(page){ return this._all()[page]||{}; },
+  left(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>!c[this.id(b)]); },
+  gone(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>c[this.id(b)]).length; },
+  clear(page,b){ const a=this._all(); a[page]={...(a[page]||{}),[this.id(b)]:Date.now()}; Store.setJSON(this.KEY,a); },
+  restore(page){ const a=this._all(); delete a[page]; Store.setJSON(this.KEY,a); },
+};
 const TeamFold = {
   KEY:'vbiz_fold_v1',
   _all(){ return Store.getJSON(this.KEY,{})||{}; },
   folded(k,def=false){ const v=this._all()[k]; return typeof v==='boolean'?v:def; },
   set(k,v){ const a=this._all(); a[k]=!!v; Store.setJSON(this.KEY,a); },
 };
-Object.assign(window,{TeamFold});
+Object.assign(window,{TeamFold,TeamNeeds});

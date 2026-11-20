@@ -241,7 +241,11 @@ const TeamReport = {
     const list=up.rows.map(x=>{ const w=x.wine, k=on.filter(p=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=on.filter(p=>!k.includes(p)); if(k.length<2||u.length<2) return null;
       const money=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0);
       return {wine:w,trained:money(k)/k.length/weeks,untrained:money(u)/u.length/weeks,k:k.length,u:u.length,missing:u,extra:x.extra}; }).filter(Boolean).slice(0,n);
-    return {x:lift.x,trained:lift.known*perWeek,untrained:lift.unknown*perWeek,total:up.total,rows:list}; },
+    // With the top sellers covered, the next wines worth training on: what sells, with at least two who serve it not yet trained.
+    const sold={}; rows.forEach(r=>{ sold[r.w]=(sold[r.w]||0)+r.q*r.p; });
+    const next=list.length?[]:TeamData.wines().filter(w=>sold[w.id]).map(w=>{ const k=on.filter(p=>TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=on.filter(p=>!k.includes(p)&&rows.some(r=>r.v===p.id));
+      return u.length>=2?{wine:w,k:k.length,of:k.length+u.length,missing:u,perWeek:sold[w.id]/weeks}:null; }).filter(Boolean).sort((a,b)=>b.perWeek-a.perWeek).slice(0,4);
+    return {x:lift.x,trained:lift.known*perWeek,untrained:lift.unknown*perWeek,total:up.total,rows:list,next}; },
   /* How far training on a set of things has spread, with room to grow: how many the whole team is trained on, how many
      at least half, how many fewer; `few` are the ones to act on. kind 'glass' (wines by the glass) or 'pairings'. */
   spread(kind){ if(kind==='pairGlass'||kind==='pairBottle'){ const g=kind==='pairGlass', its=this.pairings().filter(x=>x.first&&(g?x.glassBy:x.bottleBy)&&(g?x.glassBy:x.bottleBy).of).map(x=>{ const k=g?x.glassBy:x.bottleBy, w=g?x.glass:x.bottle; return {name:`${x.dish.name.split(',')[0]} (${TeamData.nick(w)})`,n:k.people.length,of:k.of,open:{view:'dish',id:x.dish.id},wine:w}; });
@@ -451,6 +455,21 @@ const TeamReport = {
       if(low&&low.kb.people.length<low.kb.of) add(low.kb.people.length<Math.ceil(low.kb.of/2)?'bad':'note',`${low.cocktail.name}: ${low.kb.people.length} of ${low.kb.of} trained`);
       if(bar.length) add(bar.every(x=>x.part.share>=x.part.need)?'good':'note',`Behind the bar: ${bar.map(x=>`${x.person.name.split(' ')[0]} trained on ${x.part.known} of ${x.part.total}`).join(', ')}`);
       const paired=rows.filter(x=>x.dishes.length).length; add('good',`${paired} of ${rows.length} poured with a dish on the menu`); }
+    // Integrations: where sales come from and how fresh they are, then what's left to map.
+    else if(section==='pos'){ const src=TeamSales.source(), items=TeamSales.has()?TeamSales.items():[], unm=items.filter(x=>!x.mapped).length;
+      if(src){ const d=Math.round((Date.now()-src.at)/86400000); out.pre='Your sales were last brought in '; out.strong=d<=0?'today':d===1?'yesterday':`${d} days ago`; out.post='.'; }
+      else { out.pre='No sales have been '; out.strong='brought in yet'; out.post='.'; }
+      if(src) add('good',`${src.rows} wine lines held, ${TeamSales.KEEP_DAYS} days kept`);
+      if(items.length) add(unm?'note':'good',unm?`${unm} POS item${unm===1?'':'s'} to match to a wine`:`All ${items.length} POS items matched to a wine`);
+      add('mut','Sales set what the team learns first; they never change anyone\'s readiness'); }
+    // Upload and admin: what's live and when it last changed, then anything a publish left unwritten or waiting.
+    else if(section==='upload'){ const d=TeamData.get(), vs=d.versions||[], last=vs[vs.length-1], ws=TeamData.wines(), ds=TeamData.dishes(), pend=TeamData.pending(), left=pend.cards+pend.pairings+pend.dishNotes;
+      if(d.draft){ out.pre='A new '+(d.draft.kind==='list'?'wine list':'menu')+' is '; out.strong='waiting for you'; out.post=' to publish.'; }
+      else if(last){ out.pre='Your '+(last.kind==='menu'?'menu':'list')+' was last published '; out.strong=new Date(last.at).toLocaleDateString(undefined,{day:'numeric',month:'long'}); out.post='.'; }
+      else { out.pre='Nothing is '; out.strong='published yet'; out.post='.'; }
+      add('good',`${ws.length} wines and ${ds.length} dishes live`);
+      add(left?'note':'good',left?`${left} still to write: staff cards, pairings or dish notes`:'Every wine has its staff card and every dish its pairings');
+      add('mut','Nothing reaches the team until you publish it'); }
     return out; },
 };
 Object.assign(window,{TeamReport});
