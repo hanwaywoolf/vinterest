@@ -515,7 +515,7 @@ function GrapeScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
                 onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMine(w); } }}
                 style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</div>
+                  <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{WineDNA.shownName(w)}</div>
                   <div style={{display:'flex',alignItems:'center',gap:5,fontSize:13,color:T.mid,fontFamily:C.P,minWidth:0}}>
                     <Flag wine={w} size={13}/>
                     <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.region,w.vintage].filter(Boolean).join(' · ')}</span>
@@ -571,7 +571,7 @@ function RegionPageScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.c
           onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openMine(w); } }}
           style={{display:'flex',alignItems:'center',gap:10,padding:'10px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{w.name}</div>
+            <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{WineDNA.shownName(w)}</div>
             <div style={{fontSize:13,color:T.mid,fontFamily:C.P,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{[w.producer,w.sub_region||w.region,w.vintage].filter(Boolean).join(' · ')}</div>
           </div>
           {w.rating>0?<span style={{fontSize:16,fontWeight:800,color:T.lift(scoreCol(w.rating)),fontFamily:C.P}}>{w.rating}</span>

@@ -143,3 +143,20 @@ test('status counts follow the type picked: White with no buy-again whites reads
   await root.getByText(/^White \d+$/).click();
   await expect(root.getByText(/^Buy again 0$/)).toBeVisible();
 });
+
+// The label reader sometimes put the vintage in the name ("Viña Ardanza Reserva 2016"); the row shows
+// the name once, with the year only in its own place on the line under it.
+test('a name saved with its year in it shows without the year; the year stays on the line under it', async ({ context, page }) => {
+  await setup(context, page, [{ name: 'Yeartest Reserva 2016', producer: 'Yeartest', type: 'red', region: 'Rioja', country: 'Spain', vintage: 2016, rating: 92, times_consumed: 1, scanned_at: '2099-01-01T10:00:00Z', last_scanned: '2099-01-01T10:00:00Z' }]);
+  const row = page.locator('#root .mw-row').filter({ hasText: 'Yeartest Reserva' });
+  await expect(row.locator('div[style*="font-weight: 600"]')).toHaveText('Yeartest Reserva');
+  await expect(row).toContainText('2016');
+  const names = await page.evaluate(() => [
+    WineDNA.shownName({ name: 'Miloš Plavac 2017', vintage: 2017 }),
+    WineDNA.shownName({ name: 'Château Example 1855 Grand Cru', vintage: 2015 }),
+    WineDNA.shownName({ name: 'Cuvée 2016 Réserve', vintage: 2016 }),
+    WineDNA.shownName({ name: 'Mâcon-Lugny', vintage: 2025 }),
+    WineDNA.shownName({ name: '2016', vintage: 2016 }),
+  ]);
+  expect(names).toEqual(['Miloš Plavac', 'Château Example 1855 Grand Cru', 'Cuvée Réserve', 'Mâcon-Lugny', '2016']);
+});

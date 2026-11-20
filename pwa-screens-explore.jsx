@@ -289,7 +289,7 @@ function SimilarWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
+                      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{WineDNA.shownName(w)}</div>
                       {w.approx_price_usd&&<span style={{fontSize:15,fontWeight:700,color:T.ink2,fontFamily:C.P,flexShrink:0}}>${w.approx_price_usd}</span>}
                     </div>
                     <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:2}}>{[w.region,w.country].filter(Boolean).join(' · ')}</div>
@@ -422,7 +422,7 @@ function StyleExploreScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr);
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8,marginBottom:6}}>
                 <div style={{flex:1}}>
                   {TIER[wine.tier]&&<div style={{fontSize:12,fontWeight:700,color:col,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',marginBottom:3}}>{TIER[wine.tier]}</div>}
-                  <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{wine.name}</div>
+                  <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{WineDNA.shownName(wine)}</div>
                   {wine.producer&&!wine.name.includes(wine.producer)&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{wine.producer}</div>}
                 </div>
                 {wine.price_local>0&&(

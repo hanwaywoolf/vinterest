@@ -73,7 +73,7 @@ const lvl=(v,lo,mid,hi)=>v>=0.68?hi:v>=0.38?mid:lo;
 /* Wine name + vintage for display — skips appending the vintage again when it's already part of the name string (e.g. "Viña Ardanza Reserva 2020"). */
 function _wineTitle(w){
   if(!w) return '';
-  const name=(w.name||'').trim();
+  const name=WineDNA.shownName(w);
   const vy=(w.vintage&&w.vintage!==0&&w.vintage!=='NV')?String(w.vintage):null;
   if(!vy||name.endsWith(vy)) return name;
   return `${name} ${vy}`;
@@ -341,7 +341,7 @@ function FirstScanStory({wine,onDone}){
     {!revealing&&<div style={{padding:'14px 18px 8px',flexShrink:0,display:'flex',alignItems:'flex-start',gap:12}}>
       <div style={{flex:1,minWidth:0}}>
         <div style={{fontSize:13,fontWeight:700,color:'#E05A74',fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>Your first bottle</div>
-        <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{wine.name}</div>
+        <div style={{fontSize:20,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.2,marginTop:2}}>{WineDNA.shownName(wine)}</div>
         <div style={{fontSize:14,color:'rgba(255,255,255,0.6)',fontFamily:C.P,marginTop:2}}>Here's its story, and what Vinterest will do with every bottle after it.</div>
       </div>
       <span onClick={onDone} role="button" style={{fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.6)',fontFamily:C.P,cursor:'pointer',paddingTop:2}}>Skip</span>
@@ -367,7 +367,7 @@ function ScanHeader({wine,nav,back,plain}){ const T=useTheme(); // plain: just B
     </div>
     <div style={{flex:1,minWidth:0}}>
       {plain?null:<>
-      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{wine.name}</div>
+      <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.15,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(wine)}</div>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[wine.vintage&&wine.vintage!==0?wine.vintage:'NV',wine.region!==wine.country?wine.region:null,wine.country].filter(Boolean).join(' · ')}</div>
       </>}
     </div>
