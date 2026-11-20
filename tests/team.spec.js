@@ -2837,7 +2837,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-left-row').count()).toBeGreaterThan(0);
   await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
   await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
-  await expect(page.getByTestId('c2-mins')).toContainText('Server');
+  await expect(page.getByTestId('c2-mins')).toHaveCount(0); // the minimums are set on Admin, not here
+  await expect(page.getByTestId('c2-stands')).toContainText('set on Admin');
   // The demo opens with bespoke training in flight, tracked.
   await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
   // The figure counts every track the window lists, drafts included.
@@ -3122,6 +3123,21 @@ test('the new console: Upload and Admin are one page in its own look', async ({ 
     boxes[seed] = await page.evaluate(() => ['c2-nav-venue', 'c2-page-venue'].map(t => { const el = document.querySelector(`[data-testid="${t}"] [data-testid="team-venue-logo"]`), r = el.getBoundingClientRect(), nav = el.closest('[data-testid="c2-nav-venue"]'); return [Math.round(r.width), Math.round(r.height), nav ? r.right <= nav.getBoundingClientRect().right : true]; })); }
   expect(boxes.eloise).toEqual(boxes.demo); expect(boxes.social).toEqual(boxes.demo); expect(boxes.demo[0][2]).toBe(true); expect(boxes.demo[0][1]).toBeLessThanOrEqual(36);
   await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  // The minimum for each role is set here: a step down changes what the role needs, and readiness with it.
+  await expect(page.getByTestId('c2-mins')).toContainText('Server'); await expect(page.getByTestId('c2-mins')).toContainText('Pairings');
+  const before = await page.evaluate(() => TeamLearn.need('server').glass);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Lower').click();
+  expect(await page.evaluate(() => TeamLearn.need('server').glass)).toBeCloseTo(before - 0.1, 5);
+  await expect(page.getByTestId('c2-min-row').first().getByTestId('c2-min').first()).toContainText(`${Math.round((before - 0.1) * 100)}%`);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Raise').click();
+  // Folded, every card on every page says what's in it (figures and names), never what kind of card it is.
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu', 'pos', 'upload']) { await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-' + k).click(); await page.mouse.move(700, 400);
+    const n = await page.getByTestId('c2-card-fold').count(); for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click();
+    const lines = await page.getByTestId('c2-card-summary').allInnerTexts(); expect(lines.length, k).toBe(n);
+    for (const t of lines) { expect(t, k).not.toMatch(/undefined|NaN|\[object/); expect(t.length, k + ': ' + t).toBeGreaterThan(8); }
+    expect(lines.filter(t => /\d/.test(t)).length, k + ': ' + lines.join(' | ')).toBeGreaterThanOrEqual(lines.length - 3); // a few name what's in them (the wines to train on next) with no figure
+    for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click(); }
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
   // The settings save, and the card folds to a line saying what it holds.
   await page.getByLabel('Days to learn').fill('9');
   await page.getByTestId('c2-admin-save').click();
