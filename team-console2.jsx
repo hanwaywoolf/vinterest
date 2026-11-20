@@ -328,8 +328,45 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
 /* Upload and admin, one page in the new look: the three ways to bring a list, menu or bottle in (TeamUpload c2), then
    what's live and what was published, then the restaurant's settings and its data. It replaced the classic Upload
    section, whose side column ran under the logo at the page's top right, and the separate Admin section. */
-// The new look's sections: Admin lives on the Upload page, so it has no entry of its own.
-const _C2_SECTIONS=()=>CONSOLE_SECTIONS.filter(s=>s.k!=='admin'&&(!s.only||s.only())).map(s=>s.k==='upload'?{...s,label:'Upload & admin'}:s);
+/* Integrations in the new look: where sales come from (a POS file today, live connectors later), each POS item mapped
+   once to a wine on the list, and stock. The same TeamSales calls and test ids as the classic section. */
+function _C2Pos({open}){ const T=useTheme(), acc=_c2Acc(T), two=useLayoutSize()!=='phone', src=TeamSales.source(), items=TeamSales.has()?TeamSales.items():[], [msg,setMsg]=React.useState(''), fileRef=React.useRef(null), [,bump]=React.useReducer(x=>x+1,0);
+  const onFile=e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f) return; const fr=new FileReader(); fr.onload=()=>{ const r=TeamSales.importCSV(String(fr.result)); setMsg(r.error?r.error:`${r.added} new line${r.added===1?'':'s'} read from ${r.rows}${r.skipped?`, ${r.skipped} skipped`:''}. Columns: ${r.columns.join(', ')}.`); bump(); }; fr.readAsText(f); };
+  const wines=TeamData.wines(), unm=items.filter(x=>!x.mapped), demo=TeamSales.demo(); // invented sales are said under the logo; here the card says no POS is connected
+  const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 12px 8px 0',whiteSpace:'nowrap'}, td={padding:'10px 12px 10px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'middle'};
+  const text={fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}, quiet={fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5};
+  const cap=(t,col)=><span data-cap style={{fontSize:'12px',fontWeight:500,color:col||T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em',whiteSpace:'nowrap'}}>{t}</span>;
+  const link=(t,on,testid)=><span role="button" data-cap data-testid={testid} onClick={on} style={{fontSize:'12px',fontWeight:500,color:acc,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em',cursor:'pointer',whiteSpace:'nowrap'}}>{t}</span>;
+  const LIVE=[['Square','Self-serve: the owner approves us in a browser and we read Orders, Catalog and Inventory. First live connector.','soon'],['Toast','Nightly export to an SFTP folder the venue shares, or the partner API once Toast approves us.','later'],['Lightspeed Restaurant','Partner credentials, then sales pulled hourly.','later'],['Zonal, Tevalis, Epos Now','Arranged per venue with the vendor.','later']];
+  return <div data-testid="console-pos">
+    <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={onFile} data-testid="pos-csv" style={{display:'none'}}/>
+    <_C2Head hi="Integrations" sub="your POS, and later stock" section="pos" actions={<><_C2Btn primary testid="pos-import" onClick={()=>fileRef.current&&fileRef.current.click()}>Import a sales file (CSV)</_C2Btn>
+      {src&&<_C2Btn testid="pos-clear" onClick={()=>{ if(confirm('Clear every sales line and the item map on this device?')){ TeamSales.clear(); bump(); } }}>Clear sales</_C2Btn>}</>}/>
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
+        <_C2Card title="Point of sale" testid="c2-pos" summary={demo?'No POS connected':src?`${src.label||'Connected'} · last sync ${_cAgo(src.at)}`:'Not connected'}>
+          <div data-testid="pos-state" style={{fontSize:22,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>{demo?'No POS connected':src?src.label||'Connected':'Not connected'}</div>
+          <div style={{...quiet,marginTop:6}}>{src?`Last sync ${_cAgo(src.at)} · ${src.rows} wine lines held (${TeamSales.KEEP_DAYS} days kept)`:'Nothing from your POS yet.'}{src&&src.note?<><br/>{src.note}</>:null}</div>
+          {msg&&<div data-testid="pos-import-msg" style={{...text,marginTop:10,padding:'9px 12px',border:'1px solid rgba(255,255,255,0.12)',borderRadius:10}}>{msg}</div>}
+          <div style={{...quiet,marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.08)'}}>Any POS exports item sales by day as a CSV (Toast's nightly export, Square's Reports, Lightspeed's and Zonal's reports). We read the date, item, quantity, price and server columns by name and ignore the rest; a line is never counted twice.</div></_C2Card>
+        <_C2Card title="Live connectors" testid="c2-connectors" summary={`${LIVE[0][0]} next, then ${LIVE.length-1} planned`}>
+          {LIVE.map(([n,d,st],i)=><div key={n} style={{padding:'9px 0',borderTop:i?'1px solid rgba(255,255,255,0.08)':'none'}}><div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><span style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{n}</span>{cap(st==='soon'?'Needs accounts · next':'Planned',st==='soon'?_C2_TONE.note:T.mid)}</div><div style={{...quiet,marginTop:2}}>{d}</div></div>)}
+          <div style={{...quiet,marginTop:8,paddingTop:12,borderTop:'1px solid rgba(255,255,255,0.08)'}}>A connector holds the venue's token on our server only, never in the app, and needs restaurant accounts first. Until then the CSV import does the same job by hand.</div></_C2Card>
+      </div>
+      {TeamSales.has()&&<_C2Card title="POS items and the wines they are" right={unm.length?`${unm.length} to confirm`:'all mapped'} testid="c2-pos-map" summary={`${items.length} POS items · ${unm.length?`${unm.length} to confirm`:'all mapped'}`}>
+        <div style={{...quiet,marginBottom:10,maxWidth:820}}>POS item names never match a list ("HSE RED 175", "Rioja Res Btl"), so each is mapped once and kept. A glass and a bottle of one wine are two POS items mapped to the same wine. An item with no match is a new arrival nobody has uploaded yet.</div>
+        <div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table data-testid="pos-map" className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>POS item</th><th style={th}>Sold, 90 days</th><th style={th} className="c2l">Our wine</th><th style={th}/></tr></thead>
+          <tbody>{items.slice(0,80).map(x=><tr key={x.item} data-testid={x.mapped?'pos-map-row':'pos-unmapped'}>
+            <td style={{...td,borderLeft:`3px solid ${x.mapped?'transparent':_C2_TONE.note}`,paddingLeft:10}}><span style={{fontWeight:500}}>{x.item}</span>{!x.mapped&&<span style={{display:'block',fontSize:13,color:_C2_TONE.note}}>New in your POS{x.suggest?` · looks like ${TeamData.short(x.suggest)}`:' · no wine on the list matches'}</span>}</td>
+            <td style={td}>{x.qty} · {_cMoney(x.sales)}</td>
+            <td style={td} className="c2l"><select aria-label={`Wine for ${x.item}`} value={x.mapped?(x.wine?x.wine.id:''):(x.suggest?x.suggest.id:'?')} onChange={e=>{ if(e.target.value==='?') return; TeamSales.setMap(x.item,e.target.value); bump(); }} style={{padding:'7px 9px',border:'1px solid rgba(255,255,255,0.18)',borderRadius:0,background:'#0b0b0c',colorScheme:'dark',color:T.ink,fontFamily:C.P,fontSize:14,outline:'none',maxWidth:280,width:'100%'}}>
+              {!x.mapped&&<option value="?">Choose…</option>}<option value="">Not a wine on the list</option>{wines.map(w=><option key={w.id} value={w.id}>{TeamData.short(w)}</option>)}</select></td>
+            <td style={{...td,textAlign:'right',paddingRight:0}}>{!x.mapped&&x.suggest?link('Confirm',()=>{ TeamSales.setMap(x.item,x.suggest.id); bump(); },'pos-confirm'):x.mapped&&!x.ignored&&x.wine?link('Open',()=>open({view:'wine',id:x.wine.id})):null}</td></tr>)}</tbody></table></div></_C2Card>}
+      <_C2Card title="Stock" testid="c2-stock" summary="No stock source yet"><div style={{...text,maxWidth:820}}>No stock source. Where a venue counts stock in Square, its Inventory API gives "running low" and "delivery arrived"; otherwise stock is a count entered here or a file from a beverage-inventory tool (WISK, BevSpot). We don't try to be the stock system.</div></_C2Card>
+    </div>
+  </div>; }
+// The new look's sections: uploads and settings are one page, Admin, under the `upload` key every Upload button opens, last in the navigation.
+const _C2_SECTIONS=()=>{ const xs=CONSOLE_SECTIONS.filter(s=>s.k!=='admin'&&(!s.only||s.only())); return [...xs.filter(s=>s.k!=='upload'),...xs.filter(s=>s.k==='upload').map(s=>({...s,label:'Admin',icon:'edit'}))]; };
 function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.get(), vs=[...(d.versions||[])].reverse().slice(0,6);
   const [name,setName]=React.useState(d.venue.name||''), [due,setDue]=React.useState(String(d.settings.dueDays||7)), [saved,setSaved]=React.useState(false);
   const save=()=>{ TeamData.setVenue({name:name.trim()||d.venue.name}); const n=Math.max(1,Math.min(60,parseInt(due,10)||7)); TeamData.setSetting('dueDays',n); setDue(String(n)); setSaved(true); refresh&&refresh(); };
@@ -339,7 +376,7 @@ function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.
   const fig=(n,t)=><div key={t} style={{border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'10px 12px',minWidth:0}}><div style={{fontSize:22,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.1}}>{n}</div><div style={{marginTop:4}}>{cap(t)}</div></div>;
   const text={fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}, kind=v=>v.kind==='list'?'Wine list':v.kind==='cocktails'?'Cocktails':'Menu';
   return <div data-testid="console-upload">
-    <_C2Head hi="Upload & admin" sub="your list, menu and settings" section="upload"/>
+    <_C2Head hi="Admin" sub="your list, menu and settings" section="upload"/>
     <div data-testid="console-admin" style={{display:'flex',flexDirection:'column',gap:16}}>
       <_C2Card title="Bring in a list, a menu or a bottle" testid="c2-upload" fold={false} sub="A photo or PDF; several photos for a long list. You approve what changed before anything is published.">
         <TeamUpload onChanged={refresh} background c2/></_C2Card>
@@ -786,7 +823,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   // The page's own height, for a side column that scrolls by itself beside a long table.
   React.useLayoutEffect(()=>{ const el=pageRef.current; if(!el) return; const set=()=>el.style.setProperty('--c2h',el.clientHeight+'px'); set(); if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(set); ro.observe(el); return ()=>ro.disconnect(); },[]);
   const page=phone?<_C2Mobile open={go} me={me}/>:section==='training'?<_C2Training open={go} setSection={setSection} me={me} two={two} wide={w>=1280}/>:section==='team'?<_C2Team open={go} setSection={setSection} me={me} two={two} wide={w>=1280} refresh={()=>{ refresh&&refresh(); bump(); }}/>:section==='wines'?<_C2Wines open={go} setSection={setSection} two={two}/>:section==='cocktails'?<_C2Cocktails open={go} setSection={setSection} two={two} wide={w>=1280}/>:section==='menu'?<_C2Menu open={go} setSection={setSection} me={me} two={two} wide={w>=1280}/>
-    :section==='upload'||section==='admin'?<_C2Setup refresh={()=>{ refresh&&refresh(); bump(); }} two={two}/>:section==='pos'?<_CPos open={go}/>:section==='sales'?<_C2Sales open={go} setSection={setSection} two={two}/>:<_C2Dash open={go} setSection={setSection} me={me} two={two} jump={jump}/>;
+    :section==='upload'||section==='admin'?<_C2Setup refresh={()=>{ refresh&&refresh(); bump(); }} two={two}/>:section==='pos'?<_C2Pos open={go}/>:section==='sales'?<_C2Sales open={go} setSection={setSection} two={two}/>:<_C2Dash open={go} setSection={setSection} me={me} two={two} jump={jump}/>;
   const venue=TeamData.get().venue;
   // Every table in the new look: the first column (the wine, dish or person) reads from the left, and everything
   // under the other headers sits centred beneath them.

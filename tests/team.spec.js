@@ -3081,7 +3081,8 @@ test('the new console: Upload and Admin are one page in its own look', async ({ 
   await page.getByTestId('c2-nav-tab').click();
   await expect(page.getByTestId('console-nav-admin')).toHaveCount(0);
   await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
-  await expect(page.getByTestId('c2-head')).toContainText('Upload & admin');
+  await expect(page.getByTestId('console-nav-upload')).toHaveText(/^Admin$/);
+  await expect(page.getByTestId('c2-head')).toContainText('Admin'); await expect(page.getByTestId('c2-head')).not.toContainText('Upload &');
   for (const t of ['c2-upload', 'c2-live', 'c2-published', 'c2-restaurant', 'c2-data', 'c2-accounts']) await expect(page.getByTestId(t)).toBeVisible();
   // Nothing on the page runs under the restaurant's logo at the top right (the classic Upload's side column did).
   const logo = await page.getByTestId('c2-page-venue').boundingBox();
@@ -3106,6 +3107,20 @@ test('the new console: Upload and Admin are one page in its own look', async ({ 
   await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
   await expect(page.getByTestId('c2-restaurant').getByTestId('c2-card-summary')).toContainText('9 days');
   await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
+  // Integrations is in the same look: its cards, the POS items as a table, and a sales file read from the page's head.
+  await page.getByTestId('c2-nav-tab').click();
+  expect(await page.locator('[data-testid^="console-nav-"]').last().getAttribute('data-testid')).toBe('console-nav-upload');
+  await page.getByTestId('console-nav-pos').click(); await page.mouse.move(700, 400);
+  await expect(page.getByTestId('c2-head')).toContainText('Integrations');
+  for (const t of ['c2-pos', 'c2-connectors', 'c2-pos-map', 'c2-stock']) await expect(page.getByTestId(t)).toBeVisible();
+  await expect(page.getByTestId('console-pos')).not.toContainText(/demo data/i);
+  expect(await page.getByTestId('pos-import').evaluate(el => el.offsetWidth < 320)).toBe(true);
+  await expect(page.getByTestId('pos-unmapped').first()).toBeVisible();
+  const left = await page.getByTestId('pos-unmapped').count();
+  await page.getByTestId('pos-unmapped').first().locator('select').selectOption('');
+  await expect(page.getByTestId('pos-unmapped')).toHaveCount(left - 1);
+  await page.getByTestId('pos-csv').setInputFiles({ name: 'sales.csv', mimeType: 'text/csv', buffer: Buffer.from('date,item,qty,price,server\n2026-11-19,Picpoul de Pinet 175,2,9.5,Dani\n') });
+  await expect(page.getByTestId('pos-import-msg')).toContainText('1 new line');
   expect(errors).toEqual([]);
   await ctx.close();
 });

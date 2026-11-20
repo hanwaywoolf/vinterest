@@ -455,6 +455,13 @@ const TeamReport = {
       if(low&&low.kb.people.length<low.kb.of) add(low.kb.people.length<Math.ceil(low.kb.of/2)?'bad':'note',`${low.cocktail.name}: ${low.kb.people.length} of ${low.kb.of} trained`);
       if(bar.length) add(bar.every(x=>x.part.share>=x.part.need)?'good':'note',`Behind the bar: ${bar.map(x=>`${x.person.name.split(' ')[0]} trained on ${x.part.known} of ${x.part.total}`).join(', ')}`);
       const paired=rows.filter(x=>x.dishes.length).length; add('good',`${paired} of ${rows.length} poured with a dish on the menu`); }
+    // Integrations: where sales come from and how fresh they are, then what's left to map.
+    else if(section==='pos'){ const src=TeamSales.source(), items=TeamSales.has()?TeamSales.items():[], unm=items.filter(x=>!x.mapped).length;
+      if(src){ const d=Math.round((Date.now()-src.at)/86400000); out.pre='Your sales were last brought in '; out.strong=d<=0?'today':d===1?'yesterday':`${d} days ago`; out.post='.'; }
+      else { out.pre='No sales have been '; out.strong='brought in yet'; out.post='.'; }
+      if(src) add('good',`${src.rows} wine lines held, ${TeamSales.KEEP_DAYS} days kept`);
+      if(items.length) add(unm?'note':'good',unm?`${unm} POS item${unm===1?'':'s'} to match to a wine`:`All ${items.length} POS items matched to a wine`);
+      add('mut','Sales set what the team learns first; they never change anyone\'s readiness'); }
     // Upload and admin: what's live and when it last changed, then anything a publish left unwritten or waiting.
     else if(section==='upload'){ const d=TeamData.get(), vs=d.versions||[], last=vs[vs.length-1], ws=TeamData.wines(), ds=TeamData.dishes(), pend=TeamData.pending(), left=pend.cards+pend.pairings+pend.dishNotes;
       if(d.draft){ out.pre='A new '+(d.draft.kind==='list'?'wine list':'menu')+' is '; out.strong='waiting for you'; out.post=' to publish.'; }
