@@ -455,6 +455,14 @@ const TeamReport = {
       if(low&&low.kb.people.length<low.kb.of) add(low.kb.people.length<Math.ceil(low.kb.of/2)?'bad':'note',`${low.cocktail.name}: ${low.kb.people.length} of ${low.kb.of} trained`);
       if(bar.length) add(bar.every(x=>x.part.share>=x.part.need)?'good':'note',`Behind the bar: ${bar.map(x=>`${x.person.name.split(' ')[0]} trained on ${x.part.known} of ${x.part.total}`).join(', ')}`);
       const paired=rows.filter(x=>x.dishes.length).length; add('good',`${paired} of ${rows.length} poured with a dish on the menu`); }
+    // Upload and admin: what's live and when it last changed, then anything a publish left unwritten or waiting.
+    else if(section==='upload'){ const d=TeamData.get(), vs=d.versions||[], last=vs[vs.length-1], ws=TeamData.wines(), ds=TeamData.dishes(), pend=TeamData.pending(), left=pend.cards+pend.pairings+pend.dishNotes;
+      if(d.draft){ out.pre='A new '+(d.draft.kind==='list'?'wine list':'menu')+' is '; out.strong='waiting for you'; out.post=' to publish.'; }
+      else if(last){ out.pre='Your '+(last.kind==='menu'?'menu':'list')+' was last published '; out.strong=new Date(last.at).toLocaleDateString(undefined,{day:'numeric',month:'long'}); out.post='.'; }
+      else { out.pre='Nothing is '; out.strong='published yet'; out.post='.'; }
+      add('good',`${ws.length} wines and ${ds.length} dishes live`);
+      add(left?'note':'good',left?`${left} still to write: staff cards, pairings or dish notes`:'Every wine has its staff card and every dish its pairings');
+      add('mut','Nothing reaches the team until you publish it'); }
     return out; },
 };
 Object.assign(window,{TeamReport});

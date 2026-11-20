@@ -2923,7 +2923,8 @@ for (const [W, H, name] of [[1194, 834, 'on its side'], [834, 1194, 'upright']])
   await stubNetwork(ctx);
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
   await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
-  if (W > 1000) expect(await page.getByTestId('console-nav-admin').evaluate(el => el.parentElement.scrollWidth <= el.parentElement.clientWidth + 1)).toBe(true);
+  await expect(page.getByTestId('console-nav-admin')).toHaveCount(0);
+  if (W > 1000) expect(await page.getByTestId('console-nav-pos').evaluate(el => el.parentElement.scrollWidth <= el.parentElement.clientWidth + 1)).toBe(true);
   for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) {
     await page.getByTestId('console-nav-' + k).click(); await page.waitForTimeout(250);
     const r = await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), cut = [];
@@ -3070,6 +3071,44 @@ for (const [seed, money] of [['social', '$'], ['eloise', '$'], ['princess', '£'
 
 // Cocktails in the new look: every cocktail on the list with who is trained on it and the dishes its card pours it with,
 // the bar team's progress, what needs the manager, and a cocktail opening its card in the drawer; its cards move like the rest.
+test('the new console: Upload and Admin are one page in its own look', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = 'side'; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  // Admin has no entry of its own: its settings and the restaurant's data sit under the uploads.
+  await page.getByTestId('c2-nav-tab').click();
+  await expect(page.getByTestId('console-nav-admin')).toHaveCount(0);
+  await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  await expect(page.getByTestId('c2-head')).toContainText('Upload & admin');
+  for (const t of ['c2-upload', 'c2-live', 'c2-published', 'c2-restaurant', 'c2-data', 'c2-accounts']) await expect(page.getByTestId(t)).toBeVisible();
+  // Nothing on the page runs under the restaurant's logo at the top right (the classic Upload's side column did).
+  const logo = await page.getByTestId('c2-page-venue').boundingBox();
+  const hit = await page.evaluate(({ x, y, w, h }) => [...document.querySelectorAll('[data-testid="console-upload"] [data-testid^="c2-"]:not([data-testid="c2-head"])')].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.left < x + w && r.right > x && r.top < y + h && r.bottom > y; }).map(el => el.dataset.testid), { x: logo.x, y: logo.y, w: logo.width, h: logo.height });
+  expect(hit).toEqual([]);
+  // The three ways in sit side by side, and no button is stretched across its tile.
+  const tiles = await Promise.all(['list', 'menu', 'label'].map(k => page.getByTestId('c2-upload-' + k).boundingBox()));
+  expect(new Set(tiles.map(b => Math.round(b.y))).size).toBe(1);
+  expect(await page.getByTestId('c2-upload-list').locator('[data-team-btn]').evaluate(el => el.offsetWidth < el.parentElement.clientWidth * 0.7)).toBe(true);
+  // A prepared arrival goes to review and publishes from here, with buttons that hug their labels.
+  await page.getByTestId('team-arrival').first().click();
+  await expect(page.getByTestId('team-found')).toBeVisible();
+  await page.getByText('Add to the list').click();
+  await expect(page.getByTestId('team-review')).toBeVisible();
+  await expect(page.getByTestId('c2-fact')).toContainText('waiting for you');
+  expect(await page.getByTestId('team-review').locator('[data-team-btn]').evaluateAll(els => els.every(el => el.offsetWidth < 260))).toBe(true);
+  await page.getByText('Discard').click();
+  // The settings save, and the card folds to a line saying what it holds.
+  await page.getByLabel('Days to learn').fill('9');
+  await page.getByTestId('c2-admin-save').click();
+  expect(await page.evaluate(() => TeamData.get().settings.dueDays)).toBe(9);
+  await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
+  await expect(page.getByTestId('c2-restaurant').getByTestId('c2-card-summary')).toContainText('9 days');
+  await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
 test('the new console\'s Cocktails page', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   await stubNetwork(ctx);

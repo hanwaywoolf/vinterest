@@ -325,6 +325,46 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
   </div>; }
 
 /* The classic section's editor, kept under a fold so nothing the console could do is lost in the new look. */
+/* Upload and admin, one page in the new look: the three ways to bring a list, menu or bottle in (TeamUpload c2), then
+   what's live and what was published, then the restaurant's settings and its data. It replaced the classic Upload
+   section, whose side column ran under the logo at the page's top right, and the separate Admin section. */
+// The new look's sections: Admin lives on the Upload page, so it has no entry of its own.
+const _C2_SECTIONS=()=>CONSOLE_SECTIONS.filter(s=>s.k!=='admin'&&(!s.only||s.only())).map(s=>s.k==='upload'?{...s,label:'Upload & admin'}:s);
+function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.get(), vs=[...(d.versions||[])].reverse().slice(0,6);
+  const [name,setName]=React.useState(d.venue.name||''), [due,setDue]=React.useState(String(d.settings.dueDays||7)), [saved,setSaved]=React.useState(false);
+  const save=()=>{ TeamData.setVenue({name:name.trim()||d.venue.name}); const n=Math.max(1,Math.min(60,parseInt(due,10)||7)); TeamData.setSetting('dueDays',n); setDue(String(n)); setSaved(true); refresh&&refresh(); };
+  const ws=TeamData.wines(), glass=ws.filter(TeamData.byGlass).length, ds=TeamData.dishes(), cs=TeamData.cocktails();
+  const fld={display:'block',marginTop:6,padding:'9px 11px',border:'1px solid rgba(255,255,255,0.18)',borderRadius:0,background:'transparent',color:T.ink,fontFamily:C.P,fontSize:15,outline:'none',boxSizing:'border-box'};
+  const cap=t=><div data-cap style={{fontSize:'12px',fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em'}}>{t}</div>;
+  const fig=(n,t)=><div key={t} style={{border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'10px 12px',minWidth:0}}><div style={{fontSize:22,fontWeight:300,color:T.ink,fontFamily:C.P,lineHeight:1.1}}>{n}</div><div style={{marginTop:4}}>{cap(t)}</div></div>;
+  const text={fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55}, kind=v=>v.kind==='list'?'Wine list':v.kind==='cocktails'?'Cocktails':'Menu';
+  return <div data-testid="console-upload">
+    <_C2Head hi="Upload & admin" sub="your list, menu and settings" section="upload"/>
+    <div data-testid="console-admin" style={{display:'flex',flexDirection:'column',gap:16}}>
+      <_C2Card title="Bring in a list, a menu or a bottle" testid="c2-upload" fold={false} sub="A photo or PDF; several photos for a long list. You approve what changed before anything is published.">
+        <TeamUpload onChanged={refresh} background c2/></_C2Card>
+      <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
+        <_C2Card title="Live now" testid="c2-live" summary={`${ws.length} wines · ${ds.length} dishes`}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(104px,1fr))',gap:10}}>{[fig(ws.length,'Wines'),fig(glass,'By the glass'),fig(ds.length,'Dishes'),cs.length>0&&fig(cs.length,'Cocktails'),fig(Object.keys(d.cards).length,'Staff cards'),fig(Object.keys(d.pairings).length,'Pairings')]}</div></_C2Card>
+        <_C2Card title="Published" testid="c2-published" summary={vs.length?`Last on ${_cDate(vs[0].at)}`:'Nothing yet'}>
+          {vs.length?vs.map((v,i)=><div key={v.at+'-'+v.kind} data-testid="c2-version" style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'baseline',padding:'9px 0',borderTop:i?'1px solid rgba(255,255,255,0.08)':'none',fontSize:14,fontFamily:C.P}}>
+            <span style={{color:T.ink}}>{_cDate(v.at)} <span style={{color:T.mid}}>· {kind(v)}</span></span><span style={{color:T.mid,textAlign:'right'}}>{v.added.length} new · {v.changed.length} changed · {v.removed.length} gone</span></div>)
+            :<div style={text}>Nothing published yet.</div>}</_C2Card>
+        <_C2Card title="Restaurant" testid="c2-restaurant" summary={`${d.venue.name||'Unnamed'} · ${d.settings.dueDays||7} days to learn something new`}>
+          <div style={{display:'flex',gap:14,flexWrap:'wrap',alignItems:'flex-end'}}>
+            <label style={{flex:'1 1 220px',minWidth:0}}>{cap('Name')}<input aria-label="Restaurant name" value={name} onChange={e=>{ setName(e.target.value); setSaved(false); }} style={{...fld,width:'100%'}}/></label>
+            <label>{cap('Days to learn something new')}<input aria-label="Days to learn" value={due} onChange={e=>{ setDue(e.target.value); setSaved(false); }} inputMode="numeric" style={{...fld,width:110}}/></label>
+            <_C2Btn primary testid="c2-admin-save" onClick={save}>{saved?'Saved':'Save'}</_C2Btn></div>
+          <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>Prices are in {TeamData.currency().code}; one site in the pilot.</div></_C2Card>
+        <_C2Card title="Data" testid="c2-data" summary="Kept on this device">
+          <div style={text}>Everything is on this device: the list, menu, cards, pairings, every person's training and any sales. Nothing is synced until restaurants have accounts.</div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}><_C2Btn testid="team-export" onClick={()=>TeamData.exportFile()}>Export as a file</_C2Btn>
+            <_C2Btn onClick={()=>{ if(confirm('Start again? This clears the restaurant, everyone\'s training and sales on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); refresh&&refresh(); } }}>Start again</_C2Btn></div></_C2Card>
+        <_C2Card title="Accounts and billing" testid="c2-accounts" summary="An account per restaurant comes next" style={two?{gridColumn:'1 / -1'}:undefined}>
+          <div style={text}>Next: an account per restaurant with sites and members, each person on their own phone, and billing per site through Stripe. The console then runs on the web with the same screens.</div></_C2Card>
+      </div>
+    </div>
+  </div>; }
 function _C2Manage({k,title,children}){ const T=useTheme(), acc=_c2Acc(T), [on,setOn]=React.useState(()=>!TeamFold.folded(k,true));
   return <div style={{marginTop:16}}><div role="button" data-testid={'c2-manage-'+k} aria-expanded={on} onClick={()=>setOn(v=>{ TeamFold.set(k,v); return !v; })} style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,cursor:'pointer',padding:'6px 0'}}>{on?'Hide':title} {on?'↑':'↓'}</div>{on&&<div style={{marginTop:10}}>{children}</div>}</div>; }
 const _C2_WIN={'At its peak':'#6FD79C','Drinking well':'#9CC9F5','Still young':'#F2B84B','Past its best':'#F58B7C'};
@@ -746,7 +786,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   // The page's own height, for a side column that scrolls by itself beside a long table.
   React.useLayoutEffect(()=>{ const el=pageRef.current; if(!el) return; const set=()=>el.style.setProperty('--c2h',el.clientHeight+'px'); set(); if(typeof ResizeObserver==='undefined') return; const ro=new ResizeObserver(set); ro.observe(el); return ()=>ro.disconnect(); },[]);
   const page=phone?<_C2Mobile open={go} me={me}/>:section==='training'?<_C2Training open={go} setSection={setSection} me={me} two={two} wide={w>=1280}/>:section==='team'?<_C2Team open={go} setSection={setSection} me={me} two={two} wide={w>=1280} refresh={()=>{ refresh&&refresh(); bump(); }}/>:section==='wines'?<_C2Wines open={go} setSection={setSection} two={two}/>:section==='cocktails'?<_C2Cocktails open={go} setSection={setSection} two={two} wide={w>=1280}/>:section==='menu'?<_C2Menu open={go} setSection={setSection} me={me} two={two} wide={w>=1280}/>
-    :section==='upload'?<_CUpload refresh={refresh}/>:section==='pos'?<_CPos open={go}/>:section==='admin'?<_CAdmin refresh={refresh}/>:section==='sales'?<_C2Sales open={go} setSection={setSection} two={two}/>:<_C2Dash open={go} setSection={setSection} me={me} two={two} jump={jump}/>;
+    :section==='upload'||section==='admin'?<_C2Setup refresh={()=>{ refresh&&refresh(); bump(); }} two={two}/>:section==='pos'?<_CPos open={go}/>:section==='sales'?<_C2Sales open={go} setSection={setSection} two={two}/>:<_C2Dash open={go} setSection={setSection} me={me} two={two} jump={jump}/>;
   const venue=TeamData.get().venue;
   // Every table in the new look: the first column (the wine, dish or person) reads from the left, and everything
   // under the other headers sits centred beneath them.
@@ -755,7 +795,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
     <style>{css}</style>
     {!side&&<div data-testid="c2-top" style={{display:'flex',alignItems:'center',gap:phone?12:w>=1280?22:14,padding:phone?'calc(8px + env(safe-area-inset-top)) 16px 8px':'10px 28px',borderBottom:'1px solid rgba(255,255,255,0.08)',flexShrink:0}}>
       <div data-testid="console-venue" style={{flexShrink:0,marginRight:6,maxWidth:300}}>{TeamData.brand()?<TeamVenueLogo height={34}/>:<div style={{fontSize:18,fontWeight:600,fontFamily:C.P}}>{venue.name||'Your restaurant'}</div>}</div>
-      {phone?<div style={{flex:1}}/>:<div style={{display:'flex',gap:w>=1280?22:16,overflowX:'auto',flex:1,minWidth:0}}>{CONSOLE_SECTIONS.filter(s=>!s.only||s.only()).map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} aria-current={on?'page':undefined} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{padding:'10px 0',fontSize:14,fontFamily:C.P,fontWeight:on?500:400,color:on?T.ink:T.mid,boxShadow:on?`inset 0 -2px 0 ${acc}`:'none',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>{s.label}</div>; })}</div>}
+      {phone?<div style={{flex:1}}/>:<div style={{display:'flex',gap:w>=1280?22:16,overflowX:'auto',flex:1,minWidth:0}}>{_C2_SECTIONS().map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} aria-current={on?'page':undefined} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{padding:'10px 0',fontSize:14,fontFamily:C.P,fontWeight:on?500:400,color:on?T.ink:T.mid,boxShadow:on?`inset 0 -2px 0 ${acc}`:'none',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>{s.label}</div>; })}</div>}
       {!phone&&!side&&<div role="button" data-testid="c2-classic" onClick={()=>TeamData.setConsoleLook('classic')} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',textDecoration:'underline',textUnderlineOffset:3}}>{w>=1280?'Classic view':'Classic'}</div>}
       {/* Only on a phone, where the console is one page and this is the way back to the staff app. */}
       {phone&&<div role="button" data-testid="console-to-phone" onClick={()=>onPhone({tab:'today'})} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',textDecoration:'underline',textUnderlineOffset:3}}>Staff app</div>}
@@ -769,7 +809,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
       {navOpen&&!touring&&<div data-testid="c2-nav-scrim" onClick={()=>setNavOpen(false)} style={{position:'absolute',inset:0,zIndex:30}}/>}
       <div data-testid="c2-nav-drawer" data-open={navOpen||touring?'1':'0'} inert={navOpen||touring?undefined:''} onMouseEnter={showNav} onMouseLeave={()=>hideNav()} style={{position:'absolute',left:0,top:0,bottom:0,width:248,zIndex:31,background:'#0c0c0d',borderRight:'1px solid rgba(255,255,255,0.12)',boxShadow:navOpen||touring?'24px 0 60px rgba(0,0,0,0.6)':'none',transform:navOpen||touring?'translateX(0)':'translateX(-102%)',transition:'transform .2s ease',display:'flex',flexDirection:'column',padding:'18px 12px calc(14px + env(safe-area-inset-bottom))'}}>
         <div style={{padding:'2px 10px 16px'}}>{TeamData.brand()?<TeamVenueLogo height={32}/>:<div style={{fontSize:17,fontWeight:600,fontFamily:C.P}}>{venue.name||'Your restaurant'}</div>}</div>
-        <div style={{flex:1,minHeight:0,overflowY:'auto',display:'flex',flexDirection:'column',gap:2}}>{CONSOLE_SECTIONS.filter(x=>!x.only||x.only()).map(x=>{ const on=section===x.k; return <div key={x.k} role="button" data-testid={'console-nav-'+x.k} aria-current={on?'page':undefined} onClick={()=>{ setSection(x.k); setPanel(null); setNavOpen(false); }} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',borderRadius:10,fontSize:14,fontFamily:C.P,fontWeight:on?500:400,color:on?T.ink:T.ink2,background:on?_alpha(acc,0.14):'transparent',boxShadow:on?`inset 3px 0 0 ${acc}`:'none',cursor:'pointer'}}><Icon n={x.icon} sz={16} col={on?acc:T.mid}/>{x.label}</div>; })}</div>
+        <div style={{flex:1,minHeight:0,overflowY:'auto',display:'flex',flexDirection:'column',gap:2}}>{_C2_SECTIONS().map(x=>{ const on=section===x.k; return <div key={x.k} role="button" data-testid={'console-nav-'+x.k} aria-current={on?'page':undefined} onClick={()=>{ setSection(x.k); setPanel(null); setNavOpen(false); }} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 12px',borderRadius:10,fontSize:14,fontFamily:C.P,fontWeight:on?500:400,color:on?T.ink:T.ink2,background:on?_alpha(acc,0.14):'transparent',boxShadow:on?`inset 3px 0 0 ${acc}`:'none',cursor:'pointer'}}><Icon n={x.icon} sz={16} col={on?acc:T.mid}/>{x.label}</div>; })}</div>
         <div style={{borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:10,display:'flex',flexDirection:'column',gap:2}}>
           <div data-testid="c2-nav-me" style={{display:'flex',alignItems:'center',gap:10,padding:'4px 12px 10px'}}><TeamFace person={me} size={32}/><div style={{minWidth:0,fontFamily:C.P}}><div style={{fontSize:14,fontWeight:500,color:T.ink}}>{me.name}</div><div style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[me.role].label}</div></div></div>
           {[['c2-classic-side','Classic view',()=>TeamData.setConsoleLook('classic')]].map(([t,l,f])=><div key={t} role="button" data-testid={t} onClick={f} style={{padding:'8px 12px',borderRadius:8,fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>
