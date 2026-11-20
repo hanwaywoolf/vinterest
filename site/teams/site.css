@@ -398,17 +398,20 @@ footer a { text-decoration: none; }
 
 /* Pricing */
 .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 44px; align-items: stretch; }
-.tier { border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px; background: #fff; display: flex; flex-direction: column; gap: 12px; position: relative; }
+/* Each card's six parts (kind, name, who, price, what's in it, button) sit on rows shared across the cards, so a
+   name or sentence that wraps in one card keeps every price line and list level with its neighbours'. */
+.tier { border: 1px solid var(--line); border-radius: 18px; padding: 24px 22px; background: #fff; display: grid; grid-row: span 6; grid-template-rows: subgrid; row-gap: 12px; align-content: start; position: relative; }
 .tier.pick { border-color: color-mix(in srgb, var(--c) 45%, transparent); box-shadow: 0 30px 60px -36px color-mix(in srgb, var(--c) 70%, transparent); }
 .tier .k { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--c); }
 .tier h3 { font-size: 22px; }
-.tier .who { font-size: 14px; color: var(--ink-2); min-height: 4.5em; }
+.tier .who { font-size: 14px; color: var(--ink-2); }
 .tier .price { font-size: 15px; font-weight: 700; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .tier .price small { display: block; font-size: 12px; font-weight: 400; color: var(--mute); }
 .tier ul { list-style: none; display: grid; gap: 8px; font-size: 14px; color: var(--ink-2); }
 .tier li { display: flex; gap: 8px; }
 .tier li::before { content: '✓'; color: var(--c); font-weight: 700; flex: none; }
-.tier .btn { margin-top: auto; width: 100%; }
+.tier .btn { align-self: end; width: 100%; }
+.tier ul { align-self: start; }
 .every { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 32px; margin-top: 32px; }
 .every div { padding: 16px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
 .every div b { display: block; font-weight: 600; }
@@ -424,7 +427,7 @@ footer a { text-decoration: none; }
   .map .r { grid-template-columns: 1fr; gap: 2px; }
   .map .r span:nth-child(2) { display: none; }
 }
-@media (max-width: 560px) { .tiers { grid-template-columns: 1fr; } .tier .who { min-height: 0; } }
+@media (max-width: 560px) { .tiers { grid-template-columns: 1fr; } }
 
 /* The console demo: the tabs as a list beside the laptop, each saying what's on screen; the laptop
    opens the live demo. On a phone the tabs go back to a row over the laptop, with the line under it. */
