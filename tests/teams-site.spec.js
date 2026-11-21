@@ -544,3 +544,29 @@ test('the pricing cards line up: price, list and button level across the row', a
   for (const row of tops) { expect(row.length).toBe(4); expect(new Set(row).size, row.join(' ')).toBe(1); }
   await page.close();
 });
+
+// Day to day: three parts, each with a scene of the staff app's own screens (taken by npm run site:teams:shots);
+// choosing a part shows its scene and holds it, and every picture is a phone's shape.
+test('Day to day turns through its three parts and shows the app as it is', async ({ browser }) => {
+  for (const width of [390, 1280]) {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    await page.goto(BASE + '/?live=off');
+    await page.locator('#day').scrollIntoViewIfNeeded();
+    const tabs = page.locator('#day .dtabs button'), scenes = page.locator('#day .dscene');
+    await expect(tabs).toHaveCount(3); await expect(scenes).toHaveCount(3);
+    await expect(page.locator('#day')).toHaveClass(/seen/);
+    for (let i = 0; i < 3; i++) {
+      await tabs.nth(i).click();
+      await expect(tabs.nth(i)).toHaveAttribute('aria-selected', 'true');
+      await expect(scenes.nth(i)).toHaveClass(/on/);
+      await expect(page.locator('#day .dscene.on')).toHaveCount(1);
+      // On a phone the part's words sit in the caption under the tabs.
+      if (width < 1024) await expect(page.locator('#dcap')).toHaveText(await tabs.nth(i).locator('.t').textContent());
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    const shapes = await page.evaluate(() => Promise.all(Array.from(document.querySelectorAll('#day .phone img')).map((im) => new Promise((done) => { const i = new Image(); i.onload = () => done([im.getAttribute('src'), i.naturalWidth / i.naturalHeight]); i.onerror = () => done([im.getAttribute('src'), 0]); i.src = im.src; }))));
+    expect(shapes.length).toBe(7);
+    for (const [src, ratio] of shapes) expect(Math.abs(ratio - 390 / 844), src).toBeLessThan(0.01);
+    await page.close();
+  }
+});

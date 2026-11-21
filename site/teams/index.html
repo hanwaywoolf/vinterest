@@ -116,16 +116,40 @@
   </div>
 </section>
 
-<section class="how" id="how">
+<section class="day dark" id="how">
   <div class="wrap">
     <div class="head">
       <div class="eyebrow" style="--c:var(--sky)">Day to day</div>
-      <h2>Then, every service.</h2>
+      <h2>A photo of the chef's board. <em>Scribbles and all.</em></h2>
+      <p class="lead">That's what a change takes. Tonight's special, a new bottle, a reprinted list: photograph it and Vinny reads it, pairs it from your list and has it ready for the team before service.</p>
     </div>
-    <div class="steps">
-      <div class="step" style="--c:var(--sky)"><span class="n">1</span><h3>Your list, kept current.</h3><p>When the list or menu changes, photograph the page or one new bottle. Vinny writes the training for it, and nothing reaches the team until you approve it.</p><div class="phone"><div class="scr"><img src="img/phone-upload.jpg" alt="Upload the list, the menu, or one bottle from its label"></div></div></div>
-      <div class="step" style="--c:var(--gold)"><span class="n">2</span><h3>Train on the floor.</h3><p>Five questions before service, on their own phone, on your wines and your dishes. Tested, not told, so it sticks.</p><div class="phone"><div class="scr"><img src="img/phone-drill.jpg" alt="A question before service"></div></div></div>
-      <div class="step" style="--c:var(--neon)"><span class="n">3</span><h3>Know who's ready.</h3><p>One readiness figure per person, checked without warning, against the minimum you set for each role, every service.</p><div class="phone"><div class="scr"><img src="img/phone-today-staff.jpg" alt="A bartender's readiness"></div></div></div>
+    <div class="dayg" id="day">
+      <div class="dtabs" role="tablist" aria-label="Day to day">
+        <button role="tab" aria-selected="true" style="--c:var(--sky)"><span class="n">01</span><b>Every change, from a photo.</b><span class="t">A special off the board, a new bottle from its label, a reprinted list or menu. Photograph it, type it or say it. Vinny reads it, pairs it from your list and flags the allergens for the kitchen to confirm. A dish 86'd at six is one tap. Nothing reaches the team until you approve it.</span><i></i></button>
+        <button role="tab" aria-selected="false" style="--c:var(--gold)"><span class="n">02</span><b>Train the team.</b><span class="t">Five questions before service on each person's phone, dealt from your wines, your dishes and their pairings. Vinny's test goes after what that person has missed or let fade. And when you see something on the floor, say it in your own words and push a plan to that one person.</span><i></i></button>
+        <button role="tab" aria-selected="false" style="--c:var(--neon)"><span class="n">03</span><b>Ready for service, together.</b><span class="t">Before the shift, everyone accepts tonight's briefing: the specials with their pour and allergens, what's 86'd, what's on feature. You see who has read it, and who can deliver the list, the menu and the pairings with confidence tonight.</span><i></i></button>
+      </div>
+      <p class="dcap" id="dcap" aria-hidden="true"></p>
+      <div class="dstage" aria-live="polite">
+        <div class="dscene on" style="--c:var(--sky)">
+          <div class="note" aria-hidden="true"><div class="pin"></div><u>Specials, Sat</u><p>Roast turbot, brown butter,<br>sea beans <b>34</b></p><p><s>halibut</s> none in today</p><p class="sm">fish + butter!! tell the floor</p><p class="sm">E, what do we pour w/ it?</p><span class="ring"></span><span class="view"></span></div>
+          <svg class="wire" viewBox="0 0 120 60" aria-hidden="true"><path d="M4 44 C 40 4, 80 4, 112 30" /><path d="M100 22 L113 31 L98 37" /></svg>
+          <div class="phone p1"><div class="scr"><img src="img/day/special.jpg" alt="A special read from a photo of the chef's board: its price, allergens for the kitchen to confirm, and the bottle and glass to pour with it" loading="lazy"></div></div>
+          <div class="dchips" aria-hidden="true"><span>Special</span><span>New bottle</span><span>New vintage</span><span>Price change</span><span>Menu reprint</span><span>86'd</span><span>On feature</span></div>
+        </div>
+        <div class="dscene" style="--c:var(--gold)">
+          <div class="phone pl"><div class="scr"><img src="img/day/practise.jpg" alt="Practise: today's drill, Ask Vinny, a guest at your table and Vinny's test" loading="lazy"></div></div>
+          <div class="phone pc"><div class="scr"><img src="img/day/drill.jpg" alt="A drill question on one of the restaurant's own wines" loading="lazy"></div></div>
+          <div class="phone pr"><div class="scr"><img src="img/scenes/plan-phone.jpg" alt="A plan the manager pushed, on that person's Today" loading="lazy"></div></div>
+          <div class="dtag ta">Vinny's test, aimed at what they've missed</div><div class="dtag tb">A plan pushed by the manager</div>
+        </div>
+        <div class="dscene" style="--c:var(--neon)">
+          <div class="phone pl"><div class="scr"><img src="img/day/today.jpg" alt="A server's Today: tonight's 86'd dish, the special and its pour, the wine on feature and where they stand" loading="lazy"></div></div>
+          <div class="phone pc"><div class="scr"><img src="img/day/briefing.jpg" alt="Tonight's briefing on a server's phone, to read and accept before the shift" loading="lazy"></div></div>
+          <div class="phone pr"><div class="scr"><img src="img/day/sent.jpg" alt="The briefing sent, and who on the team has read it" loading="lazy"></div></div>
+          <div class="dtag ta">On every phone before the shift</div><div class="dtag tb">Who has read it, by name</div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -438,6 +462,19 @@ if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
     line = line.then(async () => { const c = e.target; c.style.minHeight = c.offsetHeight + 'px'; talk(c).then(() => { c.style.minHeight = ''; c.parentNode.classList.add('told'); }); await sleep(2600); });
   } }, { threshold: .5 });
   exCards.forEach((c) => io.observe(c));
+}
+
+// Day to day: three parts, each with its own scene. The parts turn by themselves once the section is on screen,
+// the line under the lit one filling as it plays; choosing one holds it there.
+{
+  const day = document.getElementById('day'), dt = Array.from(day.querySelectorAll('.dtabs button')), ds = Array.from(day.querySelectorAll('.dscene'));
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches; let di = 0, dtimer = 0, held = still, seen = false;
+  const dcap = document.getElementById('dcap');
+  const dgo = (i) => { di = i; dcap.textContent = dt[i].querySelector('.t').textContent; dt.forEach((b, k) => { b.setAttribute('aria-selected', k === i ? 'true' : 'false'); b.classList.remove('run'); }); ds.forEach((s, k) => s.classList.toggle('on', k === i));
+    clearTimeout(dtimer); if (!held && seen) { void dt[i].offsetWidth; dt[i].classList.add('run'); dtimer = setTimeout(() => dgo((i + 1) % dt.length), 8000); } };
+  dt.forEach((b, i) => b.addEventListener('click', () => { held = true; dgo(i); }));
+  new IntersectionObserver((es) => { if (!es[0].isIntersecting || seen) return; seen = true; day.classList.add('seen'); dgo(0); }, { threshold: .3 }).observe(day);
+  if (still) day.classList.add('seen');
 }
 
 // The floor carousel: turns every seven seconds; the arrows and dots hold it.

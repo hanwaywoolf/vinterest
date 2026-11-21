@@ -12,6 +12,8 @@
 //   mgr.jpg             the Dashboard at a tablet's width, for the strip that scrolls it
 //   ../crop-*.jpg       one card each for the other pages: what needs you, the sales briefing, the team, training by person,
 //                       training levels, and the top of a wine's card
+//   ../day/*.jpg       the staff app on a phone: a special read from a photo, the briefing sent, Upload, a server's
+//                       briefing, Today, Practise, a drill question, the list, a card, the menu, a dish (and ../phone-*.jpg)
 //   plan, plan-phone    one person's next step, Ask Vinny and bespoke training on the Team page; that plan on their phone
 // sizes.json holds each picture's height, the bar's height (nav), and for each drawer the row that opens it:
 // how far down its page the scene scrolls first (cardAt, dishAt, a share of the scroll), where the tap lands
@@ -143,6 +145,48 @@ try {
     await ph.evaluate((id) => TeamLearn.setMe(id), who.id); await ph.reload(); const card = ph.getByTestId('today-plan').first(); await card.waitFor(); await card.scrollIntoViewIfNeeded(); await ph.waitForTimeout(400);
     await ph.screenshot({ path: path.join(OUT, 'plan-phone.jpg'), type: 'jpeg', quality: 88 }); console.log('plan-phone.jpg 390×844'); await ph.close();
   } else console.log('no pushed plan in this demo: plan.jpg not taken');
+
+  // The staff app's pictures (site/teams/img/day/, and the older img/phone-*.jpg the other pages use), from the
+  // phone app on The Larkspur in a store of its own, so tonight's changes here never reach the console's pictures:
+  // a special read from the chef's board waiting to be checked, the briefing sent and who has read it, Upload, a
+  // server's briefing, their Today, Practise, a drill question, the list, a wine's card, the menu and a dish.
+  {
+    const DAY = path.join(CROPS, 'day'); fs.mkdirSync(DAY, { recursive: true });
+    const pc = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
+    await pc.addInitScript(() => { window.VINTEREST_TOUR = 'off'; });
+    for (const p of ['**/claude', '**/tts', '**/stt']) await pc.route(p, (r) => r.fulfill({ status: 503, body: '{}' }));
+    await pc.route('**/config', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+    const ph = await pc.newPage(); ph.on('pageerror', (e) => errors.push(e.message));
+    const snap = async (name, also) => { await ph.waitForTimeout(350); const file = path.join(DAY, name + '.jpg'); await ph.screenshot({ path: file, type: 'jpeg', quality: 86 });
+      if (also) fs.copyFileSync(file, path.join(CROPS, also + '.jpg')); console.log(`day/${name}.jpg${also ? ' and ' + also + '.jpg' : ''}`); };
+    const top = () => ph.evaluate(() => { const s = document.querySelector('[data-scroll]'); if (s) s.scrollTop = 0; });
+    await ph.goto(`http://localhost:${port}/team/?seed=demo&view=phone`); await ph.waitForFunction(() => window.TeamLearn && TeamLearn.people().length);
+    // Tonight: a dish 86'd, a wine on feature, a note, and a special as the reader leaves it (a draft, read from a photo).
+    await ph.evaluate(() => { const wine = (re) => (TeamData.wines().find((w) => re.test(w.producer + ' ' + w.name)) || {}).id, dish = (re) => (TeamData.dishes().find((d) => re.test(d.name)) || {}).id;
+      TeamData.setTonight({ off: [dish(/cod/i)], feature: [wine(/Nyetimber/)], note: 'Table of twelve at 8. Lead with the turbot.' });
+      const s = TeamShift._clean({ name: 'Roast turbot, brown butter, sea beans', description: 'Turbot on the bone, roasted, with brown butter, capers and sea beans.', price: 34, section: 'main',
+        allergens: [{ code: 'fish', sure: 'stated' }, { code: 'milk', sure: 'likely' }], bottle: { id: wine(/Montmains/), why: 'Mineral and taut, with the weight for brown butter.' },
+        glass: { id: wine(/Laroche/), why: 'Crisp Chablis cuts the butter and keeps the fish fresh.' }, alts: [{ id: wine(/Nyetimber/), why: 'Bubbles and acidity against the butter.' }],
+        say: "Tonight's special is roast turbot with brown butter. It's lovely with a glass of the Chablis." }, 'photo'); const d = TeamShift.get(); d.specials.push(s); TeamShift.save(d); });
+    await ph.reload(); await ph.getByTestId('tonight-edit').first().click(); const draft = ph.getByTestId('special-draft').first(); await draft.waitFor(); await draft.scrollIntoViewIfNeeded();
+    await ph.evaluate(() => { const s = document.querySelector('[data-scroll]'), d = document.querySelector('[data-testid="special-draft"]'); if (s && d) s.scrollTop += d.getBoundingClientRect().top - s.getBoundingClientRect().top - 12; });
+    await snap('special');
+    await ph.getByTestId('special-confirm').first().click(); await ph.getByTestId('special-approve').first().click(); await ph.waitForTimeout(300); await ph.getByTestId('shift-send-btn').first().click(); await ph.waitForTimeout(300);
+    // Here the rest of the team accept over a few minutes; for the picture, those who will have done so by now.
+    await ph.evaluate(() => { const d = TeamShift.get(); for (const a of Object.values(d.acks || {})) if (a.demo) a.at = Date.now() - 60000; TeamShift.save(d); });
+    await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('tonight-edit').first().click(); const reg = ph.getByTestId('shift-register').first(); await reg.waitFor(); await reg.scrollIntoViewIfNeeded(); await snap('sent');
+    await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('team-tab-upload').click(); await top(); await snap('upload', 'phone-upload');
+    // The phone of a server who hasn't read it yet: the briefing over the app, then Today, Practise, a question, the list, a card, the menu, a dish.
+    await ph.evaluate(() => TeamLearn.setMe(TeamShift.register().waiting.filter((x) => x.role === 'server')[0].id)); await ph.reload(); await ph.getByTestId('team-briefing').waitFor(); await snap('briefing');
+    await ph.getByTestId('briefing-ack').first().click(); await ph.getByTestId('team-tab-today').waitFor(); await top(); await snap('today', 'phone-today-staff');
+    await ph.getByTestId('team-tab-wines').click(); await top(); await snap('wines', 'phone-wines');
+    await ph.getByTestId('team-wine-row').first().click(); await ph.getByTestId('team-wine').waitFor(); await snap('card', 'phone-card');
+    await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('team-tab-menu').click(); await top(); await snap('menu', 'phone-menu');
+    await ph.getByTestId('team-dish-row').first().click(); await ph.getByTestId('team-dish').waitFor(); await snap('dish', 'phone-dish');
+    await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('team-tab-vinny').click(); await top(); await snap('practise');
+    await ph.getByTestId('vinny-next').getByText(/^(Start|Carry on|Practise|Take)/).last().click(); await ph.getByTestId('drill-q').first().waitFor(); await snap('drill', 'phone-drill');
+    await pc.close();
+  }
 
   fs.writeFileSync(path.join(OUT, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
   console.log('sizes.json', JSON.stringify(sizes));
