@@ -2292,9 +2292,20 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
   expect(out.inDrill).toBe(false);
   expect(out.rewritten).toMatch(/mostly made from/);
   expect(seen.length).toBeGreaterThan(300); // every question was read
+  // A second publish reads only what changed: nothing when nothing did (the held question stays held), one wine's
+  // questions and whatever they moved when its card changes, and everything again when asked afresh.
+  // (The first rewrite moved the options a few other questions show, so those are read once more; then it's settled.)
+  const settle = await page.evaluate(() => TeamData.sommelierReview());
+  expect(settle.read).toBeLessThan(settle.asked / 5); expect(settle.held).toEqual([ids.dish]);
+  const sent = seen.length, r2 = await page.evaluate(() => TeamData.sommelierReview());
+  expect(r2.read).toBe(0); expect(seen.length).toBe(sent); expect(r2.held).toEqual([ids.dish]); expect(r2.notes[ids.dish].problem).toBe('two_right');
+  const r3 = await page.evaluate(() => { const d = TeamData.get(), w = TeamData.wines()[1], q = d.cards[w.id].qs[0]; q.q = q.q.replace(/\?*$/, ', as the list has it?'); TeamData.save(d); return TeamData.sommelierReview(); });
+  expect(r3.read).toBeGreaterThan(0); expect(r3.read).toBeLessThan(r3.asked / 5); expect(r3.held).toEqual([ids.dish]);
   await page.reload();
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toContainText('1 held out of the drill');
+  const r4 = await page.evaluate(() => TeamData.sommelierReview({ fresh: true }));
+  expect(r4.read).toBe(r4.asked);
 });
 
 // The demo tells the story a working team would: the house pours sell most and are the ones the team knows, so

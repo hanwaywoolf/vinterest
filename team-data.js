@@ -372,7 +372,14 @@ const TeamData = {
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
     const groups=c&&c.groups&&c.groups.length>1?' (in '+c.groups.map(g=>`"${g.label}": choose ${g.n}`).join(', ')+')':c&&c.n>1?` (choose ${c.n})`:'';
     return `ID ${q.id}\n${about}\nQUESTION ${d.q}${groups}\nOPTIONS\n${opts.map((o,i)=>`${right.includes(i)?'[marked right]':'[wrong]'} ${o}`).join('\n')}${opts.length?'':`\nANSWER ${d.ans||''}`}\nAFTER ${ax?(ax.text||ax.list.map(x=>`${x.name}: ${x.text}`).join(' / ')):'(nothing)'}`; },
-  async sommelierReview({onStep,only}={}){
+  /* What a question looks like to the reviewer, as a short mark: the same mark means the same question, options and line
+     after, so the verdict it was given still stands. */
+  _itemMark(q){ const s=this._reviewItem(q); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  /* A publish reads only what changed: a question whose mark is the one it was last read with keeps its verdict (fit, or
+     held with its note), so swapping one wine sends that wine's questions and any whose options it moved, not the whole
+     restaurant (`reviewed.seen`, id -> mark; `reviewed.read` is how many were sent this time). `fresh` reads everything
+     again (the pre-handover review, npm run team:review); `only` reads just those ids, as before. */
+  async sommelierReview({onStep,only,fresh}={}){
     const all=[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))]
       .filter(q=>!only||only.includes(q.id));
     if(this.isDemo()) return null;
@@ -387,16 +394,26 @@ const TeamData = {
         done+=part.length; onStep&&onStep(done,qs.length); } };
       await Promise.all(Array.from({length:Math.max(1,Math.min(this.REVIEW_AT_ONCE||1,starts.length))},lane));
       return out; };
-    const first=await ask(all), doubted=all.filter(q=>first[q.id]&&first[q.id].fit===false);
+    const prev=this.reviewed()||{}, was=fresh?{}:(prev.seen||{}), mark=Object.fromEntries(all.map(q=>[q.id,this._itemMark(q)]));
+    const stands=q=>!only&&!!was[q.id]&&was[q.id]===mark[q.id], todo=all.filter(q=>!stands(q));
+    const first=await ask(todo), doubted=todo.filter(q=>first[q.id]&&first[q.id].fit===false);
     // A wine card's own question is rewritten and read again; the rest are built from the list and can only be held.
     const card=doubted.filter(q=>q.wine&&!q.light&&!q.dish), fixTpl=_loadTextSync('prompts/team-fix.txt');
     for(let i=0;i<card.length;i+=this.FIX_BATCH) await this._rewrite(card.slice(i,i+this.FIX_BATCH).map(q=>({q,wine:q.wine,why:'sommelier',note:`${first[q.id].problem}: ${first[q.id].note}`})),fixTpl,venue);
     const again=card.length?await ask(card.map(q=>TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id)).filter(Boolean)):{};
     // A rewrite that disputes the list ("Check the list:") isn't a fix: it stays held, with the note, for the manager.
     const disputes=q=>{ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); return !!(n&&/^check the list:/i.test(String(n.why||''))); };
-    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
-    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,doubted:doubted.length,fixed:doubted.length-held.length,held,
-      notes:Object.fromEntries(held.map(id=>[id,{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}]))};
+    const heldNow=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
+    // What wasn't read keeps its verdict: a held question that still looks the same stays held, with its note.
+    const kept=(prev.held||[]).filter(id=>all.some(q=>q.id===id&&stands(q))), held=[...kept,...heldNow.filter(id=>!kept.includes(id))];
+    // The mark each question now stands on: unchanged ones keep theirs, one that was read takes the mark of what was read
+    // (a rewritten card question, the mark of its rewrite, once that was read too). One with no verdict back is read next time.
+    const seen=only?{...(prev.seen||{})}:{};
+    all.forEach(q=>{ if(stands(q)){ seen[q.id]=mark[q.id]; return; } if(!first[q.id]){ delete seen[q.id]; return; }
+      if(card.includes(q)){ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); if(n&&again[q.id]) seen[q.id]=this._itemMark(n); else delete seen[q.id]; }
+      else seen[q.id]=mark[q.id]; });
+    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,read:todo.length,doubted:kept.length+doubted.length,fixed:doubted.length-heldNow.length,held,seen,
+      notes:Object.fromEntries(held.map(id=>[id,(again[id]||first[id])?{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}:(prev.notes||{})[id]||{problem:'',note:''}]))};
     this.save(d); return d.venue.reviewed; },
   reviewed(){ return (this.get().venue||{}).reviewed||null; },
   FIX_BATCH:8, FIX_ROUNDS:2,

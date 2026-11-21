@@ -4,13 +4,14 @@ Use the words restaurant owners and staff use: "the floor" or "the space", never
 
 About the restaurant: {{about}}
 
+The restaurant's list and menu, for checking what the server says (they must only offer what's on it):
+{{list}}
+[[cache-above]]
+
 The table: {{scenario}}
 
 What a good answer from the server contains (the guest doesn't know this; it's for marking):
 {{key}}
-
-The restaurant's list and menu, for checking what the server says (they must only offer what's on it):
-{{list}}
 
 STAFF CARDS for the wines that suit this table:
 {{cards}}
