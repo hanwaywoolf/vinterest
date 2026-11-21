@@ -26,7 +26,9 @@ match, pick or list order).
 Later steps, answer None or No to everything except:
 
 - Alcohol, Tobacco, or Drug Use or References: Frequent.
-- Medical or treatment information: None. Gambling, contests, loot boxes: No.
+- Step 3, Medical or Wellness: Medical or Treatment Information None; Health or Wellness Topics No (wine and
+  food advice, not self-care).
+- Gambling, contests, loot boxes: No.
 
 Apple then sets the rating (expect 18+ in the UK and most countries because of alcohol). That's right for
 the app.
