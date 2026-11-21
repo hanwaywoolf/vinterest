@@ -47,6 +47,7 @@ screens-*.jsx
 # Rendered films (npm run site:video)
 /video/
 model-trial.md
+team-cost.md
 lcbo-check.md
 feed-report-*.md
 tts-check/
