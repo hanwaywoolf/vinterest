@@ -10,7 +10,8 @@
 //             in characters for the voice, the server's replies in seconds for the speech-to-text)
 //   special   a special read from a typed line and paired from the list (a photo adds its image's tokens)
 //   plan      a bespoke plan for one person
-//   publish   one wine changed on the list and published: its card, then everything a publish runs after it
+//   publish   one wine changed on the list and published, twice (the first reads every question; the second is the
+//             cost from then on): its card, then everything a publish runs after it
 //             (the menu re-paired, drinking windows, the question check, the sommelier review). Only with
 //             --publish, since on a long list it is dollars, and never on The Larkspur, whose demo publish
 //             sends no review.
@@ -93,8 +94,16 @@ try {
     return TeamPlans.write(pid, ['Struggling with the reds: mostly prices and what to pour them with.', 'Needs the by-the-glass whites and their pairings before the weekend.'][i % 2], by); }, i));
 
   if (PUBLISH && venue.demo) console.log('  publish: not measured on The Larkspur (its publish sends no question check or review). Name a real install.');
-  else if (PUBLISH) { unit = 'publish'; try { await page.evaluate(async () => { const w = TeamData.wines().find((x) => TeamData.card(x.id) && !TeamData.isDrink(x)), d = TeamData.get(); delete d.cards[w.id]; TeamData.save(d);
-      await TeamData.refresh({ kind: 'list', added: [w.id], changed: [], removed: [] }); }); } catch (e) { console.log('  publish failed: ' + String(e.message || e).slice(0, 200)); } unit = ''; console.log(`  publish: ${calls.filter((c) => c.unit === 'publish').length} calls`); }
+  else if (PUBLISH) {
+    // Twice: the first publish on a phone reads every question (nothing has a mark yet), the second is what a list
+    // change costs from then on. A different wine each time; the review runs six batches at once, as team:review does.
+    await page.evaluate(() => { TeamData.REVIEW_AT_ONCE = 6; });
+    for (const [n, name] of [[0, 'publish-first'], [1, 'publish']]) { unit = name; const t0 = Date.now();
+      try { const r = await page.evaluate(async (n) => { const w = TeamData.wines().filter((x) => TeamData.card(x.id) && !TeamData.isDrink(x))[n * 3], d = TeamData.get(); delete d.cards[w.id]; TeamData.save(d);
+        await TeamData.refresh({ kind: 'list', added: [w.id], changed: [], removed: [] }); const v = TeamData.reviewed() || {}; return { wine: TeamData.short(w), asked: v.asked, read: v.read }; }, n);
+        console.log(`  ${name}: ${r.wine} changed, ${calls.filter((c) => c.unit === name).length} calls, the review read ${r.read} of ${r.asked} questions, ${Math.round((Date.now() - t0) / 1000)}s`); }
+      catch (e) { console.log(`  ${name} failed: ` + String(e.message || e).slice(0, 200)); } }
+    unit = ''; }
 
   // ── What it adds up to ──
   const avg = (a) => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0, of = (u) => calls.filter((c) => c.unit === u);
@@ -113,8 +122,8 @@ try {
   for (const [name, u, n] of rows) { if (!u.calls) { L.push(`| ${name} | not measured | | | | | | ${k(n)} | |`); continue; } const month = u.cost * n; total += month; L.push(`| ${name} | ${u.model || 'not measured'} | ${u.calls.toFixed(1)} | ${k(u.in + u.write)} | ${k(u.read)} | ${k(u.out)} | ${$(u.cost)} | ${k(n)} | ${$(month)} |`); }
   const vMonth = voice.cost * m.table * USE.voice; total += vMonth;
   L.push(`| The table out loud (voice and speech-to-text) | assumed rates | | ${k(voice.chars)} characters | | ${k(voice.secs)} seconds | ${$(voice.cost)} | ${k(m.table * USE.voice)} | ${$(vMonth)} |`, `| **Total** | | | | | | | | **${$(total)}** |`, '');
-  if (U.publish) { const by = {}; for (const c of of('publish')) { (by[c.purpose] = by[c.purpose] || { n: 0, cost: 0 }); by[c.purpose].n++; by[c.purpose].cost += dollars(c); }
-    L.push('One list change, by what the publish ran:', '', '| Step | Calls | Cost |', '|---|---|---|', ...Object.entries(by).sort((a, b) => b[1].cost - a[1].cost).map(([p, v]) => `| ${p} | ${v.n} | ${$(v.cost)} |`), ''); }
+  if (U.publish) for (const [u, title] of [['publish-first', 'The first publish on a device, which reads every question (' + $(per('publish-first', 1).cost) + ' in all)'], ['publish', 'A list change after that']]) { const by = {}; for (const c of of(u)) { (by[c.purpose] = by[c.purpose] || { n: 0, cost: 0 }); by[c.purpose].n++; by[c.purpose].cost += dollars(c); }
+    L.push(title + ', by what the publish ran:', '', '| Step | Calls | Cost |', '|---|---|---|', ...Object.entries(by).sort((a, b) => b[1].cost - a[1].cost).map(([p, v]) => `| ${p} | ${v.n} | ${$(v.cost)} |`), ''); }
   else L.push(`A list or menu publish isn't in the total: ${venue.demo ? 'The Larkspur\'s publish sends no question check or review, so measure it on a real install' : 'pass --publish to measure it'} (it re-pairs the menu and re-reads every question, so it is the part that grows with the list).`, '');
   L.push(`Voice is ${$(TTS)} per 1,000 characters and speech-to-text ${$(STT)} an hour: assumptions until set from the ElevenLabs invoice (--tts, --stt). The guest's lines are counted, not sent.`,
     'A special read from a photo adds the image\'s tokens to the typed line measured here. Drills, Vinny\'s test, the briefing and readiness make no calls.');
