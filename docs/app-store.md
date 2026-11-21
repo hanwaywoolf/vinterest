@@ -60,8 +60,8 @@ Apple's and Google's own crash reports are theirs).
 
 Promotional text (170):
 
-> Scan a label and know if you'll love it, from your own ratings. Ask Vinny anything, learn as you sip,
-> and keep every bottle you've had.
+> Scan any label and know if you'll love it, from your own ratings, not a critic's. Ask Vinny anything,
+> learn as you sip, and keep every bottle you've had in one place.
 
 Description:
 
@@ -111,8 +111,9 @@ Keywords (100, no spaces, none already in the name):
 
 - Support URL: https://vinterest.app/
 - Marketing URL: https://vinterest.app/
-- Screenshots: `npm run store:shots` writes the 6.9" iPhone (1320 x 2868) and 13" iPad (2064 x 2752) sets
-  to `store-shots/` from the real app; upload them in order, 1 to 7.
+- Screenshots: `npm run store:shots` writes the iPhone with Dynamic Island, medium display (1206 x 2622,
+  the slot App Store Connect asks for first), the large iPhone (1320 x 2868) and the 13" iPad
+  (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 7.
 - App previews (videos): optional, none yet.
 - In-App Purchases and Subscriptions: add Pro Monthly (VINPRO_M) and Pro Yearly (VINPRO_A).
 - Build: the 1.11.1 build from main.

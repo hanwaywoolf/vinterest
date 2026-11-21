@@ -1,7 +1,8 @@
 // The App Store and Google Play screenshots: the real app, for the onboarding sample user (the Rioja
 // drinker), each screen set under a headline on the welcome screens' dark stage with its crimson glow.
-// Writes store-shots/iphone-N.jpg (1320 x 2868, the 6.9" iPhone size, which App Store Connect scales
-// down for smaller iPhones) and store-shots/ipad-N.jpg (2064 x 2752, the 13" iPad). JPEG because Apple
+// Writes store-shots/iphone-6.3-N.jpg (1206 x 2622, "iPhone with Dynamic Island (medium display)", the
+// slot App Store Connect asks for first), iphone-6.9-N.jpg (1320 x 2868, the large iPhones) and
+// ipad-N.jpg (2064 x 2752, the 13" iPad). JPEG because Apple
 // refuses a screenshot with an alpha channel. Run after `npm run build`: `npm run store:shots`.
 //
 // Nothing calls Claude: the label read, the scan story's lines and Vinny's answer are stubbed below, as
@@ -42,7 +43,9 @@ const SHOTS = [
 ];
 // The app as each device shows it (CSS pixels and scale), and the finished picture (CSS pixels at 3x or 2x).
 const DEVICES = [
-  { name: 'iphone', app: { width: 393, height: 852, scale: 3 }, out: { width: 440, height: 956, scale: 3 }, frame: { top: 214, width: 352, radius: 44 }, h1: 34, sub: 15.5 },
+  { name: 'iphone-6.9', app: { width: 393, height: 852, scale: 3 }, out: { width: 440, height: 956, scale: 3 }, frame: { top: 214, width: 352, radius: 44 }, h1: 34, sub: 15.5 },
+  // "iPhone with Dynamic Island (medium display)", the size App Store Connect asks for first: 1206 x 2622.
+  { name: 'iphone-6.3', app: { width: 393, height: 852, scale: 3 }, out: { width: 402, height: 874, scale: 3 }, frame: { top: 196, width: 322, radius: 40 }, h1: 31, sub: 14.2 },
   { name: 'ipad', app: { width: 1032, height: 1376, scale: 2 }, out: { width: 1032, height: 1376, scale: 2 }, frame: { top: 236, width: 820, radius: 36 }, h1: 54, sub: 22 },
 ];
 
@@ -177,7 +180,12 @@ p{font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;fo
 }
 
 try {
-  for (const dev of DEVICES) await compose(dev, await capture(dev));
+  const raw = {}; // one capture per app size, shared by the pictures made from it
+  for (const dev of DEVICES) {
+    const k = `${dev.app.width}x${dev.app.height}`;
+    raw[k] = raw[k] || await capture(dev);
+    await compose(dev, raw[k]);
+  }
 } finally {
   fs.rmSync(path.join(ROOT, 'dist/_store-shot.html'), { force: true });
   await browser.close();
