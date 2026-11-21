@@ -267,30 +267,30 @@ function ProGate({feature,onClose}){
   const f=FEAT[feature]||FEAT['wine-list'];
   return(
     <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)',zIndex:600,display:'flex',alignItems:'flex-end',backdropFilter:'blur(4px)'}}>
-      {/* A floating card, rounded all round with a gap below, so its end is plain to see; it
+      {/* A floating card, rounded all round with a gap below, so its end is plain to see, kept clear of the notch; it
           scrolls inside when a small phone at large text can't fit it. */}
-      <div data-sheet="pro" onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:22,width:'calc(100% - 20px)',margin:'0 10px calc(10px + env(safe-area-inset-bottom,0px))',maxHeight:'calc(100% - 30px)',overflowY:'auto',boxSizing:'border-box',paddingBottom:18,boxShadow:'0 10px 40px rgba(0,0,0,0.25)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
+      <div data-sheet="pro" onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:22,width:'calc(100% - 20px)',margin:'0 10px calc(10px + env(safe-area-inset-bottom,0px))',maxHeight:'calc(100% - 30px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))',overflowY:'auto',boxSizing:'border-box',paddingBottom:12,boxShadow:'0 10px 40px rgba(0,0,0,0.25)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
         <div style={{display:'flex',justifyContent:'center',padding:'10px 0 0'}}>
           <div style={{width:36,height:4,borderRadius:2,background:C.line}}/>
         </div>
-        <div style={{textAlign:'center',padding:'6px 0 8px'}}>
+        <div style={{textAlign:'center',padding:'4px 0 2px'}}>
           <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 14px',borderRadius:20,background:'linear-gradient(135deg,#9B5E00,#C4870A)'}}>
             <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.08em'}}>VINTEREST PRO</span>
           </span>
         </div>
-        <div style={{padding:'6px 24px 4px',display:'flex',flexDirection:'column',gap:14}}>
+        <div style={{padding:'4px 22px 4px',display:'flex',flexDirection:'column',gap:9}}>
           <div style={{textAlign:'center'}}>
-            <div style={{fontSize:42,marginBottom:8}}>{f.icon}</div>
-            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:6}}>{f.title}</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{f.desc}</div>
+            <div style={{fontSize:30,lineHeight:1.1,marginBottom:4}}>{f.icon}</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:4}}>{f.title}</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{f.desc}</div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
             {f.bullets.map((b,i)=>(
               <div key={i} style={{display:'flex',alignItems:'center',gap:10}}>
                 <div style={{width:20,height:20,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <Icon n="check" sz={12} col={C.green}/>
                 </div>
-                <span style={{fontSize:16,color:C.ink2,fontFamily:C.P}}>{b}</span>
+                <span style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.35}}>{b}</span>
               </div>
             ))}
           </div>

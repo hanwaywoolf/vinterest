@@ -588,7 +588,7 @@ async function handleClaude(request, env, ctx) {
    set generously, never product limits (spec D5). */
 const FAIR_USE = {
   free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
-  pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
+  pro:  { label_scan: 150, list_scan: 40, price_search: 100, _other: 600 },
 };
 /* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_plan, team_buyer, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
