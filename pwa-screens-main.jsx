@@ -64,12 +64,12 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
     navigator.mediaDevices?.getUserMedia({video:{facingMode:'environment'}})
       .then(s=>{
         streamRef.current=s; if(videoRef.current) videoRef.current.srcObject=s; setCamLive(true);
-        // Some phones default multi-camera systems to a 2x telephoto lens — force back to native 1x.
+        // Start on the main 1x lens (ScanFlow.cameraZoom): some Android phones open on a 2x
+        // telephoto, and an iPhone with an ultra-wide counts that as its widest zoom.
         const track=s.getVideoTracks()[0];
-        const caps=track&&track.getCapabilities?track.getCapabilities():null;
-        if(caps&&caps.zoom&&typeof caps.zoom.min==='number'){
-          track.applyConstraints({advanced:[{zoom:caps.zoom.min}]}).catch(()=>{});
-        }
+        let caps=null; try{ caps=track&&track.getCapabilities?track.getCapabilities():null; }catch(e){}
+        const zoom=ScanFlow.cameraZoom(caps,track&&track.label);
+        if(zoom!=null) track.applyConstraints({advanced:[{zoom}]}).catch(()=>{});
         checkTorch();
       })
       .catch(()=>setCamErr(true));
@@ -81,15 +81,18 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   const fileRef=React.useRef(null);
   // Resize to keep detail without a heavy payload: 1024px on the longest side is plenty for a label,
   // but a whole wine list in 1024px leaves its small print unreadable, so lists get 1600px.
-  function processSource(src,w,h){
+  function processSource(src,w,h,crop){
     // The free plan's 10 scans a month (Entitlement.scansLeft): the Pro sheet, before anything is sent.
     if(mode!=='list'&&!onboarding&&Entitlement.atScanLimit()){ if(showPro) showPro('scan-limit'); return; }
+    // Only what was inside the red frame (ScanFlow.frameCrop): that's what is read and what the
+    // processing screen shows. A photo from the gallery is sent whole.
+    const r=crop||{sx:0,sy:0,sw:w,sh:h};
     const maxDim=mode==='list'?1600:1024;
-    const scale=Math.min(1,maxDim/Math.max(w,h));
+    const scale=Math.min(1,maxDim/Math.max(r.sw,r.sh));
     const canvas=document.createElement('canvas');
-    canvas.width=Math.round(w*scale);
-    canvas.height=Math.round(h*scale);
-    canvas.getContext('2d').drawImage(src,0,0,canvas.width,canvas.height);
+    canvas.width=Math.round(r.sw*scale);
+    canvas.height=Math.round(r.sh*scale);
+    canvas.getContext('2d').drawImage(src,r.sx,r.sy,r.sw,r.sh,0,0,canvas.width,canvas.height);
     const dataUrl=canvas.toDataURL('image/jpeg',0.82);
     if(streamRef.current) streamRef.current.getTracks().forEach(t=>t.stop());
     setCapturedImg(dataUrl);
@@ -116,17 +119,35 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       return;
     }
     // Capture the frame before stopping the stream (stopping first can blank the frame on mobile).
-    processSource(videoRef.current,videoRef.current.videoWidth,videoRef.current.videoHeight);
+    const v=videoRef.current, vw=v.videoWidth, vh=v.videoHeight;
+    const crop=frameRef.current?ScanFlow.frameCrop(vw,vh,v.getBoundingClientRect(),frameRef.current.getBoundingClientRect()):null;
+    processSource(v,vw,vh,crop);
   }
+  /* Tap to focus: the camera focuses where the finger landed when it can (ScanFlow.focusConstraints),
+     and a ring shows the tap either way. */
+  const frameRef=React.useRef(null);
+  const [focusAt,setFocusAt]=React.useState(null);
+  function tapFocus(e){
+    const v=videoRef.current, track=streamRef.current&&streamRef.current.getVideoTracks()[0];
+    if(!v||!track||!v.videoWidth) return;
+    const box=e.currentTarget.getBoundingClientRect();
+    setFocusAt({x:e.clientX-box.left,y:e.clientY-box.top,k:Date.now()});
+    let caps=null; try{ caps=track.getCapabilities?track.getCapabilities():null; }catch(err){}
+    const c=ScanFlow.focusConstraints(caps,ScanFlow.focusPoint(v.videoWidth,v.videoHeight,v.getBoundingClientRect(),e.clientX,e.clientY));
+    if(c) track.applyConstraints({advanced:[c]}).catch(()=>{});
+  }
+  React.useEffect(()=>{ if(!focusAt) return; const t=setTimeout(()=>setFocusAt(null),900); return ()=>clearTimeout(t); },[focusAt]);
 
   async function processLabelCapture(b64){
     try{
       const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-        {type:'text',text:_loadTextSync('prompts/label-scan.txt')}
+        {type:'text',text:ScanFlow.labelPrompt()}
       ]}]});
       const wine=WineDNA.cleanWine(JSON.parse(text.replace(/```json|```/g,'').trim()));
       if(wine.error==='no_wine_label') throw new Error('no_wine_label');
+      // The year has its own place: a name read as "Viña Ardanza Reserva 2016" is saved without it.
+      if(wine.name&&wine.vintage) wine.name=WineDNA.shownName(wine);
       Handoff.openWine({demo:false,wine,confidence:0.95});
       Entitlement.addScan();
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
@@ -193,9 +214,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
           <Icon n="back" sz={18} col="#fff"/>
         </div>
         {capturedImg&&(
-          <div style={{width:'70%',aspectRatio:'2/3',borderRadius:16,overflow:'hidden',border:`2px solid ${C.cr}`,boxShadow:`0 0 40px ${C.cr}35`}}>
-            <img src={capturedImg} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-          </div>
+          <img data-testid="scan-captured" src={capturedImg} alt="" style={{display:'block',maxWidth:'78%',maxHeight:'52%',minHeight:0,objectFit:'contain',borderRadius:16,border:`2px solid ${C.cr}`,boxShadow:`0 0 40px ${C.cr}35`}}/>
         )}
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
           <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(255,255,255,0.1)',borderTopColor:C.cr,animation:'vspin 0.85s linear infinite'}}/>
@@ -244,7 +263,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
           a list frame sized from the width (2:3) was taller than that space on tall phones and pushed
           the shutter off the bottom of the screen. */}
       <div style={{flex:1,minHeight:0,position:'relative',zIndex:2,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <div style={{width:mode==='list'?'95%':'94%',height:'100%',position:'relative'}}>
+        <div ref={frameRef} data-testid="scan-frame" onPointerUp={tapFocus} style={{width:mode==='list'?'95%':'94%',height:'100%',position:'relative',cursor:'crosshair'}}>
+          {focusAt&&<div key={focusAt.k} data-testid="focus-ring" aria-hidden="true" style={{position:'absolute',zIndex:3,left:focusAt.x-34,top:focusAt.y-34,width:68,height:68,borderRadius:34,border:'2px solid #fff',boxShadow:'0 0 12px rgba(0,0,0,0.5)',pointerEvents:'none',animation:'vinFocus .9s ease-out forwards'}}><style>{'@keyframes vinFocus{0%{transform:scale(1.4);opacity:0}20%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0}}'}</style></div>}
           {/* Dim overlay outside frame */}
           <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,boxShadow:'0 0 0 2000px rgba(0,0,0,0.52)',pointerEvents:'none',zIndex:1}}/>
           {/* Corner brackets */}

@@ -45,7 +45,7 @@ try {
       sessionStorage.setItem('__seeded', '1');
       const seed = { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_pro: '1', vinterest_wines: JSON.stringify(wines),
         vinterest_onramp_1_done: '1', vinterest_wineDNA_unlock_seen: '1', vinterest_dna_welcome_seen: '1', vinterest_reveal_tips_v1: '9',
-        vinterest_xp_v3: JSON.stringify({ total: 1240 }) };
+        vinterest_xp_v3: JSON.stringify({ version: 1, accounts: { local: { total: 1240, events: [], scansThisWeek: [], totalRatings: 11, grapesSeen: [], quizCompleted: {}, quizStreaks: {} } } }) };
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v);
     }
     let s = 0x2f6b1a; // the same Math.random every run

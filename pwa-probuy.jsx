@@ -10,7 +10,7 @@ function ProBuy({onClose}){
   const signedIn=Account.signedIn();
   React.useEffect(()=>{ let on=true; if(signedIn) Billing.offers().then(o=>{ if(on) setOffers(o); }); return()=>{ on=false; }; },[signedIn]);
   const store=Platform.name()==='ios'?'Apple ID':'Google Play account';
-  const primary={background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`};
+  const primary={background:`linear-gradient(135deg,${C.cr},${C.crL})`,borderRadius:14,padding:'11px 15px',textAlign:'center',cursor:'pointer',boxShadow:`0 6px 28px ${C.cr}45`};
   const link={fontSize:15,fontWeight:600,color:C.cr,fontFamily:C.P,cursor:'pointer'};
   const run=async(key,fn)=>{
     if(busy) return; setBusy(key); setMsg('');

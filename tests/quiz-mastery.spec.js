@@ -361,3 +361,20 @@ test('every grape has facts for every quiz angle, and the prompt gets them all',
   expect(out.gaps).toEqual([]);
   for (const l of ['Other names:', 'Climate:', 'Winemaking:', 'Food:', 'Ageing:', 'Compared with similar grapes:', 'In blends:']) expect(out.line).toContain(l);
 });
+
+// A quiz answer's trait words are tappable for what they mean: marked once each, in the accent with a
+// "?", never with a dotted underline (it read as the iPhone's spelling marks), and never on the name
+// of an acid ("malic acid" is not the acidity you taste).
+test('a quiz fact marks each trait once, never an acid\'s name, and not with a dotted underline', async ({ page }) => {
+  await page.goto('http://localhost:4173/#home');
+  const r = await page.evaluate(async () => {
+    const el = document.createElement('div'); document.body.appendChild(el);
+    const T = { line: '#333', ink: '#fff', ink2: '#ddd', mid: '#999', glass: '#111' };
+    ReactDOM.createRoot(el).render(_h(_QuizFact, { text: 'Malolactic fermentation turns sharp malic acid into softer lactic acid, so the acidity feels rounder and the body fuller; acidity matters.', T, cr: '#e05a73' }));
+    await new Promise((res) => setTimeout(res, 50));
+    const terms = [...el.querySelectorAll('[data-testid="quiz-term"]')];
+    return { words: terms.map((t) => t.firstChild.textContent), deco: terms.map((t) => getComputedStyle(t).textDecorationLine) };
+  });
+  expect(r.words).toEqual(['acidity', 'body']);
+  expect(r.deco.every((d) => d === 'none')).toBe(true);
+});
