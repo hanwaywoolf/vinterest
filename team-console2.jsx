@@ -104,8 +104,15 @@ function _C2Person({x,open}){ const T=useTheme(), st=_tState[x.r.state], size=64
 function _C2Needs({items,open,tagW=72,even}){ const T=useTheme(), acc=_c2Acc(T);
   return <div>{items.map((b,i)=><_C2Row key={i} first={i===0} align="flex-start" onClick={b.open?()=>open(b.open):undefined} testid="c2-need"><div style={{width:tagW,flexShrink:0,height:20,display:'flex',alignItems:'center'}}>{_c2Pill(b.tag,_C2_TONE[b.tone]||_C2_TONE.note,even?tagW:undefined)}</div><div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:b.act?400:500,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
     {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>→ {b.act}</div>}</div></_C2Row>)}</div>; }
+/* Lands on a card of the page by its test id (an item's `open.at`): waits for it to be drawn (the section may have
+   just changed), opens it if it's folded away, and brings it to the top of the page. */
+function _c2Land(id,tries=20){ const el=document.querySelector(`[data-testid="${id}"]`);
+  if(!el){ if(tries>0) setTimeout(()=>_c2Land(id,tries-1),60); return; }
+  const shut=el.matches('[aria-expanded="false"]')?el:el.querySelector('[data-testid="c2-card-fold"][aria-expanded="false"]'); if(shut) shut.click();
+  setTimeout(()=>el.scrollIntoView({block:'start'}),shut?60:0); }
 /* A page's "Needs you" as a button with how many are left, opening a dialog: the page's lists keep their width. Each
-   item opens what it's about or is cleared with Done; a cleared one stays away until it has something new to say. */
+   item with somewhere to go is a link: a tap closes the dialog, marks it done and lands on what it's about (a card of
+   a page, opened if folded, or a plan, wine or person); one with nowhere to go is advice, cleared with Done; a cleared one stays away until it has something new to say. */
 function _C2NeedsBtn({page,items,open,title,label='Needs you',things,testid='c2-needs'}){ const T=useTheme(), acc=_c2Acc(T), [on,setOn]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0);
   const left=TeamNeeds.left(page,items), gone=TeamNeeds.gone(page,items), n=left.length;
   return <><TeamBtn testid="c2-needs-btn" primary={n>0} onClick={()=>setOn(true)}>{label}<span data-testid="c2-needs-count" style={{minWidth:18,height:18,padding:'0 5px',boxSizing:'border-box',display:'inline-flex',alignItems:'center',justifyContent:'center',background:n?acc:'rgba(255,255,255,0.16)',color:n?_c2Ink():'#fff',fontSize:'11px',fontWeight:600,letterSpacing:0}}>{n}</span></TeamBtn>
@@ -115,8 +122,8 @@ function _C2NeedsBtn({page,items,open,title,label='Needs you',things,testid='c2-
           <div role="button" aria-label="Close" data-testid="c2-needs-close" onClick={()=>setOn(false)} style={{width:32,height:32,border:'1px solid rgba(255,255,255,0.16)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,color:T.ink,flexShrink:0}}>×</div></div>
         {left.map((b,i)=><div key={TeamNeeds.id(b)} data-testid="c2-need" style={{display:'flex',gap:14,alignItems:'flex-start',padding:'14px 0',borderTop:'1px solid rgba(255,255,255,0.08)'}}>
           <div style={{width:84,flexShrink:0,marginTop:1}}>{_c2Pill(b.tag,_C2_TONE[b.tone]||_C2_TONE.note)}</div>
-          <div role={b.open?'button':undefined} onClick={b.open?()=>{ setOn(false); open(b.open); }:undefined} style={{minWidth:0,flex:1,cursor:b.open?'pointer':'default'}}><div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
-            {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>→ {b.act}</div>}</div>
+          <div role={b.open?'button':undefined} data-testid={b.open?'c2-need-go':undefined} onClick={b.open?()=>{ TeamNeeds.clear(page,b); setOn(false); open(b.open); }:undefined} style={{minWidth:0,flex:1,cursor:b.open?'pointer':'default'}}><div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
+            {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:b.open?acc:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3,...(b.open?{textDecoration:'underline',textUnderlineOffset:3,textDecorationColor:_alpha(acc,0.45)}:{})}}>{b.open?'→ ':''}{b.act}</div>}</div>
           <TeamBtn small testid="c2-need-done" onClick={()=>{ TeamNeeds.clear(page,b); bump(); }}>Done</TeamBtn></div>)}
         {gone>0&&<div style={{borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:12,marginTop:n?0:10,fontSize:13,color:T.mid,fontFamily:C.P}}>{gone} cleared · <span role="button" data-testid="c2-needs-restore" onClick={()=>{ TeamNeeds.restore(page); bump(); }} style={{color:acc,cursor:'pointer'}}>bring {gone===1?'it':'them'} back</span></div>}
       </div></div>}</>; }
@@ -822,7 +829,7 @@ function _C2Mobile({open,me}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.ha
 
 function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=useTheme(), acc=_c2Acc(T), [ref,w]=_c2Width(), two=w>=1040, phone=useLayoutSize()==='phone', side=!phone&&TeamData.navStyle()==='side', [navOpen,setNavOpen]=React.useState(false), navT=React.useRef(0), [,bump]=React.useReducer(x=>x+1,0);
   const [panel,setPanel]=React.useState(null), [touring,setTouring]=React.useState(()=>!!tour&&TeamTour.due(me&&me.id));
-  const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
+  const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); if(v.at) _c2Land(v.at); return; } if(v.at){ _c2Land(v.at); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   React.useEffect(()=>{ const a=TeamDemo.seedTonight(), b=TeamPlans.seedDemo(); if(a||b) bump(); },[]);
   const pageRef=React.useRef(null); _c2Pid=me.id;
   // The side navigation is a layer: it opens when the mouse reaches the left edge (or from the menu button) and closes once the mouse leaves it.

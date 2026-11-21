@@ -2714,7 +2714,18 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
   await page.getByTestId('c2-needs-btn').click(); await expect(page.getByTestId('sales-brief')).toContainText(/things? to know/);
   expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
-  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/); await page.getByTestId('c2-needs-close').click();
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
+  // The dialog lies over the page, so nothing in it points "below" or "above"; a line with somewhere to go is a link
+  // that closes the dialog, marks itself done and lands on its card, opened if it was folded away.
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\b(below|above)\b|this page|at the foot/i);
+  await page.getByTestId('c2-needs-close').click();
+  { const fold = page.getByTestId('sales-wines').getByTestId('c2-card-fold'); await fold.click(); await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    const n = Number(await page.getByTestId('c2-needs-count').innerText()); await page.getByTestId('c2-needs-btn').click();
+    await page.getByTestId('sales-brief').getByTestId('c2-need-go').filter({ hasText: 'Open Best sellers' }).click();
+    await expect(page.getByTestId('sales-brief')).toHaveCount(0); await expect(fold).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n - 1));
+    await expect.poll(() => page.getByTestId('sales-wines').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= -2 && r.top < innerHeight / 2; })).toBe(true);
+    await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs-restore').click(); await page.getByTestId('c2-needs-close').click(); }
   // Best sellers is the first card on the page, above Wine sales by week.
   expect(await page.evaluate(() => { const y = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect().top; return y('sales-wines') < y('sales-trend') && y('sales-wines') < y('c2-upside') && y('c2-mix') > y('sales-trend'); })).toBe(true);
   await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
