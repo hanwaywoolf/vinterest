@@ -135,19 +135,33 @@ h3 { font-size: 19px; letter-spacing: -.01em; line-height: 1.3; }
 .night { padding: 104px 0 96px; }
 .night .head { max-width: 680px; }
 .ex { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 40px; }
-.ex .c { border: 1px solid var(--line); border-radius: var(--r); padding: 22px; background: var(--bg); display: flex; flex-direction: column; gap: 14px; border-top: 4px solid var(--c); }
-.ex .q { font-size: 19px; font-weight: 500; letter-spacing: -.01em; line-height: 1.3; }
-.ex .now { font-size: 14px; color: var(--mute); }
-.ex .now s { text-decoration: none; background-image: linear-gradient(var(--red), var(--red)); background-repeat: no-repeat; background-size: 0% 2px; background-position: 0 60%; transition: background-size .5s ease; }
-.ex.play .c .q, .ex.play .c .now, .ex.play .c .then { opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
-.ex.play .c.s1 .q, .ex.play .c.s2 .q, .ex.play .c.s3 .q, .ex.play .c.s4 .q { opacity: 1; transform: none; }
-.ex.play .c.s2 .now, .ex.play .c.s3 .now, .ex.play .c.s4 .now { opacity: 1; transform: none; }
-.ex.play .c.s3 .now s, .ex.play .c.s4 .now s { background-size: 100% 2px; }
-.ex.play .c.s4 .then { opacity: 1; transform: none; }
-.ex .then { font-size: 15px; color: var(--ink); background: var(--bg-2); border-radius: 12px; padding: 12px 14px; }
-.ex small { display: block; font-size: 12px; color: var(--mute); margin-top: 6px; }
+.ex .c { border: 1px solid var(--line); border-radius: var(--r); padding: 20px; background: var(--bg); display: flex; flex-direction: column; gap: 12px; border-top: 4px solid var(--c); }
+.ex .m { position: relative; max-width: 90%; }
+.ex .m p { margin: 0; padding: 11px 14px; border-radius: 14px; }
+.ex .guest { align-self: flex-start; }
+.ex .guest p { font-size: 16px; font-weight: 500; line-height: 1.35; background: var(--bg-2); border-bottom-left-radius: 3px; }
+.ex .now, .ex .then { align-self: flex-end; }
+.ex .now .lbl, .ex .then .lbl { text-align: right; }
+.ex .now p { font-size: 14px; color: var(--mute); border: 1px solid var(--line); border-bottom-right-radius: 3px; }
+.ex .now s { text-decoration: none; background-image: linear-gradient(var(--red), var(--red)); background-repeat: no-repeat; background-size: 100% 2px; background-position: 0 60%; transition: background-size .5s ease; }
+.ex .then p { font-size: 15px; color: var(--ink); background: color-mix(in srgb, var(--c) 12%, var(--bg)); border: 1px solid color-mix(in srgb, var(--c) 45%, var(--bg)); border-bottom-right-radius: 3px; }
+.ex small { display: block; font-size: 12px; color: var(--mute); margin-top: 6px; text-align: right; }
 .ex .lbl { font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin-bottom: 4px; }
-.ex .then .lbl { color: var(--c); }
+.ex.play .m { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+.ex.play .m.on { opacity: 1; transform: none; }
+.ex.play .now s { background-size: 0% 2px; }
+.ex.play .now.struck s { background-size: 100% 2px; }
+.ex.play .now p { transition: opacity .5s ease; }
+.ex.play .now.struck p { opacity: .6; }
+.ex.play .m.typing p { color: transparent; width: 62px; height: 40px; overflow: hidden; white-space: nowrap; }
+.ex.play .m.typing p * { visibility: hidden; }
+.ex.play .m.typing small { display: none; }
+.ex.play .m.typing p::before { content: ''; position: absolute; left: 16px; margin-top: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--mute); box-shadow: 10px 0 var(--mute), 20px 0 var(--mute); animation: exdots .9s ease-in-out infinite; }
+@keyframes exdots { 0%, 100% { opacity: .25; } 50% { opacity: .9; } }
+.ex.play .then .w { opacity: 0; transition: opacity .25s ease; }
+.ex.play .then .w.in { opacity: 1; }
+.ex.play .then small { opacity: 0; transition: opacity .4s ease; }
+.ex.play .then.done small { opacity: 1; }
 
 /* Calculator */
 .calc { padding: 96px 0; background: var(--bg-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

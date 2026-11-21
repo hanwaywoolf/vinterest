@@ -55,13 +55,13 @@
   <div class="wrap">
     <div class="head">
       <div class="eyebrow" style="--c:var(--gold)">Overheard</div>
-      <h2>What your guests hear now. What they could.</h2>
-      <p class="lead">Three questions a guest asks every night, and the difference a floor that knows your list makes.</p>
+      <h2>Three chances to sell a bottle at every table.</h2>
+      <p class="lead">A guest opens the door with a question. What happens next depends on whether the server knows your list.</p>
     </div>
     <div class="ex" id="ex">
-      <div class="c" style="--c:var(--gold)"><div class="q">"We're having the olives. What should we drink?"</div><div class="now"><div class="lbl">Now</div><s>Let me ask someone.</s></div><div class="then"><div class="lbl">Ready</div>The Grüner by the glass. Peppery and herby, and the acidity freshens up all that salt.<small>Gordal olives · Bründlmayer Grüner Veltliner, £11</small></div></div>
-      <div class="c" style="--c:var(--sky)"><div class="q">"Is the English fizz any good, or should we get Champagne?"</div><div class="now"><div class="lbl">Now</div><s>Both are popular.</s></div><div class="then"><div class="lbl">Ready</div>It's from Sussex, crisp and zesty, like a green apple with a hint of lemon. Lovely with the oysters.<small>Nyetimber Classic Cuvée, £14</small></div></div>
-      <div class="c" style="--c:var(--neon)"><div class="q">"We'll have the Amarone with the olives."</div><div class="now"><div class="lbl">Now</div><s>Great choice.</s></div><div class="then"><div class="lbl">Ready</div>It's big and sweet-edged, so it'd flatten the olives. Shall I bring the Sancerre, and the Amarone for the lamb?<small>A steer, and a bottle instead of a glass</small></div></div>
+      <div class="c" style="--c:var(--gold)"><div class="m guest"><div class="lbl">Guest</div><p>We're thinking about the lemon sole. What would you drink with it?</p></div><div class="m now"><div class="lbl">Now</div><p><s>The house white's nice.</s></p></div><div class="m then"><div class="lbl">Ready</div><p>The Sancerre. It's zesty enough for the caper butter and keeps the fish fresh. If you'd rather have a glass, the Cloudy Bay does the same job.</p><small>Whole lemon sole, caper butter · Pascal Jolivet Sancerre, £62</small></div></div>
+      <div class="c" style="--c:var(--sky)"><div class="m guest"><div class="lbl">Guest</div><p>We're on the Viña Ardanza. What should we eat with it?</p></div><div class="m now"><div class="lbl">Now</div><p><s>Everything's good, to be honest.</s></p></div><div class="m then"><div class="lbl">Ready</div><p>The braised lamb shoulder. Rioja and lamb is the classic, and the leather and tobacco in that wine suit slow-cooked meat and rosemary. The sirloin works too if one of you wants steak.</p><small>Viña Ardanza Reserva on the list at £72 · Braised lamb shoulder, £29</small></div></div>
+      <div class="c" style="--c:var(--neon)"><div class="m guest"><div class="lbl">Guest</div><p>We'd like a red between £80 and £100. Full and savoury, but not another Bordeaux or Rioja. Something with a story that we wouldn't normally get to taste.</p></div><div class="m now"><div class="lbl">Now</div><p><s>The Malbec's very popular.</s></p></div><div class="m then"><div class="lbl">Ready</div><p>Then the Domaine Tempier Bandol. It's led by Mourvèdre, a grape you rarely see out front, from a small stretch of the Provence coast that this family put on the map. Dark, savoury and a little wild.</p><small>Domaine Tempier Bandol 2019, £96</small></div></div>
     </div>
   </div>
 </section>
@@ -414,15 +414,30 @@ if (pstage) {
 }
 
 
-// Overheard: each card tells its exchange in turn: the question, what the guest hears now, that struck
-// through, then the ready answer.
+// Overheard: each card plays as a conversation. The guest's question arrives after a moment of typing, the
+// reply they get now arrives and is struck through, then the ready reply is said word by word. Every line is
+// in the page from the start, so a card never changes size as it plays.
 const ex = document.getElementById('ex'), exCards = Array.from(ex.querySelectorAll('.c'));
 if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
   ex.classList.add('play');
-  let started = false;
-  new IntersectionObserver(async (es) => { if (!es[0].isIntersecting || started) return; started = true;
-    for (const c of exCards) { for (const st of ['s1', 's2', 's3', 's4']) { c.classList.add(st); await sleep(st === 's3' ? 550 : 650); } }
-  }, { threshold: .35 }).observe(ex);
+  for (const p of ex.querySelectorAll('.then p')) p.innerHTML = p.textContent.split(' ').map((w) => '<span class="w">' + w + '</span>').join(' ');
+  const say = async (m, wait) => { m.classList.add('on', 'typing'); await sleep(wait); m.classList.remove('typing'); };
+  const talk = async (c) => {
+    const [g, n, t] = c.querySelectorAll('.m');
+    await say(g, 800); await sleep(900);
+    await say(n, 700); await sleep(800); n.classList.add('struck'); await sleep(900);
+    await say(t, 900);
+    for (const w of t.querySelectorAll('.w')) { w.classList.add('in'); await sleep(70); }
+    t.classList.add('done');
+  };
+  // A card plays when it is on screen (stacked on a phone, each in its turn as it is reached; side by side,
+  // one starting a little after the other). Its height is held while it plays, since a line being typed is
+  // drawn as a small bubble.
+  let line = Promise.resolve();
+  const io = new IntersectionObserver((es) => { for (const e of es) { if (!e.isIntersecting) continue; io.unobserve(e.target);
+    line = line.then(async () => { const c = e.target; c.style.minHeight = c.offsetHeight + 'px'; talk(c).then(() => { c.style.minHeight = ''; }); await sleep(2600); });
+  } }, { threshold: .5 });
+  exCards.forEach((c) => io.observe(c));
 }
 
 // The floor carousel: turns every seven seconds; the arrows and dots hold it.
