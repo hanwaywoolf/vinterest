@@ -2215,16 +2215,18 @@ test('a drill about one wine never asks which wine: its table question asks only
       const o = TeamLearn.oneWine(q); if (!o) { bad.push(q.q); return; }
       const oc = TeamLearn.choices(o); if ((oc.groups || []).some((g) => /suggest/i.test(g.label)) || /What would you suggest/.test(o.q)) bad.push(o.q); else reworded.push(o.q);
     }));
-    // Essentials: the wine-only table question isn't asked alone; a narrowed test on one wine carries no "which wine".
+    // Essentials: the wine-only table question stays, as it stands, or the wine could never be finished from its own
+    // Practise (it sat at "2 of 3"); every role's one-wine drill asks every question its standing counts.
     const ess = TeamData.wines().flatMap((w) => TeamLearn.qsFor('server', w.id).filter((q) => q.k === 'apply' && q.mc));
-    const essGone = ess.every((q) => TeamLearn.oneWine(q) === null);
+    const essGone = ess.every((q) => TeamLearn.oneWine(q) === q);
+    const short = Object.keys(TeamLearn.ROLES).flatMap((role) => TeamData.wines().filter((w) => TeamLearn.qsFor(role, w.id).some((q) => !TeamLearn.oneWine(q))).map((w) => role + ' ' + w.id));
     const t = TeamVinny.test(som.id, { ask: 'Tondonia' });
-    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, test: t.qs.map((q) => q.q), title: t.title };
+    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, short, test: t.qs.map((q) => q.q), title: t.title };
   });
   expect(r.bad).toEqual([]);
   expect(r.reworded).toBeGreaterThan(20);
   expect(r.sample).toMatch(/You suggest the .+\. Why does it work\?$/);
-  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true);
+  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true); expect(r.short).toEqual([]);
   expect(r.test.some((q) => /What would you suggest/.test(q))).toBe(false);
   // On the screen: Practise this wine from a card with a table question.
   await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'sommelier'); TeamLearn.setMe(s.id); });
