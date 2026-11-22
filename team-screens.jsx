@@ -248,7 +248,7 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLay
     const drill=(()=>{ const dn=TeamLearn.doneToday(pid);
       if(!dn) return <div data-testid="today-next" style={{marginTop:12}}>
           <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,marginBottom:6}}>Next</div>
-          <TeamBtn primary onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions<span aria-hidden="true">→</span></TeamBtn></div>;
+          <TeamBtn primary onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</TeamBtn></div>;
       return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:12,padding:'12px 14px',borderRadius:0,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
           <div style={{width:32,height:32,borderRadius:16,background:'#5FD48F',color:'#0F1A13',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,flexShrink:0}}>✓</div>
           <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Today's drill done</div>
@@ -321,7 +321,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
-    qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,items}; });
+    qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,known:r&&r.count?r.count.known:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
   // When the question doesn't ask how sure they are, a right answer inside QUICK_MS reads as sure (confidence from speed, not a tap).
   const shownAt=React.useRef(Date.now());
@@ -345,7 +345,9 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const daily=!given&&!only&&!part, marked=React.useRef(false);
   React.useEffect(()=>{ if(!q&&qs.length&&daily&&!marked.current){ marked.current=true; TeamLearn.drillDone(pid,tally.right,tally.of); } },[q]);
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
-  if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct, right=rightRef.current;
+  // At Essentials readiness is a count, so the change is counted in wines and dishes: one more known of 130 is under a
+  // point of the percentage, and a test that finished a wine once said "no change".
+  if(!q){ const r=TeamLearn.note(pid), rise=r.tier==='essentials'&&r.count?r.count.known-before.known:r.pct-before.pct, right=rightRef.current;
     const rows=Object.entries(before.items).map(([id,was])=>{ const mix=TeamLearn.isCocktail(id), dish=!mix&&!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=mix?(TeamData.cocktail(id)||{}).name:dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish,mix}; });
     // The summary says the result in words (what they now know, when it comes back), then the figures; the mechanism waits behind a tap.
     const known=TeamLearn.knownLine(right), when=TeamLearn.comesBack(pid,right);

@@ -2202,6 +2202,38 @@ for (const [name, viewport] of [['landscape', { width: 1180, height: 820 }], ['p
   });
 }
 
+// At Essentials readiness is a count ("You know 55 of 130"): one wine finished is under a point of the percentage,
+// and the summary once said "no change" beside a wine that had just gone to 3 of 3.
+test('finishing a wine at Essentials shows on the drill summary', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.me());
+  // Every answer of this drill is taken as right, so the test is of the summary, not of the picking.
+  const n = await page.evaluate(() => { const me = TeamLearn.me(), rec = TeamLearn.record; TeamLearn.record = function (pid, q) { return rec.call(TeamLearn, pid, q, true, 'sure'); };
+    const w = TeamData.wines().find((w) => { const st = TeamLearn.standing(me.id, w.id); return st && st.total > 1 && st.known === 0; }); window.__w = w.id;
+    return { tier: TeamLearn.readiness(me.id).tier, total: TeamLearn.standing(me.id, w.id).total, name: TeamData.short(w) }; });
+  expect(n.tier).toBe('essentials');
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').filter({ hasText: n.name }).first().click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
+  for (let i = 0; i < n.total; i++) {
+    await expect(page.getByTestId('drill-q')).toBeVisible();
+    const choose = page.getByText(/Choose \d+/).first();
+    if (await choose.isVisible().catch(() => false)) { const k = Number((await choose.innerText()).match(/Choose (\d+)/)[1]); for (let j = 0; j < k; j++) await page.getByTestId('drill-opt').nth(j).click(); }
+    else await page.getByTestId('drill-opt').first().click();
+    const check = page.getByText('Check'); if (await check.isVisible().catch(() => false)) await check.click();
+    await expect(page.getByTestId('drill-result')).toBeVisible();
+    await page.getByText(/^Next$|^Finish$/).click();
+  }
+  const done = page.getByTestId('drill-done');
+  await expect(done).toBeVisible();
+  await expect(done).toContainText(/You know \d+ of \d+ ▲1/);
+  await expect(done).not.toContainText('no change');
+});
+
 test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=princess&view=phone`);
