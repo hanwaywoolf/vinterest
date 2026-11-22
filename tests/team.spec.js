@@ -581,6 +581,17 @@ test('the publish check: every question is checked, the ones that fail are rewri
   const fix = reqs.filter((x) => x.purpose === 'team_fix');
   expect(fix.length).toBeGreaterThan(0);
   expect(fix.map((x) => x.messages[0].content).join('\n')).toMatch(/PROBLEM giveaway/);
+  // What still fails after its rewrites waits for a change: the next publish sends none of it again, a question that
+  // changes goes back, and asking afresh sends everything.
+  const again = await page.evaluate(async () => {
+    const one = await TeamData.checkQuestions(), sentOne = one.sent, left = one.left;
+    const d = TeamData.get(); d.cards['w-ardanza-reserva'].qs.push({ id: 'w-ardanza-reserva#bad2', k: 'recall', q: 'Is the La Rioja Alta Viña Ardanza Reserva red or white?', ans: 'Red', acc: [], why: 'x' }); TeamData.save(d);
+    const two = await TeamData.checkQuestions(), fresh = await TeamData.checkQuestions(null, null, { fresh: true });
+    return { sentOne, left, sentTwo: two.sent, fresh: fresh.sent, failed: fresh.failed };
+  });
+  expect(again.sentOne).toBe(0);
+  expect(again.sentTwo).toBe(1);
+  expect(again.fresh).toBe(again.failed);
   // The demo restaurant runs offline: it's counted, never sent.
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();

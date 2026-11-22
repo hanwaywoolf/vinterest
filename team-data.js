@@ -374,7 +374,8 @@ const TeamData = {
     return `ID ${q.id}\n${about}\nQUESTION ${d.q}${groups}\nOPTIONS\n${opts.map((o,i)=>`${right.includes(i)?'[marked right]':'[wrong]'} ${o}`).join('\n')}${opts.length?'':`\nANSWER ${d.ans||''}`}\nAFTER ${ax?(ax.text||ax.list.map(x=>`${x.name}: ${x.text}`).join(' / ')):'(nothing)'}`; },
   /* What a question looks like to the reviewer, as a short mark: the same mark means the same question, options and line
      after, so the verdict it was given still stands. */
-  _itemMark(q){ const s=this._reviewItem(q); let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  _mark(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  _itemMark(q){ return this._mark(this._reviewItem(q)); },
   /* A publish reads only what changed: a question whose mark is the one it was last read with keeps its verdict (fit, or
      held with its note), so swapping one wine sends that wine's questions and any whose options it moved, not the whole
      restaurant (`reviewed.seen`, id -> mark; `reviewed.read` is how many were sent this time). `fresh` reads everything
@@ -417,9 +418,14 @@ const TeamData = {
     this.save(d); return d.venue.reviewed; },
   reviewed(){ return (this.get().venue||{}).reviewed||null; },
   FIX_BATCH:8, FIX_ROUNDS:2,
-  async checkQuestions(ids,onStep){
+  /* A question that still fails after its rewrites is remembered with why (`checked.gave`, id -> a mark of the question
+     and its reason), and isn't sent again while both are the same: at Eloise every publish was paying to rewrite the same
+     questions that had already failed twice, and each new wording was then read again by the sommelier review. It goes
+     back when the question or its reason changes, or when asked afresh (`fresh`, as npm run team:review does). */
+  async checkQuestions(ids,onStep,{fresh}={}){
     const all=ids||this.wines().map(w=>w.id), asked=all.reduce((n,id)=>n+((this.card(id)||{}).qs||[]).length,0);
-    const failed=TeamLearn.audit(all);
+    const was=fresh?{}:(((this.get().venue||{}).checked||{}).gave||{}), fmark=f=>this._mark(JSON.stringify(f.q)+'|'+(f.why||''));
+    const failedAll=TeamLearn.audit(all), failed=failedAll.filter(f=>was[f.q.id]!==fmark(f));
     let fixed=0;
     if(failed.length&&!this.isDemo()){
       const tpl=_loadTextSync('prompts/team-fix.txt'), venue=this.get().venue.name||'the restaurant';
@@ -439,7 +445,10 @@ const TeamData = {
     }
     // Then the review of every question as the drill shows it (TeamLearn.review), listed on the console's Wines section.
     let flagged=0; try{ flagged=TeamLearn.review().length; }catch(e){}
-    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed,flagged}; this.save(d);
+    // What fails now, of these wines, is what's left: each remembered as it stands, so it waits for a change.
+    const gave=ids?{...was}:{}; failedAll.forEach(f=>{ delete gave[f.q.id]; });
+    const after=failed.length?TeamLearn.audit([...new Set(failedAll.map(f=>f.wine))]):failedAll; after.forEach(f=>{ gave[f.q.id]=fmark(f); });
+    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failedAll.length,sent:failed.length,fixed,left:after.length,flagged,gave}; this.save(d);
     return d.venue.checked;
   },
 
