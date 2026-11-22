@@ -2234,6 +2234,17 @@ test('finishing a wine at Essentials shows on the drill summary', async ({ conte
   await expect(done).not.toContainText('no change');
 });
 
+// A card's Pair it and the "best match" question read one list (TeamLearn.poursWith): the Chablis at Eloise was asked
+// with Caesar Salad right while its card listed three other dishes.
+for (const seed of ['demo', 'social', 'eloise', 'princess']) test(`the dish a "best match" question wants is the first on the card's Pair it (${seed})`, async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => { let n = 0; const off = []; [...TeamData.wines(), ...TeamData.cocktails()].forEach((w) => { const q = TeamLearn.lightQs(w.id, { all: true }).find((q) => /#pair$/.test(q.id)); if (!q) return; n++;
+    const list = TeamLearn.poursWith(w.id).map((x) => x.name); if (q.opts[q.a] !== list[0] || new Set(list).size !== list.length) off.push(w.id); }); return { n, off }; });
+  expect(r.n).toBeGreaterThan(10); expect(r.off).toEqual([]);
+});
+
 test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=princess&view=phone`);
