@@ -24,6 +24,7 @@
 //   --specials 6      specials read per week             --plans 4     bespoke plans per month
 //   --changes 4       list or menu publishes per month (each re-runs what `publish` measures)
 //   --level hints     the table's help: choices, hints or own
+//   --steady          with --publish: skip the first full read and measure only a list change after it
 //   --only ask,table  measure only these (ask, table, special, plan); the rest show as not measured
 //   --tts 0.20        voice, $ per 1,000 characters      --stt 0.40    speech-to-text, $ per hour of audio
 //   --price in,out    $ per million tokens for a model the table below doesn't know
@@ -37,7 +38,7 @@ const argv = process.argv.slice(2), flag = (k, d) => { const i = argv.indexOf('-
 const seed = argv.find((a, i) => !a.startsWith('--') && !(argv[i - 1] || '').startsWith('--')) || 'demo';
 const N = (k, d) => Number(flag(k, d));
 const RUNS = N('runs', 2), USE = { staff: N('staff', 8), tables: N('tables', 2), voice: N('voice', 1), asks: N('asks', 3), specials: N('specials', 6), plans: N('plans', 4), changes: N('changes', 4) };
-const ONLY = typeof flag('only') === 'string' ? flag('only').split(',') : null, LEVEL = String(flag('level', 'hints')), TTS = N('tts', 0.2), STT = N('stt', 0.4), PUBLISH = !!flag('publish', false), WEEKS = 52 / 12;
+const ONLY = typeof flag('only') === 'string' ? flag('only').split(',') : null, LEVEL = String(flag('level', 'hints')), TTS = N('tts', 0.2), STT = N('stt', 0.4), PUBLISH = !!flag('publish', false), STEADY = !!flag('steady', false), WEEKS = 52 / 12;
 const API = process.env.VINTEREST_API_ORIGIN || 'https://vinterest.pages.dev';
 
 // $ per million tokens (input, output), as scripts/model-trial.mjs has them. A cached read is a tenth of the
@@ -98,7 +99,10 @@ try {
     // Twice: the first publish on a phone reads every question (nothing has a mark yet), the second is what a list
     // change costs from then on. A different wine each time; the review runs six batches at once, as team:review does.
     await page.evaluate(() => { TeamData.REVIEW_AT_ONCE = 6; });
-    for (const [n, name] of [[0, 'publish-first'], [1, 'publish']]) { unit = name; const t0 = Date.now();
+    // --steady skips the first, full read: every question is marked as already read (no call), so only the list change is measured.
+    if (STEADY) await page.evaluate(() => { const all = [...TeamData.wines().flatMap((w) => [...TeamLearn.wineQs(w.id, { all: true }), ...TeamLearn.lightQs(w.id, { all: true })]), ...TeamData.cocktails().flatMap((c) => TeamLearn.cocktailQs(c.id, { all: true })), ...TeamData.dishes().flatMap((x) => TeamLearn.dishQs(x.id, { all: true }))];
+      const d = TeamData.get(); d.venue.reviewed = { ...(d.venue.reviewed || { held: [], notes: {} }), seen: Object.fromEntries(all.map((q) => [q.id, TeamData._itemMark(q)])) }; TeamData.save(d); });
+    for (const [n, name] of (STEADY ? [[1, 'publish']] : [[0, 'publish-first'], [1, 'publish']])) { unit = name; const t0 = Date.now();
       try { const r = await page.evaluate(async (n) => { const w = TeamData.wines().filter((x) => TeamData.card(x.id) && !TeamData.isDrink(x))[n * 3], d = TeamData.get(); delete d.cards[w.id]; TeamData.save(d);
         await TeamData.refresh({ kind: 'list', added: [w.id], changed: [], removed: [] }); const v = TeamData.reviewed() || {}; return { wine: TeamData.short(w), asked: v.asked, read: v.read }; }, n);
         console.log(`  ${name}: ${r.wine} changed, ${calls.filter((c) => c.unit === name).length} calls, the review read ${r.read} of ${r.asked} questions, ${Math.round((Date.now() - t0) / 1000)}s`); }
@@ -122,7 +126,7 @@ try {
   for (const [name, u, n] of rows) { if (!u.calls) { L.push(`| ${name} | not measured | | | | | | ${k(n)} | |`); continue; } const month = u.cost * n; total += month; L.push(`| ${name} | ${u.model || 'not measured'} | ${u.calls.toFixed(1)} | ${k(u.in + u.write)} | ${k(u.read)} | ${k(u.out)} | ${$(u.cost)} | ${k(n)} | ${$(month)} |`); }
   const vMonth = voice.cost * m.table * USE.voice; total += vMonth;
   L.push(`| The table out loud (voice and speech-to-text) | assumed rates | | ${k(voice.chars)} characters | | ${k(voice.secs)} seconds | ${$(voice.cost)} | ${k(m.table * USE.voice)} | ${$(vMonth)} |`, `| **Total** | | | | | | | | **${$(total)}** |`, '');
-  if (U.publish) for (const [u, title] of [['publish-first', 'The first publish on a device, which reads every question (' + $(per('publish-first', 1).cost) + ' in all)'], ['publish', 'A list change after that']]) { const by = {}; for (const c of of(u)) { (by[c.purpose] = by[c.purpose] || { n: 0, cost: 0 }); by[c.purpose].n++; by[c.purpose].cost += dollars(c); }
+  if (U.publish) for (const [u, title] of [...(of('publish-first').length ? [['publish-first', 'The first publish on a device, which reads every question (' + $(per('publish-first', 1).cost) + ' in all)']] : []), ['publish', 'A list change after that']]) { const by = {}; for (const c of of(u)) { (by[c.purpose] = by[c.purpose] || { n: 0, cost: 0 }); by[c.purpose].n++; by[c.purpose].cost += dollars(c); }
     L.push(title + ', by what the publish ran:', '', '| Step | Calls | Cost |', '|---|---|---|', ...Object.entries(by).sort((a, b) => b[1].cost - a[1].cost).map(([p, v]) => `| ${p} | ${v.n} | ${$(v.cost)} |`), ''); }
   else L.push(`A list or menu publish isn't in the total: ${venue.demo ? 'The Larkspur\'s publish sends no question check or review, so measure it on a real install' : 'pass --publish to measure it'} (it re-pairs the menu and re-reads every question, so it is the part that grows with the list).`, '');
   L.push(`Voice is ${$(TTS)} per 1,000 characters and speech-to-text ${$(STT)} an hour: assumptions until set from the ElevenLabs invoice (--tts, --stt). The guest's lines are counted, not sent.`,

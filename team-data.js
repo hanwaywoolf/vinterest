@@ -465,7 +465,11 @@ const TeamData = {
       // As with the cards: a batch that fails is tried again, then one dish at a time.
       let j;
       try{ j=this._json(await this._callRetry('team_pairings',ask(xs)))||{}; }
-      catch(e){ if(xs.length<2) throw e; j={pairings:[]}; for(const one of xs){ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); } }
+      catch(e){ if(xs.length<2) throw e; j={pairings:[]};
+        // One dish at a time, each asked twice at most. A dish whose answer still can't be read keeps the pairing it had
+        // (or none, and is asked again at the next publish) rather than stopping the whole publish: one dish at Eloise
+        // came back as broken JSON every time and nothing after the pairings ran.
+        for(const one of xs){ for(let go=0;go<2;go++){ try{ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); break; }catch(e1){ if(go) console.warn('No pairing could be read for '+one.name); } } } }
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
         // The answer's dish is found by its name as sent, else by the same letters (a curly apostrophe typed straight,

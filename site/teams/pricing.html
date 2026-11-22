@@ -24,32 +24,33 @@
 
 <section class="band" style="padding-top:24px">
   <div class="wrap">
+    <div class="cur" id="cur" role="group" aria-label="Currency"><span>Prices in</span><button type="button" data-cur="GBP" aria-pressed="true">GBP</button><button type="button" data-cur="USD" aria-pressed="false">USD</button><button type="button" data-cur="CAD" aria-pressed="false">CAD</button><button type="button" data-cur="EUR" aria-pressed="false">EUR</button><button type="button" data-cur="AUD" aria-pressed="false">AUD</button><button type="button" data-cur="NZD" aria-pressed="false">NZD</button></div>
     <div class="tiers">
       <div class="tier pick" style="--c:var(--cr)">
         <div class="k">Restaurant</div><h3>Restaurants and wine bars</h3>
         <p class="who">The glass list and the bottles, every dish paired and its allergens signed off, a floor held to a minimum per role.</p>
-        <div class="price"><b>£99</b> <i>a month, per site</i><small>On an annual term. £129 month to month.</small></div>
+        <div class="price"><b><span data-p="r1">£99</span></b> <i>a month, per site</i><small>On an annual term. <span data-p="r2">£129</span> month to month.</small></div>
         <ul><li>Trained to the glass and bottle lists</li><li>The menu: pairings, notes and allergens</li><li>A training level and minimum per role</li></ul>
         <a class="btn primary" href="#pilot">Sign up for a pilot</a>
       </div>
       <div class="tier" style="--c:var(--plum)">
         <div class="k">Fine dining</div><h3>Fine dining</h3>
         <p class="who">A deep list and a sommelier's standard, with the comparisons that sell the second bottle.</p>
-        <div class="price"><b>£199</b> <i>a month, per site</i><small>On an annual term. £229 month to month.</small></div>
+        <div class="price"><b><span data-p="f1">£199</span></b> <i>a month, per site</i><small>On an annual term. <span data-p="f2">£229</span> month to month.</small></div>
         <ul><li>Everything in Restaurant</li><li>High level: comparisons on every wine</li><li>Your sommelier's own minimums</li></ul>
         <a class="btn ghost" href="#pilot">Sign up for a pilot</a>
       </div>
       <div class="tier" style="--c:var(--sky)">
         <div class="k">Group</div><h3>Restaurant groups</h3>
         <p class="who">Several sites, each on its own list and menu, held to one standard.</p>
-        <div class="price"><b>From £99</b> <i>a month, per site</i><small>Five sites or more, on a 12-month term.</small></div>
+        <div class="price"><b>From <span data-p="r1">£99</span></b> <i>a month, per site</i><small>Five sites or more, on a 12-month term.</small></div>
         <ul><li>Everything in Fine dining</li><li>One standard across sites</li><li>The group view, built with you</li></ul>
         <a class="btn ghost" href="#pilot">Start with one site</a>
       </div>
       <div class="tier" style="--c:var(--rose)">
         <div class="k">Winery</div><h3>Wineries and tasting rooms</h3>
         <p class="who">Your range as the list, the tasting room as the floor, and seasonal staff ready fast.</p>
-        <div class="price"><b>£99</b> <i>a month, per tasting room</i><small>On an annual term. £129 month to month.</small></div>
+        <div class="price"><b><span data-p="r1">£99</span></b> <i>a month, per tasting room</i><small>On an annual term. <span data-p="r2">£129</span> month to month.</small></div>
         <ul><li>Your range and tasting flights</li><li>Every vintage kept as one wine</li><li>Vinny playing a visitor</li></ul>
         <a class="btn ghost" href="#pilot">Sign up for a pilot</a>
       </div>
@@ -72,7 +73,7 @@
       <div><b>Training</b><span>A card for every wine and dish. Every question goes through the app's own review and a sommelier review before your team sees it.</span></div>
       <div><b>Targets</b><span>A training level and a minimum for each role, and the measures of success you and we agree in writing.</span></div>
     </div>
-    <div class="fee"><b>£450 once, per site</b><span>£750 for a fine dining list. Included in a pilot. <a href="/mise-en-place">How mise en place runs, step by step →</a></span></div>
+    <div class="fee"><b><span data-p="s1">£450</span> once, per site</b><span><span data-p="s2">£750</span> for a fine dining list. Included in a pilot. <a href="/mise-en-place">How mise en place runs, step by step →</a></span></div>
   </div>
 </section>
 
@@ -130,11 +131,11 @@
   <div class="wrap">
     <div><div class="eyebrow" style="--c:var(--green-n)">Fair questions</div><h2>About the money.</h2></div>
     <div>
-      <details open><summary>What does a pilot cost?</summary><p>Half the monthly price for your first 90 days, with mise en place included: about £65 a month for a restaurant on the month-to-month price. There's no term to sign until you've seen the 90-day review.</p></details>
+      <details open><summary>What does a pilot cost?</summary><p>Half the monthly price for your first 90 days, with mise en place included: about <span data-p="p1">£65</span> a month for a restaurant on the month-to-month price. There's no term to sign until you've seen the 90-day review.</p></details>
       <details><summary>What is the mise en place fee for?</summary><p>Our team's work before go-live: reading in your list and menu and checking them against the originals, the analysis and recommendations, the pairings, the training and its reviews, and the targets in your plan. It's charged once per site and included in a pilot.</p></details>
       <details><summary>Why not just upload the list and go?</summary><p>You can load a list in minutes, and after go-live your owner publishes changes that way. The first build is different: a wrong vintage, a glass price read as a bottle or a pairing nobody checked gets drilled into the whole team, so we check it with you first.</p></details>
       <details><summary>Does changing the list or running specials cost more?</summary><p>No. List and menu changes, nightly specials, 86'd dishes and plans for individual staff are in every plan.</p></details>
-      <details><summary>What about prices outside the UK?</summary><p>These are our UK prices. We're piloting in Ontario too, in Canadian dollars; ask us and we'll quote yours.</p></details>
+      <details><summary>Which currencies can I pay in?</summary><p>Pick your currency at the top of the page: pounds, US, Canadian, Australian or New Zealand dollars, or euros. Each market has its own set prices, so they don't move with the exchange rate. Anywhere else, ask us and we'll quote yours.</p></details>
       <details><summary>How would I know it paid for itself?</summary><p>Bring in your POS sales before and during. The console shows wine sales beside what the team knows, so you can judge the lift yourself rather than take ours.</p></details>
     </div>
   </div>
@@ -144,5 +145,28 @@
 
 %%FOOTER%%
 <script src="/site.js?v=%%JS_V%%" defer></script>
+<script>
+// The pricing page's currency: each market has its own set prices (never the pound converted). It opens on the
+// visitor's own (their last choice, else their country as /api/country gives it, else pounds); the page as written is pounds.
+(() => {
+  const PRICES = { // r: restaurant and winery, f: fine dining (annual term, month to month); s: mise en place; p: a restaurant's pilot month
+    GBP: { sym: '£', r1: 99, r2: 129, f1: 199, f2: 229, s1: 450, s2: 750, p1: 65 },
+    USD: { sym: 'US$', r1: 129, r2: 169, f1: 249, f2: 289, s1: 595, s2: 995, p1: 85 },
+    CAD: { sym: 'CA$', r1: 169, r2: 219, f1: 329, f2: 379, s1: 795, s2: 1295, p1: 110 },
+    EUR: { sym: '€', r1: 119, r2: 149, f1: 229, f2: 269, s1: 525, s2: 875, p1: 75 },
+    AUD: { sym: 'A$', r1: 189, r2: 249, f1: 379, f2: 439, s1: 895, s2: 1495, p1: 125 },
+    NZD: { sym: 'NZ$', r1: 209, r2: 269, f1: 419, f2: 479, s1: 975, s2: 1595, p1: 135 } };
+  const EURO = ['AT', 'BE', 'CY', 'DE', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PT', 'SI', 'SK'];
+  const forCountry = (c) => c === 'US' ? 'USD' : c === 'CA' ? 'CAD' : c === 'AU' ? 'AUD' : c === 'NZ' ? 'NZD' : EURO.includes(c) ? 'EUR' : c === 'GB' ? 'GBP' : '';
+  const box = document.getElementById('cur'), KEY = 'vt_currency';
+  const show = (code) => { const p = PRICES[code]; if (!p) return;
+    document.querySelectorAll('[data-p]').forEach((el) => { el.textContent = p.sym + p[el.dataset.p].toLocaleString('en-GB'); });
+    box.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.cur === code ? 'true' : 'false')); };
+  box.addEventListener('click', (e) => { const b = e.target.closest('button[data-cur]'); if (!b) return; show(b.dataset.cur); try { localStorage.setItem(KEY, b.dataset.cur); } catch (err) {} });
+  let saved = ''; try { saved = localStorage.getItem(KEY) || ''; } catch (err) {}
+  if (PRICES[saved]) show(saved);
+  else fetch('/api/country').then((r) => r.json()).then((d) => { const c = forCountry(d.country); if (c && box.querySelector('[aria-pressed="true"]').dataset.cur === 'GBP') show(c); }).catch(() => {});
+})();
+</script>
 </body>
 </html>

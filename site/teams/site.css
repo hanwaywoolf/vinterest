@@ -483,6 +483,11 @@ footer a { text-decoration: none; }
 .map .r span:last-child { font-weight: 500; }
 
 /* Pricing */
+.cur { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; background: var(--bg-2); width: max-content; max-width: 100%; }
+.cur span { padding: 0 8px 0 10px; font-size: 13px; color: var(--mute); }
+.cur button { padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 500; color: var(--ink-2); background: none; border: 0; cursor: pointer; font-family: inherit; }
+.cur button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); }
+.cur + .tiers { margin-top: 20px; }
 .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 44px; align-items: stretch; }
 /* Each card's six parts (kind, name, who, price, what's in it, button) sit on rows shared across the cards, so a
    name or sentence that wraps in one card keeps every price line and list level with its neighbours'. */

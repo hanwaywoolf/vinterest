@@ -570,3 +570,27 @@ test('Day to day turns through its three parts and shows the app as it is', asyn
     await page.close();
   }
 });
+
+// Pricing: the page is written in pounds; a visitor picks one of six currencies and every price on the page follows,
+// from each market's own set prices; the choice is kept, and a first visit opens on their country's.
+test('the pricing page shows each plan in the currency picked', async ({ browser }) => {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  await page.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: '{"country":"CA"}' }));
+  await page.goto(BASE + '/pricing');
+  await expect(page.locator('#cur button')).toHaveText(['GBP', 'USD', 'CAD', 'EUR', 'AUD', 'NZD']);
+  await expect(page.locator('#cur [aria-pressed="true"]')).toHaveText('CAD'); // from the visitor's country
+  await expect(page.locator('.tier').first().locator('.price')).toContainText('CA$169');
+  await page.locator('#cur [data-cur="GBP"]').click();
+  await expect(page.locator('.tier').first().locator('.price')).toContainText('£99');
+  await expect(page.locator('.tier').first().locator('.price')).toContainText('£129 month to month');
+  await expect(page.locator('.fee')).toContainText('£450 once, per site');
+  for (const [code, first] of [['USD', 'US$129'], ['EUR', '€119'], ['AUD', 'A$189'], ['NZD', 'NZ$209']]) {
+    await page.locator(`#cur [data-cur="${code}"]`).click();
+    await expect(page.locator('.tier').first().locator('.price')).toContainText(first);
+    expect(await page.locator('[data-p]').evaluateAll((els) => els.every((e) => /^\D+[\d,]+$/.test(e.textContent)))).toBe(true);
+  }
+  await page.reload(); // the choice is kept over the country
+  await expect(page.locator('#cur [aria-pressed="true"]')).toHaveText('NZD');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  await page.close();
+});
