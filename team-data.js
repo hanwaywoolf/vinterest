@@ -12,6 +12,7 @@ const TeamData = {
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
   PITCH_BATCH:8,      // wines per short-card call (a pitch demo's cards carry no questions)
   PAIR_BATCH:12,      // dishes per pairing call
+  PAIR_FULL_AT:8,     // from this many new or changed wines in one publish, every dish is paired afresh
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
   DISH_BATCH:8,       // dishes per dish-notes call
@@ -460,6 +461,34 @@ const TeamData = {
       .map((q,i)=>({...q,id:c.id+'#'+i}));
     return {...c,dishes:(c.dishes||[]).filter(x=>onMenu.has(x.dish)),alts:(c.alts||[]).filter(a=>d.wines[a.id]&&d.wines[a.id].onList&&a.id!==c.id),qs};
   },
+  /* Which dishes a publish pairs again. A pairing is kept wherever the change leaves it standing, since every dish and
+     table question is built from it: pairing all 17 dishes again for one new wine at Eloise reworded them all, and 212
+     of 709 questions were checked, rewritten and read again ($6 a change). So: a dish with no pairing, or one that
+     leans on a wine no longer on the list, is paired again; for new or changed wines one call asks which dishes they
+     should move (prompts/team-pairing-new.txt), and only those are paired again; a menu change pairs its new and
+     changed dishes. A big list change (PAIR_FULL_AT wines) or an answer that can't be read pairs every dish, as before. */
+  async pairingsFor(res,dishes){
+    const d=this.get(), on=id=>id&&d.wines[id]&&d.wines[id].onList;
+    const fresh=[...new Set([...(res.added||[]),...(res.changed||[])])].filter(id=>on(id)&&!this.isDrink(d.wines[id]));
+    if(!dishes.some(id=>this.pairing(id))) return dishes;
+    // A menu change pairs the dishes that are new or changed, and any left without a pairing.
+    if(res.kind==='menu'){ const moved=new Set([...(res.added||[]),...(res.changed||[])]); return dishes.filter(id=>moved.has(id)||!this.pairing(id)||!(this.pairing(id).best||[]).length); }
+    if(res.kind!=='list'||fresh.length>=this.PAIR_FULL_AT) return dishes;
+    const uses=p=>[...(p.best||[]),p.glass,p.avoid].filter(Boolean).map(b=>b.id);
+    const need=new Set(dishes.filter(id=>{ const p=this.pairing(id); return !p||!(p.best||[]).length||uses(p).some(w=>!on(w)); }));
+    const rest=dishes.filter(id=>!need.has(id));
+    if(!fresh.length||!rest.length) return [...need];
+    const line=w=>{ const c=this.card(w.id), s=c&&c.style; return `${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}${s?` | body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`:''}`; };
+    const nm=id=>d.wines[id]?this.label(d.wines[id]):'';
+    const prompt=_loadTextSync('prompts/team-pairing-new.txt').replace(/\{\{venue\}\}/g,d.venue.name||'the restaurant').replace('{{about}}',this.about())
+      .replace('{{list}}',this.wines().filter(w=>!this.isDrink(w)).map(line).join('\n')).replace('{{wines}}',fresh.map(id=>line(d.wines[id])).join('\n'))
+      .replace('{{dishes}}',rest.map(id=>{ const x=this.dish(id), p=this.pairing(id); return `${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')} | picks: ${(p.best||[]).map(b=>nm(b.id)).join('; ')} | glass: ${p.glass?nm(p.glass.id):'none'} | avoid: ${p.avoid?nm(p.avoid.id):'none'}`; }).join('\n'));
+    let j; try{ j=this._json(await this._callRetry('team_pairings',prompt)); }catch(e){}
+    if(!j||!Array.isArray(j.dishes)) return dishes;
+    const key=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,''), named=new Set(j.dishes.map(key));
+    rest.forEach(id=>{ if(named.has(key(this.dish(id).name))) need.add(id); });
+    return [...need];
+  },
   /* The list's best matches for each dish (prompts/team-pairings.txt). */
   async writePairings(dishIds,onStep){
     const tpl=_loadTextSync('prompts/team-pairings.txt');
@@ -528,9 +557,10 @@ const TeamData = {
     const needPairs=dishes.length&&this.wines().length&&!onlyPrepared&&(res.kind==='list'||res.added.length||res.changed.length||res.removed.length||dishes.some(id=>!this.pairing(id)));
     const dated=this.wines().filter(w=>w.vintage&&!w.peak).map(w=>w.id);
     // Pairings and windows don't depend on each other, so they're written at the same time, reported as one step.
-    const prog={p:0,w:0}, total=(needPairs?dishes.length:0)+dated.length, tell=()=>onStep&&onStep(needPairs&&dated.length?'Matching the menu and checking drinking windows':needPairs?'Matching wines to the menu':'Checking drinking windows',prog.p+prog.w,total);
+    const prog={p:0,w:0}; let total=(needPairs?dishes.length:0)+dated.length; const tell=()=>onStep&&onStep(needPairs&&dated.length?'Matching the menu and checking drinking windows':needPairs?'Matching wines to the menu':'Checking drinking windows',prog.p+prog.w,total);
     const jobs=[];
-    if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
+    // A list change keeps every pairing it can (pairingsFor): only the dishes the change moves are paired again.
+    if(needPairs) jobs.push(this.pairingsFor(res,dishes).then(ids=>{ total+=ids.length-dishes.length; return ids.length?this.writePairings(ids,(a)=>{ prog.p=a; tell(); }):tell(); }));
     if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
     if(jobs.length){ tell(); await Promise.all(jobs); }
     // Dish notes are written when the menu is published (or asked for from Upload), never on a list publish, so a new

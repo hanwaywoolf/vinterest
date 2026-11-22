@@ -126,7 +126,7 @@ test('a prompt marked [[cache-above]] is sent with its unchanging part cached an
 test('every Teams prompt that is cached keeps the per-call parts below its marker', async () => {
   const fs = require('node:fs'), dir = path.join(__dirname, '..', 'prompts');
   const perCall = { 'team-cards.txt': ['facts', 'wines', 'example'], 'team-pitch-cards.txt': ['facts', 'wines'], 'team-fix.txt': ['facts', 'items'], 'team-review.txt': ['items'],
-    'team-pairings.txt': ['dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'],
+    'team-pairings.txt': ['dishes'], 'team-pairing-new.txt': ['wines', 'dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'],
     // Ask Vinny and the guest at the table send the whole list every turn: what's above the marker is the same for every
     // turn of a table and every question of a shift, so only the first pays for it in full.
     'team-vinny.txt': ['cards', 'history', 'question'], 'team-guest.txt': ['scenario', 'key', 'cards', 'transcript', 'last', 'help', 'helpfields'] };

@@ -602,6 +602,41 @@ test('the publish check: every question is checked, the ones that fail are rewri
   expect(errors).toEqual([]);
 });
 
+// A list change keeps the pairings it can (TeamData.pairingsFor): pairing every dish again for one wine reworded them
+// all, and a third of a restaurant's questions were checked and read again at each change.
+test('a list change pairs again only the dishes it moves', async ({ context, page }) => {
+  const reqs = []; let named = [];
+  await openSample(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_pairings') return '';
+    const text = JSON.stringify(b.messages);
+    return text.includes('wines chosen again') ? JSON.stringify({ dishes: named }) : JSON.stringify({ pairings: [{ dish: 'Braised lamb shoulder, white beans, rosemary', best: [{ id: 'w-catena-malbec', why: 'Again.' }] }] });
+  } });
+  const pairs = () => page.evaluate(() => Object.fromEntries(TeamData.dishes().map((x) => [x.id, JSON.stringify(TeamData.pairing(x.id))])));
+  const ask = (res) => page.evaluate((res) => TeamData.pairingsFor(res, TeamData.dishes().map((x) => x.id)), res);
+  const all = await page.evaluate(() => TeamData.dishes().map((x) => x.id)), before = await pairs();
+  // One new wine that moves nothing: one short call, no dish paired again.
+  expect(await ask({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] })).toEqual([]);
+  expect(reqs.filter((r) => r.purpose === 'team_pairings')).toHaveLength(1);
+  // It moves the lamb: only the lamb is paired again, and a whole publish leaves every other pairing as it was.
+  named = ['Braised lamb shoulder, white beans, rosemary'];
+  expect(await ask({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] })).toEqual(['d-lamb']);
+  await page.evaluate(() => TeamData.refresh({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] }));
+  const after = await pairs();
+  expect(JSON.parse(after['d-lamb']).best[0].why).toBe('Again.');
+  expect(Object.keys(before).filter((id) => before[id] !== after[id])).toEqual(['d-lamb']);
+  // A wine taken off the list: the dishes that leant on it are paired again without asking.
+  named = [];
+  const gone = await page.evaluate(() => { const d = TeamData.get(), id = TeamData.pairing('d-lamb').best[0].id; d.wines[id].onList = false; TeamData.save(d);
+    return TeamData.dishes().filter((x) => { const p = TeamData.pairing(x.id); return p && [...p.best, p.glass, p.avoid].some((b) => b && b.id === id); }).map((x) => x.id); });
+  const n = reqs.length;
+  expect((await ask({ kind: 'list', added: [], changed: [], removed: ['x'] })).sort()).toEqual(gone.sort());
+  expect(reqs.length).toBe(n);
+  // A menu change pairs its own dishes; a big list change, or an answer that can't be read, pairs every dish.
+  expect(await ask({ kind: 'menu', added: ['d-lamb'], changed: [], removed: [] })).toEqual(expect.arrayContaining(['d-lamb']));
+  expect((await ask({ kind: 'menu', added: ['d-lamb'], changed: [], removed: [] })).length).toBeLessThan(all.length);
+  expect(await page.evaluate(() => TeamData.pairingsFor({ kind: 'list', added: TeamData.wines().slice(0, TeamData.PAIR_FULL_AT).map((w) => w.id), changed: [], removed: [] }, TeamData.dishes().map((x) => x.id)))).toEqual(all);
+});
+
 test('an uploaded list is reviewed before it goes live; publishing writes cards and pairings and assigns the new wine', async ({ context, page }) => {
   const reqs = [];
   const list = { wines: [
