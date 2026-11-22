@@ -41,12 +41,13 @@ const _TC_BTN={fontSize:14,fontWeight:500};
 /* The Teams button (the new console and the cards): square and hollow, small spaced capitals in the accent, filling
    solid with the accent while the pointer is on it or it is pressed. A secondary one takes a white hairline and white
    text. It hugs its label, never a card's width. On a card its text is the card's own 14; in the console's pages 12. */
-function TeamBtn({children,primary,small,card,onClick,testid,disabled,style}){ const T=useTheme(), acc=T.lift?T.lift(C.cr):C.cr, [hot,setHot]=React.useState(false);
-  const line=primary?acc:'rgba(255,255,255,0.22)', fill=primary?acc:'#ffffff', on=hot&&!disabled;
+function TeamBtn({children,primary,solid,small,card,onClick,testid,disabled,style}){ const T=useTheme(), acc=T.lift?T.lift(C.cr):C.cr, [hot,setHot]=React.useState(false);
+  // `solid` is the one main action of a screen (Today's drill): filled from the start, dimming a little when pressed.
+  const line=primary||solid?acc:'rgba(255,255,255,0.22)', fill=primary||solid?acc:'#ffffff', on=(hot||solid)&&!disabled;
   return <div role="button" data-testid={testid} data-team-btn aria-disabled={disabled||undefined} onClick={disabled?undefined:onClick}
     onPointerEnter={e=>{ if(e.pointerType==='mouse') setHot(true); }} onPointerLeave={()=>setHot(false)} onPointerDown={()=>setHot(true)} onPointerUp={e=>{ if(e.pointerType!=='mouse') setHot(false); }} onPointerCancel={()=>setHot(false)}
     style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxSizing:'border-box',padding:small?'9px 13px':'12px 18px',borderRadius:0,border:`1px solid ${on?fill:line}`,background:on?fill:'transparent',color:on?inkOn(fill):primary?acc:T.ink,
-      fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:1,transition:'background .12s, color .12s',userSelect:'none',...style}}>{children}</div>; }
+      fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:solid&&hot?0.82:1,transition:'background .12s, color .12s, opacity .12s',userSelect:'none',...style}}>{children}</div>; }
 const _tcH=(T,t,sub)=><div style={{marginBottom:10}}><div data-card-name style={{fontSize:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
 /* One scale on a card: its name 20, a figure 16, every line 14, and every caption, tab, pill and button 12px spaced capitals
    (data-cap), with 8 to 12px between blocks. */
@@ -241,49 +242,59 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLay
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:(()=>{
     // The drill button: under the parts on a phone, straight under the readiness card on a tablet (the main thing to do, in view).
     const drill=(()=>{ const dn=TeamLearn.doneToday(pid);
-      if(!dn) return <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>;
-      return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:14,padding:'12px 14px',borderRadius:14,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
+      if(!dn) return <div data-testid="today-next" style={{marginTop:12}}>
+          <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,marginBottom:6}}>Next</div>
+          <TeamBtn solid card onClick={()=>open({view:'drill'})} style={{display:'flex',width:'100%',padding:'15px 18px'}}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</TeamBtn></div>;
+      return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:12,padding:'12px 14px',borderRadius:0,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
           <div style={{width:32,height:32,borderRadius:16,background:'#5FD48F',color:'#0F1A13',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,flexShrink:0}}>✓</div>
           <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Today's drill done</div>
             <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{dn.right} of {dn.of} right{dn.n>1?` over ${dn.n} drills`:''}. The next one is ready tomorrow; more now only helps.</div></div></div>
-        <Btn full style={{marginTop:10}} onClick={()=>open({view:'drill'})}>Do another 5 questions</Btn></>; })();
+        <TeamBtn card onClick={()=>open({view:'drill'})} style={{display:'flex',width:'100%',marginTop:10}}>Do another 5 questions</TeamBtn></>; })();
     const colA=<div>
-    {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6)}}>
+    {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6),borderRadius:0}}>
       <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your first {pl.current.days} days</div>
       <div data-testid="team-state" data-pct={r.pct} style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>{pl.current.part==='dishes'?`The ${pl.current.total} dishes on the menu`:pl.current.part==='cocktails'?`The ${pl.current.total} cocktails`:pl.current.part==='glass'?`The ${pl.current.total} wines by the glass`:`The ${pl.current.total} bottles`}</div>
       <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Day {pl.current.day} of {pl.current.days}. Five questions a day, what sells most first; {pl.waves.length>1?`then ${pl.waves.slice(1).map(w=>w.label.toLowerCase()).join(', then ')}`:'that\'s the whole list'}. Your readiness shows once you've done a drill.</div>
-    </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center'}}>
+    </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center',borderRadius:0}}>
       <TeamRing pct={r.pct} col={st.col}/>
       <div style={{flex:1,minWidth:0}}>
         <div data-testid="team-state" data-pct={r.pct} style={{fontSize:17,fontWeight:800,color:r.tier==='essentials'?T.ink:st.col,fontFamily:C.P}}>{r.tier==='essentials'?`You know ${r.count.known} of ${r.count.total}`:st.label}</div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{r.tier==='essentials'?(r.count.known>=r.count.total&&r.count.total?'Every wine and dish you sell. Keep the daily drill going so it stays that way.':'Five questions a day, what sells most first. A wine or dish counts once every question on it is right.'):r.state==='ready'?'You know what your role sells. Keep the daily drill going so it stays that way.':r.state==='slipping'?'Some answers have faded or new wines arrived. A few drills puts you back.':'Your minimum for working the floor, below.'}</div>
       </div>
     </Card>}
-    {wide&&<div style={{marginBottom:12}}>{drill}</div>}
-    {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'10px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
-    <Card style={{marginTop:10}}>
-      {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:18}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known{r.tier==='essentials'&&k!=='allergens'?'':` · need ${Math.round(p.need*100)}%`}</span></div>
-        <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={r.tier==='essentials'&&k!=='allergens'?'#5FD48F':p.share>=p.need?'#5FD48F':cr} h={6}/>{!(r.tier==='essentials'&&k!=='allergens')&&<div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/>}</div>
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>{Math.round(p.partial*100)}% of the answers held</div>
-        {/* A clear button per part: a green outline with white text, so practising one part is an obvious next step. */}
-        <div role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:8,padding:'11px 14px',borderRadius:12,border:'1.5px solid #5FD48F',background:_alpha('#5FD48F',0.1),color:T.ink,fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()}<span style={{color:'#5FD48F'}}>→</span></div>
-      </div>)}
-      <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine, dish or cocktail is known once every question on it is right and still fresh; the line fills with every answer you hold.</div>
-      {ret.asked>=3&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
-    </Card>
-    {!wide&&drill}
+    {/* The one thing to do next sits straight under the readiness: today's drill. The areas follow as rows, each with its
+        own small Practise; the area to work on (the wave's, else the one furthest under its minimum) is marked Up next. */}
+    <div style={{marginBottom:wide?12:0}}>{drill}</div>
+    {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'14px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
+    {(()=>{ const parts=Object.entries(r.parts), ess=k=>r.tier==='essentials'&&k!=='allergens', short=([k,p])=>ess(k)?1-p.partial:p.need-p.share;
+      const open1=parts.filter(([k,p])=>p.total&&p.known<p.total), wave=pl&&pl.current&&open1.find(([k])=>k===pl.current.part);
+      const next=(wave||open1.slice().sort((x,y)=>short(y)-short(x))[0]||[])[0];
+      return <div data-testid="team-parts" style={{marginTop:12,border:`1px solid ${T.line}`,background:T.glass}}>
+        <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,padding:'12px 14px 10px'}}>Or practise one area</div>
+        {parts.map(([k,p])=>{ const done=p.total>0&&p.known>=p.total, met=ess(k)?done:p.share>=p.need, isNext=k===next, col=met?'#5FD48F':isNext?cr:T.mid;
+          return <div key={k} data-testid="team-part" data-next={isNext||undefined} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:`1px solid ${T.line}`,boxShadow:isNext?`inset 3px 0 0 ${cr}`:'none'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}><span style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamLearn.PART_LABEL[k]}</span>
+                {isNext&&<span data-cap style={{..._T_CAPS,fontSize:'11px',fontWeight:600,color:cr,fontFamily:C.P}}>Up next</span>}
+                {done&&<span style={{fontSize:14,color:'#5FD48F',fontFamily:C.P}}>✓</span>}</div>
+              <div style={{position:'relative',marginTop:7}}><Prog val={p.partial} col={col} h={4}/>{!ess(k)&&<div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:10,background:T.ink,opacity:0.6}}/>}</div>
+              <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.35}}>{p.known} of {p.total} known{ess(k)?'':` · need ${Math.round(p.need*100)}%`}</div>
+            </div>
+            <TeamBtn small primary={isNext} testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{flexShrink:0}}>Practise</TeamBtn>
+          </div>; })}
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,padding:'10px 14px 12px',borderTop:`1px solid ${T.line}`}}>Known means every question on it is right and still fresh. The line fills with every answer you hold.{ret.asked>=3?` Surprise re-checks this month: ${ret.right} of ${ret.asked} remembered.`:''}</div>
+      </div>; })()}
     {/* Bespoke training their manager pushed (team-plans.js): its own card, a part at a time, apart from the daily drill. */}
     {TeamPlans.forPerson(pid).map(plan=>{ const pr=TeamPlans.progress(plan), i=pr.next<0?0:pr.next, part=plan.parts[i], by=plan.by&&TeamLearn.person(plan.by);
-      return <div key={plan.id} data-testid="today-plan" style={{marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${pr.finished?T.line:_alpha('#C9A96E',0.5)}`,background:pr.finished?'transparent':_alpha('#C9A96E',0.07)}}>
+      return <div key={plan.id} data-testid="today-plan" style={{marginTop:10,padding:'12px 14px',borderRadius:0,border:`1px solid ${pr.finished?T.line:_alpha('#C9A96E',0.5)}`,background:pr.finished?'transparent':_alpha('#C9A96E',0.07)}}>
         <div style={{fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:600,color:T.mid,fontFamily:C.P}}>{by?`From ${by.name.split(' ')[0]}`:'From your manager'} · your own training</div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:4}}>{plan.title}</div>
         <div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><Prog val={pr.total?pr.done/pr.total:0} col={pr.finished?'#5FD48F':'#C9A96E'} h={6} style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{pr.done} of {pr.total}</span></div>
         {pr.finished?<div style={{fontSize:14,color:'#5FD48F',fontFamily:C.P,marginTop:8}}>Finished. Every part done.</div>
           :<><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>Part {i+1} of {plan.parts.length}: {part.title}{part.why?`. ${part.why}`:''}</div>
-            <Btn small primary style={{marginTop:10}} onClick={()=>open({view:'drill',qs:TeamPlans.questions(plan.id),intro:{title:plan.title,why:`Part ${i+1} of ${plan.parts.length}: ${part.title}.`}})}>{pr.done?'Carry on':'Start'} · {pr.parts[i].total-pr.parts[i].done} question{pr.parts[i].total-pr.parts[i].done===1?'':'s'}</Btn></>}
+            <TeamBtn small primary style={{marginTop:10}} onClick={()=>open({view:'drill',qs:TeamPlans.questions(plan.id),intro:{title:plan.title,why:`Part ${i+1} of ${plan.parts.length}: ${part.title}.`}})}>{pr.done?'Carry on':'Start'} · {pr.parts[i].total-pr.parts[i].done} question{pr.parts[i].total-pr.parts[i].done===1?'':'s'}</TeamBtn></>}
       </div>; })}
-    {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
+    {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:0,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
     </div>; const colB=<div>
     {wide&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.canConsole(person)}/>}
     {wide&&TeamLearn.canConsole(person)&&<TeamKpiStrip open={open}/>}
