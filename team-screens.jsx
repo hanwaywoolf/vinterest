@@ -116,18 +116,22 @@ function TeamJobChip({onOpen,style}){ const T=useTheme(), cr=T.lift(C.cr), job=u
   </div>; }
 /* The figures a manager wants on the move, on the phone's Today: the console has the rest. */
 function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=TeamReport.salesSummary(7);
-  const tile=(label,value,sub,col,onClick,testid)=><div key={label} role="button" data-testid={testid} onClick={onClick} style={{flex:'1 1 120px',padding:'10px 12px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer',minWidth:0}}>
-    <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{label}</div><div style={{fontSize:22,fontWeight:700,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:2}}>{value}</div>{sub&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{sub}</div>}</div>;
+  // The console's figure tiles: square, joined by hairlines, a capitals caption that never wraps, the figure, one line under.
+  const tile=(span,label,value,sub,col,onClick,testid)=><div key={label} role="button" data-testid={testid} onClick={onClick} style={{gridColumn:`span ${span}`,padding:'12px 12px 11px',background:'#000',cursor:'pointer',minWidth:0}}>
+    <div data-cap style={{..._T_CAPS,fontSize:'11px',fontWeight:500,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
+    <div style={{fontSize:22,fontWeight:600,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:6}}>{value}</div>
+    {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.3}}>{sub}</div>}</div>;
+  const more=(o.adoption.length>0?1:0)+(s?1:0), wide2=more===1?6:3;
   return <div data-testid="team-kpis" style={{marginBottom:14}}>
-    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-      {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({console:'team'}),'kpi-readiness')}
-      {tile('Behind',o.behind,o.behind?'past their wave':'all on track',o.behind?T.tone.bad:null,()=>open({console:'team'}))}
-      {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({console:'team'}))}
-      {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({console:'wines'}))}
-      {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({console:'sales'}),'kpi-sales')}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:1,background:T.line,border:`1px solid ${T.line}`}}>
+      {tile(2,'Readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({console:'team'}),'kpi-readiness')}
+      {tile(2,'Behind',o.behind,o.behind?'past wave':'on track',o.behind?T.tone.bad:null,()=>open({console:'team'}))}
+      {tile(2,'Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({console:'team'}))}
+      {o.adoption.length>0&&tile(wide2,'New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not known by all`,null,()=>open({console:'wines'}))}
+      {s&&tile(wide2,'Wine sales · 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({console:'sales'}),'kpi-sales')}
     </div>
     {/* Each figure opens its part of the console; the console works on a phone too, and wider on a tablet or laptop. */}
-    <div data-testid="kpi-console" style={{marginTop:10}}><Btn small primary onClick={()=>open({console:'dash'})}>Open the console</Btn></div>
+    <div data-testid="kpi-console" style={{marginTop:10}}><TeamBtn small primary onClick={()=>open({console:'dash'})}>Open the console</TeamBtn></div>
   </div>; }
 
 /* The installed restaurant's own logo (venue.brand): its wordmark in white on the dark stage. */
@@ -192,7 +196,7 @@ function TeamTonightCard({pid,open,manage}){ const T=useTheme(), cr=T.lift(C.cr)
       {line(w)&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{line(w)}</div>}</div>
     <div role="button" aria-label={`Say ${TeamData.short(w)}`} onClick={e=>{ e.stopPropagation(); say(w); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>🔊</div></div>;
   if(!off.length&&!feat.length&&!look.length&&!sps.length&&!manage) return null;
-  return <div data-testid="team-tonight" style={{marginBottom:12}}><Card style={{borderColor:_alpha(cr,0.5)}}>
+  return <div data-testid="team-tonight" style={{marginBottom:12}}><Card style={{borderColor:_alpha(cr,0.5),borderRadius:0}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Tonight</div>
       {manage&&<span role="button" data-testid="tonight-edit" onClick={()=>open({view:'tonight'})} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{off.length||feat.length||sps.length?'Change':'Set tonight'}</span>}</div>
     {gone.length>0&&<div data-testid="tonight-soldout" style={{marginTop:8,padding:'8px 12px',borderRadius:10,background:_alpha('#F28B7D',0.14),border:`1px solid ${_alpha('#F28B7D',0.5)}`,fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b>Sold out:</b> {gone.map(e=>`${e.name} (${TeamShift.time(e.at)})`).join(', ')}</div>}
@@ -244,12 +248,12 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLay
     const drill=(()=>{ const dn=TeamLearn.doneToday(pid);
       if(!dn) return <div data-testid="today-next" style={{marginTop:12}}>
           <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,marginBottom:6}}>Next</div>
-          <TeamBtn solid card onClick={()=>open({view:'drill'})} style={{display:'flex',width:'100%',padding:'15px 18px'}}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</TeamBtn></div>;
+          <TeamBtn primary onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions<span aria-hidden="true">→</span></TeamBtn></div>;
       return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:12,padding:'12px 14px',borderRadius:0,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
           <div style={{width:32,height:32,borderRadius:16,background:'#5FD48F',color:'#0F1A13',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,flexShrink:0}}>✓</div>
           <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Today's drill done</div>
             <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{dn.right} of {dn.of} right{dn.n>1?` over ${dn.n} drills`:''}. The next one is ready tomorrow; more now only helps.</div></div></div>
-        <TeamBtn card onClick={()=>open({view:'drill'})} style={{display:'flex',width:'100%',marginTop:10}}>Do another 5 questions</TeamBtn></>; })();
+        <TeamBtn onClick={()=>open({view:'drill'})} style={{marginTop:10}}>Do another 5 questions</TeamBtn></>; })();
     const colA=<div>
     {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6),borderRadius:0}}>
       <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your first {pl.current.days} days</div>

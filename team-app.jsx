@@ -78,7 +78,7 @@ function TeamApp(){
   else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='vinny'?<TeamVinnyTab pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh} background/>:<TeamPeople open={open} onChanged={refresh}/>;
   return <DeckTheme.Provider value={_DECK_DARK}>
-    <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha((brand&&brand.accent)||cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
+    <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:'#000',color:T.ink}}>
       {set&&<div style={{padding:'calc(env(safe-area-inset-top) + 12px) 16px 10px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${T.line}`}}>
         {top&&top.view!=='guest'?<div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
           :brand&&brand.mark?<img src={brand.mark} alt="" style={{height:26,width:26,borderRadius:13,boxShadow:`0 0 0 1px ${_alpha(brand.accent||'#ffffff',0.6)}`}} onError={e=>{ e.target.style.display='none'; }}/>
@@ -105,7 +105,7 @@ function TeamApp(){
             {split&&<div data-testid="team-split-list" style={{width:'38%',minWidth:300,maxWidth:440,flexShrink:0,borderRight:`1px solid ${T.line}`,overflowY:'auto',padding:'16px 14px 24px'}}>{tab==='wines'?<TeamWines pid={me.id} open={open} selected={top.id}/>:<TeamMenu open={open} selected={top.id}/>}</div>}
             <div ref={scrollRef} data-scroll data-split={split?'1':undefined} style={{flex:1,minWidth:0,overflowY:'auto',padding:'16px 16px 24px'}}><div style={{maxWidth:wide?(split?760:top?760:1000):720,margin:'0 auto'}}>{set&&<TeamJobChip onOpen={()=>{ if(manager){ setTab('upload'); setStack([]); } }}/>}<ScreenErrorBoundary>{body}</ScreenErrorBoundary></div></div>
           </div>
-          {set&&!top&&!wide&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:T.bg,paddingBottom:'env(safe-area-inset-bottom)'}}>{tabs.map(t=>tabBtn(t,false))}</div>}
+          {set&&!top&&!wide&&<div style={{display:'flex',borderTop:`1px solid ${T.line}`,background:'#000',paddingBottom:'env(safe-area-inset-bottom)'}}>{tabs.map(t=>tabBtn(t,false))}</div>}
         </>; })()}
       {/* A guest at the table (TeamGuest) covers the header and tabs: a chat wants the whole screen. It stays mounted
           under a wine or dish it opened, and comes back when that is popped. */}
