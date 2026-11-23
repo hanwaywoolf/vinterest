@@ -2245,6 +2245,36 @@ for (const seed of ['demo', 'social', 'eloise', 'princess']) test(`the dish a "b
   expect(r.n).toBeGreaterThan(10); expect(r.off).toEqual([]);
 });
 
+// Running costs are Vinterest's own business: counted on the device from what the Worker reports, drawn only on a
+// superuser's device (TeamSuper), and never for a restaurant.
+test('what a publish cost is kept for Vinterest only: no customer sees a running cost', async ({ browser }) => {
+  const open = async (sup) => { const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }); await stubNetwork(ctx);
+    await ctx.addInitScript((sup) => { window.VINTEREST_CONSOLE = 'preview'; if (sup != null) window.VINTEREST_SUPER = sup; }, sup);
+    const page = await ctx.newPage(); await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+    await page.evaluate(async () => { const say = (purpose, i, o) => window.dispatchEvent(new CustomEvent('vinterest:claude-usage', { detail: { purpose, model: 'claude-opus-5-5', usage: { input_tokens: i, output_tokens: o, cache_read_input_tokens: 1000 } } }));
+      TeamCosts.begin({ kind: 'list', added: ['a'], changed: [], removed: [] }); say('team_cards', 10000, 5000); say('team_review', 50000, 20000); say('label_scan', 9, 9); TeamCosts.end();
+      say('team_vinny', 20000, 500); });
+    return { ctx, page }; };
+  // A restaurant's manager: the ledger is kept, and nothing on any page of the console says a cost.
+  const a = await open(null);
+  const kept = await a.page.evaluate(() => { const c = TeamCosts.get(), p = c.publishes[0]; return { n: c.publishes.length, purposes: Object.keys(p.by).sort(), cost: TeamCosts.dollars(p.by), month: Object.keys(Object.values(c.months)[0]).sort(), sup: TeamSuper.on() }; });
+  expect(kept.n).toBe(1); expect(kept.purposes).toEqual(['team_cards', 'team_review']); expect(kept.sup).toBe(false);
+  expect(kept.cost).toBeCloseTo((60000 * 4 + 2000 * 0.4 + 25000 * 20) / 1e6, 5);
+  expect(kept.month).toEqual(['team_cards', 'team_review', 'team_vinny']);
+  await a.page.evaluate(() => document.querySelector('[data-testid=c2-nav-edge], [data-testid=console-nav-upload]'));
+  for (const k of ['dash', 'sales', 'team', 'wines', 'menu', 'upload']) { await a.page.getByTestId('console-nav-' + k).click(); await expect(a.page.getByTestId('c2-costs')).toHaveCount(0); await expect(a.page.getByText(/Running costs|Vinterest only/)).toHaveCount(0); }
+  expect(await a.page.evaluate(() => JSON.stringify(TeamData.get()).includes('team_review'))).toBe(false); // not in the restaurant's document or its export
+  await a.ctx.close();
+  // One of ours: Admin shows each publish and the month.
+  const b = await open(true);
+  await b.page.getByTestId('console-nav-upload').click();
+  const card = b.page.getByTestId('c2-costs');
+  await expect(card).toContainText('Vinterest only'); await expect(card.getByTestId('c2-cost-row')).toHaveCount(1);
+  await expect(card.getByTestId('c2-cost-row')).toContainText('1 new'); await expect(card.getByTestId('c2-cost-row')).toContainText('$0.741');
+  await expect(card.getByTestId('c2-cost-month')).toContainText('vinny');
+  await b.ctx.close();
+});
+
 test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=princess&view=phone`);
@@ -2385,9 +2415,9 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
   expect(seen.length).toBeGreaterThan(300); // every question was read
   // A second publish reads only what changed: nothing when nothing did (the held question stays held), one wine's
   // questions and whatever they moved when its card changes, and everything again when asked afresh.
-  // (The first rewrite moved the options a few other questions show, so those are read once more; then it's settled.)
-  const settle = await page.evaluate(() => TeamData.sommelierReview());
-  expect(settle.read).toBeLessThan(settle.asked / 5); expect(settle.held).toEqual([ids.dish]);
+  // (The first rewrite moved the options a few other questions show: those were read once more in that same review, as
+  // they now stand (`settled`), so the next publish has nothing left over from it.)
+  expect(r.settled).toBeGreaterThan(0); expect(r.read).toBe(r.asked + r.settled);
   const sent = seen.length, r2 = await page.evaluate(() => TeamData.sommelierReview());
   expect(r2.read).toBe(0); expect(seen.length).toBe(sent); expect(r2.held).toEqual([ids.dish]); expect(r2.notes[ids.dish].problem).toBe('two_right');
   const r3 = await page.evaluate(() => { const d = TeamData.get(), w = TeamData.wines()[1], q = d.cards[w.id].qs[0]; q.q = q.q.replace(/\?*$/, ', as the list has it?'); TeamData.save(d); return TeamData.sommelierReview(); });

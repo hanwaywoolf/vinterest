@@ -230,3 +230,15 @@ test('/stt: a recording written down by ElevenLabs, off without its key, other o
     expect((await post({ ELEVENLABS_API_KEY: 'k' }, undefined, 'text/plain')).status).toBe(400);
   } finally { global.fetch = realFetch; }
 });
+
+// /team-super: the staff app's ?super=<key>, which lets a device of Vinterest's own team see running costs. Nobody can
+// be one until the secret is set, and a restaurant never is.
+test('/team-super: a 404 without the secret, the right key only, other origins refused', async () => {
+  const worker = await loadWorker();
+  const ask = (env, key, origin = 'https://eloise.vinterest.team') => worker.fetch(new Request('https://vinterest.pages.dev/team-super', { method: 'POST', headers: { 'content-type': 'application/json', origin }, body: JSON.stringify({ key }) }), env, { waitUntil() {} });
+  expect((await ask({}, 'anything')).status).toBe(404);
+  const env = { TEAM_SUPER_KEY: 'larkspur-7-keys' };
+  const ok = await ask(env, 'larkspur-7-keys'); expect(ok.status).toBe(200); expect((await ok.json()).ok).toBe(true);
+  for (const bad of ['', 'larkspur-7-key', 'larkspur-7-keys-and-more', 'LARKSPUR-7-KEYS']) expect((await ask(env, bad)).status).toBe(403);
+  expect((await ask(env, 'larkspur-7-keys', 'https://evil.example')).status).toBe(403);
+});

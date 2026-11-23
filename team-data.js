@@ -382,8 +382,8 @@ const TeamData = {
      restaurant (`reviewed.seen`, id -> mark; `reviewed.read` is how many were sent this time). `fresh` reads everything
      again (the pre-handover review, npm run team:review); `only` reads just those ids, as before. */
   async sommelierReview({onStep,only,fresh}={}){
-    const all=[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))]
-      .filter(q=>!only||only.includes(q.id));
+    const every=()=>[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))];
+    const all=every().filter(q=>!only||only.includes(q.id));
     if(this.isDemo()) return null;
     const tpl=_loadTextSync('prompts/team-review.txt'), venue=this.get().venue.name||'the restaurant';
     const cock=this.cocktails().length?`The cocktail list:\n${this._drinkLines()}`:'';
@@ -414,10 +414,31 @@ const TeamData = {
     all.forEach(q=>{ if(stands(q)){ seen[q.id]=mark[q.id]; return; } if(!first[q.id]){ delete seen[q.id]; return; }
       if(card.includes(q)){ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); if(n&&again[q.id]) seen[q.id]=this._itemMark(n); else delete seen[q.id]; }
       else seen[q.id]=mark[q.id]; });
-    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,read:todo.length,doubted:kept.length+doubted.length,fixed:doubted.length-heldNow.length,held,seen,
-      notes:Object.fromEntries(held.map(id=>[id,(again[id]||first[id])?{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}:(prev.notes||{})[id]||{problem:'',note:''}]))};
-    this.save(d); return d.venue.reviewed; },
+    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,read:todo.length,settled:0,doubted:kept.length+doubted.length,fixed:doubted.length-heldNow.length,held,seen,
+      notes:Object.fromEntries(held.map(id=>{ const v=again[id]||first[id]; return [id,v?{problem:v.problem,note:v.note}:(prev.notes||{})[id]||{problem:'',note:''}]; }))};
+    this.save(d);
+    /* Settling. A rewrite, or a question newly held out of the drill, changes what other questions show (their wrong
+       answers are drawn from the rest of the list) after they were marked as read: at Eloise the publish after an
+       install read 78 questions again, and rewrote some, for a change that moved about a dozen. So what this review
+       itself moved is read once more here, as it now stands (SETTLE_ROUNDS at most, since holding one can move a few
+       more); one that's doubted is held, with no second round of rewrites, and every mark kept is of the final wording. */
+    if(!only&&(card.length||heldNow.length)) for(let round=0;round<this.SETTLE_ROUNDS;round++){
+      const v=this.get().venue.reviewed, moved=every().filter(q=>v.seen[q.id]&&this._itemMark(q)!==v.seen[q.id]); if(!moved.length) break;
+      const got=await ask(moved), d2=this.get(), r2=d2.venue.reviewed;
+      moved.forEach(q=>{ const g=got[q.id]; if(!g){ delete r2.seen[q.id]; return; } r2.seen[q.id]=this._itemMark(q);
+        if(g.fit===false&&!r2.held.includes(q.id)){ r2.held.push(q.id); r2.notes[q.id]={problem:g.problem,note:g.note}; r2.doubted++; } });
+      r2.read+=moved.length; r2.settled+=moved.length; this.save(d2);
+      // Holding one just now moved the marks again: those just read keep the mark of what was read, the rest go round.
+    }
+    return this.get().venue.reviewed; },
+  SETTLE_ROUNDS:3,
   reviewed(){ return (this.get().venue||{}).reviewed||null; },
+  /* After the sommelier's read: a question the check had given up on, and that the sommelier's rewrite then changed, is
+     remembered as it now stands. It has had its rewrites; without this every such question was sent for another paid
+     round at the next publish, whatever that publish changed. A failure the check never saw is still sent next time. */
+  settleGave(){ const d=this.get(), ck=d.venue&&d.venue.checked; if(!ck||!ck.gave||typeof TeamLearn==='undefined') return;
+    let n=0; try{ TeamLearn.audit(this.wines().map(w=>w.id)).forEach(f=>{ const m=this._mark(JSON.stringify(f.q)+'|'+(f.why||'')); if(ck.gave[f.q.id]&&ck.gave[f.q.id]!==m){ ck.gave[f.q.id]=m; n++; } }); }catch(e){ return; }
+    if(n) this.save(d); },
   FIX_BATCH:8, FIX_ROUNDS:2,
   /* A question that still fails after its rewrites is remembered with why (`checked.gave`, id -> a mark of the question
      and its reason), and isn't sent again while both are the same: at Eloise every publish was paying to rewrite the same
@@ -544,7 +565,8 @@ const TeamData = {
   /* After a publish: cards for wines without one, then pairings for every dish (a new wine can be the
      best match for a dish that hasn't changed), then the new wines and dishes assigned to staff.
      onStep(label, done, total). */
-  async refresh(res,onStep){
+  async refresh(res,onStep){ TeamCosts.begin(res); try{ return await this._refresh(res,onStep); } finally{ TeamCosts.end(); } },
+  async _refresh(res,onStep){
     // The demo's prepared arrivals (TeamSample.ARRIVALS) carry their card, pairings and window already,
     // so a bottle from that set publishes with no call at all; anything else is written here.
     const prepared=[...(res.added||[]),...(res.changed||[])].filter(id=>TeamSample.applyPrepared(id));
@@ -572,6 +594,7 @@ const TeamData = {
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.checkQuestions(null,(a,b)=>onStep&&onStep('Checking every question',a,b));
     // Then the sommelier's read of every question as the drill shows it; anything still doubted is held out of the drill.
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.sommelierReview({onStep:(a,b)=>onStep&&onStep('A sommelier is reading every question',a,b)});
+    this.settleGave();
     if(typeof TeamLearn!=='undefined') TeamLearn.assign(res);
   },
   /* The drinking window for each dated wine (the consumer app's vintage_info, open to every account),
@@ -957,6 +980,45 @@ Object.assign(window,{TeamTour});
 /* What a console page's "Needs you" has had cleared (docs/business.md "Needs you"): each item is known by its tag and
    what it says, so one that's been dealt with or dismissed stays away until the facts behind it change and it says
    something new. Kept on the device, per page. */
+/* What Claude cost, for Vinterest's own team only (TeamSuper). Every team call's tokens are added up as the Worker
+   reports them (the bridge's vinterest:claude-usage event): per publish (begin/end around TeamData.refresh) and per
+   month by purpose. It is kept on the device and never drawn for a restaurant: no running cost is ever shown to a
+   customer, so nothing reads this but the console's Running costs card, which only a superuser's device has. */
+const TeamCosts = {
+  KEY:'vbiz_costs_v1', KEEP:40,
+  // Dollars per million tokens in and out, by the start of the model's name; a cache read is a tenth, a cache write 1.25×.
+  PRICES:[['claude-opus',4,20],['claude-fable',4,20],['claude-sonnet-5',2,10],['claude-sonnet',3,15],['claude-haiku',1,5]],
+  get(){ const d=Store.getJSON(this.KEY,null)||{}; return {publishes:d.publishes||[],months:d.months||{}}; },
+  _add(by,u,model){ const b=by[u.purpose]=by[u.purpose]||{n:0,in:0,out:0,cr:0,cw:0}; const x=u.usage||{};
+    b.n++; b.in+=x.input_tokens||0; b.out+=x.output_tokens||0; b.cr+=x.cache_read_input_tokens||0; b.cw+=x.cache_creation_input_tokens||0; if(model) b.model=model; },
+  note(u){ if(!u||!/^team_/.test(u.purpose||'')||!u.usage) return;
+    const d=this.get(), m=new Date().toISOString().slice(0,7); d.months[m]=d.months[m]||{}; this._add(d.months[m],u,u.model);
+    Object.keys(d.months).sort().slice(0,-12).forEach(k=>delete d.months[k]);
+    if(this._open) this._add(this._open.by,u,u.model);
+    Store.setJSON(this.KEY,d); },
+  begin(res){ this._open={at:Date.now(),kind:(res&&res.kind)||'',added:((res&&res.added)||[]).length,changed:((res&&res.changed)||[]).length,removed:((res&&res.removed)||[]).length,by:{}}; },
+  end(){ const o=this._open; this._open=null; if(!o||!Object.keys(o.by).length) return; o.ms=Date.now()-o.at;
+    const d=this.get(); d.publishes=[...d.publishes,o].slice(-this.KEEP); Store.setJSON(this.KEY,d); },
+  price(model){ const r=this.PRICES.find(p=>String(model||'').startsWith(p[0]))||this.PRICES[0]; return {in:r[1],out:r[2]}; },
+  dollars(by){ return Object.values(by||{}).reduce((t,b)=>{ const p=this.price(b.model); return t+(b.in*p.in+b.cr*p.in*0.1+b.cw*p.in*1.25+b.out*p.out)/1e6; },0); },
+  calls(by){ return Object.values(by||{}).reduce((t,b)=>t+b.n,0); },
+  usd(n){ return '$'+(n<1?n.toFixed(3):n.toFixed(2)); },
+};
+try{ window.addEventListener('vinterest:claude-usage',e=>{ try{ TeamCosts.note(e.detail); }catch(x){} }); }catch(e){}
+
+/* Vinterest's own team on this device (a superuser): the only people who see running costs. Switched on by opening the
+   app with ?super=<key>, which the Worker checks against its TEAM_SUPER_KEY secret (POST /team-super; 404 with no
+   secret set, so nobody can be one); ?super=off switches it off. Kept on the device, never in a restaurant's document. */
+const TeamSuper = {
+  KEY:'vbiz_super_v1',
+  on(){ if(typeof window!=='undefined'&&window.VINTEREST_SUPER!=null) return !!window.VINTEREST_SUPER; return Store.get(this.KEY)==='1'; },
+  off(){ Store.remove(this.KEY); },
+  async unlock(key){ if(!key) return false; if(key==='off'){ this.off(); return false; }
+    try{ const r=await fetch(Platform.api('/team-super'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:String(key)})}); const j=r.ok?await r.json():null;
+      if(j&&j.ok){ Store.set(this.KEY,'1'); return true; } }catch(e){}
+    return false; },
+};
+
 const TeamNeeds = {
   KEY:'vbiz_needs_v1',
   _all(){ return Store.getJSON(this.KEY,{})||{}; },

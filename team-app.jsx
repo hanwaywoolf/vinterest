@@ -34,6 +34,9 @@ function TeamApp(){
   // /team/?seed=demo opens straight onto the demo restaurant (the wine-show laptop), replacing whatever
   // restaurant the device holds unless it's already this build's copy of it (so a reload keeps progress, and a
   // new build with more written in replaces a stale one).
+  // ?super=<key> makes this device one of Vinterest's own (TeamSuper), checked by the Worker; the key leaves the address at once.
+  React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), k=q.get('super'); if(!k) return; q.delete('super'); const rest=q.toString(); history.replaceState(null,'',location.pathname+(rest?'?'+rest:''));
+    TeamSuper.unlock(k).then(()=>refresh()); }catch(e){} },[]);
   React.useEffect(()=>{ try{ const q=new URLSearchParams(location.search), host=TeamSample.hostSeed();
     // A restaurant's own address (demo.vinterest.team, socialcorner.vinterest.team) opens that restaurant every time, whatever
     // ?seed the link carries or the device last held; a ?seed is dropped from the address.

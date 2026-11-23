@@ -367,6 +367,21 @@ function _C2Pos({open}){ const T=useTheme(), acc=_c2Acc(T), two=useLayoutSize()!
   </div>; }
 // The new look's sections: uploads and settings are one page, Admin, under the `upload` key every Upload button opens, last in the navigation.
 const _C2_SECTIONS=()=>{ const xs=CONSOLE_SECTIONS.filter(s=>s.k!=='admin'&&(!s.only||s.only())); return [...xs.filter(s=>s.k!=='upload'),...xs.filter(s=>s.k==='upload').map(s=>({...s,label:'Admin',icon:'edit'}))]; };
+/* Running costs, for Vinterest's own team only (TeamSuper.on()): what each publish cost in Claude calls and the month by
+   purpose, from TeamCosts. Never rendered for a restaurant: no running cost is shown to a customer. */
+function _C2Costs({two}){ const T=useTheme(), c=TeamCosts.get(), pubs=[...c.publishes].reverse(), m=new Date().toISOString().slice(0,7), month=c.months[m]||{};
+  const td={padding:'8px 10px',fontSize:14,fontFamily:C.P,color:T.ink2,borderTop:`1px solid ${T.line}`,textAlign:'left',whiteSpace:'nowrap'}, th={...td,borderTop:'none',color:T.mid,fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:500};
+  const what=p=>p.kind==='menu'?'Menu':[p.added&&`${p.added} new`,p.changed&&`${p.changed} changed`,p.removed&&`${p.removed} gone`].filter(Boolean).join(', ')||'List';
+  const when=t=>new Date(t).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const name=k=>k.replace(/^team_/,'').replace(/_/g,' ');
+  return <_C2Card title="Running costs" testid="c2-costs" right="Vinterest only · never shown to the restaurant" summary={`${pubs.length} publish${pubs.length===1?'':'es'} · ${TeamCosts.usd(TeamCosts.dollars(month))} this month`} style={two?{gridColumn:'1 / -1'}:undefined}>
+    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>Claude calls made from this device, at list prices. Voice isn't counted.</div>
+    {pubs.length?<div style={{overflowX:'auto'}}><table style={{borderCollapse:'collapse',width:'100%'}}><thead><tr><th style={th}>Publish</th><th style={th}>What changed</th><th style={th}>Calls</th><th style={th}>Time</th><th style={th}>Cost</th><th style={th}>Where it went</th></tr></thead>
+      <tbody>{pubs.map((p,i)=><tr key={i} data-testid="c2-cost-row"><td style={td}>{when(p.at)}</td><td style={td}>{what(p)}</td><td style={td}>{TeamCosts.calls(p.by)}</td><td style={td}>{Math.max(1,Math.round((p.ms||0)/60000))} min</td><td style={{...td,color:T.ink,fontWeight:500}}>{TeamCosts.usd(TeamCosts.dollars(p.by))}</td>
+        <td style={{...td,whiteSpace:'normal'}}>{Object.entries(p.by).sort((a,b)=>TeamCosts.dollars({x:b[1]})-TeamCosts.dollars({x:a[1]})).map(([k,b])=>`${name(k)} ${TeamCosts.usd(TeamCosts.dollars({x:b}))}`).join(' · ')}</td></tr>)}</tbody></table></div>
+      :<div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>No publish has made a call from this device yet.</div>}
+    {Object.keys(month).length>0&&<div data-testid="c2-cost-month" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.6,marginTop:14}}><span style={{color:T.ink,fontWeight:500}}>This month, every call: {TeamCosts.usd(TeamCosts.dollars(month))}.</span> {Object.entries(month).sort((a,b)=>TeamCosts.dollars({x:b[1]})-TeamCosts.dollars({x:a[1]})).map(([k,b])=>`${name(k)} ${TeamCosts.usd(TeamCosts.dollars({x:b}))} (${b.n})`).join(' · ')}</div>}
+  </_C2Card>; }
 function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.get(), vs=[...(d.versions||[])].reverse().slice(0,6);
   const [name,setName]=React.useState(d.venue.name||''), [due,setDue]=React.useState(String(d.settings.dueDays||7)), [saved,setSaved]=React.useState(false);
   const save=()=>{ TeamData.setVenue({name:name.trim()||d.venue.name}); const n=Math.max(1,Math.min(60,parseInt(due,10)||7)); TeamData.setSetting('dueDays',n); setDue(String(n)); setSaved(true); refresh&&refresh(); };
@@ -397,6 +412,7 @@ function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.
           <div style={text}>Everything is on this device: the list, menu, cards, pairings, every person's training and any sales. Nothing is synced until restaurants have accounts.</div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}><_C2Btn testid="team-export" onClick={()=>TeamData.exportFile()}>Export as a file</_C2Btn>
             <_C2Btn onClick={()=>{ if(confirm('Start again? This clears the restaurant, everyone\'s training and sales on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); refresh&&refresh(); } }}>Start again</_C2Btn></div></_C2Card>
+        {TeamSuper.on()&&<_C2Costs two={two}/>}
         <_C2Card title="Accounts and billing" testid="c2-accounts" summary="An account per restaurant comes next" style={two?{gridColumn:'1 / -1'}:undefined}>
           <div style={text}>Next: an account per restaurant with sites and members, each person on their own phone, and billing per site through Stripe. The console then runs on the web with the same screens.</div></_C2Card>
       </div>
