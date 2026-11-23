@@ -1,0 +1,30 @@
+# Records the App Store's App preview video (scripts/app-preview.mjs): twenty seconds of the app itself,
+# 886 x 1920, H.264 with a silent sound track, the file App Store Connect takes for every iPhone slot.
+# On demand: Actions → App preview → Run workflow, then download the "app-preview" artifact and upload
+# app-preview.mp4 under App Previews on the version page (docs/app-store.md).
+name: App preview
+on:
+  workflow_dispatch:
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - run: npm run build
+      - run: npm run store:preview
+      - run: test -s video/app-preview.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-preview
+          path: |
+            video/app-preview.mp4
+            video/app-preview.webm
+          retention-days: 30

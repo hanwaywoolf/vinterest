@@ -57,7 +57,7 @@ Not collected: location (the country is typed, never GPS), photos (a label photo
 kept), contacts, health, browsing history, usage data and diagnostics (no analytics or crash SDK in the app;
 Apple's and Google's own crash reports are theirs).
 
-## The version page (1.11.1)
+## The version page
 
 Promotional text (170):
 
@@ -115,8 +115,81 @@ Keywords (100, no spaces, none already in the name):
 - Screenshots: `npm run store:shots` writes the iPhone with Dynamic Island, medium display (1206 x 2622,
   the slot App Store Connect asks for first), the large iPhone (1320 x 2868) and the 13" iPad
   (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 7.
-- App previews (videos): optional, none yet.
+- App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records twenty seconds of the
+  app alone at 886 x 1920, the size every iPhone slot takes. Apple wants H.264 with a sound track, which
+  needs a full ffmpeg: run Actions → App preview → Run workflow, download the `app-preview` artifact and
+  upload `app-preview.mp4`. Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
 - In-App Purchases and Subscriptions: add Pro Monthly (VINPRO_M) and Pro Yearly (VINPRO_A).
 - Build: the 1.11.1 build from main.
 - App Review Information: sign-in required, see `docs/app-review.md`.
 - Version release: Manually release this version (so it goes live when you choose after approval).
+
+## Growing reach
+
+### A free trial on Pro
+
+Seven days free on the monthly plan only. The yearly plan is already 42% off, and a trial on both makes
+the cheap yearly price the thing people try and cancel.
+
+- App Store Connect → Subscriptions → Vinterest Pro → Pro Monthly → Subscription Prices → + →
+  Create Introductory Offer: every country, no end date, Free, 1 week. New subscribers only (Apple's rule:
+  one introductory offer per person per group).
+- Google Play Console → Monetise → Subscriptions → the monthly subscription → its base plan → Add offer:
+  eligibility "New customer acquisition, never had any subscription", one phase, Free trial, 7 days.
+- RevenueCat needs nothing: the offer comes with the product.
+
+The Pro sheet says it by itself (`Billing._trial`): "Try 7 days free", then "Then £4.99 / month · Cancel
+anytime", only for someone the store says can still have the trial. Add a line to the description once
+it's live: "New subscribers get the first 7 days of Pro Monthly free."
+
+### The rating prompt
+
+From 1.11.3 the app asks for a store rating with Apple's and Google's own sheet (`ReviewAsk` in
+`pwa-userdata.js`): straight after someone rates a wine 90 or more, once they've rated five wines, at most
+three times and never within 120 days. The store decides whether the sheet shows (Apple: three times a
+year), so it can't be tested in TestFlight, where the sheet appears but can't submit.
+
+### Featuring nomination
+
+App Store Connect → Featuring → Nominations → + . Type: App Launch (or New Content once the trial is live).
+Submit at least three weeks before the date you'd like, earlier for Christmas.
+
+- Name: Vinterest: wine matched to your own taste
+- Description:
+
+> Most wine apps tell you what critics or crowds think of a bottle. Vinterest tells you what you'll think.
+> Rate what you drink on the 100-point scale and every label you scan comes back with a match: the chance
+> you'll enjoy this wine, worked out from your own ratings and explained in plain words (the grapes,
+> regions and producers that lift your ratings, and the ones that hold them back). It never invents a
+> number: until you've rated three wines of a type it says it's too early to call.
+>
+> Each scan plays as a short story drawn in code: the label, where the vintage is in its life, the grape
+> sketched in pen, the map closing in on the region. From there the app teaches. Quizzes and short reads
+> are written from the person's own bottles, a wine map fills in as they taste, and every wine word comes
+> with what it means and how to notice it. Vinterest exists to take the fear out of wine.
+>
+> Built by Vinterest.app Limited, an independent UK company. No ads, no tracking, no data sold; sign-in is optional. Partner
+> shop links never change a match or the order of a list.
+
+- Helpful details: its own text size setting (Standard, Large, Extra large), charts labelled for screen
+  readers, dark and light appearance, iPhone and iPad layouts. Vinterest Pro (£4.99 a month, £34.99 a year) adds
+  restaurant wine list scanning.
+- Timing hook: Christmas and New Year, when people buy wine they don't know for other people.
+
+### In-App Events
+
+Apple requires an event deep link that opens the app, and the app has no URL scheme or universal link
+yet, so events wait for that (one release: `@capacitor/app`, a `vinterest://` scheme through
+`vinterestNative`, and the link opened through the same `_openLink` push uses). The first event, ready to
+enter once it exists:
+
+- Reference name: Christmas wine 2026
+- Event name (30): Find your Christmas wine
+- Short description (50): Scan before you buy. Know you'll love it.
+- Long description (120): Standing in the wine aisle with a list of dinners to buy for? Scan any label
+  and see how well it matches your taste.
+- Badge: Special Event. Purpose: appropriate for all users. Priority: High.
+- Dates: publish 1 December, starts 8 December, ends 26 December 2026.
+- Deep link: `vinterest://camera`
+- Art: event card 1920 x 1080 and event details page 1080 x 1920, no text baked into the top or bottom
+  third (Apple overlays the name there).
