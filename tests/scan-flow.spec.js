@@ -956,3 +956,20 @@ test('the Learn more cards never say what Claude does not know: a hedged card dr
   expect(await page.evaluate(() => !!WineDeep.parse('{"house":null,"made":{"line":"x"}}'))).toBe(true);
   expect(await page.evaluate(() => WineDeep.prompt({ name: 'X', type: 'red', region: 'Médoc', country: 'France' }, null))).toMatch(/never in the first person/);
 });
+
+test('a scanned new grape says its quiz is open, and never sells Pro to someone who has it', async ({ context, page }) => {
+  // The grape opens before the XP is awarded, since the "New grape" card is written with the award.
+  const label = { ...PRIORAT, name: 'Papale Test', grapes: ['Primitivo'], region: 'Puglia', country: 'Italy', grapes_basis: 'label' };
+  await setup(context, page, { label, seed: { vinterest_onboarded: '1' } });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  await expect(page.locator('#root')).toContainText('Papale Test');
+  expect(await page.evaluate(() => GrapeUnlocks.isUnlocked('Primitivo'))).toBe(true);
+  await page.evaluate(() => { location.hash = '#home'; });
+  const card = page.getByTestId('moment-card').filter({ hasText: 'Primitivo' });
+  await expect(card).toContainText('Its quiz is open on Learn');
+  await expect(card).not.toContainText('Pro');
+  // A grape that stays closed for a Pro user (only guessed for the wine) is never a paywall.
+  const out = await page.evaluate(() => { Entitlement.isPro = () => true; return XPSystem.present([{ grape: 'Nebbiolo', amount: 15, label: 'New grape: Nebbiolo', bonus: true }]).moments[0]; });
+  expect(out.body).not.toMatch(/Pro/); expect(out.action).toBeNull();
+});

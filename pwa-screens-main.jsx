@@ -152,7 +152,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       Entitlement.addScan();
       // Scan XP is awarded once the wine is confirmed and saved (ScanFlow.awardScanXP), so a
       // misread label never earns a "new grape" for the wrong grape.
-      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.awardScanXP(wine,{defer:true}); ScanFlow.unlockLearning(wine); }catch(e){} onComplete(wine); return; }
+      if(onboarding){ try{ WineHistory.track(wine); ScanFlow.unlockLearning(wine); ScanFlow.awardScanXP(wine,{defer:true}); }catch(e){} onComplete(wine); return; }
     }catch(e){
       if(onboarding){ onComplete(null); return; }
       // The server counted this month's scans as used (another phone, a reinstall): say so, not "try again".
