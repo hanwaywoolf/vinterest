@@ -115,7 +115,7 @@ Keywords (100, no spaces, none already in the name):
 - Screenshots: `npm run store:shots` writes the iPhone with Dynamic Island, medium display (1206 x 2622,
   the slot App Store Connect asks for first), the large iPhone (1320 x 2868) and the 13" iPad
   (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 7.
-- App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records twenty seconds of the
+- App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records thirty seconds of the
   app alone at 886 x 1920, the size every iPhone slot takes. Apple wants H.264 with a sound track, which
   needs a full ffmpeg: run Actions → App preview → Run workflow, download the `app-preview` artifact and
   upload `app-preview.mp4`. Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
