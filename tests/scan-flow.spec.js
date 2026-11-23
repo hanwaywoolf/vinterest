@@ -934,3 +934,42 @@ test('TasteMatch is a distribution: a spread, a personal bar just under their av
   expect(out.strictBar).toBe(82);
   expect(out.generousBar).toBe(90);
 });
+
+test('the Learn more cards never say what Claude does not know: a hedged card drops to its fallback and checked facts', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/?demo=1#home`);
+  const d = await page.evaluate(() => WineDeep.clean({
+    house: { line: "Château La Tessonnière is a Médoc estate, and I can't confirm details of its history, so I'll stick to what a Médoc château typically offers.",
+      more: "I don't have verified details on this estate's founding, size or flagship bottling, so I won't invent a story." },
+    made: { line: 'Aged in French oak for a year before bottling.', more: 'Merlot leads the blend, with Cabernet Sauvignon for structure.' },
+    year: { line: "I'm not sure how the year went here.", more: 'Drinking well now, with a few years ahead.', rating: 'Good' },
+    region: { line: 'Gravel soils near the estuary.', more: "Details on the exact commune can't be confirmed." },
+  }));
+  expect(d.house).toBeNull();
+  expect(d.made.line).toMatch(/French oak/);
+  expect(d.year.line).toBe('Drinking well now, with a few years ahead.');
+  expect(d.region.line).toMatch(/Gravel/);
+  expect(d.region.more).toBeUndefined();
+  // Ordinary wine words that look like the hedges stay.
+  expect(await page.evaluate(() => WineDeep.HEDGE.test('An inventive, unoaked style from the Médoc.'))).toBe(false);
+  // A null house is a valid answer, and the prompt asks for one rather than a guess.
+  expect(await page.evaluate(() => !!WineDeep.parse('{"house":null,"made":{"line":"x"}}'))).toBe(true);
+  expect(await page.evaluate(() => WineDeep.prompt({ name: 'X', type: 'red', region: 'Médoc', country: 'France' }, null))).toMatch(/never in the first person/);
+});
+
+test('a scanned new grape says its quiz is open, and never sells Pro to someone who has it', async ({ context, page }) => {
+  // The grape opens before the XP is awarded, since the "New grape" card is written with the award.
+  const label = { ...PRIORAT, name: 'Papale Test', grapes: ['Primitivo'], region: 'Puglia', country: 'Italy', grapes_basis: 'label' };
+  await setup(context, page, { label, seed: { vinterest_onboarded: '1' } });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByTestId('scan-file').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
+  await expect(page.locator('#root')).toContainText('Papale Test');
+  expect(await page.evaluate(() => GrapeUnlocks.isUnlocked('Primitivo'))).toBe(true);
+  await page.evaluate(() => { location.hash = '#home'; });
+  const card = page.getByTestId('moment-card').filter({ hasText: 'Primitivo' });
+  await expect(card).toContainText('Its quiz is open on Learn');
+  await expect(card).not.toContainText('Pro');
+  // A grape that stays closed for a Pro user (only guessed for the wine) is never a paywall.
+  const out = await page.evaluate(() => { Entitlement.isPro = () => true; return XPSystem.present([{ grape: 'Nebbiolo', amount: 15, label: 'New grape: Nebbiolo', bonus: true }]).moments[0]; });
+  expect(out.body).not.toMatch(/Pro/); expect(out.action).toBeNull();
+});

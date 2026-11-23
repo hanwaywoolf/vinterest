@@ -291,10 +291,12 @@ const XPSystem = {
       xp+=a.amount||0;
       if(a.bonus&&(a.amount||0)>=best){ best=a.amount||0; label=a.label.replace(/!$/,''); }
       if(a.grape){
-        const key=typeof GrapeUnlocks!=='undefined'?GrapeUnlocks.key(a.grape):null, open=key&&GrapeUnlocks.isUnlocked(key);
+        // Pro is only ever offered to someone who isn't Pro: a grape that's closed for a Pro user (a guessed
+        // grape, say) is just one more grape, never a paywall.
+        const key=typeof GrapeUnlocks!=='undefined'?GrapeUnlocks.key(a.grape):null, open=key&&GrapeUnlocks.isUnlocked(key), sell=key&&!open&&!Entitlement.isPro();
         moments.push({id:'grape:'+(key||a.grape),icon:'grape',kicker:'New grape',title:a.grape,
-          body:!key?'One more grape in your WineDNA.':open?`Its quiz is open on Learn: ten questions on where it grows and what it tastes like.`:'Its quiz is part of Pro.',
-          action:!key?null:open?{label:`Take the ${key} quiz`,learn:{kind:'grape',grape:key}}:{label:'See Pro',pro:'grape-library'}});
+          body:open?`Its quiz is open on Learn: ten questions on where it grows and what it tastes like.`:sell?'Its quiz is part of Pro.':'One more grape in your WineDNA.',
+          action:open?{label:`Take the ${key} quiz`,learn:{kind:'grape',grape:key}}:sell?{label:'See Pro',pro:'grape-library'}:null});
       }
       if(a.country) moments.push({id:'country:'+a.country,icon:'globe',kicker:'New country',title:`Your first wine from ${a.country}`,
         body:'Its regions are on your wine map in Mastery.',action:{label:'See your wine map',screen:'mastery-map'}});

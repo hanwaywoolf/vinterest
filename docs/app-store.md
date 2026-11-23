@@ -9,8 +9,9 @@ both together.
 - Name: Vinterest: Wine Scanner
 - Subtitle (30 characters): Wine matched to your own taste
 - Category: Food & Drink. Secondary: Education.
-- Content rights: No, it doesn't contain, show or access third-party content. (Wine facts and Claude's text
-  are ours to show; there's no licensed content.)
+- Content rights: Yes, it contains, shows or accesses third-party content, and Yes, we have the rights:
+  the Shop tab shows a partner shop's bottle photo and prices from its product feed (Awin's terms) and
+  links to shops.
 - Age rating: see below.
 - Privacy policy URL: https://vinterest.app/privacy/
 - Copyright (on the version page): 2026 Vinterest.app Limited

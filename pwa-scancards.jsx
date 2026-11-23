@@ -256,7 +256,8 @@ function ScanCardsScreen({nav,back,showPro}){
     const isNew=!WineHistory.find(wine);
     WineHistory.track(wine);
     if(isNew&&source==='list') WineHistory.setScanIntent(wine.name,wine.vintage,'checking');
-    if(source==='camera'){ ScanFlow.awardScanXP(wine); ScanFlow.unlockLearning(wine); }
+    // The grape and region open first: the "New grape" moment is written as the XP is awarded, and reads whether its quiz is open.
+    if(source==='camera'){ ScanFlow.unlockLearning(wine); ScanFlow.awardScanXP(wine); }
   },[wine,confirmed]);
 
   function applyEdit(patch){

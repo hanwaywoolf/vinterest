@@ -15,7 +15,20 @@
 const WineDeep = {
   VERSION:'v1',
   key(w){ return `vinterest_deep_${this.VERSION}_${((w&&w.name)||'').replace(/\s/g,'_')}_${(w&&w.vintage)||'nv'}`; },
-  get(w){ const t=Cache.getText(this.key(w)); if(!t) return null; try{ return JSON.parse(t); }catch(e){ return null; } },
+  get(w){ const t=Cache.getText(this.key(w)); if(!t) return null; try{ return this.clean(JSON.parse(t)); }catch(e){ return null; } },
+  /* A card never talks about what Claude doesn't know ("I can't confirm details of its history, so
+     I won't invent a story"): it's the app speaking, so there's no "I", and a gap is simply not
+     shown. Any sentence like that drops its field (a card left with no line shows its fallback
+     and the checked facts under it); applied on read too, so answers already cached are fixed. */
+  HEDGE:/\b(I|I'm|I've|I'll|I'd|me|my)\b|can(no|')t (be )?(confirm|verif|say)|\b(unconfirmed|unverified|verified|not sure|unsure|no (reliable|verified|confirmed) (information|details|record))\b|\binvent(ing)?\b|\bdon't (have|know)\b/i,
+  clean(d){
+    if(!d||typeof d!=='object') return d;
+    ['house','year','made','region'].forEach(k=>{ const v=d[k]; if(!v||typeof v!=='object') return;
+      if(v.more&&this.HEDGE.test(v.more)) delete v.more;
+      if(v.line&&this.HEDGE.test(v.line)) d[k]=v.more?{...v,line:v.more,more:undefined}:(k==='year'?{...v,line:undefined}:null); });
+    if(d.table&&d.table.serve&&this.HEDGE.test(d.table.serve)) delete d.table.serve;
+    return d;
+  },
   /* The checked facts for this wine's region and lead grape (data/knowledge.json). */
   facts(w){
     const rk=(typeof Regions!=='undefined'&&Regions.resolve(w))||null, R=rk&&KNOWLEDGE.regions[rk];
@@ -43,9 +56,9 @@ const WineDeep = {
       (checked?`CHECKED FACTS (use them, never contradict them): ${checked} `:'')+
       (match&&match.label?`The app's match verdict for this drinker: "${match.label}". `:'')+
       'The reader has already seen the match, how the wine will feel, its grape\'s profile, the region\'s climate and one line to say about it: do not repeat those. Every card goes deeper: specific to THIS wine, house and place, no generic filler. '+
-      'Explain every wine term in a few plain words right where you use it. No numbers, percentages or decimals anywhere EXCEPT years and the checked figures above; years are always numerals. Only state facts you are sure of; where you are not, say what is typical rather than inventing. '+
+      'Explain every wine term in a few plain words right where you use it. No numbers, percentages or decimals anywhere EXCEPT years and the checked figures above; years are always numerals. Only state facts you are sure of. Write as the app, never in the first person: no "I", and never mention what you do or don\'t know, can or can\'t confirm, or have verified. Where you aren\'t sure of a fact, leave it out and write about what you are sure of (the appellation, the grapes, the style). If you don\'t know this producer, set "house" to null rather than describing a typical house. '+
       'Return ONLY valid JSON, no markdown: {'+
-      '"house":{"line":"one sentence: who makes this wine and what the house is known for (max 26 words)","more":"two or three sentences: the estate\'s story, how this bottle sits in its range (an entry wine, the flagship, a single vineyard), and another wine of theirs worth knowing (max 70 words)"},'+
+      '"house":null when you don\'t know this producer, else {"line":"one sentence: who makes this wine and what the house is known for (max 26 words)","more":"two or three sentences: the estate\'s story, how this bottle sits in its range (an entry wine, the flagship, a single vineyard), and another wine of theirs worth knowing (max 70 words)"},'+
       `"year":{"line":"one sentence on what the ${year||'blend of years'} was like in this region${year?'':' and what blending across years does for this wine'} (max 26 words)","more":"two sentences on how this bottle is drinking now and how it will change (max 50 words)","rating":"Exceptional|Outstanding|Very Good|Good|Average|Unknown","drink_from":${year?'YYYY':'null'},"drink_to":${year?'YYYY':'null'},"peak_from":${year?'YYYY':'null'},"peak_to":${year?'YYYY':'null'}},`+
       '"made":{"line":"one sentence on how this wine is made (max 26 words)","more":"two or three sentences: the classification and what it means in the glass (the checked ageing rules verbatim where they apply), the oak, the blend, anything unusual in the winemaking (max 70 words)"},'+
       '"region":{"line":"one sentence on what sets this appellation apart from its neighbours (max 26 words)","more":"two or three sentences: its sub-zones or villages, what a label from here tells you, how it sits in the wider region (max 70 words)"},'+
@@ -57,8 +70,8 @@ const WineDeep = {
     const s=c.indexOf('{'), e=c.lastIndexOf('}');
     if(s>=0&&e>s) c=c.slice(s,e+1);
     const d=JSON.parse(c);
-    if(!d||typeof d!=='object'||!d.house||!d.made) throw new Error('deep: not the cards');
-    return d;
+    if(!d||typeof d!=='object'||!d.made) throw new Error('deep: not the cards');
+    return this.clean(d);
   },
   /* Loads (or returns the cached) cards; `cb(d)` with null when it can't be written. */
   load(w,match,cb){
