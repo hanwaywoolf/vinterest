@@ -360,7 +360,7 @@ html.js .hero-cam.wait { animation-play-state: paused; }
 .store-badge { display: inline-flex; line-height: 0; border-radius: 10px; }
 .store-badge:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .store-badge.ios img { height: 54px; width: auto; }
-.store-badge.android img { height: 81px; width: auto; margin: -13px 0; }
+.store-badge.android img { height: 81px; width: auto; margin: -13px -12px; }
 html.js .thanks:not([hidden]) .tick-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .5s ease .15s forwards; }
 html.js .thanks:not([hidden]) .tick { animation: pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes draw { to { stroke-dashoffset: 0; } }
