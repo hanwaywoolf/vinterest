@@ -9,8 +9,8 @@
 // label read and scan cards are stubbed, like the tests. It always writes video/app-preview.webm. Apple
 // wants H.264 with a sound track, which the ffmpeg that comes with Playwright can't write, so where a full
 // ffmpeg is installed (GitHub's runners: Actions -> App preview -> Run workflow) it also writes
-// video/app-preview.mp4, with the music in assets/preview-music.* (its licence in docs/app-store.md) faded
-// in and out, or a silent track when there's no music file.
+// video/app-preview.mp4, with the music (PREVIEW_MUSIC or assets/preview-music.*, its licence in
+// docs/app-store.md) faded in and out, or a silent track when there's no music file.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -22,7 +22,9 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const SAMPLE = require(path.join(ROOT, 'data/onboarding-sample.json'));
 const PORT = 4183, W = 443, H = 960, SCALE = 2, FPS = 30, SECONDS = 30;
 const OUT = path.join(ROOT, 'video/app-preview.webm');
-const MUSIC = ['mp3', 'm4a', 'ogg', 'wav', 'flac'].map((x) => path.join(ROOT, 'assets/preview-music.' + x)).find((f) => fs.existsSync(f)) || null;
+// The music: PREVIEW_MUSIC (a path), else assets/preview-music.*, which is git-ignored: a licensed track is
+// never committed, since the repository is public and a stock licence doesn't allow passing the file on.
+const MUSIC = [process.env.PREVIEW_MUSIC, ...['mp3', 'm4a', 'ogg', 'wav', 'flac'].map((x) => path.join(ROOT, 'assets/preview-music.' + x))].find((f) => f && fs.existsSync(f)) || null;
 const MUSIC_START = Number(process.env.PREVIEW_MUSIC_START || 0); // seconds into the track the film starts on
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
@@ -199,11 +201,12 @@ try {
     console.log(`Saved ${path.relative(ROOT, OUT)} (${SECONDS}s, ${frames.length} painted frames)`); }
   if (full) { const mp4 = OUT.replace(/\.webm$/, '.mp4');
     // The music fades in over the first second and out over the last two; without a track, silence.
-    const sound = MUSIC ? ['-ss', String(MUSIC_START), '-i', MUSIC, '-af', `afade=t=in:st=0:d=1,afade=t=out:st=${SECONDS - 2}:d=2,loudnorm=I=-16:TP=-1.5:LRA=11,apad`]
+    const sound = MUSIC ? ['-stream_loop', '-1', '-ss', String(MUSIC_START), '-i', MUSIC, // a track shorter than the film comes round again
+      '-af', `afade=t=in:st=0:d=1,afade=t=out:st=${SECONDS - 2}:d=2,loudnorm=I=-16:TP=-1.5:LRA=11,apad`]
       : ['-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100'];
     await run(full, [...input, ...sound, '-map', '0:v', '-map', '1:a', '-vf', size, '-c:v', 'libx264', '-profile:v', 'high', '-level', '4.0', '-pix_fmt', 'yuv420p',
       '-r', String(FPS), '-b:v', '10M', '-maxrate', '12M', '-bufsize', '20M', '-c:a', 'aac', '-b:a', '256k', '-ar', '44100', '-ac', '2', '-t', String(SECONDS), '-movflags', '+faststart', mp4], feed);
-    console.log(`Saved ${path.relative(ROOT, mp4)} (H.264 with ${MUSIC ? 'music from ' + path.relative(ROOT, MUSIC) : 'a silent track'}, for App Store Connect)`); }
+    console.log(`Saved ${path.relative(ROOT, mp4)} (H.264 with ${MUSIC ? 'music from ' + path.basename(MUSIC) : 'a silent track'}, for App Store Connect)`); }
   else console.log('No ffmpeg with H.264 here: run the App preview workflow on GitHub for the .mp4 Apple takes.');
 } finally {
   await browser.close();

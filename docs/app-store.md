@@ -123,10 +123,13 @@ Keywords (100, no spaces, none already in the name):
   parts, each a card saying in large text what the app does and then the app doing it: a scan (the match,
   the grape, the map closing in on the region), WineDNA's portrait, a quiz question answered, Vinny
   answering. The `.mp4` Apple takes needs a full ffmpeg: run Actions → App preview → Run workflow, download
-  the `app-preview` artifact and upload `app-preview.mp4`. Music: put a track we're licensed to use
-  commercially at `assets/preview-music.mp3` (or `.m4a`, `.ogg`, `.wav`, `.flac`) and note its licence
-  here; the script fades it in and out (`PREVIEW_MUSIC_START` seconds into the track), and without a file
-  the sound track is silent. Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
+  the `app-preview` artifact and upload `app-preview.mp4`. Music is "Peace and Harmony Loop: warm, elegant, intimate"
+  (Adobe Stock 513023934, licensed on Carey's Adobe Stock plan). The repository is public and a stock
+  licence doesn't allow passing the file on, so the track is never committed: locally, save it as
+  `assets/preview-music.wav` (git-ignored) or point `PREVIEW_MUSIC` at it; for the workflow, set the
+  `PREVIEW_MUSIC_URL` secret to a private download link. The script loops a short track, fades it in
+  and out (`PREVIEW_MUSIC_START` seconds in), and writes a silent sound track when there's no file.
+  Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
 - In-App Purchases and Subscriptions: add Pro Monthly (VINPRO_M) and Pro Yearly (VINPRO_A).
 - Build: the 1.11.1 build from main.
 - App Review Information: sign-in required, see `docs/app-review.md`.
