@@ -63,9 +63,9 @@ test.describe('desktop', () => {
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Who made it, and when to drink it');
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Whether it\'s for you', { timeout: 6000 });
     // It finishes and stays on the last caption; it does not start again.
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it', { timeout: 15000 });
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Save it, and go deeper', { timeout: 20000 });
     await page.waitForTimeout(2500);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Then rate it');
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('Save it, and go deeper');
     // A click on a caption stops it: choose the first, and it stays there.
     await jump(page, 'scan', 0);
     await page.waitForTimeout(2500);
@@ -97,7 +97,7 @@ test.describe('desktop', () => {
     await expect(page.locator('.hero .stage .cap')).toHaveText('And the region it comes from.', { timeout: 6000 });
     await expect(page.locator('.hero .stage .cap')).toHaveText('Rate it with a turn of the dial.', { timeout: 6000 });
     await expect(page.locator('.hero [data-layer="scan"] [role="slider"][aria-label="Rating"]')).toBeVisible({ timeout: 6000 });
-    await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 6000 });
+    await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 12000 });
     await expect(page.locator('.hero [data-layer="dna"]')).toContainText('WineDNA');
     await page.locator('.hero .arrow.next').click();
     const at = await page.locator('.hero .stage .cap').textContent();
@@ -111,27 +111,28 @@ test.describe('desktop', () => {
     await page.goto(BASE + '/');
     await show(page, 'scan');
     const phone = page.locator('#scan .phone-app');
-    await jump(page, 'scan', 3);
-    await expect(page.locator('#scan .steps li.on h3')).toHaveText('The grape');
-    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'grape', { timeout: 8000 });
-    await expect(phone).toContainText('Syrah');
+    await jump(page, 'scan', 2);
+    await expect(page.locator('#scan .steps li.on h3')).toHaveText('How it will taste');
+    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'taste', { timeout: 8000 });
+    await expect(phone).toContainText('Blackberry');
     // The story would move on by itself after the scene's reading time; held, it doesn't.
     await page.waitForTimeout(6000);
-    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'grape');
+    await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'taste');
     await jump(page, 'scan', 0);
     await expect(phone.locator('[data-testid="reveal-scene"]')).toHaveAttribute('data-scene', 'label', { timeout: 8000 });
   });
 
   test('the wheel over the text scrolls the page and never moves the demo', async ({ page }) => {
     await page.goto(BASE + '/');
-    await show(page, 'rate');
-    await jump(page, 'rate', 0);
-    const copy = await page.locator('#rate .copy').boundingBox();
+    await show(page, 'learn-wine');
+    await jump(page, 'learn-wine', 0);
+    const first = await page.locator('#learn-wine .steps li.on h3').textContent();
+    const copy = await page.locator('#learn-wine .copy').boundingBox();
     await page.mouse.move(copy.x + 100, copy.y + 100);
     const y0 = await page.evaluate(() => scrollY);
     for (let i = 0; i < 6; i++) { await page.mouse.wheel(0, 100); await page.waitForTimeout(60); }
     await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0 + 300);
-    await expect(page.locator('#rate .steps li.on h3')).toHaveText('Turn the dial to rate');
+    await expect(page.locator('#learn-wine .steps li.on h3')).toHaveText(first);
   });
 
   test('the page scrolls straight past a demo: no pinned section to scroll through', async ({ page }) => {
@@ -159,12 +160,14 @@ test.describe('desktop', () => {
     await jump(page, 'scan', 2);
     await expect(scene).toHaveAttribute('data-scene', 'taste', { timeout: 8000 });
     await expect(phone).toContainText('Blackberry', { timeout: 8000 });   // the tasting notes
-    await jump(page, 'scan', 4);
-    await expect(scene).toHaveAttribute('data-scene', 'place', { timeout: 8000 });
+    // One caption for the grape and the region: the grape's scene, then on to the map.
+    await jump(page, 'scan', 3);
+    await expect(scene).toHaveAttribute('data-scene', 'grape', { timeout: 8000 });
+    await expect(scene).toHaveAttribute('data-scene', 'place', { timeout: 14000 });
     await expect(phone).toContainText('Rhône Valley', { timeout: 8000 });
-    await jump(page, 'scan', 5);
+    await jump(page, 'scan', 4);
     await expect(scene).toHaveAttribute('data-scene', 'say', { timeout: 8000 });
-    await jump(page, 'scan', 6);
+    await jump(page, 'scan', 5);
     // The story ends on the rating, with a way to skip it.
     await expect(phone).toContainText('How was it?', { timeout: 8000 });
     await expect(phone).toContainText('Skip the rating');
@@ -195,25 +198,27 @@ test.describe('desktop', () => {
 
   test('rating a bottle at the end of its story turns the dial up and saves it, then offers the ways out, without changing the other demos', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
-    await show(page, 'rate');
-    const phone = page.locator('#rate .phone-app');
-    await expect(phone).toContainText('How was it?');
-    await jump(page, 'rate', 1);
+    await show(page, 'scan');
+    const phone = page.locator('#scan .phone-app');
+    await jump(page, 'scan', 5);
+    await show(page, 'scan');   // a demo only plays while its section is on screen, and the click may have scrolled the page
+    await expect(phone).toContainText('How was it?', { timeout: 10000 });
+    await expect(phone.locator('[role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', '92', { timeout: 10000 });
+    await jump(page, 'scan', 6);
     await expect(phone).toContainText('Rated 92', { timeout: 8000 });
     // The three quick answers fill in as the caption plays.
     await expect(phone).toContainText('On your Buy again list', { timeout: 10000 });
     await expect(phone.locator('input[aria-label="What you paid"]')).toHaveValue('30', { timeout: 10000 });
     await expect(phone.locator('input[aria-label="Where did you have it"]')).toHaveValue("At a friend's dinner", { timeout: 10000 });
     // Then the ways out under the extras.
-    await jump(page, 'rate', 2);
     const ways = phone.locator('[data-testid="reveal-ways"]');
     await expect(ways).toContainText('See the result and learn more', { timeout: 10000 });
     await expect(ways).toContainText('Finish');
     // Going back to the start puts the rating panel back.
-    await jump(page, 'rate', 0);
+    await jump(page, 'scan', 5);
     await expect(phone).toContainText('How was it?', { timeout: 10000 });
     // A saved rating stays in that demo: the WineDNA demo still counts the sample user's own bottles.
-    await jump(page, 'rate', 1);
+    await jump(page, 'scan', 6);
     await expect(phone).toContainText('Rated 92', { timeout: 10000 });
     await show(page, 'winedna');
     await expect(page.locator('#winedna .phone-app')).toContainText('12 bottles scanned');
@@ -308,7 +313,7 @@ test.describe('desktop', () => {
     await page.addInitScript(() => { if (!localStorage.getItem('vinterest_wines')) localStorage.setItem('vinterest_wines', '[{"name":"Mine"}]'); });
     await page.goto(BASE + '/');
     for (const id of FITS) { await show(page, id); await page.waitForTimeout(400); }
-    await jump(page, 'rate', 1);
+    await jump(page, 'scan', 6);
     await page.waitForTimeout(1500);
     const stored = await page.evaluate(() => ({ n: localStorage.length, wines: localStorage.getItem('vinterest_wines'), s: sessionStorage.length }));
     // Only the visitor's own key is there, unchanged, and nothing was written to session storage.
@@ -326,7 +331,7 @@ test.describe('desktop', () => {
 
 // Nothing in a demo section may be cut off, whatever the window: the text and the phone stay inside
 // the section, and the caption text stays clear of the header.
-const FITS = ['scan', 'rate', 'learn-wine', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
+const FITS = ['scan', 'learn-wine', 'winedna', 'vinny', 'learn', 'mastery', 'my-wines'];
 async function fits(page, id) {
   await show(page, id);
   await page.waitForTimeout(300);

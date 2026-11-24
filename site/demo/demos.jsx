@@ -87,6 +87,24 @@ function _until(fn, tries = 40) {
   (function go(n) { if (dead || fn() || n <= 0) return; setTimeout(() => go(n - 1), 120); })(tries);
   return () => { dead = true; };
 }
+/* Some screens bring a part of themselves into view (WineDNA opening a section, Learn jumping to one, an article's last button).
+   In the app that scrolls the screen; on the website the browser would scroll the page as well, to wherever that phone is, moving
+   it under the reader. Inside a demo phone, only the phone's own scrolling areas move. */
+{
+  const native = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (arg) {
+    const phone = this.closest && this.closest('.phone-app');
+    if (!phone) return native.call(this, arg);
+    const block = arg && typeof arg === 'object' ? arg.block || 'start' : arg === false ? 'end' : 'start';
+    for (let n = this.parentElement; n && phone.contains(n); n = n.parentElement) {
+      if (n.scrollHeight <= n.clientHeight + 1 || !['auto', 'scroll'].includes(getComputedStyle(n).overflowY)) continue;
+      // The phone is drawn scaled, so a distance on screen is k times the scroller's own pixels.
+      const a = this.getBoundingClientRect(), b = n.getBoundingClientRect(), k = b.height && n.clientHeight ? b.height / n.clientHeight : 1;
+      const top = (a.top - b.top) / k, room = n.clientHeight - a.height / k;
+      n.scrollTop += block === 'end' ? top - room : block === 'center' ? top - room / 2 : block === 'nearest' ? (top < 0 ? top : top > room ? top - room : 0) : top;
+    }
+  };
+}
 /* The screen's own vertical scroller: the tallest overflowing element inside it. */
 function _demoScroller(root) {
   let best = null, room = 40;
@@ -645,13 +663,67 @@ const VinterestDemo = {
       })(40);
     };
     let saved = false, rated = false, learned = false, boughtAgain = false, paid = false, where = false;
+    /* The story's end sheet, by q (0 to 1): the dial turned up to a 92, saved, the quick answers filled in, then read down to the
+       ways out under them. Going back to the start (or choosing that part again) starts the rating over, so the dial plays again. */
+    const RV_STORY = 0.6;
+    let rvAt = -1, dialWait = false, dialSettle = false;
+    const driveRate = (p) => {
+      const slider0 = _scoreSlider(el), story = kind === 'reveal';
+      // (In the scan section the dial alone simply turns again from 70; only a saved rating needs the sheet rebuilt.)
+      if ((saved && p < 0.42) || (!story && !saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0)) {
+        saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw();
+        // The story opens on its first scene again: Skip takes it straight back to its end sheet.
+        if (story) { rvAt = RV_KEYS.length - 1; rvToken++; cancel = _until(() => _tapText(el, /^Skip$/), 60); }
+        if (p >= 0.05 || story) setTimeout(() => api.update(lastP), 700); // back to where it was asked to be
+        return;
+      }
+      const slider = _scoreSlider(el);
+      // The end sheet may still be on its way (the story swiping to it): once its dial is there, set it to where p already is.
+      if (!saved && !slider && !dialWait) { dialWait = true; _until(() => {
+        // (The sheet is still sliding in when its dial first exists, and a turn can miss: keep at it until the dial has the rating.)
+        const sl = _scoreSlider(el);
+        if (!sl) return false;
+        dialWait = false; api.update(lastP);
+        if (saved || lastP < RV_STORY || (lastP - RV_STORY) / (1 - RV_STORY) < 0.05 || _scoreNow(_scoreSlider(el)) > 0) return true;
+        dialWait = true; return false;
+      }, 80); }
+      if (!saved && slider) {
+        const s = p < 0.05 ? 0 : Math.round(70 + (_RATE_TO - 70) * _ease((p - 0.05) / 0.4));
+        const now = p >= 0.45 ? _RATE_TO : s;
+        if (now && _scoreNow(slider) !== now) _setScore(slider, now);
+        // A turn made while the sheet is still sliding in can land a point or two off: at the end of the turn, see that it took.
+        if (p >= 0.45 && !dialSettle) { dialSettle = true; _until(() => {
+          const sl = _scoreSlider(el);
+          const q = kind === 'reveal' ? (lastP - RV_STORY) / (1 - RV_STORY) : lastP;
+          if (!sl || saved || q < 0.45 || _scoreNow(sl) === _RATE_TO) { dialSettle = false; return true; }
+          _setScore(sl, _RATE_TO); return false;
+        }, 150); }
+      }
+      if (p >= 0.5 && !saved && !rated) { rated = true; _until(() => { if (_tapText(el, /^Save rating$/)) { saved = true; return true; } return false; }, 30); }
+      if (saved) {
+        // The three quick answers it asks for: buy again, what you paid, where you had it.
+        if (p >= 0.74 && !boughtAgain) { boughtAgain = true; _until(() => _tapText(el, /^I'd buy this again/), 20); }
+        if (p >= 0.82 && !paid) { paid = true; _until(() => { const i = el.querySelector('input[aria-label="What you paid"]'); if (!i) return false; _setInput(i, '30'); return true; }, 20); }
+        if (p >= 0.9 && !where) { where = true; _until(() => { const i = el.querySelector('input[aria-label="Where did you have it"]'); if (!i) return false; _setInput(i, "At a friend's dinner"); return true; }, 20); }
+        // The sheet scrolls itself: down through the extras to the ways out (Go deeper, Wine details, the result).
+        const sc = el.querySelector('[data-testid="reveal-end"]');
+        if (sc) { scroller = sc; glide.to(_ease((p - 0.55) / 0.42) * (sc.scrollHeight - sc.clientHeight)); }
+      }
+    };
     const api = {
       update(p) {
         lastP = p;
         const update = (q) => api.update(q);
         if (d.steps) { place(p); return; }
         if (kind === 'scan') { runActs(p); scrollTo(p); return; }
-        if (kind === 'reveal') { rvTo(Math.floor(p * RV_KEYS.length + 1e-6)); return; }
+        if (kind === 'reveal') {
+          // The story a scene at a time up to RV_STORY, then its end sheet: the rating (driveRate) over the rest of p.
+          if (saved && p < RV_STORY) { saved = rated = boughtAgain = paid = where = false; scroller = null; rvAt = -1; draw(); }
+          const i = Math.min(RV_KEYS.length - 1, Math.floor(p / RV_STORY * (RV_KEYS.length - 1) + 1e-6));
+          if (i !== rvAt) { rvAt = i; rvTo(i); }
+          if (p >= RV_STORY) driveRate((p - RV_STORY) / (1 - RV_STORY));
+          return;
+        }
         if (kind === 'deck') {
           // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
           // part (p from 0.75) plays on the taste card, whose own number it isn't.
@@ -669,34 +741,7 @@ const VinterestDemo = {
           if (top) { const sc = _demoScroller(top); if (sc) { scroller = sc; glide.to(_ease((within - 0.15) / 0.75) * (sc.scrollHeight - sc.clientHeight)); } }
           return;
         }
-        if (kind === 'rate') {
-          // On the story's end sheet: turn the dial up to a 92, save it, then read down what it asks next
-          // and the ways out under it. Going back to the start (or choosing that part again) starts the
-          // rating over, so the dial plays again.
-          const slider0 = _scoreSlider(el);
-          if ((saved && p < 0.42) || (!saved && p < 0.05 && slider0 && _scoreNow(slider0) > 0)) {
-            saved = false; rated = false; boughtAgain = paid = where = false; scroller = null; draw();
-            if (p >= 0.05) setTimeout(() => api.update(lastP), 500); // back to where it was asked to be
-            return;
-          }
-          const slider = _scoreSlider(el);
-          if (!saved && slider) {
-            const s = p < 0.05 ? 0 : Math.round(70 + (_RATE_TO - 70) * _ease((p - 0.05) / 0.4));
-            const now = p >= 0.45 ? _RATE_TO : s;
-            if (now && _scoreNow(slider) !== now) _setScore(slider, now);
-          }
-          if (p >= 0.5 && !saved && !rated) { rated = true; _until(() => { if (_tapText(el, /^Save rating$/)) { saved = true; return true; } return false; }, 30); }
-          if (saved) {
-            // The three quick answers it asks for: buy again, what you paid, where you had it.
-            if (p >= 0.74 && !boughtAgain) { boughtAgain = true; _until(() => _tapText(el, /^I'd buy this again/), 20); }
-            if (p >= 0.82 && !paid) { paid = true; _until(() => { const i = el.querySelector('input[aria-label="What you paid"]'); if (!i) return false; _setInput(i, '30'); return true; }, 20); }
-            if (p >= 0.9 && !where) { where = true; _until(() => { const i = el.querySelector('input[aria-label="Where did you have it"]'); if (!i) return false; _setInput(i, "At a friend's dinner"); return true; }, 20); }
-            // The sheet scrolls itself: down through the extras to the ways out (Go deeper, Wine details, the result).
-            const sc = el.querySelector('[data-testid="reveal-end"]');
-            if (sc) { scroller = sc; glide.to(_ease((p - 0.55) / 0.42) * (sc.scrollHeight - sc.clientHeight)); }
-          }
-          return;
-        }
+        if (kind === 'rate') { driveRate(p); return; }
         if (kind === 'keep') {
           // Rate it, save it and open "what's next" (what a visitor does), then read down the options.
           if (!learned) {
