@@ -57,6 +57,24 @@ const Entitlement = {
   // The server said the month is used up (another phone, a reinstall): this phone agrees from now on.
   noteScanLimit(){ Store.setJSON(this.MONTH_KEY,{m:this._month(),n:this.FREE_SCANS}); if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{}); },
   atScanLimit(){ return this.scansLeft()<=0; },
+  /* Shelf scans (one photo of many bottles): FREE_SHELF a calendar month on the free plan, counted apart
+     from label scans, so everyone can try one in a shop; Pro has only the weekly fair-use cap. Counted
+     like label scans: the server's figure when signed in (/me's `month`), this phone's otherwise. */
+  FREE_SHELF:2, SHELF_KEY:'vinterest_shelf_month',
+  _deviceShelf(){ const v=Store.getJSON(this.SHELF_KEY,null); return v&&v.m===this._month()?(v.n||0):0; },
+  shelfThisMonth(){
+    if(typeof Account!=='undefined'&&Account.signedIn()){
+      const m=(Account.me()||{}).month;
+      return Math.max(this._deviceShelf(),m&&m.start&&m.start.slice(0,7)===this._month()&&m.used?(m.used.shelf_scan||0):0);
+    }
+    return this._deviceShelf();
+  },
+  shelfLeft(){ return this.isPro()?Infinity:Math.max(0,this.FREE_SHELF-this.shelfThisMonth()); },
+  addShelfScan(){
+    Store.setJSON(this.SHELF_KEY,{m:this._month(),n:this._deviceShelf()+1});
+    if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{});
+  },
+  noteShelfLimit(){ Store.setJSON(this.SHELF_KEY,{m:this._month(),n:this.FREE_SHELF}); if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{}); },
   /* What wine list scanning still needs: null (go ahead), 'signin' or 'pro'. The Worker checks this
      itself (list_scan is PRO_ONLY in _worker.js) and never trusts the device flag, so with sign-in
      configured a signed-out phone needs to sign in even after "Start Pro", and a signed-in one needs

@@ -73,6 +73,10 @@ Description:
 > Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then
 > tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
 >
+> SCAN A WHOLE SHELF
+> In a shop, take one photo of the shelf. Vinterest reads every label it can and tells you which bottle
+> suits you best. Free twice a month, and as often as you like with Pro.
+>
 > A MATCH FROM YOUR OWN RATINGS
 > Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out
 > from the wines you've rated, not from a critic's score. It says why, in plain words: the grapes, regions
@@ -95,8 +99,8 @@ Description:
 > My Wines keeps what you drank, what you paid, where you had it and what you thought.
 >
 > VINTEREST PRO
-> Free includes 10 label scans a month and five grapes and regions to study. Pro adds wine list scanning
-> in restaurants, more scans, every grape and region you meet, and the full Mastery map.
+> Free includes 10 label scans and 2 shelf scans a month and five grapes and regions to study. Pro adds
+> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region you meet, and the full Mastery map.
 > Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing
 > automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your
 > Apple ID settings.
@@ -193,3 +197,21 @@ enter once it exists:
 - Deep link: `vinterest://camera`
 - Art: event card 1920 x 1080 and event details page 1080 x 1920, no text baked into the top or bottom
   third (Apple overlays the name there).
+
+## Telling people about an update
+
+From 1.11.4, the apps show "Vinterest 1.12.0 is out" on Home when the live Worker says a newer
+version is in the store. Nothing is rebuilt: set these on Cloudflare (vinterest project, Production
+variables) once the new version is live in the store, then redeploy or wait for the next deploy.
+
+- `APP_LATEST`: the newest version, e.g. `1.12.0`. Use `APP_LATEST_IOS` and `APP_LATEST_ANDROID`
+  instead when Apple and Google approve on different days, so nobody is sent to a store that
+  doesn't have it yet.
+- `APP_STORE_ID`: the app's numeric Apple ID (App Store Connect → App Information). Without it
+  iPhones aren't told.
+- `APP_UPDATE_NOTE` (optional): one line on what's new, shown on the card (140 characters at most).
+- `APP_MIN` (optional): the oldest version still supported. Below it the card can't be dismissed
+  and says the version is too old. Use it only when an old version really breaks.
+
+"Not now" hides the card until the next version is announced. Installs older than 1.11.4 don't
+have the card; for those, an email to signed-in users is the only way to reach them.

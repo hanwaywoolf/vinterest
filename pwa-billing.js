@@ -25,10 +25,12 @@ const Billing = {
     try{
       const r=await fetch(Platform.api('/config')); if(!r.ok) return this.config();
       const j=await r.json(), b=j&&j.billing||{}, before=this.allPro();
-      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push,iosTypedPromo:!!j.iosTypedPromo});
+      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push,iosTypedPromo:!!j.iosTypedPromo,update:j.update||null});
       if(before!==this.allPro()){ try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} }
       // The same answer says whether push can be used (Push.available), which the Profile switch waits on.
       try{ window.dispatchEvent(new Event('vinterest:push')); }catch(e){}
+      // And whether a newer version is in the store (AppUpdate, Home's update card).
+      try{ window.dispatchEvent(new Event('vinterest:update')); }catch(e){}
     }catch(e){}
     return this.config();
   },

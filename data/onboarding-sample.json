@@ -333,7 +333,7 @@
         "n": 11,
         "level": "good",
         "next": "Rate 1 more to firm it up",
-        "unrated": 1
+        "unscored": 1
       },
       "chips": [
         {
@@ -345,7 +345,7 @@
           "value": "Rioja"
         },
         {
-          "label": "Top-rated region",
+          "label": "Top-scoring region",
           "value": "Rioja · 91"
         }
       ],
@@ -372,7 +372,29 @@
         "acidity": "The reds you choose are medium on average, from Bin 407 Cabernet Sauvignon at the softer-acid end to Barolo at the fresher end.",
         "sweetness": "The reds you choose are bone dry on average, from Barolo at the drier end to Bin 407 Cabernet Sauvignon at the sweeter end."
       },
-      "sweetSpot": "£20–£45 GBP"
+      "sweetSpot": "£20–£45 GBP",
+      "rules": [
+        {
+          "kind": "reach",
+          "lead": "Reach for Tempranillo",
+          "why": "6 bottles, average rating 91: 2 points above your average 89."
+        },
+        {
+          "kind": "try",
+          "lead": "Try Mencía",
+          "why": "Mencía has the medium tannins you go for in your reds, and brings floral, peppery freshness."
+        }
+      ],
+      "signals": [
+        {
+          "axis": "tannins",
+          "text": "You consistently rate softer-tannin reds higher."
+        },
+        {
+          "axis": "body",
+          "text": "You consistently rate lighter reds higher."
+        }
+      ]
     },
     "article": {
       "id": "sample",
@@ -390,7 +412,7 @@
       "id": "grapes",
       "group": "places",
       "label": "Grapes",
-      "rating": 35,
+      "score": 35,
       "level": "Developing",
       "next": {
         "label": "Next: the Malbec quiz",
@@ -399,28 +421,28 @@
       "items": [
         {
           "name": "Tempranillo",
-          "rating": 85,
+          "score": 85,
           "level": "Confident",
           "quiz": 100,
           "reads": 1
         },
         {
           "name": "Grenache",
-          "rating": 42,
+          "score": 42,
           "level": "Developing",
           "quiz": 60,
           "reads": 0
         },
         {
           "name": "Syrah",
-          "rating": 14,
+          "score": 14,
           "level": "Getting started",
           "quiz": 20,
           "reads": 0
         },
         {
           "name": "Malbec",
-          "rating": 0,
+          "score": 0,
           "level": "Not started",
           "quiz": 0,
           "reads": 0

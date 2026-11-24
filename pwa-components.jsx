@@ -255,6 +255,7 @@ function ProBadge({style:s}){
 function ProGate({feature,onClose}){
   const FEAT={
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
+    'shelf-scan':{icon:'🛒',title:`That's your ${Entitlement.FREE_SHELF} free shelf scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans any shelf, and every bottle on it comes with your match.`,bullets:['Scan any shelf and see which bottle suits you','Wine list scanning at restaurants','Every bottle you open, every month']},
     'unlimited-scans':{icon:'📷',title:'Keep scanning',desc:`Free includes ${Entitlement.FREE_SCANS} label scans a month. Pro scans every bottle you open.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'scan-limit':{icon:'📷',title:`That's your ${Entitlement.FREE_SCANS} free scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans every bottle you open, and whole wine lists too.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},

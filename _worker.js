@@ -50,6 +50,7 @@
 const CLAUDE_PURPOSE_LIMITS = {
   label_scan: 4096,       // pwa-screens-main.jsx — photo -> wine JSON
   list_scan: 8192,         // pwa-screens-main.jsx — photo of a wine list -> wine[]
+  shelf_scan: 8192,        // pwa-screens-main.jsx — photo of a shop shelf -> the wines whose labels can be read (prompts/shelf-scan.txt)
   scancard: 2048,          // pwa-scancards.jsx — the scan story's line to say and a fact
   wine_deep: 4096,         // pwa-deep.js WineDeep — "Learn more about this wine" cards, on demand
   price: 4096,             // pwa-components.jsx fetchRetailEstimate — retail price estimate
@@ -262,6 +263,10 @@ export default {
         // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
         // App Store submission (review rule 3.1.1).
         iosTypedPromo: env.IOS_TYPED_PROMO === "1",
+        // "A new version is out" on Home (AppUpdate in pwa-update.js), set here so announcing a
+        // release is a Cloudflare variable, not an app build (docs/app-store.md "Telling people about
+        // an update").
+        update: appUpdate(env),
       });
     }
     if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/run") {
@@ -587,8 +592,8 @@ async function handleClaude(request, env, ctx) {
    purposes need Pro in `entitlements`, which only the server writes. The caps are cost guards,
    set generously, never product limits (spec D5). */
 const FAIR_USE = {
-  free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
-  pro:  { label_scan: 150, list_scan: 40, price_search: 100, _other: 600 },
+  free: { label_scan: 100, list_scan: 30, shelf_scan: 30, price_search: 50, _other: 500 },
+  pro:  { label_scan: 150, list_scan: 40, shelf_scan: 40, price_search: 100, _other: 600 },
 };
 /* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_plan, team_buyer, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
@@ -645,7 +650,13 @@ async function tierOf(env, userId) {
 /* The free plan's label scans are counted per calendar month (UTC), not per week: FREE_MONTHLY a
    month, through use_quota_month (0009_monthly_scans.sql), kind "<purpose>:month". Pro keeps only the
    weekly fair-use cap. The app shows what's left from /me's `month` and says so before the camera. */
-const FREE_MONTHLY = { label_scan: 10 };
+const FREE_MONTHLY = { label_scan: 10, shelf_scan: 2 };
+/* What the free plan is told at each monthly cap, and the code the app reads (a shelf scan is one photo
+   of many bottles, free twice a month so everyone can try it; it costs about what a label scan does). */
+const MONTHLY_SAID = {
+  label_scan: { code: "scan_limit", text: (n, back) => `You've used your ${n} free scans this month. They come back on 1 ${back}, or go Pro to keep scanning.` },
+  shelf_scan: { code: "shelf_limit", text: (n, back) => `You've used your ${n} free shelf scans this month. They come back on 1 ${back}, or go Pro to scan any shelf.` },
+};
 function monthStart(d = new Date()) { return d.toISOString().slice(0, 7) + "-01"; }
 function nextMonthName(d = new Date()) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" }); }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
@@ -670,7 +681,8 @@ async function gateAccount(request, env, purpose) {
   if (tier !== "pro" && FREE_MONTHLY[purpose]) {
     const m = await db(env, "rpc/use_quota_month", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose + ":month", p_cap: FREE_MONTHLY[purpose] }) });
     if (m.ok && (await m.json()) === null) {
-      return { response: json(429, { error: `You've used your ${FREE_MONTHLY[purpose]} free scans this month. They come back on 1 ${nextMonthName()}, or go Pro to keep scanning.`, code: "scan_limit" }) };
+      const said = MONTHLY_SAID[purpose] || MONTHLY_SAID.label_scan;
+      return { response: json(429, { error: said.text(FREE_MONTHLY[purpose], nextMonthName()), code: said.code }) };
     }
   }
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
@@ -759,6 +771,23 @@ const PUSH_HOUR = 17, PUSH_WINDOW = 6, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PU
 const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
 function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
 function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
+/* The newest version in each store, the oldest still supported, and where to get it, from the
+   Cloudflare variables APP_LATEST (or APP_LATEST_IOS / APP_LATEST_ANDROID when the two stores are
+   out of step), APP_MIN (optional), APP_UPDATE_NOTE (an optional line on what's new) and
+   APP_STORE_ID (the App Store's numeric id; iPhone gets nothing without it). Null when no latest
+   version is set, so nothing shows. */
+function appUpdate(env) {
+  const v = (s) => (/^\d+(\.\d+){1,2}$/.test(String(s || "").trim()) ? String(s).trim() : null);
+  const note = String(env.APP_UPDATE_NOTE || "").trim().slice(0, 140) || null, min = v(env.APP_MIN);
+  const ios = v(env.APP_LATEST_IOS) || v(env.APP_LATEST), android = v(env.APP_LATEST_ANDROID) || v(env.APP_LATEST);
+  const storeId = /^\d{6,12}$/.test(String(env.APP_STORE_ID || "")) ? env.APP_STORE_ID : null;
+  const out = {
+    ios: ios && storeId ? { latest: ios, min, note, url: `https://apps.apple.com/app/id${storeId}` } : null,
+    android: android ? { latest: android, min, note, url: "https://play.google.com/store/apps/details?id=app.vinterest" } : null,
+  };
+  return out.ios || out.android ? out : null;
+}
+
 function pushOn(env) { return accountsOn(env) && (apnsOn(env) || fcmOn(env)); }
 
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");

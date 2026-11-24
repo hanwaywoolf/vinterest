@@ -161,7 +161,7 @@ test('the first scan tells the bottle\'s story and shows what Vinterest will do 
 // the first four shows a preview of the real screen, fed the sample user in
 // data/onboarding-sample.json; every slide fits a small and a tall phone without scrolling.
 const WELCOME_TITLES = ['Scan a bottle. Know if it\'s for you.', 'Every bottle builds your WineDNA.', 'The right wine, wherever you\'re buying.',
-  'Find out why you like what you like.', 'It gets better with every bottle.'];
+  'Find out why you like what you like.', 'Here\'s what happens next.'];
 for (const [w, h] of [[360, 640], [430, 932]]) {
   test(`the welcome slides at ${w}x${h}: Next through five, previews that fit, Skip to the last`, async ({ context, page }) => {
     const errors = collectErrors(page);
@@ -384,12 +384,14 @@ test.describe('the welcome slides on a touch screen', () => {
 });
 
 // The last slide: the red dot walks down the timeline when the slide arrives.
-test('the timeline dot moves from the first bottle to every bottle after', async ({ context, page }) => {
+test('the last slide says what happens next, and its dot walks from the checks to the three questions', async ({ context, page }) => {
   await makeDeterministic(page);
   await stubNetwork(context);
   await page.goto(`${BASE}/`);
   await page.locator('#root').getByText('Skip', { exact: true }).click();
   const step = () => page.locator('[data-step]').getAttribute('data-step');
   await expect.poll(step).toBe('0');
-  await expect.poll(step, { timeout: 5000 }).toBe('2');
+  await expect.poll(step, { timeout: 6000 }).toBe('3');
+  const root = page.locator('#root');
+  for (const w of ['Two quick checks', 'Your first scan', 'Watch its story, then rate it', 'Three quick questions']) await expect(root.getByText(w, { exact: true }).first()).toBeVisible();
 });
