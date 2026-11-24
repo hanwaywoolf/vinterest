@@ -22,6 +22,10 @@ test('Vinny knows their wines, takes a follow-up, and links to learning', async 
   await root(page).locator('form div[style*="cursor: text"]').click();
   expect(reqs.filter((r) => r.purpose === 'wine_qa')).toHaveLength(0);
   expect(await page.getByLabel('Ask Vinny').inputValue()).not.toBe('');
+  // One backspace on the untouched suggestion empties the box (filling over it straight away raced
+  // the clear and once sent the suggestion and the new question run together).
+  await page.getByLabel('Ask Vinny').press('Backspace');
+  await expect(page.getByLabel('Ask Vinny')).toHaveValue('');
 
   await page.getByLabel('Ask Vinny').fill('Why do I keep picking Tempranillo?');
   await page.getByLabel('Ask', { exact: true }).click();
