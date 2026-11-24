@@ -28,16 +28,28 @@ const WINE = { name: 'Viña Real Gran Reserva', confidence: 'high', alternative:
   effervescence: null, abv: 13.5, tasting_notes: ['dried cherry', 'leather', 'vanilla'], food_pairings: ['Roast lamb', 'Manchego', 'Mushroom risotto'], price_usd: 48, description: 'A classic Gran Reserva from CVNE.' };
 const GEN = { fact: 'CVNE was founded in Haro in 1879, beside the railway that carried Rioja to Bordeaux.', fit: 'x', caution: 'x', origin: 'x', region_style: 'x', estate: 'x',
   talk: ['Gran Reserva means it rested at least five years before release, two of them in oak', 'x', 'x'], fact2: 'x' };
+// A shop shelf as the shelf reader returns it: one bottle they've rated (shown by their rating, first),
+// the rest matched from their other wines.
+const SHELF = { u: 0, wines: [
+  { n: 'Reserva', pr: 'Marqués de Riscal', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '16.00', g: 'Tempranillo', s: '766' },
+  { n: 'Crozes-Hermitage', pr: 'E. Guigal', t: 'red', r: 'Crozes-Hermitage', c: 'France', v: 2020, p: '19.00', g: 'Syrah', s: '776' },
+  { n: 'Viña Ardanza Reserva', pr: 'La Rioja Alta', t: 'red', r: 'Rioja', c: 'Spain', v: 2016, p: '32.00', g: 'Tempranillo', s: '766' },
+  { n: 'Bourgogne Pinot Noir', pr: 'Louis Jadot', t: 'red', r: 'Burgundy', c: 'France', v: 2021, p: '17.00', g: 'Pinot Noir', s: '366' },
+  { n: 'Gran Reserva', pr: 'Faustino I', t: 'red', r: 'Rioja', c: 'Spain', v: 2012, p: '24.00', g: 'Tempranillo', s: '756' },
+  { n: 'Côtes du Rhône Réserve', pr: 'Famille Perrin', t: 'red', r: 'Côtes du Rhône', c: 'France', v: 2021, p: '11.00', g: 'Grenache', s: '665' },
+] };
 const QUESTION = 'Steak tonight. What should I look for?';
 const ANSWER = "Go for a Malbec from Mendoza. It has the ripe dark fruit of the Riojas you rate highest, with firmer tannins to stand up to the steak. You gave the 2021 Catena Malbec an 89, so start there, or try a Ribera del Duero for Tempranillo with more grip.";
 
 // Each screenshot: its headline (the <b> word in crimson), the line under it, and how to get there.
 const SHOTS = [
   { id: 'match', title: "Know if you'll <b>love</b> it.", sub: "Scan a label. Your match comes from your own ratings, not a critic's.", scene: 1 },
+  { id: 'shelf', title: 'Scan a whole <b>shelf</b>.', sub: 'Or a wine list. Every bottle matched to your taste, best first.', hash: 'winelist', shelf: true },
   { id: 'dna', title: 'Your taste, in <b>words</b>.', sub: 'WineDNA shows what you reach for and what lifts your ratings.', hash: 'profile' },
   { id: 'vinny', title: 'Ask <b>Vinny</b> anything.', sub: "Answers that know every wine you've had.", hash: 'home', vinny: true },
   { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it.', scene: 3 },
   { id: 'learn', title: 'Learn as you <b>sip</b>.', sub: 'Quizzes and short reads, written from your bottles.', hash: 'learn' },
+  { id: 'quiz', title: 'Five questions, <b>no pressure</b>.', sub: 'Quick quizzes on your grapes and regions, with the answer explained.', hash: 'quiz', quiz: true },
   { id: 'mastery', title: 'Watch your knowledge <b>grow</b>.', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
   { id: 'wines', title: 'Every bottle, <b>remembered</b>.', sub: 'What you drank, what you paid and what you thought of it.', hash: 'mywines' },
 ];
@@ -59,7 +71,7 @@ async function appContext(dev) {
   const context = await browser.newContext({ viewport: { width: dev.app.width, height: dev.app.height }, deviceScaleFactor: dev.app.scale, hasTouch: true,
     locale: 'en-GB', timezoneId: 'Europe/London' });
   await context.addInitScript(({ wines }) => {
-    window.VINTEREST_REVEAL = 'real'; window.VINTEREST_DETAIL = 'all';
+    window.VINTEREST_REVEAL = 'real'; window.VINTEREST_DETAIL = 'all'; window.VINTEREST_WHATSNEW = 'off';
     if (!sessionStorage.getItem('__seeded')) {
       sessionStorage.setItem('__seeded', '1');
       const seed = { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP', vinterest_pro: '1', vinterest_wines: JSON.stringify(wines),
@@ -120,6 +132,9 @@ async function capture(dev) {
   await page.addStyleTag({ content: QUIET });
   await study(page);
   for (const s of SHOTS.filter((x) => x.hash)) {
+    // A shelf scan's results and a Wine Basics quiz are opened the way the app opens them, with their handoff.
+    if (s.shelf) await page.evaluate((shelf) => { const r = ScanFlow.shelfWines(JSON.stringify(shelf)); Handoff.wineList.set({ demo: false, shelf: true, wines: r.wines, unread: r.unread, currency: 'GBP' }); }, SHELF);
+    if (s.quiz) await page.evaluate(() => Handoff.quiz.set({ mode: 'practice', topicId: 'red_grapes' }));
     await page.evaluate((h) => { window.location.hash = '#' + h; }, s.hash);
     await wait(1600);
     if (s.vinny) {
@@ -128,6 +143,16 @@ async function capture(dev) {
       await page.getByText(ANSWER.slice(0, 30)).first().waitFor({ timeout: 10000 }).catch(() => console.warn('no Vinny answer'));
       await page.evaluate(() => document.activeElement && document.activeElement.blur());
       await wait(2500);
+    }
+    // The quiz answered right, so the picture shows the verdict and the fact behind it.
+    if (s.quiz) {
+      const right = await page.evaluate(() => {
+        const shown = [...document.querySelectorAll('#root *')].map((e) => e.textContent.trim());
+        const q = QuizMastery.topicPool('red_grapes').find((x) => shown.includes(x.q));
+        return q ? q.opts[q.a] : null;
+      });
+      if (right) { await page.getByText(right, { exact: true }).first().click(); await wait(3500); }
+      else console.warn('quiz: no question found');
     }
     await page.evaluate(() => document.querySelectorAll('#root div').forEach((e) => { e.scrollTop = 0; }));
     await wait(400);
