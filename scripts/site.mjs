@@ -71,6 +71,10 @@ async function minify(file, loader) {
   return code;
 }
 
+/* The apps' store pages. APP_STORE_URL / PLAY_STORE_URL override them (set one empty to build the page as it was
+   before that app was listed: the beta form instead of the store buttons). The Worker's /get uses the same two. */
+const APP_STORE = 'https://apps.apple.com/app/id6819741453';
+const PLAY_STORE = 'https://play.google.com/store/apps/details?id=app.vinterest';
 /* A store link from the environment: an https URL or nothing (it is written into an attribute). */
 function storeUrl(v) { return /^https:\/\/[^\s"'<>]+$/.test(v || '') ? v : ''; }
 
@@ -117,7 +121,7 @@ async function build() {
     JSONLD: structuredData(read('site/index.html'), origin),
     ORIGIN: origin,
     // The apps' store pages. Empty until they're listed: the page then asks for beta sign-ups instead.
-    IOS_URL: storeUrl(process.env.APP_STORE_URL), ANDROID_URL: storeUrl(process.env.PLAY_STORE_URL),
+    IOS_URL: storeUrl(process.env.APP_STORE_URL ?? APP_STORE), ANDROID_URL: storeUrl(process.env.PLAY_STORE_URL ?? PLAY_STORE),
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`

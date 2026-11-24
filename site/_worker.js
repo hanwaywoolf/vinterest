@@ -161,6 +161,25 @@ export async function handleBeta(request, env, ctx) {
   return json({ ok: true });
 }
 
+/* vinterest.app/get: one link for both apps (a QR code, a bio link, a post). An iPhone or iPad goes to the App Store, an Android
+   phone to Google Play, anything else to the page's download section, which shows both. The store addresses can be changed
+   with APP_STORE_URL and PLAY_STORE_URL, as the page's are at build time. */
+export const APP_STORE = "https://apps.apple.com/app/id6819741453";
+export const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.vinterest";
+export function storeFor(ua) {
+  ua = ua || "";
+  if (/iPhone|iPad|iPod/.test(ua)) return "ios";
+  if (/Android/.test(ua)) return "android";
+  return "";
+}
+export function handleGet(request, env = {}) {
+  const which = storeFor(request.headers.get("user-agent"));
+  const ok = (v, d) => (/^https:\/\/[^\s"'<>]+$/.test(v || "") ? v : d);
+  const to = which === "ios" ? ok(env.APP_STORE_URL, APP_STORE) : which === "android" ? ok(env.PLAY_STORE_URL, PLAY_STORE) : new URL("/#beta", request.url).toString();
+  // Never cached: the same address answers differently for each kind of phone.
+  return new Response(null, { status: 302, headers: { location: to, "cache-control": "no-store", vary: "user-agent" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -172,6 +191,7 @@ export default {
     // One address for search engines: www goes to the bare domain, and every other host (the
     // pages.dev previews) is served but kept out of search, so it never competes with vinterest.app.
     if (url.hostname === "www.vinterest.app") return Response.redirect(`https://vinterest.app${url.pathname}${url.search}`, 301);
+    if (url.pathname === "/get" || url.pathname === "/get/") return handleGet(request, env);
     const res = await env.ASSETS.fetch(request);
     const type = res.headers.get("content-type") || "";
     const out = new Response(res.body, res);
