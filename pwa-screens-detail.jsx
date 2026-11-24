@@ -195,6 +195,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){ const T=useTheme(), cr
       if(existingRating>0){ WineHistory.rate(wine.name,wine.vintage,n); }
       else { WineHistory.add(wine,n); }
       if(!ratedOnce.current){ XPSystem.awardAndToast([{type:'rate'}]); ratedOnce.current=true; }
+      try{ ReviewAsk.afterRating(n); }catch(e){}
       setUserRating(n);
       setSaved(true);
       setShowRatingUI(false);

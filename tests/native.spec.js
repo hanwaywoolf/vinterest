@@ -282,3 +282,38 @@ test('the strip behind the status bar is crimson, dark or light', async ({ conte
   await page.goto('http://localhost:4173/#camera');
   await expect.poll(() => strip.evaluate((s) => s.offsetHeight)).toBe(0);
 });
+
+test('the store rating sheet is asked for after a wine they loved, once they have rated five, and not again for months', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await asApp(page);
+  const wines = [1, 2, 3, 4, 5].map((i) => ({ name: 'Wine ' + i, vintage: 2018, type: 'red', rating: 88, scanned: Date.now() - i * 864e5 }));
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_wines: JSON.stringify(wines.slice(0, 4)) });
+  await stubNetwork(context);
+  await page.goto(BASE + '/#home');
+  await page.waitForFunction(() => typeof ReviewAsk !== 'undefined');
+  const out = await page.evaluate(async (fifth) => {
+    let asked = 0; Platform.requestReview = async () => { asked++; };
+    ReviewAsk.DELAY_MS = 0;
+    const wait = () => new Promise((r) => setTimeout(r, 30));
+    const r = {};
+    r.tooFew = ReviewAsk.afterRating(95);
+    WineHistory.add(fifth, 88);
+    r.notLoved = ReviewAsk.afterRating(88);
+    r.loved = ReviewAsk.afterRating(92); await wait();
+    r.again = ReviewAsk.afterRating(96); await wait();
+    r.later = ReviewAsk.due(96, Date.now() + 121 * 864e5);
+    r.asked = asked;
+    r.synced = Backup.SETTINGS_KEYS.includes(ReviewAsk.KEY) || Backup.PROGRESS_KEYS.includes(ReviewAsk.KEY);
+    return r;
+  }, wines[4]);
+  expect(out).toEqual({ tooFew: false, notLoved: false, loved: true, again: false, later: true, asked: 1, synced: false });
+});
+
+test('on the web nobody is asked for a store rating', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1' });
+  await stubNetwork(context);
+  await page.goto(BASE + '/#home');
+  await page.waitForFunction(() => typeof ReviewAsk !== 'undefined');
+  expect(await page.evaluate(() => [ReviewAsk.due(99), !!window.VinterestNative.AppReview])).toEqual([false, true]);
+});

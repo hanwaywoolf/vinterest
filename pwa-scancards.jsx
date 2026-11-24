@@ -1032,6 +1032,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     if(existingRating>0){ const e=WineHistory.find(wine); WineHistory.rate(e?e.name:wine.name,e?e.vintage:wine.vintage,score); }
     else WineHistory.add(wine,score);
     try{ if(window.XPSystem&&!existingRating) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
+    try{ ReviewAsk.afterRating(score); }catch(e){}
     try{
       const sd=Handoff.scanResult.get({});
       sd.existingRating=score;

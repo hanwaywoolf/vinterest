@@ -92,6 +92,25 @@ const Settings = {
 
 /* Per-device choices that shouldn't follow the user: the phone-layout override used by the
    preview panel, which WineDNA sections are folded away, and what the grape cluster last showed. */
+/* When to ask for a store rating: straight after they rate a wine they loved (MIN_SCORE or more), once
+   they've rated MIN_RATED wines, so the app has shown what it does, never within GAP_DAYS of the last
+   ask and MAX times at most. Kept on this phone only (never synced or backed up). */
+const ReviewAsk = {
+  KEY:'vinterest_review_asked', MIN_SCORE:90, MIN_RATED:5, GAP_DAYS:120, MAX:3, DELAY_MS:1800,
+  asked(){ const v=Store.getJSON(this.KEY,[]); return Array.isArray(v)?v:[]; },
+  due(score,now=Date.now()){
+    if(!(score>=this.MIN_SCORE)||!Platform.native()) return false;
+    const rated=WineHistory.getAll().filter(w=>w.rating>0).length, a=this.asked();
+    return rated>=this.MIN_RATED&&a.length<this.MAX&&(!a.length||now-a[a.length-1]>=this.GAP_DAYS*864e5);
+  },
+  afterRating(score){
+    if(!this.due(score)) return false;
+    Store.setJSON(this.KEY,[...this.asked(),Date.now()]);
+    setTimeout(()=>{ Platform.requestReview(); },this.DELAY_MS);
+    return true;
+  },
+};
+
 const Device = {
   FORCE_MOBILE_KEY:'vinterest_force_mobile', DNA_COLLAPSE_KEY:'vinterest_dna_collapsed_v1',
   forceMobile(){ return Store.get(this.FORCE_MOBILE_KEY)==='1'; },

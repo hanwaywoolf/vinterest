@@ -33,8 +33,8 @@ function ProBuy({onClose}){
     </div>}
     {offers&&offers.map(o=>
       <div key={o.pkg.identifier||o.label} role="button" data-testid="pro-offer" onClick={()=>run('buy',()=>Billing.buy(o))} style={{...primary,opacity:busy&&busy!=='buy'?0.6:1}}>
-        <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>{busy==='buy'?'Opening…':`Subscribe · ${o.price}${o.per?' / '+o.per:''}`}</div>
-        <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>{o.label} · Cancel anytime</div>
+        <div style={{fontSize:18,fontWeight:700,color:'#fff',fontFamily:C.P}}>{busy==='buy'?'Opening…':o.trial?`Try ${o.trial}`:`Subscribe · ${o.price}${o.per?' / '+o.per:''}`}</div>
+        <div style={{fontSize:15,color:'rgba(255,255,255,0.68)',fontFamily:C.P,marginTop:2}}>{o.trial?`Then ${o.price}${o.per?' / '+o.per:''} · Cancel anytime`:`${o.label} · Cancel anytime`}</div>
       </div>)}
     {msg&&<div role="alert" data-testid="pro-msg" style={{fontSize:14,color:C.mid,fontFamily:C.P,textAlign:'center',lineHeight:1.5}}>{msg}</div>}
     <div style={{textAlign:'center'}}>
