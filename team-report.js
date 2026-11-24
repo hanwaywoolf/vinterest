@@ -388,7 +388,7 @@ const TeamReport = {
     const servers=TeamLearn.people().filter(p=>['server','bartender','sommelier'].includes(p.role)), shifts=Object.fromEntries(servers.map(p=>[p.id,nights.filter(x=>(x.shifts||[]).includes(p.id)).length]));
     const out=this.salesByWine(days).slice(0,n).map(x=>{ const w=x.wine, k=servers.filter(p=>shifts[p.id]&&TeamLearn.knowsWine(p.id,p.role,w.id,(all[p.id]||{items:{}}).items)), u=servers.filter(p=>shifts[p.id]&&!k.includes(p));
       const money=ps=>rows.filter(r=>r.w===w.id&&ps.some(p=>p.id===r.v)).reduce((a,r)=>a+r.q*r.p,0), sh=ps=>ps.reduce((a,p)=>a+shifts[p.id],0);
-      const gap=k.length&&u.length?Math.max(0,money(k)/sh(k)-money(u)/sh(u)):0; return {wine:w,extra:gap*sh(u)/weeks,knows:x.knows,of:x.of,missing:u}; }).filter(x=>x.extra>=1).sort((a,b)=>b.extra-a.extra);
+      const gap=k.length&&u.length?Math.max(0,money(k)/sh(k)-money(u)/sh(u)):0; return {wine:w,extra:gap*sh(u)/weeks,knows:k.length,of:k.length+u.length,missing:u}; }).filter(x=>x.extra>=1).sort((a,b)=>b.extra-a.extra);
     return {total:out.reduce((a,x)=>a+x.extra,0),rows:out}; },
   /* Readiness week by week isn't kept yet, so only a demo restaurant draws it: a rise to where the team stands today,
      the same every time, labelled Demo data on screen. null for a real restaurant. */

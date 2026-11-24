@@ -113,6 +113,7 @@ const TeamSales = {
      don't move, Marco's by-the-glass sales dipped the weeks he stopped drilling, Priya sells less wine
      per cover than Dani, Amara has only worked her first nights, and a Picpoul the till knows that the
      list doesn't. Seeded, so it's the same every time. */
+  STARS:3, STAR_SHARES:[0.04,0.06,0.08,0.1], STAR_X:3.2,
   seedDemo(weeks=8){
     const wines=TeamData.wines(); if(!wines.length) return 0;
     const ppl=TeamLearn.people(), by=role=>ppl.filter(p=>p.role===role), first=n=>ppl.find(p=>p.name.split(' ')[0]===n);
@@ -133,6 +134,21 @@ const TeamSales = {
     const pushed=new Set([...TeamDemo.house(glass,'glass').slice(0,Math.ceil(glass.length/2)),...TeamDemo.house(wines.filter(w=>!TeamData.byGlass(w)),'bottle').slice(0,5)].map(w=>w.id));
     // How much each wine would sell on its own merits: cheaper and by the glass sell more, sweet wines least.
     const merit=(w,size)=>{ const price=money(size==='glass'?w.glass:w.bottle)||20; let m=(size==='glass'?60:160)/Math.max(6,price); if(/sweet|fortif|dessert/i.test(w.section)||/fortified|dessert/.test(w.type)) m*=0.35; if(w.type==='rosé'||w.type==='orange') m*=0.7; if(pushed.has(w.id)) m*=size==='glass'?1.7:1.6; const sellers=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)); if(sellers.length&&!sellers.some(p=>knows(p,w))) m*=0.55; return m; };
+    /* The wines the story of "where the next sales are" is told with: up to three bottles that sell well off the floor and
+       that only some of the people who serve them are trained on (at least two who are, two who aren't), near the
+       middle of the list's prices. Without them a restaurant whose team learnt its house pours first had every top
+       seller known by everyone, and the card said the next $84 on $29,654 a week (Eloise). They sell a share of the
+       bottles each (STAR_SHARES), and a trained server sells STAR_X times what an untrained one does, as the trained-lift figure says. */
+    const floor=ppl.filter(p=>['server','bartender','sommelier'].includes(p.role)), prices=bottle.map(w=>money(w.bottle)).sort((a,b)=>a-b), mid=prices[Math.floor(prices.length/2)]||0;
+    const stars=bottle.filter(w=>!TeamData.byGlass(w)&&!/sweet|fortif|dessert/i.test(w.section||'')&&!/fortified|dessert/.test(w.type||'')).map(w=>({w,k:floor.filter(p=>knows(p,w)).length,price:money(w.bottle)}))
+      .filter(x=>x.k>=2&&floor.length-x.k>=2&&x.price>=mid*0.6&&x.price<=mid*1.6).sort((a,b)=>Math.abs(a.k-floor.length/2)-Math.abs(b.k-floor.length/2)||Math.abs(a.price-mid)-Math.abs(b.price-mid)||(a.w.id<b.w.id?-1:1));
+    // One of each colour where the list allows, so the three aren't all the same kind of bottle.
+    const starSet=new Set(); stars.forEach(x=>{ if(starSet.size<this.STARS&&![...starSet].some(id=>TeamData.wine(id).type===x.w.type)) starSet.add(x.w.id); }); stars.forEach(x=>{ if(starSet.size<this.STARS) starSet.add(x.w.id); });
+    // Their share of the bottles goes up a step until at least two of them are among the top eight sellers (the wines
+    // the card reads): a list with a strong by-the-glass trade needs more than one with few glasses.
+    const make=share=>{ s=0x5eed;
+    const plain=bottle.filter(w=>!starSet.has(w.id)).reduce((a,w)=>a+merit(w,'bottle'),0), starMerit=plain*share/Math.max(0.01,1-share*starSet.size);
+    const bMerit=w=>starSet.has(w.id)?starMerit:merit(w,'bottle');
     const rows=[], nights={}; const now=new Date(); now.setHours(0,0,0,0);
     for(let d=weeks*7;d>=1;d--){
       const day=new Date(now.getTime()-d*this.DAY), dow=day.getDay(); if(dow===1&&!social) continue; // the Larkspur closes Mondays
@@ -146,7 +162,7 @@ const TeamSales = {
       const agg={}; const add=(w,size,p,qty,price,item)=>{ const k=`${item}|${p?p.id:'-'}`; const x=agg[k]||(agg[k]={w,size,p,qty:0,price,item}); x.qty+=qty; };
       // By the glass: about half the covers take a glass; the bar pours a share of them (less in Marco's slipping weeks).
       // Pours follow the covers before the lift, so the busy week sells more wine but a little less per guest.
-      const glassLines=Math.round(base*(0.5+rnd()*0.12)), barShare=marco?(d<=21?0.2:0.34):0;
+      const glassLines=Math.round(base*(0.5+rnd()*0.12)), barShare=marco?(d<=21?0.18:0.36):0;
       for(let i=0;i<glassLines;i++){
         const w=pick(glass,glass.map(x=>merit(x,'glass'))); const bar=rnd()<barShare;
         let p=bar?marco:servers.length?pick(servers,servers.map(x=>(x===priya?0.7:1)*(knows(x,w)?1.25:1))):null;
@@ -156,8 +172,8 @@ const TeamSales = {
       // Bottles: the sommelier sells most of them when she's on.
       const bottleLines=Math.round(base*(0.1+rnd()*0.05)*(d<=7?1.3:1));
       for(let i=0;i<bottleLines;i++){
-        const w=pick(bottle,bottle.map(x=>merit(x,'bottle'))); const som=claire&&shifts.includes(claire)&&rnd()<0.45;
-        const p=som?claire:servers.length?pick(servers,servers.map(x=>(x===priya?0.6:1)*(knows(x,w)?1.35:1))):null;
+        const w=pick(bottle,bottle.map(bMerit)), star=starSet.has(w.id); const som=claire&&shifts.includes(claire)&&rnd()<(star?0.2:0.45);
+        const p=som?claire:servers.length?pick(servers,servers.map(x=>(x===priya?0.6:1)*(knows(x,w)?(star?this.STAR_X:1.35):1))):null;
         add(w,'bottle',p,1,money(w.bottle),`${TeamData.short(w)} Btl`);
       }
       // A wine the till knows and the list doesn't: the kitchen's new Picpoul, on since last week.
@@ -165,6 +181,10 @@ const TeamSales = {
       if(d<=10){ const n=1+Math.floor(rnd()*4); for(let i=0;i<n;i++) add(null,extra.size,servers[0]||marco,1,extra.price,extra.name); }
       Object.values(agg).forEach((x,k)=>rows.push({i:`demo-${key}-${k}`,t:day.getTime()+19*3600000+Math.floor(rnd()*4*3600000),n:x.item,w:x.w?x.w.id:null,s:x.size,q:x.qty,p:x.price,v:x.p?x.p.id:null}));
     }
+    return {rows,nights}; };
+    let made=null; for(const share of this.STAR_SHARES){ made=make(share); const rev={}; made.rows.forEach(r=>{ if(r.w) rev[r.w]=(rev[r.w]||0)+r.q*r.p; });
+      const top=Object.keys(rev).sort((x,y)=>rev[y]-rev[x]).slice(0,8); if(!starSet.size||top.filter(id=>starSet.has(id)).length>=Math.min(2,starSet.size)) break; }
+    const {rows,nights}=made;
     const d=this._empty(); d.map={}; rows.forEach(r=>{ if(r.w) d.map[r.n]=r.w; }); // the demo's map is confirmed, bar the Picpoul
     this.save(d);
     return this.ingest(rows,{source:{kind:'demo',label:'Demo data (invented)',note:`Eight weeks of invented sales for ${venue}, shaped for the demo. Nothing here came from a POS.`},nights});

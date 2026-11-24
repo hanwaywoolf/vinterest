@@ -820,7 +820,7 @@ const TeamDemo = {
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a
      changed stamp reloads a device that already has the restaurant. */
-  STORY:3,
+  STORY:4,
   /* A list in the order a restaurant teaches it and pushes it: dry before sweet, cheapest first. The demo's
      sales favour the first half (TeamSales.seedDemo), so the house pours sell most and are the ones a
      working team already knows. */
