@@ -151,7 +151,11 @@ async function capture(dev) {
         const q = QuizMastery.topicPool('red_grapes').find((x) => shown.includes(x.q));
         return q ? q.opts[q.a] : null;
       });
-      if (right) { await page.getByText(right, { exact: true }).first().click(); await wait(3500); }
+      // STORE_QUIZ=tap: the moment after the tap instead (every answer still showing, the right one lit),
+      // the quiz slowed so the picture is taken before the answers slide away.
+      const tap = process.env.STORE_QUIZ === 'tap';
+      if (tap) await page.evaluate(() => { window.VINTEREST_QUIZ_SPEED = 0.1; });
+      if (right) { await page.getByText(right, { exact: true }).first().click(); await wait(tap ? 900 : 3500); }
       else console.warn('quiz: no question found');
     }
     await page.evaluate(() => document.querySelectorAll('#root div').forEach((e) => { e.scrollTop = 0; }));
