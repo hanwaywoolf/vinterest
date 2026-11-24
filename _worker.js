@@ -263,6 +263,10 @@ export default {
         // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
         // App Store submission (review rule 3.1.1).
         iosTypedPromo: env.IOS_TYPED_PROMO === "1",
+        // "A new version is out" on Home (AppUpdate in pwa-update.js), set here so announcing a
+        // release is a Cloudflare variable, not an app build (docs/app-store.md "Telling people about
+        // an update").
+        update: appUpdate(env),
       });
     }
     if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/run") {
@@ -767,6 +771,23 @@ const PUSH_HOUR = 17, PUSH_WINDOW = 6, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PU
 const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
 function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
 function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
+/* The newest version in each store, the oldest still supported, and where to get it, from the
+   Cloudflare variables APP_LATEST (or APP_LATEST_IOS / APP_LATEST_ANDROID when the two stores are
+   out of step), APP_MIN (optional), APP_UPDATE_NOTE (an optional line on what's new) and
+   APP_STORE_ID (the App Store's numeric id; iPhone gets nothing without it). Null when no latest
+   version is set, so nothing shows. */
+function appUpdate(env) {
+  const v = (s) => (/^\d+(\.\d+){1,2}$/.test(String(s || "").trim()) ? String(s).trim() : null);
+  const note = String(env.APP_UPDATE_NOTE || "").trim().slice(0, 140) || null, min = v(env.APP_MIN);
+  const ios = v(env.APP_LATEST_IOS) || v(env.APP_LATEST), android = v(env.APP_LATEST_ANDROID) || v(env.APP_LATEST);
+  const storeId = /^\d{6,12}$/.test(String(env.APP_STORE_ID || "")) ? env.APP_STORE_ID : null;
+  const out = {
+    ios: ios && storeId ? { latest: ios, min, note, url: `https://apps.apple.com/app/id${storeId}` } : null,
+    android: android ? { latest: android, min, note, url: "https://play.google.com/store/apps/details?id=app.vinterest" } : null,
+  };
+  return out.ios || out.android ? out : null;
+}
+
 function pushOn(env) { return accountsOn(env) && (apnsOn(env) || fcmOn(env)); }
 
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
