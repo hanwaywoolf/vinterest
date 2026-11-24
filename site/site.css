@@ -354,6 +354,13 @@ html.js .hero-cam.wait { animation-play-state: paused; }
 .form .btn.store { margin: 0; min-height: 64px; justify-content: flex-start; padding: 0 22px; background: #fff; color: #0F0F0F; gap: 14px; font-size: 20px; }
 .btn.store span { display: grid; text-align: left; line-height: 1.15; }
 .btn.store small { font-size: 12px; font-weight: 500; opacity: .7; }
+/* The official badges, as Apple and Google supply them: never recoloured or stretched. Google's PNG carries its own clear
+   space round the badge, so it's drawn taller to sit the same size as Apple's. */
+.store-row:has(.store-badge) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.store-badge { display: inline-flex; line-height: 0; border-radius: 10px; }
+.store-badge:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.store-badge.ios img { height: 54px; width: auto; }
+.store-badge.android img { height: 81px; width: auto; margin: -13px 0; }
 html.js .thanks:not([hidden]) .tick-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .5s ease .15s forwards; }
 html.js .thanks:not([hidden]) .tick { animation: pop .45s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes draw { to { stroke-dashoffset: 0; } }

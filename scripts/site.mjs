@@ -78,6 +78,20 @@ const PLAY_STORE = 'https://play.google.com/store/apps/details?id=app.vinterest'
 /* A store link from the environment: an https URL or nothing (it is written into an attribute). */
 function storeUrl(v) { return /^https:\/\/[^\s"'<>]+$/.test(v || '') ? v : ''; }
 
+/* The store buttons: Apple's and Google's official badges once their files are in site/badges/ (app-store.svg from
+   Apple's marketing tools, google-play.png from Google's badge page, both unaltered), else plain buttons in the page's own style. */
+const PLAIN_IOS = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.5" y1="18.4" x2="13.5" y2="18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><small>Download on the</small>App Store</span>';
+const PLAIN_ANDROID = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 4.5v15l12-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span><small>Get it on</small>Google Play</span>';
+function storeBadges() {
+  const has = (f) => fs.existsSync(path.join(SITE, 'badges', f));
+  return {
+    IOS_BADGE_CLASS: has('app-store.svg') ? 'store-badge ios' : 'btn store',
+    IOS_BADGE: has('app-store.svg') ? '<img src="/badges/app-store.svg" alt="Download on the App Store" width="162" height="54"/>' : PLAIN_IOS,
+    ANDROID_BADGE_CLASS: has('google-play.png') ? 'store-badge android' : 'btn store',
+    ANDROID_BADGE: has('google-play.png') ? '<img src="/badges/google-play.png" alt="Get it on Google Play" width="209" height="81"/>' : PLAIN_ANDROID,
+  };
+}
+
 function fill(html, vars) {
   const out = html.replace(/%%([A-Z_]+)%%/g, (m, k) => {
     if (!(k in vars)) throw new Error(`site: unknown token ${m}`);
@@ -122,6 +136,7 @@ async function build() {
     ORIGIN: origin,
     // The apps' store pages. Empty until they're listed: the page then asks for beta sign-ups instead.
     IOS_URL: storeUrl(process.env.APP_STORE_URL ?? APP_STORE), ANDROID_URL: storeUrl(process.env.PLAY_STORE_URL ?? PLAY_STORE),
+    ...storeBadges(),
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`
@@ -137,6 +152,8 @@ async function build() {
     const dest = rel.startsWith('site/') ? rel.slice(5) : rel;
     fs.cpSync(path.join(ROOT, rel), path.join(OUT, dest), { recursive: true });
   }
+  // The official store badges, once they're in site/badges/.
+  if (fs.existsSync(path.join(SITE, 'badges'))) fs.cpSync(path.join(SITE, 'badges'), path.join(OUT, 'badges'), { recursive: true });
   // The share card, if one has been made (npm run site:og).
   if (fs.existsSync(path.join(SITE, 'og.png'))) fs.copyFileSync(path.join(SITE, 'og.png'), path.join(OUT, 'og.png'));
   fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
