@@ -75,6 +75,27 @@ test.describe('desktop', () => {
     await expect(page.locator('#scan .steps li.on h3')).toHaveText('Whether it\'s for you');
   });
 
+  test('the header links to Vinterest Teams on every page, and still fits on a small phone', async ({ page }) => {
+    for (const path of ['/', '/privacy/', '/terms/']) {
+      await page.goto(BASE + path);
+      await expect(page.locator('.top a.teams')).toHaveAttribute('href', 'https://vinterest.team');
+      await expect(page.locator('footer a[href="https://vinterest.team"]')).toHaveText('Vinterest Teams');
+    }
+    await page.goto(BASE + '/');
+    await expect(page.locator('.top a.teams')).toHaveText('For restaurants');
+    for (const width of [360, 375]) {
+      await page.setViewportSize({ width, height: 700 });
+      const fit = await page.evaluate(() => {
+        const r = (s) => document.querySelector(s).getBoundingClientRect();
+        const logo = r('.top .logo'), link = r('.top a.teams'), btn = r('.top nav .btn');
+        return { order: logo.right <= link.left && link.right <= btn.left, in: btn.right <= innerWidth, oneLine: btn.height < 50,
+          shape: logo.width / logo.height, wide: document.documentElement.scrollWidth <= innerWidth };
+      });
+      expect(fit.order && fit.in && fit.oneLine && fit.wide, JSON.stringify(fit)).toBe(true);
+      expect(fit.shape).toBeGreaterThan(4);
+    }
+  });
+
   test('the progress bar is centred over the phone', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of ['scan', 'winedna', 'vinny']) {

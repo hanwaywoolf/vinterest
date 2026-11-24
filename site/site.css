@@ -216,6 +216,23 @@ footer a:hover { color: #fff; }
 @media (max-width: 900px) {
   :root { --gutter: 20px; }
   .top nav a.link { display: none; }
+  /* The Teams link stays on a phone: a restaurateur following an email link opens it there. */
+  .top nav a.link.teams { display: inline; font-size: 14px; white-space: nowrap; }
+  .top nav { gap: 14px; }
+}
+/* Narrow phones: "Restaurants" alone, and a slightly smaller logo, so the three fit on one line. */
+@media (max-width: 440px) {
+  .top nav a.link.teams .for { display: none; }
+  .top nav a.link.teams .r { text-transform: uppercase; }
+  .top nav a.link.teams { font-size: 13px; }
+  .top .wrap > a { flex: 0 1 96px; min-width: 0; }
+  .top .wrap > a .logo { width: 100%; height: auto; display: block; }
+  .top nav { flex: none; }
+  .top .wrap { gap: 12px; }
+  .top nav .btn { white-space: nowrap; padding-left: 14px; padding-right: 14px; }
+  .top nav { gap: 12px; }
+}
+@media (max-width: 900px) {
   .hero { padding: 100px 0 56px; min-height: 0; }
   .hero .wrap { grid-template-columns: 1fr; gap: 32px; }
   /* The phone is as wide as the screen allows (never the sliver that fits under a heading in one
