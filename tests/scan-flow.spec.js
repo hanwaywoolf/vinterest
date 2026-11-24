@@ -1041,3 +1041,33 @@ test('a scanned new grape says its quiz is open, and never sells Pro to someone 
   const out = await page.evaluate(() => { Entitlement.isPro = () => true; return XPSystem.present([{ grape: 'Nebbiolo', amount: 15, label: 'New grape: Nebbiolo', bonus: true }]).moments[0]; });
   expect(out.body).not.toMatch(/Pro/); expect(out.action).toBeNull();
 });
+
+// A bottle they've already rated is shown by that rating, not by the match: the match leaves the
+// bottle itself out (what their other wines predict), which read "Could go either way" for a 100.
+test('a bottle they rated shows their rating, on a list (sorted first) and on its result, with the prediction as a note', async ({ context, page }) => {
+  await setup(context, page, { seed: { vinterest_pro: '1' } });
+  await page.goto(`${BASE}/?demo=1#home`);
+  const top = await page.evaluate(() => WineHistory.getAll().filter((w) => w.type === 'red' && w.rating >= 96)[0]);
+  expect(top).toBeTruthy();
+  const list = { wines: [
+    { n: 'Rioja Test Reserva', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '48', g: 'Tempranillo', s: '766' },
+    { n: top.name, pr: top.producer || '', t: 'red', r: top.region, c: top.country, v: top.vintage, p: '92', g: (top.grapes || [])[0] || '', s: '877' },
+  ] };
+  await context.unrouteAll({ behavior: 'ignoreErrors' });
+  await setup(context, page, { list, seed: { vinterest_pro: '1' } });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Wine List', { exact: true }).click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'list.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await expect(page.getByTestId('list-rated')).toHaveText(`You rated ${top.rating}`);
+  // By match, their own 96+ comes first, whatever the leave-one-out % would say.
+  await root.getByText('Sort: Match Rate', { exact: true }).click();
+  const ratedBox = await page.getByTestId('list-rated').boundingBox();
+  const otherBox = await root.getByText('Rioja Test Reserva').boundingBox();
+  expect(ratedBox.y).toBeLessThan(otherBox.y);
+  // Opened, the ring is their rating and the prediction is a note.
+  await page.getByTestId('list-rated').click();
+  await expect(page.getByTestId('rated-ring').first()).toContainText(String(top.rating));
+  await expect(page.getByTestId('rated-line').first()).toContainText(`You rated it ${top.rating} · we'd have expected about`);
+  await expect(root).not.toContainText('Could go either way');
+});
