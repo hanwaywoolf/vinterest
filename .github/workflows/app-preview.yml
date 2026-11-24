@@ -1,5 +1,5 @@
-# Records the App Store's App preview video (scripts/app-preview.mjs): thirty seconds of the app itself,
-# 886 x 1920, H.264 with a silent sound track, the file App Store Connect takes for every iPhone slot.
+# Records the App Store's App preview video (scripts/app-preview.mjs): thirty seconds of the app in four
+# parts, 886 x 1920, H.264 with the music in assets/preview-music.* (silent without one), the file App Store Connect takes for every iPhone slot.
 # On demand: Actions → App preview → Run workflow, then download the "app-preview" artifact and upload
 # app-preview.mp4 under App Previews on the version page (docs/app-store.md).
 name: App preview

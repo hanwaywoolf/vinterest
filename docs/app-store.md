@@ -119,10 +119,14 @@ Keywords (100, no spaces, none already in the name):
 - Screenshots: `npm run store:shots` writes the iPhone with Dynamic Island, medium display (1206 x 2622,
   the slot App Store Connect asks for first), the large iPhone (1320 x 2868) and the 13" iPad
   (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 7.
-- App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records thirty seconds of the
-  app alone at 886 x 1920, the size every iPhone slot takes. Apple wants H.264 with a sound track, which
-  needs a full ffmpeg: run Actions → App preview → Run workflow, download the `app-preview` artifact and
-  upload `app-preview.mp4`. Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
+- App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records thirty seconds in four
+  parts, each a card saying in large text what the app does and then the app doing it: a scan (the match,
+  the grape, the map closing in on the region), WineDNA's portrait, a quiz question answered, Vinny
+  answering. The `.mp4` Apple takes needs a full ffmpeg: run Actions → App preview → Run workflow, download
+  the `app-preview` artifact and upload `app-preview.mp4`. Music: put a track we're licensed to use
+  commercially at `assets/preview-music.mp3` (or `.m4a`, `.ogg`, `.wav`, `.flac`) and note its licence
+  here; the script fades it in and out (`PREVIEW_MUSIC_START` seconds into the track), and without a file
+  the sound track is silent. Pick the poster frame in App Store Connect (the match dial, about 4 seconds in).
 - In-App Purchases and Subscriptions: add Pro Monthly (VINPRO_M) and Pro Yearly (VINPRO_A).
 - Build: the 1.11.1 build from main.
 - App Review Information: sign-in required, see `docs/app-review.md`.
