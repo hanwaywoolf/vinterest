@@ -15,7 +15,7 @@
 const _WELCOME_SAMPLE=_loadJSON('data/onboarding-sample.json');
 
 const _WELCOME_TILES=[
-  {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at any label or wine list. You get a match built on your own taste, and the reasons why.',preview:'match'},
+  {t:'Scan a bottle. Know if it\'s for you.',d:'Point your camera at a label, a shelf or a wine list. Every bottle tells its story, with a match built on your own taste and the reasons why.',preview:'match'},
   {t:'Every bottle builds your WineDNA.',d:'Your ratings add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
   {t:'The right wine, wherever you\'re buying.',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
   {t:'Find out why you like what you like.',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
@@ -63,41 +63,46 @@ function _useCount(n,ms,delay=0){
   return v;
 }
 
+/* The scan story's match scene, as a fresh scan plays it (ScanReveal's own stage, glow, progress
+   and scene: _RvMatch), for the sample user's bottle: the dial sweeps up, the verdict lands, one
+   reason each way. */
 function _PreviewMatch(){
-  const S=_WELCOME_SAMPLE.slides, m=S.match, w=_WELCOME_SAMPLE.user.scanned, col=_TONE_COL[m.tone];
-  const pct=_useCount(m.pct,1100,150);
-  return <div style={{display:'flex',flexDirection:'column',gap:10}}>
-    <Card style={{padding:16}}><WineIdentity wine={w}/></Card>
-    <Card style={{padding:16}}>
-      <div style={{display:'flex',alignItems:'center',gap:14}}>
-        <MatchRing match={{...m,pct}}/>
-        <div className="wp-in" style={{flex:1,minWidth:0,animationDelay:'.9s'}}>
-          <div style={{fontSize:20,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1.2}}>{m.label}</div>
-          <div style={{fontSize:15,color:C.mid,fontFamily:C.P,marginTop:3}}>Likely about {m.expected} from you · {m.expectedLabel}</div>
-          <div style={{fontSize:13,color:C.mid,fontFamily:C.P,marginTop:2}}>{m.pct}% sure you'd rate it {m.bar}+, your usual for reds</div>
-        </div>
-      </div>
-      <div className="wp-reasons" style={{marginTop:14,paddingTop:12,borderTop:`1px solid ${C.line}`}}><MatchReasons match={m} showSummary={false}/></div>
-    </Card>
+  const S=_WELCOME_SAMPLE.slides, m=S.match, w=_WELCOME_SAMPLE.user.scanned;
+  const col=(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[w.type])||C.cr, glow=_RV_LIFT(col);
+  const pro=m.reasons.find(r=>r.tone==='good'), con=m.reasons.find(r=>r.tone==='bad');
+  const d={match:{...m,pro:pro&&pro.text,con:con&&con.text}};
+  return <div className="rv-stage" style={{position:'relative',borderRadius:26,overflow:'hidden',border:'1px solid rgba(255,255,255,0.08)',touchAction:'auto'}}>
+    <style>{REVEAL_CSS}</style>
+    <div aria-hidden="true" style={{position:'absolute',inset:0,background:`radial-gradient(circle at 50% 28%, ${glow}66, transparent 62%)`}}/>
+    <div style={{position:'relative',display:'flex',gap:4,padding:'12px 14px 0'}}>
+      {[1,1,0,0,0,0].map((on,i)=><div key={i} style={{flex:1,height:3,borderRadius:2,background:on?'#fff':'rgba(255,255,255,0.22)'}}/>)}
+    </div>
+    <div style={{position:'relative',padding:'10px 18px 0'}}>
+      <span style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your scan</span>
+    </div>
+    <div style={{position:'relative',padding:'10px 26px 14px',textAlign:'center'}}>
+      <div style={{fontSize:15,fontWeight:700,color:'rgba(255,255,255,0.85)',fontFamily:C.P,marginBottom:16}}>{WineDNA.nameYear?WineDNA.nameYear(w):`${w.name} ${w.vintage||''}`}</div>
+      <_RvMatch d={d} col={glow}/>
+    </div>
+    <div style={{position:'relative',textAlign:'center',padding:'4px 0 14px'}}>
+      <span style={{fontSize:'10px',fontWeight:700,color:'rgba(255,255,255,0.4)',fontFamily:C.P,letterSpacing:'0.16em',textTransform:'uppercase'}}>Personalised scan story · powered by Vinny</span>
+    </div>
   </div>;
 }
+const _RV_LIFT=c=>(typeof _DECK_DARK!=='undefined'&&_DECK_DARK.lift)?_DECK_DARK.lift(c):c;
 
 function _dnaTab(){
   const d=_WELCOME_SAMPLE.slides.dna;
-  return {d,tLabel:d.label.toLowerCase(),t:{...d,tab:((typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.label===d.label))||{}).tab,col:(typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr,loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k)}};
+  return {d,tLabel:d.label.toLowerCase(),t:{...d,tab:((typeof _TYPES!=='undefined'&&_TYPES.find(x=>x.label===d.label))||{}).tab,col:_RV_LIFT((typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS.red)||C.cr),loved:{length:d.lovedCount},axes:d.axes,showAxis:k=>d.axes.includes(k),signals:d.signals||[]}};
 }
-function _DnaSummary({style}){
-  const {d,t,tLabel}=_dnaTab();
-  return <div className="wp-in" style={style}><Card style={{padding:16,display:'flex',flexDirection:'column',gap:10}}>
-    <DnaTitle t={t} basisLine={`Based on your ${d.lovedCount} Outstanding (90+) ${tLabel}`}/>
-    <DnaFacts t={t} chips={d.chips} conf={d.confidence}/>
-  </Card></div>;
-}
+/* WineDNA as it opens today: Next time you're buying (the sample user's rules), then the
+   portrait's named scales. */
 function _PreviewDna(){
-  const {t,tLabel}=_dnaTab();
+  const {d,t}=_dnaTab();
   return <div style={{display:'flex',flexDirection:'column',gap:10}}>
-    <_DnaSummary/>
-    <div className="wp-dna-bars"><DnaTasteCard t={t} tLabel={tLabel} notes={false}/></div>
+    <div className="wp-in" style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.6)',fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',padding:'2px 4px 0'}}>Your WineDNA · {d.label}</div>
+    {d.rules&&d.rules.length>0&&<div className="wp-in"><DnaRules t={t} given={d.rules} nav={()=>{}}/></div>}
+    <DnaTasteTiles t={t} nav={()=>{}}/>
   </div>;
 }
 
@@ -131,8 +136,8 @@ function _PreviewVinny(){
   const a=!sent?full
     :ms<answerAt?<span style={{position:'relative',display:'block'}}>{full}<span style={{position:'absolute',left:0,top:0,fontSize:15,fontStyle:'italic',color:'rgba(255,255,255,0.7)'}}>Thinking…</span></span>
     :<>{v.a.slice(0,nA)}{nA<v.a.length&&<span className="wp-caret"/>}<span style={{opacity:0}}>{v.a.slice(nA)}</span></>;
-  return <div style={{position:'relative',width:390,borderRadius:26,overflow:'hidden',background:C.bg,border:'1px solid rgba(255,255,255,0.08)'}}>
-    <img src="onboarding-home.jpg" alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'auto',opacity:0.32,filter:'blur(1px)'}}/>
+  return <div style={{position:'relative',width:390,borderRadius:26,overflow:'hidden',background:_DECK_DARK.bg,border:'1px solid rgba(255,255,255,0.08)'}}>
+    <img src="onboarding-home.jpg" alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'auto',opacity:0.45,filter:'blur(1px)'}}/>
     <div style={{position:'relative',padding:`62px 16px ${_WELCOME_SPARE.vinny}px`}}>
       <VinnyBar field={field} hasText={!!typedQ} canSend={false} lit={!!typedQ&&!sent}/>
       <div style={{opacity:sent?1:0,transform:sent?'none':'translateY(6px)',transition:'opacity .35s, transform .35s'}}>
@@ -154,9 +159,9 @@ function _PreviewLearn(){
 function _welcomeAlt(kind){
   const S=_WELCOME_SAMPLE.slides, U=_WELCOME_SAMPLE.user;
   if(kind==='match'){ const m=S.match, w=U.scanned, [pro,con]=m.reasons;
-    return `Example scan result: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`; }
+    return `Example scan story: ${w.producer} ${w.name} ${w.vintage}, a ${m.pct}% match, "${m.label}". For it: ${pro.text} Against it: ${con.text}`; }
   if(kind==='dna'){ const d=S.dna;
-    return `Example WineDNA for reds: "${d.personality}", based on ${d.lovedCount} Outstanding reds. ${d.chips.map(c=>`${c.label}: ${c.value}`).join('. ')}. ${d.confidence.n} rated, ${d.confidence.next||'a strong read'}.`; }
+    return `Example WineDNA for reds. Next time you're buying: ${(d.rules||[]).map(r=>r.lead).join('; ')}. Then where the reds they choose sit on body, tannins and acidity.`; }
   if(kind==='vinny'){ const v=S.vinny[0];
     return `Example of asking Vinny from the Home screen. Question: "${v.q}" Vinny's answer, from this user's WineDNA: "${v.a}"`; }
   const st=S.article, a=S.mastery;
@@ -165,6 +170,10 @@ function _welcomeAlt(kind){
 const _WELCOME_PREVIEWS={match:_PreviewMatch,dna:_PreviewDna,vinny:_PreviewVinny,learn:_PreviewLearn};
 // A preview drawn at a fixed width, in its own frame (the Vinny one lines up with its Home screenshot).
 const _WELCOME_FRAMED={vinny:390};
+// A preview drawn on its own stage, with no card behind it (the scan story's match scene), and how
+// small it may go before it's cropped: its dial and verdict are display-sized, so it reads smaller.
+const _WELCOME_BARE={match:true};
+const _WELCOME_MIN={match:0.5};
 // How much of a framed preview's bottom is only faded background, and may be cropped to fit.
 const _WELCOME_SPARE={vinny:150};
 
@@ -201,9 +210,10 @@ function _WelcomePreview({kind,active}){
         out={s,w:W,crop:H/h<s-0.001,pan:0};
       }
       // Never so small it can't be read: below MIN it stays at MIN and is cropped at the bottom.
-      else if(best.s<_WELCOME_PREVIEW_MIN){
-        const W=_WELCOME_FRAMED[kind]||Math.round(bw/_WELCOME_PREVIEW_MIN); g.style.width=W+'px';
-        out={s:_WELCOME_PREVIEW_MIN,w:W,crop:true,pan:_WELCOME_FRAMED[kind]?0:Math.min(0,Math.round(H/_WELCOME_PREVIEW_MIN-g.scrollHeight))}; // a framed preview only loses faded background at the bottom: no scroll
+      else if(best.s<(_WELCOME_MIN[kind]||_WELCOME_PREVIEW_MIN)){
+        const MIN=_WELCOME_MIN[kind]||_WELCOME_PREVIEW_MIN;
+        const W=_WELCOME_FRAMED[kind]||Math.round(bw/MIN); g.style.width=W+'px';
+        out={s:MIN,w:W,crop:true,pan:_WELCOME_FRAMED[kind]?0:Math.min(0,Math.round(H/MIN-g.scrollHeight))}; // a framed preview only loses faded background at the bottom: no scroll
       }
       g.style.width=prev;
       setFit(f=>Math.abs(f.s-out.s)<0.005&&f.w===out.w&&!!f.crop===!!out.crop&&f.pan===out.pan?f:out);
@@ -221,7 +231,9 @@ function _WelcomePreview({kind,active}){
     <div ref={stage} aria-hidden="true" inert="" className={'wp-stage'+(playing?' wp-run':'')} style={{position:'absolute',top:fit.crop?0:'50%',left:'50%',width:fit.w||'100%',
       transform:fit.crop?`translateX(-50%) scale(${fit.s})`:`translate(-50%,-50%) scale(${fit.s})`,transformOrigin:fit.crop?'top center':'center center',pointerEvents:'none',userSelect:'none'}}>
       <div key={run} className={fit.crop&&playing&&fit.pan<0?'wp-pan':''} style={{'--wp-pan':`${fit.pan||0}px`}}>
-        {_WELCOME_FRAMED[kind]?<Body/>:<div style={{background:C.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}><Body/></div>}
+        <DeckTheme.Provider value={_DECK_DARK}>
+          {_WELCOME_FRAMED[kind]||_WELCOME_BARE[kind]?<Body/>:<div style={{background:_DECK_DARK.bg,borderRadius:22,padding:12,border:'1px solid rgba(255,255,255,0.08)'}}><Body/></div>}
+        </DeckTheme.Provider>
       </div>
     </div>
   </div>;

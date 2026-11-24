@@ -204,8 +204,9 @@ function DnaTasteCard({t,tLabel,notes=true}){ const T=useTheme();
 /* Your rules (WineDNA.rules): three things to do next time they're buying, at the top of the
    tab. Reach, skip, try: each a lead line, its evidence, and a tap to the region's page or to
    Explore Next. */
-function DnaRules({t,nav,onExplore,bare}){ const T=useTheme(), col=t.col;
-  const rules=WineDNA.rules(t,t.explore);
+function DnaRules({t,nav,onExplore,bare,given}){ const T=useTheme(), col=t.col;
+  // `given`: rules worked out ahead (the welcome slide's sample user, data/onboarding-sample.json).
+  const rules=given||WineDNA.rules(t,t.explore);
   if(!rules.length) return null;
   // The marks are drawn, not typed: a text arrow sits off-centre in Poppins.
   const line={fill:'none',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round'};
