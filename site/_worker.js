@@ -113,9 +113,27 @@ export async function handleBeta(request, env, ctx) {
   return json({ ok: true });
 }
 
+// The apps in their stores. The App Store link has no country in it, so it opens each visitor's own.
+const APP_STORE = "https://apps.apple.com/app/id6819741453";
+const PLAY_STORE = "https://play.google.com/store/apps/details?id=app.vinterest";
+
+/* /get: one link for both stores, for social bios and print. An iPhone or iPad goes to the App
+   Store (iPadOS asks for desktop pages and says Macintosh, so a Mac name with a touch screen can't
+   be told apart here: it gets the home page's buttons), an Android phone to Google Play, anything
+   else to the store buttons on the home page. */
+function storeFor(ua) {
+  if (/iPhone|iPad|iPod/i.test(ua)) return APP_STORE;
+  if (/Android/i.test(ua)) return PLAY_STORE;
+  return null;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    if (url.pathname === "/get" || url.pathname === "/get/") {
+      const to = storeFor(request.headers.get("user-agent") || "") || new URL("/#get", url).toString();
+      return new Response(null, { status: 302, headers: { location: to, "cache-control": "no-store", vary: "user-agent" } });
+    }
     if (url.pathname === "/api/beta") return handleBeta(request, env, ctx);
     if (url.pathname === "/api/country") {
       const c = request.headers.get("cf-ipcountry") || (request.cf && request.cf.country) || "";

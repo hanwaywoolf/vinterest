@@ -520,3 +520,20 @@ test.describe('the sign-up Worker', () => {
     expect(statuses[7]).toBe(429);
   });
 });
+
+// One link for both stores (social bios, print): /get sends each phone to its own store.
+test('/get sends an iPhone to the App Store, an Android phone to Google Play, anything else to the store buttons', async ({ page }) => {
+  const worker = (await load()).default;
+  const go = async (ua) => {
+    const r = await worker.fetch(new Request('https://vinterest.app/get', { headers: { 'user-agent': ua } }), { ASSETS: { fetch: () => new Response('') } });
+    return [r.status, r.headers.get('location'), r.headers.get('cache-control')];
+  };
+  expect(await go('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)')).toEqual([302, 'https://apps.apple.com/app/id6819741453', 'no-store']);
+  expect((await go('Mozilla/5.0 (Linux; Android 15; Pixel 9)'))[1]).toBe('https://play.google.com/store/apps/details?id=app.vinterest');
+  expect((await go('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'))[1]).toBe('https://vinterest.app/#get');
+  // The home page carries both store buttons where /get lands, and the header points at /get.
+  await page.goto(BASE + '/');
+  await expect(page.locator('#get [data-store="ios"]')).toHaveAttribute('href', 'https://apps.apple.com/app/id6819741453');
+  await expect(page.locator('#get [data-store="android"]')).toHaveAttribute('href', 'https://play.google.com/store/apps/details?id=app.vinterest');
+  await expect(page.locator('header.top a.btn')).toHaveAttribute('href', '/get');
+});

@@ -207,8 +207,8 @@ variables) once the new version is live in the store, then redeploy or wait for 
 - `APP_LATEST`: the newest version, e.g. `1.12.0`. Use `APP_LATEST_IOS` and `APP_LATEST_ANDROID`
   instead when Apple and Google approve on different days, so nobody is sent to a store that
   doesn't have it yet.
-- `APP_STORE_ID`: the app's numeric Apple ID (App Store Connect → App Information). Without it
-  iPhones aren't told.
+- `APP_STORE_ID` (optional): the app's Apple ID is already in the code (6819741453); set this only
+  if it ever changes.
 - `APP_UPDATE_NOTE` (optional): one line on what's new, shown on the card (140 characters at most).
 - `APP_MIN` (optional): the oldest version still supported. Below it the card can't be dismissed
   and says the version is too old. Use it only when an old version really breaks.
@@ -223,3 +223,12 @@ with a "Show me" button on each item. The text ships in the build, in `data/what
 an entry for every release worth naming (newest first, two to four items, each a title, one
 sentence and where Show me goes). The same words work as the stores' "What's new". Someone who
 installs fresh never sees it; someone who skipped versions sees everything since the last one.
+
+## Store links
+
+- App Store: https://apps.apple.com/app/id6819741453 (no country in it, so it opens each visitor's
+  own store). The Apple ID is in App Store Connect → App Information.
+- Google Play: https://play.google.com/store/apps/details?id=app.vinterest
+- One link for both, for social bios and print: https://vinterest.app/get sends an iPhone or iPad
+  to the App Store, an Android phone to Google Play, and anything else to the store buttons on the
+  home page (`site/_worker.js`).
