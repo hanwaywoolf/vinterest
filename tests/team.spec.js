@@ -2275,6 +2275,41 @@ test('what a publish cost is kept for Vinterest only: no customer sees a running
   await b.ctx.close();
 });
 
+// The reporting window (TeamWindow): a manager picks the stretch the console's sales figures are over; the staff app's
+// own figures never move with it.
+test('the reporting window: the last N days, weeks or months, or a range, on the console only', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } }); await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const page = await ctx.newPage(); await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-sales').click();
+  const head = page.getByTestId('c2-head'), rev = page.getByTestId('sales-revenue');
+  await expect(head).toContainText('the last 7 nights'); await expect(page.getByTestId('c2-trend')).toHaveAttribute('data-unit', 'night');
+  const week = await rev.innerText();
+  // A usual stretch: eight weeks, drawn week by week, compared with the eight before.
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-8weeks').click();
+  await expect(head).toContainText('the last 8 weeks'); await expect(page.getByTestId('c2-trend')).toHaveAttribute('data-unit', 'week');
+  await expect(rev).toContainText('the 8 weeks before'); expect(await rev.innerText()).not.toBe(week);
+  expect(await page.evaluate(() => TeamReport.salesSummary(TeamWindow.days()).days)).toBe(56);
+  // The last N of anything.
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-n').fill('3'); await page.getByTestId('c2-window-unit').selectOption('weeks'); await page.getByTestId('c2-window-last').click();
+  await expect(head).toContainText('the last 3 weeks'); await expect(page.getByTestId('c2-window')).toContainText('Last 3 weeks');
+  // A range of dates that ended a fortnight ago: every figure is of those nights, none after them.
+  const day = (back) => page.evaluate((back) => TeamSales.night(Date.now() - back * 86400000), back), from = await day(27), to = await day(14);
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-from').fill(from); await page.getByTestId('c2-window-to').fill(to); await page.getByTestId('c2-window-range').click();
+  const r = await page.evaluate(({ from, to }) => { const rows = TeamSales.rows(TeamWindow.days()), nights = [...new Set(rows.map((x) => TeamSales.night(x.t)))].sort();
+    return { days: TeamWindow.days(), first: nights[0], last: nights[nights.length - 1], sum: Math.round(rows.reduce((a, x) => a + x.q * x.p, 0)), shown: Math.round(TeamReport.salesSummary(TeamWindow.days()).revenue) }; }, { from, to });
+  expect(r.days).toBe(14); expect(r.first >= from).toBe(true); expect(r.last <= to).toBe(true); expect(r.shown).toBe(r.sum);
+  await expect(rev).toContainText('the 14 nights before');
+  // It's kept for the console (a reload opens on it), and the Dashboard reads it too.
+  await page.reload(); await page.getByTestId('console-nav-sales').click(); await expect(rev).toContainText('the 14 nights before');
+  await page.getByTestId('console-nav-dash').click(); await expect(page.getByTestId('c2-window')).toBeVisible();
+  // The staff app's own figures stay on the last seven nights, whatever the manager is looking at.
+  await page.goto(`${BASE}/team/?seed=demo&view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => ({ scope: TeamWindow.scope, days: TeamWindow.days(), end: Math.abs(TeamSales.clock() - Date.now()) < 5000 }))).toEqual({ scope: false, days: 7, end: true });
+  await ctx.close();
+});
+
 test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=princess&view=phone`);
@@ -2840,9 +2875,13 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
   await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
   await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
-  const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
+  // The chart: its figures are a scale down the side and a note under the pointer, never written on the line.
+  const scale = () => page.getByTestId('c2-trend').locator('text').allTextContents().then((t) => t.join('|'));
+  const all = await scale();
   await page.getByTestId('c2-chart-bottles').click();
-  await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
+  await expect.poll(scale).not.toBe(all);
+  await page.getByTestId('c2-trend').hover({ position: { x: 300, y: 80 } });
+  await expect(page.getByTestId('c2-trend-tip').locator('text').first()).toHaveText(/^[£$][\d,]+$/);
   await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
   // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
   await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');

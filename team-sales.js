@@ -11,6 +11,38 @@
    Sources: a CSV any till can export (importCSV), the demo's invented sales (seedDemo, labelled
    "Demo data" wherever they show), and later Square's Orders API through the Worker. The pilot keeps
    it on this device (Store, vbiz_sales_v1), capped to KEEP_DAYS. */
+/* The reporting window: the stretch of nights the console's sales figures are over, set by a manager from the head of
+   Dashboard and Sales Insights (the last N days, weeks or months, or a from-and-to range) and kept on the device
+   (vbiz_window_v1). It is in force only while the new console is on screen (`scope`, set by its shell and cleared by
+   the staff app), so a person's Today and the drill's "sells N a week" never move with a manager's range. Figures that
+   need a longer run to mean anything (what training is worth, the nights of the week) never use fewer than 28 nights. */
+const TeamWindow = {
+  KEY:'vbiz_window_v1', DAY:86400000, scope:false, UNIT:{days:1,weeks:7,months:30}, MAX:90,
+  PRESETS:[{n:7,unit:'days'},{n:14,unit:'days'},{n:4,unit:'weeks'},{n:8,unit:'weeks'},{n:1,unit:'months'},{n:3,unit:'months'}],
+  DEFAULT:{kind:'last',n:7,unit:'days'},
+  _day(s){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s||'')); return m?new Date(+m[1],+m[2]-1,+m[3]).getTime():NaN; },
+  stored(){ const w=Store.getJSON(this.KEY,null); if(!w) return {...this.DEFAULT};
+    if(w.kind==='custom'){ const a=this._day(w.from), b=this._day(w.to); return a<=b?{kind:'custom',from:w.from,to:w.to}:{...this.DEFAULT}; }
+    const n=Math.max(1,Math.round(+w.n||0)); return this.UNIT[w.unit]&&n?{kind:'last',n,unit:w.unit}:{...this.DEFAULT}; },
+  get(){ return this.scope?this.stored():{...this.DEFAULT}; },
+  set(w){ Store.setJSON(this.KEY,w); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  is(w){ const g=this.stored(); return g.kind===w.kind&&(w.kind==='custom'?g.from===w.from&&g.to===w.to:g.n===w.n&&g.unit===w.unit); },
+  /* How many nights it covers, and where it ends: now, or the midnight after a range's last day (never in the future). */
+  days(){ const w=this.get(); const d=w.kind==='custom'?Math.round((this._day(w.to)-this._day(w.from))/this.DAY)+1:w.n*this.UNIT[w.unit]; return Math.max(1,Math.min(this.MAX,d)); },
+  end(){ const w=this.get(); return w.kind==='custom'?Math.min(Date.now(),this._day(w.to)+this.DAY):Date.now(); },
+  long(){ return Math.max(28,this.days()); },
+  _date(ms){ return new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short'}); },
+  /* The window in words: `span` ("the last 7 nights"), `before` (what it's compared with), `on` (after "up 6% "),
+     `over` (after a figure), `label` (the picker's own caption). */
+  words(w=this.get()){ const n=w.n, pl=(x,u)=>`${x} ${u}${x===1?'':'s'}`;
+    if(w.kind==='custom'){ const d=Math.round((this._day(w.to)-this._day(w.from))/this.DAY)+1, r=w.from===w.to?this._date(this._day(w.from)):`${this._date(this._day(w.from))} to ${this._date(this._day(w.to))}`;
+      return {span:r,before:`the ${pl(d,'night')} before`,on:`on the ${pl(d,'night')} before`,over:`from ${r}`,in:`from ${r}`,label:r}; }
+    if(w.unit==='days'&&n===7) return {span:'the last 7 nights',before:'the week before',on:'on last week',over:'over 7 nights',in:'in the last 7 nights',label:'Last 7 nights'};
+    if(w.unit==='days') return {span:`the last ${n} nights`,before:`the ${n} nights before`,on:`on the ${n} nights before`,over:`over ${n} nights`,in:`in the last ${n} nights`,label:`Last ${pl(n,'night')}`};
+    const u=w.unit==='weeks'?'week':'month', one=n===1;
+    return {span:one?`the last ${u}`:`the last ${n} ${u}s`,before:one?`the ${u} before`:`the ${n} ${u}s before`,on:one?`on the ${u} before`:`on the ${n} ${u}s before`,over:one?`over the last ${u}`:`over ${n} ${u}s`,in:one?`in the last ${u}`:`in the last ${n} ${u}s`,label:one?`Last ${u}`:`Last ${n} ${u}s`}; },
+};
+
 const TeamSales = {
   KEY:'vbiz_sales_v1', KEEP_DAYS:90, DAY:86400000,
   _empty(){ return {v:1,source:null,rows:[],nights:{},map:{}}; },
@@ -23,9 +55,12 @@ const TeamSales = {
   demo(){ const s=this.source(); return !!(s&&s.kind==='demo'); },
   night(ms){ const d=new Date(ms); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; },
   /* Rows in the last `days` (all when 0), mapped to wines through the item map as it stands now. */
-  rows(days=0){ const d=this.get(), since=days?Date.now()-days*this.DAY:0, map=d.map||{};
-    return d.rows.filter(r=>r.t>=since).map(r=>({...r,w:r.w||(map[r.n]||null)})); },
-  nights(days=0){ const d=this.get(), since=days?this.night(Date.now()-days*this.DAY):''; return Object.entries(d.nights||{}).filter(([k])=>k>=since).map(([k,n])=>({night:k,...n})); },
+  // Every window ends at the report clock: now, or the end of a custom range a manager picked in the console (TeamWindow).
+  clock(){ return TeamWindow.end(); },
+  midnight(){ return new Date(this.clock()).setHours(0,0,0,0); },
+  rows(days=0){ const d=this.get(), until=this.clock(), since=days?until-days*this.DAY:0, map=d.map||{};
+    return d.rows.filter(r=>r.t>=since&&r.t<=until).map(r=>({...r,w:r.w||(map[r.n]||null)})); },
+  nights(days=0){ const d=this.get(), until=this.clock(), last=this.night(until-1), since=days?this.night(until-days*this.DAY):''; return Object.entries(d.nights||{}).filter(([k])=>k>=since&&k<=last).map(([k,n])=>({night:k,...n})); },
   /* Adds rows, never twice (the till's own line id), drops anything older than KEEP_DAYS, and
      notes the source. Unknown item names get a proposed match (suggest) but no mapping until the
      manager confirms it: a wrong match would send sales to the wrong wine. */

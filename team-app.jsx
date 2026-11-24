@@ -6,6 +6,9 @@ const TEAM_TABS=[
   {k:'today',label:'Today',icon:'home'},{k:'vinny',label:'Vinny',icon:'vinny'},{k:'wines',label:'Wines',icon:'wine'},{k:'menu',label:'Menu',icon:'fork'},
   {k:'upload',label:'Upload',icon:'camera',manager:true},{k:'team',label:'Team',icon:'user',manager:true},
 ];
+/* Teams' own look, on the staff app and the new console: the dark stage on flat black, with square hairline cards and the
+   Teams button (Card and Btn in pwa-components.jsx read `flat`). The classic console keeps the consumer app's dark stage. */
+const _TEAM_FLAT={..._DECK_DARK,flat:true,bg:'#000'};
 function TeamApp(){
   TeamBrand.apply(); // first, so every colour below is the restaurant's own
   const T=_DECK_DARK, cr=T.lift(C.cr);
@@ -61,7 +64,9 @@ function TeamApp(){
   const consoleOn=set&&manager&&(forceConsole||wantConsole||size!=='phone')&&!phoneView;
   const toPhone=v=>{ setPhoneView(true); setWantConsole(false); setStack([]); if(v&&v.pid&&TeamLearn.person(v.pid)) TeamLearn.setMe(v.pid); if(v&&v.tab) setTab(v.tab); else setTab('today'); if(v&&v.view==='drill') setStack([{view:'drill',only:v.only,part:v.part}]); refresh(); };
   if(consoleOn) TeamBrand.apply(true); // the console's own default accent, gold
-  if(consoleOn) return <DeckTheme.Provider value={_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary>{TeamData.consoleLook()==='preview'?<TeamConsole2 me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>:<TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>}</ScreenErrorBoundary></div></DeckTheme.Provider>;
+  // The manager's reporting window (TeamWindow) holds only on the new console; its shell switches it on as it draws.
+  TeamWindow.scope=false;
+  if(consoleOn) return <DeckTheme.Provider value={TeamData.consoleLook()==='preview'?_TEAM_FLAT:_DECK_DARK}><div data-gen={gen} style={{position:'absolute',inset:0,color:T.ink}}><ScreenErrorBoundary>{TeamData.consoleLook()==='preview'?<TeamConsole2 me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>:<TeamConsole me={me} onPhone={toPhone} refresh={refresh} section={section} setSection={setSection} tour/>}</ScreenErrorBoundary></div></DeckTheme.Provider>;
   const back=()=>{ pendRef.current=posRef.current[stack.length-1]||0; setStack(s=>s.slice(0,-1)); };
   const top=stack[stack.length-1];
   let body;
@@ -80,7 +85,7 @@ function TeamApp(){
     :<TeamDrill pid={me.id} only={v.only} part={v.part} given={v.qs} intro={v.intro} back={back} open={open}/>}</div>);
   else body=tab==='today'?<TeamToday pid={me.id} open={open}/>:tab==='vinny'?<TeamVinnyTab pid={me.id} open={open}/>:tab==='wines'?<TeamWines pid={me.id} open={open}/>:tab==='menu'?<TeamMenu open={open}/>
     :tab==='upload'?<TeamUpload onChanged={refresh} background/>:<TeamPeople open={open} onChanged={refresh}/>;
-  return <DeckTheme.Provider value={_DECK_DARK}>
+  return <DeckTheme.Provider value={_TEAM_FLAT}>
     <div data-gen={gen} style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:'#000',color:T.ink}}>
       {set&&<div style={{padding:'calc(env(safe-area-inset-top) + 12px) 16px 10px',display:'flex',alignItems:'center',gap:10,borderBottom:`1px solid ${T.line}`}}>
         {top&&top.view!=='guest'?<div role="button" aria-label="Back" onClick={back} style={{width:34,height:34,borderRadius:17,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}><Icon n="back" sz={16} col={T.ink}/></div>
@@ -88,13 +93,13 @@ function TeamApp(){
           :<img src="/logo.png" alt="" style={{height:20,filter:'invert(1)'}} onError={e=>{ e.target.style.display='none'; }}/>}
         {/* An installed restaurant shows its own wordmark where the name would be (venue.brand). */}
         <div style={{flex:1,minWidth:0,fontSize:15,fontWeight:700,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{brand&&brand.logo?<TeamVenueLogo height={18}/>:(TeamData.get().venue.name||'Your restaurant')}</div>
-        {manager&&<div role="button" data-testid="team-to-console" onClick={()=>toConsole(section)} style={{padding:'5px 10px',borderRadius:14,border:`1px solid ${T.line}`,fontSize:12,fontFamily:C.P,color:T.ink2,cursor:'pointer',whiteSpace:'nowrap'}}>Console</div>}
+        {manager&&<div role="button" data-testid="team-to-console" onClick={()=>toConsole(section)} style={{padding:'5px 10px',borderRadius:0,border:`1px solid ${T.line}`,fontSize:12,fontFamily:C.P,color:T.ink2,cursor:'pointer',whiteSpace:'nowrap'}}>Console</div>}
         {/* On a phone the person is their face alone, so the restaurant's name has the room; the switcher it opens names everyone, and Today greets them by name and role. */}
-        <div role="button" data-testid="team-who" aria-label={`${me.name}, ${TeamLearn.ROLES[me.role].label}. Switch person`} onClick={()=>setSwitching(x=>!x)} style={{display:'flex',alignItems:'center',gap:8,padding:size==='phone'?2:'4px 10px 4px 4px',borderRadius:18,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer',flexShrink:0}}><TeamFace person={me} size={28}/>{size!=='phone'&&<>{me.name.split(' ')[0]} · {TeamLearn.ROLES[me.role].label}</>}</div>
+        <div role="button" data-testid="team-who" aria-label={`${me.name}, ${TeamLearn.ROLES[me.role].label}. Switch person`} onClick={()=>setSwitching(x=>!x)} style={{display:'flex',alignItems:'center',gap:8,padding:size==='phone'?2:'4px 10px 4px 4px',borderRadius:size==='phone'?18:0,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer',flexShrink:0}}><TeamFace person={me} size={28}/>{size!=='phone'&&<>{me.name.split(' ')[0]} · {TeamLearn.ROLES[me.role].label}</>}</div>
       </div>}
       {switching&&<div style={{padding:'8px 16px',borderBottom:`1px solid ${T.line}`,display:'flex',gap:6,flexWrap:'wrap'}}>
-        {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!TeamLearn.canConsole(p)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:16,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
-        {!TeamSample.hostSeed()&&<div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>}
+        {TeamLearn.people().map(p=><div key={p.id} role="button" onClick={()=>{ TeamLearn.setMe(p.id); setSwitching(false); setStack([]); if(!TeamLearn.canConsole(p)&&['upload','team'].includes(tab)) setTab('today'); refresh(); }} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px 4px 4px',borderRadius:0,border:`1px solid ${p.id===me.id?cr:T.line}`,fontSize:13,fontFamily:C.P,color:T.ink,cursor:'pointer'}}><TeamFace person={p} size={24}/>{p.name.split(' ')[0]} · {TeamLearn.ROLES[p.role].label}</div>)}
+        {!TeamSample.hostSeed()&&<div role="button" onClick={()=>{ if(confirm('Change restaurant? This clears this restaurant and everyone\'s training on this device, and goes back to the start.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); setSwitching(false); setStack([]); setTab('today'); refresh(); } }} data-testid="team-change-restaurant" style={{padding:'4px 12px',borderRadius:0,border:`1px solid ${T.line}`,fontSize:13,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>Change restaurant</div>}
       </div>}
       {(()=>{
         // One tab, drawn in the bottom bar on a phone and on the rail on a tablet (where the active one carries a tint).

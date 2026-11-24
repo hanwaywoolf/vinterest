@@ -29,15 +29,15 @@
  },
  "navW": 249,
  "dash": 2056,
- "sales": 2382,
- "team": 1824,
+ "sales": 2394,
+ "team": 1840,
  "training": 2284,
- "wines": 5190,
+ "wines": 5161,
  "menu": 3237,
- "cardAt": 0.455,
+ "cardAt": 0.4513,
  "cardTap": {
   "x": 179,
-  "y": 416
+  "y": 415
  },
  "cardX": 840,
  "cardW": 600,
@@ -52,9 +52,9 @@
  "dish": 1105,
  "mgrW": 820,
  "mgrNav": 0,
- "mgr": 3483,
+ "mgr": 3510,
  "plan": [
   921,
-  606
+  607
  ]
 }
