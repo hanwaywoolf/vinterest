@@ -74,3 +74,42 @@ function MomentCard({m,more,onAct,onClose}){
     </div>
   </div>;
 }
+
+/* What's new (WhatsNew in pwa-whatsnew.js): a sheet over a calm screen, once, on the first open of
+   a new version. Always the dark stage, like the moment cards. Each item can open what it's about
+   (Show me); Got it, the backdrop or an item's button marks the version seen. */
+function WhatsNewSheet({items,version,onOpen,onClose}){
+  const reduce=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pink='#E05A74';
+  return <div data-testid="whats-new" role="dialog" aria-modal="true" aria-label={`What's new in Vinterest ${version}`}
+    style={{position:'absolute',inset:0,zIndex:400,display:'flex',flexDirection:'column',justifyContent:'flex-end'}}>
+    <style>{`@keyframes wnFade{from{opacity:0}to{opacity:1}}@keyframes wnUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}`}</style>
+    <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)',animation:reduce?'none':'wnFade .3s ease both'}}/>
+    <div style={{position:'relative',maxHeight:'88%',display:'flex',flexDirection:'column',overflow:'hidden',background:'#141416',borderTop:'1px solid rgba(255,255,255,0.12)',borderRadius:'24px 24px 0 0',
+      boxShadow:'0 -20px 60px rgba(0,0,0,0.5)',animation:reduce?'none':'wnUp .45s cubic-bezier(.2,.7,.2,1) both'}}>
+      <div aria-hidden="true" style={{position:'absolute',top:-60,left:0,right:0,height:220,background:`radial-gradient(ellipse at 50% 0%, rgba(224,90,116,0.28), transparent 70%)`,pointerEvents:'none'}}/>
+      <div style={{position:'relative',flex:1,minHeight:0,overflowY:'auto',padding:'10px 20px 4px'}}>
+        <div style={{width:40,height:4,borderRadius:2,background:'rgba(255,255,255,0.2)',margin:'0 auto 18px'}}/>
+        <div style={{fontSize:13,fontWeight:700,color:pink,fontFamily:C.P,letterSpacing:'0.12em',textTransform:'uppercase'}}>New in Vinterest {version}</div>
+        <div style={{fontSize:26,fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1.15,margin:'6px 0 16px'}}>Here's what's changed.</div>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {items.map((it,i)=><div key={i} data-testid="whats-new-item" style={{display:'flex',gap:12,padding:14,borderRadius:16,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',
+            animation:reduce?'none':`wnUp .45s cubic-bezier(.2,.7,.2,1) ${0.15+i*0.08}s both`}}>
+            <div style={{width:40,height:40,borderRadius:12,background:'rgba(224,90,116,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon n={it.icon||'star'} sz={19} col={pink}/></div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P,lineHeight:1.3}}>{it.title}</div>
+              <div style={{fontSize:14,color:'rgba(255,255,255,0.72)',fontFamily:C.P,lineHeight:1.5,marginTop:3}}>{it.text}</div>
+              {it.open&&<div role="button" data-testid="whats-new-open" onClick={()=>onOpen(it.open)} style={{display:'inline-block',marginTop:8,fontSize:14,fontWeight:700,color:pink,fontFamily:C.P,cursor:'pointer'}}>{it.open.label||'Show me'} →</div>}
+            </div>
+          </div>)}
+        </div>
+      </div>
+      {/* Outside the scrolling list, so it's in reach however long the list or large the text. */}
+      <div style={{position:'relative',flexShrink:0,padding:'12px 20px calc(env(safe-area-inset-bottom) + 16px)',borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+        <div role="button" data-testid="whats-new-done" onClick={onClose} style={{padding:'14px',borderRadius:14,background:C.cr,textAlign:'center',cursor:'pointer'}}>
+          <span style={{fontSize:16,fontWeight:700,color:'#fff',fontFamily:C.P}}>Got it</span>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
