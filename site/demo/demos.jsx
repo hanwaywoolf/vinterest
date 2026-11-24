@@ -331,21 +331,19 @@ const _DEMO_SCREENS = {
       setTimeout(() => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* the bottle stays */ } }, 700);
     } },
     { id: 'dna', nav: 'profile', Screen: WineDNAScreen },
+    { id: 'learn', nav: 'learn', Screen: LearnScreen },
     { id: 'vinny', nav: 'home', Screen: _VinnyScreen },
     { id: 'wines', nav: 'mywines', Screen: MyWinesScreen },
   ], steps: [
-    // One bottle from the scan to what it teaches. The camera (drawn by the page) reads the label, and the story opens on its label scene.
+    // The camera (drawn by the page) reads the label, and the story opens on its label scene.
     { at: 0, layer: 'scan', do: [{ story: 4800, until: 'label' }] },
-    // The story carries on from there: the match, held until its ring has filled and its reason is read, then how the wine will feel.
-    { at: 0.125, layer: 'scan', follows: [0], do: [{ story: 6500, from: 'match', until: 'taste' }] },
-    // Still the story: its grape, drawn by the pen, then the place, the map closing in on the region.
-    { at: 0.25, layer: 'scan', follows: [0, 1, 3], do: [{ story: 6000, from: 'grape', until: 'grape' }] },
-    { at: 0.375, layer: 'scan', follows: [0, 1, 2], do: [{ story: 6000, from: 'place', until: 'place' }] },
-    // Its end: the dial turned to a rating.
-    { at: 0.5, layer: 'scan', follows: [0, 1, 2, 3], do: [{ rate: 94 }] },
-    { at: 0.625, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
-    { at: 0.75, layer: 'vinny', do: [{ vinny: true }] },
-    { at: 0.875, layer: 'wines', to: 'top', drift: 0.6, ms: 7000 },
+    // The story carries on to the match, held there until its ring has filled and its reason is read.
+    { at: 1 / 6, layer: 'scan', follows: [0], do: [{ story: 6500, from: 'match', until: 'match' }] },
+    { at: 2 / 6, layer: 'dna', to: 'top', drift: 0.5, ms: 7000 },
+    // Learn: what's up next for them, then down to the grapes and regions they've opened.
+    { at: 3 / 6, layer: 'learn', to: 'top', drift: 0.9, ms: 8000 },
+    { at: 4 / 6, layer: 'vinny', do: [{ vinny: true }] },
+    { at: 5 / 6, layer: 'wines', to: 'top', drift: 0.6, ms: 7000 },
   ] },
 };
 
@@ -666,7 +664,7 @@ const VinterestDemo = {
     /* The story's end sheet, by q (0 to 1): the dial turned up to a 92, saved, the quick answers filled in, then read down to the
        ways out under them. Going back to the start (or choosing that part again) starts the rating over, so the dial plays again. */
     const RV_STORY = 0.6;
-    let rvAt = -1, dialWait = false, dialSettle = false;
+    let rvAt = -1, dialWait = false, dialSettle = 0;
     const driveRate = (p) => {
       const slider0 = _scoreSlider(el), story = kind === 'reveal';
       // (In the scan section the dial alone simply turns again from 70; only a saved rating needs the sheet rebuilt.)
@@ -692,11 +690,18 @@ const VinterestDemo = {
         const now = p >= 0.45 ? _RATE_TO : s;
         if (now && _scoreNow(slider) !== now) _setScore(slider, now);
         // A turn made while the sheet is still sliding in can land a point or two off: at the end of the turn, see that it took.
-        if (p >= 0.45 && !dialSettle) { dialSettle = true; _until(() => {
+        // (Each time it's asked for, a fresh check replaces the last, so one that ran out of tries never leaves the dial a point off.)
+        if (p >= 0.45) { const mine = ++dialSettle; _until(() => {
+          if (mine !== dialSettle) return true;
           const sl = _scoreSlider(el);
           const q = kind === 'reveal' ? (lastP - RV_STORY) / (1 - RV_STORY) : lastP;
-          if (!sl || saved || q < 0.45 || _scoreNow(sl) === _RATE_TO) { dialSettle = false; return true; }
-          _setScore(sl, _RATE_TO); return false;
+          if (saved || q < 0.45) return true;
+          if (!sl || _scoreNow(sl) === _RATE_TO) return false;   // keep watching: a late turn of the arc can still move it
+          // A tap on the arc can land a point off while the sheet is still moving; the arrow keys move it by exactly one.
+          const d = _RATE_TO - _scoreNow(sl);
+          if (_scoreNow(sl) > 0 && Math.abs(d) <= 3) sl.dispatchEvent(new KeyboardEvent('keydown', { key: d > 0 ? 'ArrowRight' : 'ArrowLeft', bubbles: true, cancelable: true }));
+          else _setScore(sl, _RATE_TO);
+          return false;
         }, 150); }
       }
       if (p >= 0.5 && !saved && !rated) { rated = true; _until(() => { if (_tapText(el, /^Save rating$/)) { saved = true; return true; } return false; }, 30); }

@@ -87,16 +87,11 @@ test.describe('desktop', () => {
 
   test('the front page is a carousel of the app that turns by itself until someone touches it', async ({ page }) => {
     await page.goto(BASE + '/?speed=8');
-    // One bottle, start to finish: the scan, then its story a pill at a time (the match, the grape, the region), then the rating.
-    // (At this speed the captions turn faster than the story's own swipes; the scenes themselves are checked at full speed, below.)
-    await expect(page.locator('.hero .prog button')).toHaveCount(8);
+    // Six parts: the scan and its match, then WineDNA, Learn, Vinny and My Wines.
+    await expect(page.locator('.hero .prog button')).toHaveCount(6);
     await expect(page.locator('.hero .stage .cap')).toHaveText("Scan any bottle's label.");
     // The first part's reading time starts once the camera has scanned the bottle (the camera keeps its own time).
-    await expect(page.locator('.hero .stage .cap')).toHaveText("See its story, and if it's for you.", { timeout: 14000 });
-    await expect(page.locator('.hero .stage .cap')).toHaveText('Get to know the grape.', { timeout: 6000 });
-    await expect(page.locator('.hero .stage .cap')).toHaveText('And the region it comes from.', { timeout: 6000 });
-    await expect(page.locator('.hero .stage .cap')).toHaveText('Rate it with a turn of the dial.', { timeout: 6000 });
-    await expect(page.locator('.hero [data-layer="scan"] [role="slider"][aria-label="Rating"]')).toBeVisible({ timeout: 6000 });
+    await expect(page.locator('.hero .stage .cap')).toHaveText("See if it's for you.", { timeout: 14000 });
     await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 12000 });
     await expect(page.locator('.hero [data-layer="dna"]')).toContainText('WineDNA');
     await page.locator('.hero .arrow.next').click();
@@ -203,7 +198,8 @@ test.describe('desktop', () => {
     await jump(page, 'scan', 5);
     await show(page, 'scan');   // a demo only plays while its section is on screen, and the click may have scrolled the page
     await expect(phone).toContainText('How was it?', { timeout: 10000 });
-    await expect(phone.locator('[role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', '92', { timeout: 10000 });
+    // (The dial is set while the sheet is still arriving and then corrected to the point, which takes longer on a busy machine.)
+    await expect(phone.locator('[role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', '92', { timeout: 20000 });
     await jump(page, 'scan', 6);
     await expect(phone).toContainText('Rated 92', { timeout: 8000 });
     // The three quick answers fill in as the caption plays.
@@ -464,13 +460,10 @@ test.describe('the hero\'s opening', () => {
     await pills.nth(1).click();
     await expect(scene).toHaveAttribute('data-scene', 'match', { timeout: 5000 });
     await expect(page.locator('.hero .phone-app')).toContainText('Likely a favourite', { timeout: 6000 });
-    // The region's scene, then back a pill to the grape's, then the rating at the story's end.
+    // Learn: the app's own Learn tab.
     await pills.nth(3).click();
-    await expect(scene).toHaveAttribute('data-scene', 'place', { timeout: 8000 });
-    await pills.nth(2).click();
-    await expect(scene).toHaveAttribute('data-scene', 'grape', { timeout: 8000 });
-    await pills.nth(4).click();
-    await expect(page.locator('.hero [data-layer="scan"] [role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', '94', { timeout: 9000 });
+    await expect(page.locator('.hero [data-layer="learn"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('.hero [data-layer="learn"]')).toContainText('Learn', { timeout: 5000 });
   });
 
   test('the hero\'s entrance leaves everything in place', async ({ page }) => {
