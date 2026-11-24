@@ -3,6 +3,32 @@
    How a scanned wine maps onto one already saved, price context in their currency, and turning a Blind Call
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
+  /* A shelf scan's answer (prompts/shelf-scan.txt) as list entries: {wines, unread}. One entry per
+     wine (the same bottle read twice is one), each named producer first;
+     `unread` is how many other bottles Claude says it couldn't read. Throws on an answer that isn't JSON
+     or says there were no bottles. */
+  shelfWines(text){
+    let t=String(text||'').replace(/```json|```/g,'').trim();
+    const a=t.indexOf('{'), b=t.lastIndexOf('}');
+    if(a>=0&&b>a) t=t.slice(a,b+1);
+    const data=JSON.parse(t);
+    if(data.error) throw new Error(data.error);
+    const seen=[], wines=[];
+    (data.wines||data.results||[]).forEach(w=>{
+      const year=Number(w.vintage||w.v), producer=String(w.producer||w.pr||'').trim();
+      // The name as a label reads it, producer first ("Viña Ardanza Reserva"), which is also how a
+      // scanned bottle of it is saved, so a shelf bottle finds the one already in My Wines.
+      const bare=String(w.name||w.n||'').trim();
+      const full=!bare?producer:producer&&bare.toLowerCase().indexOf(producer.toLowerCase())<0?producer+' '+bare:bare;
+      const e={name:full,producer,type:w.type||w.t||'red',region:w.region||w.r||'',country:w.country||w.c||'',
+        vintage:year>=1900&&year<=2100?year:null,price:String(w.price||w.p||'').trim(),grape:w.grape||w.g||'',style:w.style||w.s||''};
+      if(!e.name) return;
+      if(seen.some(x=>WineHistory.same(x,e))) return;
+      seen.push(e); wines.push(e);
+    });
+    return {wines,unread:Math.max(0,Math.round(Number(data.unread!=null?data.unread:data.u)||0))};
+  },
+
   /* The camera's starting zoom: the main (1x) lens, as on Android. A WebKit camera on an iPhone with
      an ultra-wide lens ("Back Triple Camera", "Back Dual Wide Camera") reports the ultra-wide as its
      widest zoom, so taking the minimum opened on 0.5x and the label sat small in the frame. Zoom 1

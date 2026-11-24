@@ -36,7 +36,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   const streamRef=React.useRef(null);
   const [phase,setPhase]=React.useState('viewfinder'); // viewfinder | processing
   const [capturedImg,setCapturedImg]=React.useState(null);
-  const [mode,setMode]=React.useState(()=>!onComplete&&Handoff.cameraMode.take()==='list'&&!Entitlement.listScanNeeds()?'list':'bottle'); // bottle | list
+  const [mode,setMode]=React.useState(()=>!onComplete&&Handoff.cameraMode.take()==='list'&&!Entitlement.listScanNeeds()?'list':'bottle'); // bottle | shelf | list
   const [camErr,setCamErr]=React.useState(false);
   // The phone's torch, for dark restaurants: only offered when the camera says it has one (Android
   // Chrome does; iPhone Safari doesn't let a web page use it, so the button stays hidden there).
@@ -83,11 +83,13 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   // but a whole wine list in 1024px leaves its small print unreadable, so lists get 1600px.
   function processSource(src,w,h,crop){
     // The free plan's 10 scans a month (Entitlement.scansLeft): the Pro sheet, before anything is sent.
-    if(mode!=='list'&&!onboarding&&Entitlement.atScanLimit()){ if(showPro) showPro('scan-limit'); return; }
+    if(mode==='bottle'&&!onboarding&&Entitlement.atScanLimit()){ if(showPro) showPro('scan-limit'); return; }
+    // A shelf scan has its own small free allowance (Entitlement.shelfLeft).
+    if(mode==='shelf'&&Entitlement.shelfLeft()<=0){ if(showPro) showPro('shelf-scan'); return; }
     // Only what was inside the red frame (ScanFlow.frameCrop): that's what is read and what the
     // processing screen shows. A photo from the gallery is sent whole.
     const r=crop||{sx:0,sy:0,sw:w,sh:h};
-    const maxDim=mode==='list'?1600:1024;
+    const maxDim=mode==='bottle'?1024:1600; // a list's small print and a shelf's small labels need the detail
     const scale=Math.min(1,maxDim/Math.max(r.sw,r.sh));
     const canvas=document.createElement('canvas');
     canvas.width=Math.round(r.sw*scale);
@@ -99,6 +101,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
     setPhase('processing');
     const b64=dataUrl.split(',')[1];
     if(mode==='list') processListCapture(b64);
+    else if(mode==='shelf') processShelfCapture(b64);
     else processLabelCapture(b64);
   }
   /* A photo from the library: the fallback when the camera isn't available, and handy for a
@@ -197,6 +200,31 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
     }finally{ nav('winelist'); }
   }
 
+  /* A shelf: one photo of many bottles, each read from its label and matched like a list entry. It
+     shares the list's results screen (Handoff.wineList with `shelf`), where every bottle carries the
+     match and a tap opens it as a look, not a purchase. Bottles Claude couldn't read are counted
+     (`unread`), never guessed. */
+  async function processShelfCapture(b64){
+    try{
+      const text=await window.claude.complete({purpose:'shelf_scan',max_tokens:8192,messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+        {type:'text',text:ContentEngine.fillTpl(_loadTextSync('prompts/shelf-scan.txt'),{currency:homeCurrency})}
+      ]}]});
+      const res=ScanFlow.shelfWines(text);
+      if(!res.wines.length) throw new Error('no_bottles');
+      Entitlement.addShelfScan();
+      Handoff.wineList.set({demo:false,shelf:true,wines:res.wines,unread:res.unread,currency:homeCurrency});
+    }catch(e){
+      if(e&&e.code==='shelf_limit'){ Entitlement.noteShelfLimit(); if(showPro) showPro('shelf-scan'); back(); return; }
+      Handoff.wineList.set({demo:true,shelf:true,reason:e.message,code:e.code||null,status:e.status||null,signIn:!!e.signIn});
+    }
+    nav('winelist');
+  }
+  function pickShelf(){
+    if(Entitlement.shelfLeft()<=0){ if(showPro) showPro('shelf-scan'); return; }
+    setMode('shelf');
+  }
+
   // Wine List follows what the Worker allows (Entitlement.listScanNeeds), so a phone that only
   // looks like Pro isn't sent to a scan the server will refuse.
   function pickList(){
@@ -218,8 +246,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         )}
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12}}>
           <div style={{width:44,height:44,borderRadius:22,border:'3px solid rgba(255,255,255,0.1)',borderTopColor:C.cr,animation:'vspin 0.85s linear infinite'}}/>
-          <span style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>{mode==='list'?'Analysing wine list…':'Analysing label…'}</span>
-          <span style={{fontSize:16,color:'rgba(255,255,255,0.4)',fontFamily:C.P}}>Identifying {mode==='list'?'wines':'wine'} with AI</span>
+          <span style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>{mode==='list'?'Analysing wine list…':mode==='shelf'?'Reading the shelf…':'Analysing label…'}</span>
+          <span style={{fontSize:16,color:'rgba(255,255,255,0.4)',fontFamily:C.P}}>Identifying {mode==='bottle'?'wine':'wines'} with AI</span>
         </div>
         <style>{`@keyframes vspin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -239,7 +267,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
       ):(
         <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#1a1a1a,#2d1b2e)',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:8}}>
           <Icon n="camera" sz={42} col="rgba(255,255,255,0.18)"/>
-          <span style={{fontSize:16,color:'rgba(255,255,255,0.6)',fontFamily:C.P,textAlign:'center',padding:'0 32px'}}>Camera unavailable. Choose a photo of the {mode==='list'?'wine list':'label'} instead.</span>
+          <span style={{fontSize:16,color:'rgba(255,255,255,0.6)',fontFamily:C.P,textAlign:'center',padding:'0 32px'}}>Camera unavailable. Choose a photo of the {mode==='list'?'wine list':mode==='shelf'?'shelf':'label'} instead.</span>
           <div onClick={()=>fileRef.current&&fileRef.current.click()} style={{marginTop:8,padding:'10px 20px',borderRadius:22,background:C.cr,color:'#fff',fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer',position:'relative',zIndex:4}}>Choose a photo</div>
         </div>
       )}
@@ -252,6 +280,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         <div style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
           <span style={{fontSize:18,fontWeight:600,color:'#fff',fontFamily:C.P,whiteSpace:'nowrap'}}>{onboarding?'Scan your first bottle':'Scan Wine'}</span>
           {!onboarding&&mode==='bottle'&&Entitlement.scansLeft()<=5&&<span data-testid="scans-left" style={{fontSize:13,color:'rgba(255,255,255,0.8)',fontFamily:C.P,marginTop:2}}>{Entitlement.scansLeft()===0?'No free scans left this month':`${Entitlement.scansLeft()} free scan${Entitlement.scansLeft()===1?'':'s'} left this month`}</span>}
+          {!onboarding&&mode==='shelf'&&Entitlement.shelfLeft()!==Infinity&&<span data-testid="shelf-left" style={{fontSize:13,color:'rgba(255,255,255,0.8)',fontFamily:C.P,marginTop:2}}>{`${Entitlement.shelfLeft()} free shelf scan${Entitlement.shelfLeft()===1?'':'s'} left this month`}</span>}
         </div>
         {onSkip
           ?<span onClick={onSkip} style={{minWidth:38,textAlign:'right',fontSize:15,fontWeight:600,color:'rgba(255,255,255,0.75)',fontFamily:C.P,cursor:'pointer'}}>Skip</span>
@@ -283,7 +312,7 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
           {/* Instruction inside frame */}
           <div style={{position:'absolute',bottom:16,left:0,right:0,textAlign:'center',zIndex:2}}>
             <span role="status" style={{fontSize:16,color:galleryHint?'#fff':'rgba(255,255,255,0.7)',fontWeight:galleryHint?600:400,fontFamily:C.P,background:galleryHint?'rgba(139,26,47,0.85)':'rgba(0,0,0,0.48)',padding:'5px 14px',borderRadius:18,display:'inline-block',maxWidth:'calc(100% - 32px)',lineHeight:1.35,backdropFilter:'blur(4px)',transition:'background .4s, color .4s'}}>
-              {galleryHint?'Or pick a photo from your gallery ↓':mode==='list'?'Frame the wine list':'Frame the wine label'}
+              {galleryHint?'Or pick a photo from your gallery ↓':mode==='list'?'Frame the wine list':mode==='shelf'?'Frame the bottles, close enough to read':'Frame the wine label'}
             </span>
           </div>
         </div>
@@ -312,8 +341,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
         )}
         {/* Mode toggle — hidden during onboarding (bottle only) */}
         {!onboarding&&<div style={{display:'inline-flex',background:'rgba(0,0,0,0.55)',borderRadius:10,overflow:'hidden',backdropFilter:'blur(12px)'}}>
-          {['Bottle','Wine List'].map((m,i)=>(
-            <div key={i} onClick={()=>i===0?setMode('bottle'):pickList()} style={{padding:'10px 24px',background:(i===0?mode==='bottle':mode==='list')?C.cr:'transparent',fontSize:17,fontWeight:600,color:(i===0?mode==='bottle':mode==='list')?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .18s'}}>{m}</div>
+          {[['bottle','Bottle',()=>setMode('bottle')],['shelf','Shelf',pickShelf],['list','Wine List',pickList]].map(([k,l,pick])=>(
+            <div key={k} role="button" aria-pressed={mode===k} onClick={pick} style={{padding:'10px 17px',background:mode===k?C.cr:'transparent',fontSize:17,fontWeight:600,color:mode===k?'#fff':'rgba(255,255,255,0.45)',fontFamily:C.P,cursor:'pointer',transition:'background .15s',whiteSpace:'nowrap'}}>{l}</div>
           ))}
         </div>}
         {/* Capture button, with a photo-library picker beside it */}

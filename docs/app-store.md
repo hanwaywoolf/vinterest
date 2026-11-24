@@ -73,6 +73,10 @@ Description:
 > Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then
 > tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
 >
+> SCAN A WHOLE SHELF
+> In a shop, take one photo of the shelf. Vinterest reads every label it can and tells you which bottle
+> suits you best. Free twice a month, and as often as you like with Pro.
+>
 > A MATCH FROM YOUR OWN RATINGS
 > Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out
 > from the wines you've rated, not from a critic's score. It says why, in plain words: the grapes, regions
@@ -95,8 +99,8 @@ Description:
 > My Wines keeps what you drank, what you paid, where you had it and what you thought.
 >
 > VINTEREST PRO
-> Free includes 10 label scans a month and five grapes and regions to study. Pro adds wine list scanning
-> in restaurants, more scans, every grape and region you meet, and the full Mastery map.
+> Free includes 10 label scans and 2 shelf scans a month and five grapes and regions to study. Pro adds
+> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region you meet, and the full Mastery map.
 > Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing
 > automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your
 > Apple ID settings.

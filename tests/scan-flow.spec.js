@@ -20,12 +20,13 @@ const DEEP = { house: { line: 'Clos Test is a small Priorat estate known for old
   made: { line: 'Old-vine Garnacha, fermented in open vats and aged in older barrels.', more: 'Little new oak, so the fruit leads.' },
   region: { line: 'Priorat sits on llicorella, the black slate that gives its wines their mineral edge.', more: 'Gratallops and Porrera are its best-known villages.' },
   table: { serve: 'Serve just below room temperature and decant for an hour.', pairings: [{ food: 'Roast lamb', why: 'Tannin against fat.' }, { food: 'Grilled chorizo', why: 'Smoke meets smoke.' }, { food: 'Aged Manchego', why: 'Salt against fruit.' }] } };
-async function setup(context, page, { label, list, seed = {}, deep, deepMs = 0 } = {}) {
+async function setup(context, page, { label, list, shelf, seed = {}, deep, deepMs = 0 } = {}) {
   await makeDeterministic(page);
   await seedLocalStorage(page, { vinterest_wineDNA_unlock_seen: '1', ...seed });
   await stubNetwork(context, {
     claudeText: (body) => (body.purpose === 'label_scan' && label ? JSON.stringify(label)
       : body.purpose === 'list_scan' && list ? JSON.stringify(list)
+      : body.purpose === 'shelf_scan' && shelf ? (typeof shelf === 'string' ? shelf : JSON.stringify(shelf))
       : body.purpose === 'wine_deep' && deep ? new Promise((ok) => setTimeout(() => ok(JSON.stringify(deep)), deepMs)) : ''),
   });
 }
@@ -808,6 +809,73 @@ test('a card always opens at its top, going back to one you had scrolled include
   await root.getByText('2 / 9', { exact: true }).locator('xpath=preceding-sibling::div[1]').click();
   await expect(root).toContainText('1 / 9');
   expect(await topScroll()).toBe(0);
+});
+
+// A shelf scan: one photo of a shop shelf, every readable bottle matched. Free twice a month.
+const SHELF = { wines: [
+  { n: 'Barolo', pr: 'Cantina Test', t: 'red', r: 'Barolo', c: 'Italy', v: 2018, p: '', g: 'Nebbiolo', s: '899' },
+  { n: 'Reserva', pr: 'Bodegas Test', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '14.50', g: 'Tempranillo', s: '766' },
+  { n: 'Reserva', pr: 'Bodegas Test', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '14.50', g: 'Tempranillo', s: '766' },
+  { n: 'Sancerre', pr: 'Domaine Test', t: 'white', r: 'Sancerre', c: 'France', v: null, p: '', g: 'Sauvignon Blanc', s: '408' },
+], u: 3 };
+test('a shelf scan lists each wine it could read once, best match first, says what it could not read, and is free twice a month', async ({ context, page }) => {
+  await setup(context, page, { shelf: SHELF });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  const root = page.locator('#root');
+  await page.getByText('Shelf', { exact: true }).click();
+  await expect(root).toContainText('Frame the bottles, close enough to read');
+  await expect(page.getByTestId('shelf-left')).toHaveText('2 free shelf scans left this month');
+  await page.getByTestId('scan-file').setInputFiles({ name: 'shelf.png', mimeType: 'image/png', buffer: PNG });
+  await expect(root).toContainText('On This Shelf');
+  await expect(root).toContainText('3 wines read · matched to your taste');
+  await expect(page.getByTestId('shelf-unread')).toContainText('3 other bottles were too small or turned away to read');
+  // The same bottle read twice is one row, named producer first.
+  await expect(root.getByText('Bodegas Test Reserva', { exact: true })).toHaveCount(1);
+  await expect(root).toContainText('Rioja · Spain · 2019');
+  await expect(root).toContainText('£14.50');
+  // Best match first: the demo history's Tempranillos beat its Barolo (rated 72); the white is too early.
+  const text = await root.innerText();
+  expect(text.indexOf('Bodegas Test')).toBeLessThan(text.indexOf('Cantina Test'));
+  await expect(root).toContainText('Too early');
+  // No shop price lookups: a shelf scan is the one call.
+  expect(await page.evaluate(() => Entitlement.shelfLeft())).toBe(1);
+  // A tapped bottle opens as a look, not a purchase.
+  await root.getByText('Bodegas Test Reserva', { exact: true }).click();
+  await expect(page).toHaveURL(/#identified/);
+
+  // The second is the last free one this month; then Shelf opens the Pro sheet and nothing is sent.
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Shelf', { exact: true }).click();
+  await expect(page.getByTestId('shelf-left')).toHaveText('1 free shelf scan left this month');
+  await page.getByTestId('scan-file').setInputFiles({ name: 'shelf.png', mimeType: 'image/png', buffer: PNG });
+  await expect(root).toContainText('On This Shelf');
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Shelf', { exact: true }).click();
+  await expect(page.locator('[data-sheet="pro"]')).toContainText('your 2 free shelf scans this month');
+  await expect(page.getByTestId('shelf-left')).toHaveCount(0);
+});
+
+test('a shelf with nothing readable says to move closer, and a new user is told why there is no match yet', async ({ context, page }) => {
+  await setup(context, page, { shelf: '{"error":"no_bottles"}' });
+  await page.goto(`${BASE}/?demo=1#camera`);
+  await page.getByText('Shelf', { exact: true }).click();
+  await page.getByTestId('scan-file').setInputFiles({ name: 'shelf.png', mimeType: 'image/png', buffer: PNG });
+  const root = page.locator('#root');
+  await expect(root).toContainText('No labels could be read');
+  await expect(root).toContainText('Move closer');
+  // A read that found nothing doesn't use up a free shelf scan.
+  expect(await page.evaluate(() => Entitlement.shelfLeft())).toBe(2);
+
+  // Only types they haven't rated enough of (the demo history is nearly all red): no number is made up.
+  expect(await page.evaluate((t) => { const r = ScanFlow.shelfWines(t); return [r.wines.length, r.unread]; }, JSON.stringify(SHELF))).toEqual([3, 3]);
+  await page.evaluate(() => Handoff.wineList.set({ demo: false, shelf: true, unread: 0, currency: 'GBP', wines: [
+    { name: 'Sancerre', producer: 'Domaine Test', type: 'white', region: 'Sancerre', country: 'France', grape: 'Sauvignon Blanc', style: '408' },
+    { name: 'Brut Réserve', producer: 'Maison Test', type: 'sparkling', region: 'Champagne', country: 'France', grape: 'Chardonnay', style: '508' }] }));
+  await page.goto(`${BASE}/?demo=1#home`);
+  await page.evaluate(() => { window.location.hash = '#winelist'; });
+  await expect(page.getByTestId('shelf-early')).toContainText("Once you've rated 3 wines of a type");
+  await expect(page.getByTestId('shelf-best')).toHaveCount(0);
+  await expect(page.getByTestId('shelf-unread')).toHaveCount(0);
 });
 
 // List scanning is Pro on the server (PRO_ONLY in _worker.js), which never trusts the phone's own

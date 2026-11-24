@@ -115,6 +115,26 @@ test.describe('Worker', () => {
     expect((await scan('list_scan', 'tok-free', shipped)).status).toBe(402);
   });
 
+  test('a free account gets 2 shelf scans a month, apart from its label scans, then 429 shelf_limit; Pro is not counted by month', async () => {
+    const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
+    expect((await scan('shelf_scan')).status).toBe(200); // signed out: as a label scan, the phone keeps count
+    expect((await scan('label_scan', 'tok-free')).status).toBe(200);
+    for (let i = 0; i < 2; i++) expect((await scan('shelf_scan', 'tok-free')).status).toBe(200);
+    const r = await scan('shelf_scan', 'tok-free');
+    expect(r.status).toBe(429);
+    const body = await r.json();
+    expect(body.code).toBe('shelf_limit');
+    expect(body.error).toMatch(/2 free shelf scans this month\. They come back on 1 [A-Z][a-z]+, or go Pro/);
+    expect(sb.counters['u-free:shelf_scan:month']).toBe(2);
+    expect(sb.counters['u-free:label_scan:month']).toBe(1);
+    expect((await scan('label_scan', 'tok-free')).status).toBe(200);
+    for (let i = 0; i < 4; i++) expect((await scan('shelf_scan', 'tok-pro')).status).toBe(200);
+    expect(sb.counters['u-pro:shelf_scan:month']).toBeUndefined();
+    const me = await (await worker.fetch(req('/me', { token: 'tok-free', method: 'GET' }), env)).json();
+    expect(me.month.used.shelf_scan).toBe(2);
+    expect(me.month.caps.shelf_scan).toBe(2);
+  });
+
   test('a free account gets 10 label scans a month, then 429 scan_limit; Pro is not counted by month', async () => {
     const sb = fakeSupabase(); globalThis.fetch = sb.fetch;
     for (let i = 0; i < 10; i++) expect((await scan('label_scan', 'tok-free')).status).toBe(200);
