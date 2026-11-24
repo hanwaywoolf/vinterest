@@ -19,10 +19,13 @@ const _WELCOME_TILES=[
   {t:'Every bottle builds your WineDNA.',d:'Your ratings add up to a profile of the grapes, regions, styles and prices you love. It remembers everything you\'ve tried, so you don\'t have to.',preview:'dna'},
   {t:'The right wine, wherever you\'re buying.',d:'In the shop, at the restaurant or browsing online, scan and your match tells you if it\'s for you. Got a quick question? Ask Vinny. His answers come from your WineDNA.',preview:'vinny'},
   {t:'Find out why you like what you like.',d:'Articles written for you, from your WineDNA and history, on the grapes and regions behind your favourites and the ones worth trying next. Quizzes make it stick, and your mastery map shows how far you\'ve come.',preview:'learn'},
-  {t:'It gets better with every bottle.',steps:[
-    {when:'First bottle',d:'Its story, its quizzes, and the start of your WineDNA.'},
-    {when:'After 3 reds',d:'Your red matches switch on. The same goes for every other type you drink.'},
-    {when:'Every bottle after',d:'Sharper matches, more written for you, and a Vinny who knows you better.'},
+  // The last slide is what happens once they tap the button, in the order onboarding runs it
+  // (NewUserFlow: the checks, the first scan, its story ending on the rating, the three questions).
+  {t:'Here\'s what happens next.',steps:[
+    {when:'Two quick checks',d:'Your age, and where you buy wine, so prices are in your money.'},
+    {when:'Your first scan',d:'Point your camera at a bottle\'s label, or pick a photo of one.'},
+    {when:'Watch its story, then rate it',d:'Its grape, its place and how it\'ll taste. Your rating starts your WineDNA, and after 3 of a type, every bottle of it comes with a match.'},
+    {when:'Three quick questions',d:'Then you\'re in, with your Home ready.'},
   ]},
 ];
 
