@@ -49,7 +49,7 @@ const SHOTS = [
   { id: 'vinny', title: 'Ask <b>Vinny</b> anything.', sub: "Answers that know every wine you've had.", hash: 'home', vinny: true },
   { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it.', scene: 3 },
   { id: 'learn', title: 'Learn as you <b>sip</b>.', sub: 'Quizzes and short reads, written from your bottles.', hash: 'learn' },
-  { id: 'quiz', title: 'Five questions, <b>no pressure</b>.', sub: 'Quick quizzes on your grapes and regions, with the answer explained.', hash: 'quiz', quiz: true },
+  { id: 'quiz', title: 'Five questions, <b>no pressure</b>.', sub: 'Quick quizzes on your grapes and regions. Learn a fact with every answer.', hash: 'quiz', quiz: true },
   { id: 'mastery', title: 'Watch your knowledge <b>grow</b>.', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
   { id: 'wines', title: 'Every bottle, <b>remembered</b>.', sub: 'What you drank, what you paid and what you thought of it.', hash: 'mywines' },
 ];
@@ -144,16 +144,16 @@ async function capture(dev) {
       await page.evaluate(() => document.activeElement && document.activeElement.blur());
       await wait(2500);
     }
-    // The quiz answered right, so the picture shows the verdict and the fact behind it.
+    // The quiz just after the right answer is tapped: every answer still showing, the right one lit green,
+    // the quiz slowed so the picture is taken before the answers slide away.
     if (s.quiz) {
       const right = await page.evaluate(() => {
         const shown = [...document.querySelectorAll('#root *')].map((e) => e.textContent.trim());
         const q = QuizMastery.topicPool('red_grapes').find((x) => shown.includes(x.q));
         return q ? q.opts[q.a] : null;
       });
-      // STORE_QUIZ=tap: the moment after the tap instead (every answer still showing, the right one lit),
-      // the quiz slowed so the picture is taken before the answers slide away.
-      const tap = process.env.STORE_QUIZ === 'tap';
+      // STORE_QUIZ=answer: the verdict and its fact instead, once the answers have gone.
+      const tap = process.env.STORE_QUIZ !== 'answer';
       if (tap) await page.evaluate(() => { window.VINTEREST_QUIZ_SPEED = 0.1; });
       if (right) { await page.getByText(right, { exact: true }).first().click(); await wait(tap ? 900 : 3500); }
       else console.warn('quiz: no question found');
