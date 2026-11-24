@@ -647,12 +647,16 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
   const [typeFilter,setTypeFilter]=React.useState(null); // null = all
   const types=['red','white','rosé','sparkling'];
 
-  const indexed=wines.map((w,i)=>({w,i,m:matches[i]}));
+  // A bottle they've already rated (the same wine and year) shows that rating, not the match, and
+  // one they rated 90+ goes to the top of the match sort as their own pick (TasteMatch.ratedOf).
+  const [ratedOf]=React.useState(()=>wines.map(w=>TasteMatch.ratedOf(TasteMatch.fromListEntry(w))));
+  const indexed=wines.map((w,i)=>({w,i,m:matches[i],r:ratedOf[i]}));
+  const sortKey=x=>x.r>=ParkerScale.LOVED?200+x.r:((x.m&&x.m.pct)??-1);
   const filtered=typeFilter?indexed.filter(x=>(x.w.type||'red').toLowerCase().replace('é','e')===typeFilter.replace('é','e')):indexed;
-  const shown=sortMode==='match'?[...filtered].sort((a,b)=>((b.m&&b.m.pct)??-1)-((a.m&&a.m.pct)??-1)):filtered;
+  const shown=sortMode==='match'?[...filtered].sort((a,b)=>sortKey(b)-sortKey(a)):filtered;
   const toneCol={good:T.green,neutral:T.amber,bad:T.tone.bad};
   // The shelf's best bottle for them: the highest match, named only when it's at least a good bet.
-  const best=shelf?indexed.filter(x=>x.m&&x.m.pct!=null&&x.m.pct>=TasteMatch.GOOD_FROM).sort((a,b)=>b.m.pct-a.m.pct)[0]:null;
+  const best=shelf?indexed.filter(x=>x.r>=ParkerScale.LOVED||(!x.r&&x.m&&x.m.pct!=null&&x.m.pct>=TasteMatch.GOOD_FROM)).sort((a,b)=>sortKey(b)-sortKey(a))[0]:null;
   const anyMatch=indexed.some(x=>x.m&&x.m.pct!=null);
 
   return(
@@ -715,7 +719,7 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
         <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':shelf?'Left to Right':'Wine List Order'}</div>
         {shelf&&!isDemo&&data.unread>0&&<div data-testid="shelf-unread" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,padding:'9px 12px',borderRadius:10,background:T.amberBg,border:`1px solid ${T.amber}40`}}>{data.unread===1?'1 other bottle was':`${data.unread} other bottles were`} too small or turned away to read. Move closer and scan again to include {data.unread===1?'it':'them'}.</div>}
         {shelf&&wines.length>0&&!anyMatch&&<div data-testid="shelf-early" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,padding:'9px 12px',borderRadius:10,background:T.glass,border:`1px solid ${T.line}`}}>Too early for a match on these. Once you've rated {TasteMatch.MIN_SCORED} wines of a type, every bottle of that type on a shelf comes with one.</div>}
-        {shown.map(({w,i,m})=>{
+        {shown.map(({w,i,m,r})=>{
           const col=colFor(w.type);
           const val=valueInfo(w,i);
           const mCol=m&&m.pct!=null?toneCol[m.tone]:T.mid;
@@ -734,7 +738,11 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
                     <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{WineDNA.shownName(w)}</div>
-                    {m&&m.pct!=null
+                    {r>0
+                      ?<div data-testid="list-rated" style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:T.tone[ParkerScale.tone(r)]+'14',flexShrink:0}}>
+                        <span style={{fontSize:14,fontWeight:700,color:T.tone[ParkerScale.tone(r)],fontFamily:C.P}}>You rated {r}</span>
+                      </div>
+                    :m&&m.pct!=null
                       ?<div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:mCol+'14',flexShrink:0}}>
                         <span style={{fontSize:16,fontWeight:700,color:mCol,fontFamily:C.P}}>{m.pct}%</span>
                       </div>
@@ -743,9 +751,10 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
                   <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:2}}>
                     {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
                   </div>
-                  {best&&best.i===i&&<div data-testid="shelf-best" style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P,marginTop:3}}>Your best match on this shelf</div>}
-                  {m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
-                  {m&&m.reasons[0]&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
+                  {best&&best.i===i&&<div data-testid="shelf-best" style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P,marginTop:3}}>{r?'Your pick on this shelf: you loved it':'Your best match on this shelf'}</div>}
+                  {r>0&&<div style={{fontSize:14,fontWeight:600,color:T.tone[ParkerScale.tone(r)],fontFamily:C.P,marginTop:3}}>{ParkerScale.label(r)}{m&&m.expected!=null?<span style={{fontWeight:400,color:T.mid}}> · we'd have expected about {m.expected}</span>:null}</div>}
+                  {!r&&m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
+                  {!r&&m&&m.reasons[0]&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
                   {m&&!m.reasons[0]&&m.style&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.style}</div>}
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>

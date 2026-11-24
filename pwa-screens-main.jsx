@@ -36,7 +36,8 @@ function ScanScreen({nav,back,showPro,onComplete,onSkip}){
   const streamRef=React.useRef(null);
   const [phase,setPhase]=React.useState('viewfinder'); // viewfinder | processing
   const [capturedImg,setCapturedImg]=React.useState(null);
-  const [mode,setMode]=React.useState(()=>!onComplete&&Handoff.cameraMode.take()==='list'&&!Entitlement.listScanNeeds()?'list':'bottle'); // bottle | shelf | list
+  const [mode,setMode]=React.useState(()=>{ if(onComplete) return 'bottle'; const m=Handoff.cameraMode.take();
+    return m==='list'&&!Entitlement.listScanNeeds()?'list':m==='shelf'&&Entitlement.shelfLeft()>0?'shelf':'bottle'; }); // bottle | shelf | list
   const [camErr,setCamErr]=React.useState(false);
   // The phone's torch, for dark restaurants: only offered when the camera says it has one (Android
   // Chrome does; iPhone Safari doesn't let a web page use it, so the button stays hidden there).

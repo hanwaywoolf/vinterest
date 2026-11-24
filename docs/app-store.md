@@ -215,3 +215,11 @@ variables) once the new version is live in the store, then redeploy or wait for 
 
 "Not now" hides the card until the next version is announced. Installs older than 1.11.4 don't
 have the card; for those, an email to signed-in users is the only way to reach them.
+
+## What's new in the app
+
+From 1.11.5, the first time someone opens a new version they see a sheet listing what changed,
+with a "Show me" button on each item. The text ships in the build, in `data/whats-new.json`: add
+an entry for every release worth naming (newest first, two to four items, each a title, one
+sentence and where Show me goes). The same words work as the stores' "What's new". Someone who
+installs fresh never sees it; someone who skipped versions sees everything since the last one.

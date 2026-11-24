@@ -248,10 +248,13 @@ function _RvWindow({w,col}){
 /* 2. The match: the dial sweeps up, the verdict lands, then one reason each way. Too early: how
    many scores it needs. Already scored: their score beside the prediction. */
 function _RvMatch({d,col,existingRating,still}){
-  const m=d.match, tone=_RV_TONE[m.tone]||_RV_TONE.neutral;
-  const pct=m.pct!=null?m.pct:0, counted=_useCount(pct,1500,250), shown=still?pct:counted;
+  // A bottle they've already rated: the dial shows their rating (TasteMatch.ratedOf), not the match.
+  const rated=existingRating>0?existingRating:0;
+  const m=d.match, tone=rated?_RV_TONE[ParkerScale.tone(rated)]:(_RV_TONE[m.tone]||_RV_TONE.neutral);
+  const target=rated||(m.pct!=null?m.pct:0), counted=_useCount(target,1500,250), shown=still?target:counted;
+  const fill=rated?Math.max(0,(shown-ParkerScale.MIN)/(100-ParkerScale.MIN)):shown/100;
   const R=74, circ=2*Math.PI*R, size=200;
-  if(m.early){
+  if(m.early&&!rated){
     const p=m.early;
     return <div style={{display:'flex',flexDirection:'column',gap:16,alignItems:'center',textAlign:'center'}}>
       {_rvEyebrow('Your match','rgba(255,255,255,0.7)')}
@@ -263,22 +266,25 @@ function _RvMatch({d,col,existingRating,still}){
     </div>;
   }
   return <div style={{display:'flex',flexDirection:'column',gap:14,alignItems:'center',textAlign:'center'}}>
-    {_rvEyebrow('Your match','rgba(255,255,255,0.7)')}
+    {_rvEyebrow(rated?'Your rating':'Your match','rgba(255,255,255,0.7)')}
     <div className="rv-in" style={{position:'relative',width:size,height:size,..._rvDelay(.1)}}>
       <svg width={size} height={size} viewBox="0 0 200 200" style={{transform:'rotate(-90deg)'}} aria-hidden="true">
         <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="14"/>
-        {m.pct!=null&&<circle cx="100" cy="100" r={R} fill="none" stroke={tone} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-shown/100)} style={{filter:`drop-shadow(0 0 10px ${tone}99)`}}/>}
+        {(rated||m.pct!=null)&&<circle cx="100" cy="100" r={R} fill="none" stroke={tone} strokeWidth="14" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-fill)} style={{filter:`drop-shadow(0 0 10px ${tone}99)`}}/>}
       </svg>
       <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-        {m.pct!=null?<>
+        {rated?<>
+          <div data-testid="reveal-rated" style={{fontSize:'58px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1,letterSpacing:'-2px'}}>{shown}</div>
+          <div style={{fontSize:'12px',fontWeight:700,color:'rgba(255,255,255,0.55)',fontFamily:C.P,letterSpacing:'0.14em',textTransform:'uppercase',marginTop:4}}>you rated</div>
+        </>:m.pct!=null?<>
           <div data-testid="reveal-pct" style={{fontSize:'58px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1,letterSpacing:'-2px'}}>{shown}<span style={{fontSize:'24px',fontWeight:700,color:'rgba(255,255,255,0.7)'}}>%</span></div>
           <div style={{fontSize:'12px',fontWeight:700,color:'rgba(255,255,255,0.55)',fontFamily:C.P,letterSpacing:'0.14em',textTransform:'uppercase',marginTop:4}}>match</div>
         </>:<div style={{fontSize:'40px',fontWeight:800,color:'rgba(255,255,255,0.5)',fontFamily:C.P}}>—</div>}
       </div>
     </div>
-    <div className="rv-in" style={{..._rvDelay(1.5),fontSize:28,fontWeight:800,color:tone,fontFamily:C.P,lineHeight:1.15}}>{m.label}</div>
+    <div className="rv-in" style={{..._rvDelay(1.5),fontSize:28,fontWeight:800,color:tone,fontFamily:C.P,lineHeight:1.15}}>{rated?ParkerScale.label(rated):m.label}</div>
     <div className="rv-in" style={{..._rvDelay(1.7),fontSize:16,color:'rgba(255,255,255,0.75)',fontFamily:C.P,lineHeight:1.45}}>
-      {existingRating>0?`You rated it ${existingRating}${m.expected!=null?` · we expected about ${m.expected}`:''}`
+      {rated?TasteMatch.ratedLine(m,rated)
         :m.expectedLabel?`Likely about ${m.expected} from you · ${m.expectedLabel}${m.bar!=null?` · ${m.pct}% sure you'd rate it ${m.bar}+`:''}`:''}
     </div>
     {(m.pro||m.con)&&<div style={{display:'flex',flexDirection:'column',gap:8,marginTop:6,width:'100%',maxWidth:340,textAlign:'left'}}>

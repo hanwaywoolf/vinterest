@@ -164,3 +164,33 @@ test('typing straight after tapping a suggestion never gets the cursor moved mid
   await box.type('!');
   await expect(box).toHaveValue('What goes with lamb? tonight!');
 });
+
+// What's new (WhatsNew): once, on the first calm screen after an update; never for someone new.
+test('What\'s new shows once after an update, opens what it\'s about, and never shows to someone new', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_wineDNA_unlock_seen: '1' });
+  await stubNetwork(context, { whatsNew: 'real' });
+  await page.goto(`${BASE}/#home`);
+  const sheet = page.getByTestId('whats-new');
+  await expect(sheet).toContainText('New in Vinterest');
+  await expect(sheet).toContainText('Scan a whole shelf');
+  expect(await page.getByTestId('whats-new-item').count()).toBeGreaterThanOrEqual(2);
+  // Show me opens the camera on Shelf, and the version counts as seen.
+  await page.getByTestId('whats-new-open').first().click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByTestId('shelf-left')).toBeVisible();
+  await page.goto(`${BASE}/#home`);
+  await page.reload();
+  await page.waitForTimeout(800);
+  await expect(sheet).toHaveCount(0);
+  // An older version seen: shown again for this one. Nothing newer than the build is ever listed.
+  const out = await page.evaluate(() => {
+    Store.set(WhatsNew.KEY, '1.0.0'); const again = WhatsNew.items().length;
+    const future = WhatsNew._data().some((e) => AppUpdate.older(WhatsNew.installed(), e.v));
+    // Someone finishing onboarding is marked as having seen this version.
+    Store.remove(WhatsNew.KEY); Settings.setOnboarded(); const fresh = WhatsNew.items().length;
+    const synced = Backup.SETTINGS_KEYS.includes(WhatsNew.KEY) || Backup.PROGRESS_KEYS.includes(WhatsNew.KEY);
+    return { again: again > 0, future, fresh, synced };
+  });
+  expect(out).toEqual({ again: true, future: false, fresh: 0, synced: false });
+});

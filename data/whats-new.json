@@ -1,0 +1,28 @@
+{
+  "_about": "What's new, shown once on the first open of a new version (WhatsNew in pwa-whatsnew.js). Each version keeps two to four items: a title, one sentence and where Show me goes. Newest version first. The same text can go in the stores' What's new.",
+  "versions": [
+    {
+      "v": "1.11.5",
+      "items": [
+        {
+          "icon": "wine",
+          "title": "Scan a whole shelf",
+          "text": "Point the camera at a shop shelf and every bottle it can read comes back matched to your taste, best first. Two free shelf scans a month.",
+          "open": { "camera": "shelf", "label": "Try a shelf" }
+        },
+        {
+          "icon": "star",
+          "title": "Your rating comes first",
+          "text": "A bottle you've already rated now shows your rating, on a wine list, a shelf or its own page, with what we'd have predicted beside it.",
+          "open": { "screen": "mywines", "label": "See My Wines" }
+        },
+        {
+          "icon": "bell",
+          "title": "Told when there's an update",
+          "text": "When a newer Vinterest is in the store, Home says so, with a button straight to it.",
+          "open": null
+        }
+      ]
+    }
+  ]
+}
