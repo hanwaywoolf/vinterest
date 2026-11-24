@@ -46,7 +46,7 @@ test.describe('desktop', () => {
     page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
+    await expect(page.locator('h1')).toContainText('The wine app built just for you');
     // The first tile is the start of the scan story: the wine, then its match a few seconds in.
     const hero = page.locator('.hero .phone-app');
     // The bottle in the hero's camera is another vintage of the sample user's favourite, so its match is high and says why.
@@ -91,7 +91,7 @@ test.describe('desktop', () => {
     await expect(page.locator('.hero .prog button')).toHaveCount(6);
     await expect(page.locator('.hero .stage .cap')).toHaveText("Scan any bottle's label.");
     // The first part's reading time starts once the camera has scanned the bottle (the camera keeps its own time).
-    await expect(page.locator('.hero .stage .cap')).toHaveText("See if it's for you.", { timeout: 14000 });
+    await expect(page.locator('.hero .stage .cap')).toHaveText('A match from your own ratings.', { timeout: 14000 });
     await expect(page.locator('.hero .stage .cap')).toHaveText('Every bottle builds your WineDNA.', { timeout: 12000 });
     await expect(page.locator('.hero [data-layer="dna"]')).toContainText('WineDNA');
     await page.locator('.hero .arrow.next').click();
@@ -468,7 +468,7 @@ test.describe('the hero\'s opening', () => {
 
   test('the hero\'s entrance leaves everything in place', async ({ page }) => {
     await page.goto(BASE + '/');
-    await expect(page.locator('h1')).toContainText("Find wines you'll love. Learn while you sip");
+    await expect(page.locator('h1')).toContainText('The wine app built just for you');
     await page.waitForTimeout(2600);
     const seen = await page.evaluate(() => [...document.querySelectorAll('.hero h1 .w, .hero .lead, .hero .cta, .hero .phone-slot')].every((el) => getComputedStyle(el).opacity === '1'));
     expect(seen).toBe(true);
