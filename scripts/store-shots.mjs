@@ -43,15 +43,15 @@ const ANSWER = "Go for a Malbec from Mendoza. It has the ripe dark fruit of the 
 
 // Each screenshot: its headline (the <b> word in crimson), the line under it, and how to get there.
 const SHOTS = [
-  { id: 'match', title: "Know if you'll <b>love</b> it.", sub: "Scan a label. Your match comes from your own ratings, not a critic's.", scene: 1 },
-  { id: 'shelf', title: 'Scan a whole <b>shelf</b>.', sub: 'Or a wine list. Every bottle matched to your taste, best first.', hash: 'winelist', shelf: true },
-  { id: 'dna', title: 'Your taste, in <b>words</b>.', sub: 'WineDNA shows what you reach for and what lifts your ratings.', hash: 'profile' },
-  { id: 'vinny', title: 'Ask <b>Vinny</b> anything.', sub: "Answers that know every wine you've had.", hash: 'home', vinny: true },
-  { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it.', scene: 3 },
-  { id: 'learn', title: 'Learn as you <b>sip</b>.', sub: 'Quizzes and short reads, written from your bottles.', hash: 'learn' },
-  { id: 'quiz', title: 'Five questions, <b>no pressure</b>.', sub: 'Quick quizzes on your grapes and regions. Learn a fact with every answer.', hash: 'quiz', quiz: true },
-  { id: 'mastery', title: 'Watch your knowledge <b>grow</b>.', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
-  { id: 'wines', title: 'Every bottle, <b>remembered</b>.', sub: 'What you drank, what you paid and what you thought of it.', hash: 'mywines' },
+  { id: 'match', title: 'The wine app built just for <b>you</b>.', sub: "Scan a label and see if you'll love it, from your own ratings. Nobody else's.", scene: 1 },
+  { id: 'shelf', title: 'Every bottle, matched to <b>you</b>.', sub: 'Scan a whole shelf or a wine list. Your best match comes first.', hash: 'winelist', shelf: true },
+  { id: 'dna', title: 'Your WineDNA, made just for <b>you</b>.', sub: 'The grapes, regions and styles you love, and what to buy next.', hash: 'profile' },
+  { id: 'vinny', title: 'A wine expert who knows <b>you</b>.', sub: "Ask Vinny anything. He answers from the wines you've had.", hash: 'home', vinny: true },
+  { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it at the table.', scene: 3 },
+  { id: 'learn', title: 'Learn why you like what you <b>like</b>.', sub: 'Short reads written from your own bottles.', hash: 'learn' },
+  { id: 'quiz', title: 'Quizzes on the wines <b>you</b> drink.', sub: 'Five questions at a time. Learn a fact with every answer.', hash: 'quiz', quiz: true },
+  { id: 'mastery', title: 'How well-rounded is your <b>knowledge</b>?', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
+  { id: 'wines', title: "Remember everything you've <b>tried</b>.", sub: 'Every bottle with your rating, what you paid and where you had it.', hash: 'mywines' },
 ];
 // The app as each device shows it (CSS pixels and scale), and the finished picture (CSS pixels at 3x or 2x).
 const DEVICES = [
@@ -208,13 +208,51 @@ p{font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;fo
   await context.close();
 }
 
+// The wide header picture (the store page's banner, 720 x 308 as Apple shows it): the logo, the headline and
+// three phones, from the iPhone's own screens. STORE_BANNER=WxH sets its size in pixels.
+async function banner(shots) {
+  const [W, H] = (process.env.STORE_BANNER || '2340x1000').split('x').map(Number);
+  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const img = (id) => 'data:image/png;base64,' + shots[id].toString('base64');
+  const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');
+  const u = H / 1000, pw = Math.round(400 * u), ph = Math.round(pw * 852 / 393);
+  const phone = (id, x, y, rot, z) => `<div class="ph" style="left:${x}px;top:${y}px;transform:rotate(${rot}deg);z-index:${z}"><img src="${img(id)}"></div>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/fonts/fonts.css"><style>
+html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff}
+.stage{position:absolute;inset:0;background:radial-gradient(ellipse 55% 90% at 12% 10%,#8B1A2Fbb,transparent 70%),radial-gradient(ellipse 50% 70% at 78% 60%,#8B1A2F66,transparent 70%),#0d0d0f}
+.copy{position:absolute;left:${Math.round(W * 0.075)}px;top:0;bottom:0;width:${Math.round(W * 0.40)}px;display:flex;flex-direction:column;justify-content:center}
+.logo{height:${Math.round(48 * u)}px;width:auto;align-self:flex-start;margin-bottom:${Math.round(56 * u)}px;filter:brightness(0) invert(1)}
+.kick{font-size:${Math.round(24 * u)}px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#F07C93;margin:0 0 ${Math.round(18 * u)}px}
+h1{font-size:${Math.round(104 * u)}px;line-height:1.02;font-weight:800;letter-spacing:-0.03em;margin:0 0 ${Math.round(34 * u)}px}
+h1 b{color:#F07C93;font-weight:800}
+p{font-size:${Math.round(38 * u)}px;line-height:1.35;color:rgba(255,255,255,.76);margin:0}
+.ph{position:absolute;width:${pw}px;height:${ph}px;border-radius:${Math.round(52 * u)}px;overflow:hidden;border:${Math.max(1, Math.round(2 * u))}px solid rgba(255,255,255,.18);
+  box-shadow:0 ${Math.round(40 * u)}px ${Math.round(100 * u)}px rgba(0,0,0,.75),0 0 ${Math.round(80 * u)}px rgba(224,90,116,.2)}
+.ph img{display:block;width:100%;height:100%}
+</style></head><body><div class="stage"></div>
+<div class="copy"><img class="logo" src="${logo}"><div class="kick">Your taste. Nobody else's.</div><h1>The wine app built just for <b>you</b>.</h1><p>Scan any label and know if you'll love it, from your own ratings.</p></div>
+${phone('dna', Math.round(W * 0.5), Math.round(190 * u), -6, 1)}${phone('vinny', Math.round(W * 0.5 + 2 * pw * 0.8), Math.round(190 * u), 6, 1)}${phone('match', Math.round(W * 0.5 + pw * 0.8), Math.round(80 * u), 0, 2)}
+</body></html>`;
+  fs.writeFileSync(path.join(ROOT, 'dist/_store-shot.html'), html);
+  await page.goto(`http://localhost:${PORT}/_store-shot.html`);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete));
+  const file = path.join(OUT, `banner-${W}x${H}.jpg`);
+  await page.screenshot({ path: file, type: 'jpeg', quality: 92 });
+  console.log('Saved', path.relative(ROOT, file));
+  await context.close();
+}
+
 try {
   const raw = {}; // one capture per app size, shared by the pictures made from it
-  for (const dev of DEVICES) {
+  // STORE_ONLY=banner makes the header picture alone.
+  for (const dev of process.env.STORE_ONLY === 'banner' ? DEVICES.slice(0, 1) : DEVICES) {
     const k = `${dev.app.width}x${dev.app.height}`;
     raw[k] = raw[k] || await capture(dev);
-    await compose(dev, raw[k]);
+    if (process.env.STORE_ONLY !== 'banner') await compose(dev, raw[k]);
   }
+  await banner(raw['393x852']);
 } finally {
   fs.rmSync(path.join(ROOT, 'dist/_store-shot.html'), { force: true });
   await browser.close();
