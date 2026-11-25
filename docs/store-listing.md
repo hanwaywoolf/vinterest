@@ -22,13 +22,15 @@ wine, and shop links never change a match or the order of a list.
 
     scanner,label,sommelier,tasting,rating,journal,red,white,rose,grape,region,learn,pairing,cellar,quiz
 
-**Description** (4,000 max, 2,594 used)
+**Description** (4,000 max, 2,856 used)
 
     The wine app built just for you.
 
     Most wine apps tell you what everyone else thinks of a bottle. Vinterest learns what you like from the wines you scan and rate, and tells you, before you open one, whether you'll enjoy it.
 
     SCAN ANY LABEL: Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
+
+    SCAN A WHOLE SHELF: Standing in the shop? Take one photo of the shelf, or pick one from your gallery, and every bottle Vinterest can read comes back matched to your taste, best first, with your best match on the shelf marked.
 
     A MATCH FROM YOUR OWN RATINGS: Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out from the wines you've rated. No star averages and no critic scores. It says why, in plain words: the grapes, regions and producers that lift your ratings, and the ones that hold them back.
 
@@ -44,7 +46,7 @@ wine, and shop links never change a match or the order of a list.
 
     HERE TO TEACH, NOT TO SELL: Vinterest doesn't sell wine. Shop links are there when you want them, and they never change a match or the order of a list.
 
-    VINTEREST PRO: Free includes 10 label scans a month and five grapes and regions to study. Pro adds wine list scanning in restaurants, more scans, every grape and region you meet, and the full Mastery map. Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your Apple ID settings.
+    VINTEREST PRO: Free includes 10 label scans and 2 shelf scans a month, and five grapes and regions to study. Pro adds wine list scanning in restaurants, more label and shelf scans, every grape and region you meet, and the full Mastery map. Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your Apple ID settings.
 
     Terms: https://vinterest.app/terms/
 
@@ -65,7 +67,7 @@ sentences saying "charged to your Google Play account" and "Manage or cancel in 
 
 - The description avoids words that are spelled differently in the US and the UK, so one text serves
   every English listing. The prices in the Pro paragraph are the UK's: change them per country's listing.
-- Pro's line says what the plans do today (`FREE_SCANS`, `FREE_GRAPE_CAP`, `FREE_REGION_CAP`, `PRO_ONLY`).
+- Pro's line says what the plans do today (`FREE_SCANS`, `FREE_SHELF` (shelf scanning is on main, from 1.11.5), `FREE_GRAPE_CAP`, `FREE_REGION_CAP`, `PRO_ONLY`).
   Change it here when the plans change. Pro's scans are under a fair-use cap, so it says "more scans",
   never "unlimited".
 - Screenshots carry the same line: the first one's caption should be the subtitle.
