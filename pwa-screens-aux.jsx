@@ -187,7 +187,7 @@ function TasteProfileScreen({nav,back,showPro}){
                 <Icon n="wine" sz={14} col={c.col}/>
               </div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+                <div style={{fontSize:16,fontWeight:600,color:C.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
                 <div style={{display:'flex',alignItems:'center',gap:6,marginTop:2}}>
                   {w.region&&<span style={{fontSize:13,color:C.mid,fontFamily:C.P}}>{w.region}</span>}
                   {w.rating>0&&<><span style={{fontSize:13,color:C.line,fontFamily:C.P}}>·</span><span style={{fontSize:13,fontWeight:700,color:C.amber,fontFamily:C.P}}>{w.rating}/100</span></>}
@@ -272,7 +272,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){ const T=useTh
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:6}}>
           {saved&&<Icon n="bookmark" sz={14} col={T.mid}/>}
-          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:16,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
         </div>
         {/* Favourite (the heart on the wine's screen), the country's flag, then producer · region · year. */}
         <div style={{display:'flex',alignItems:'center',gap:5,marginTop:1,minWidth:0}}>
@@ -288,7 +288,7 @@ function WineRow({w,open,setOpen,onOpen,onScore,onEdit,onDelete}){ const T=useTh
           ?<span style={{minWidth:34,textAlign:'right',fontSize:17,fontWeight:800,color:T.tone[MyWines.scoreTone(w.rating)],fontFamily:C.P}}>{w.rating}</span>
           :saved
             ?<span style={{fontSize:13,fontWeight:600,color:T.mid,fontFamily:C.P}}>Saved</span>
-            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${_alpha(cr,0.4)}`,background:T.crSoft,color:cr,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
+            :<button onClick={e=>{ e.stopPropagation(); onScore(w); }} style={{border:`1px solid ${_alpha(cr,0.4)}`,background:T.crSoft,color:T.ink,borderRadius:20,padding:'5px 11px',fontSize:13,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Rate it</button>}
         {price&&<span className="mw-price" aria-label={price.label} style={{fontSize:13,color:price.paid?T.ink:T.mid,fontWeight:price.paid?600:400,fontFamily:C.P,whiteSpace:'nowrap'}}>{price.text}</span>}
       </div>
     </div>
@@ -346,7 +346,7 @@ function MyWinesScreen({nav,back}){ const T=useTheme(), cr=T.lift(C.cr); // the 
               <Icon n="sort" sz={15} col={T.ink2}/><span style={{fontSize:14,fontWeight:600,color:T.ink2,fontFamily:C.P}}>{sortLabel}</span>
             </div>
             {sortOpen&&<div style={{position:'absolute',right:0,top:'calc(100% + 6px)',background:T.dark?T.card:C.white,border:`1px solid ${T.line}`,borderRadius:12,boxShadow:'0 8px 24px rgba(0,0,0,0.3)',padding:4,zIndex:20,minWidth:150}}>
-              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:sort===s.id?cr:T.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?T.crSoft:'transparent'}}>{s.label}</div>)}
+              {MyWines.SORTS.map(s=><div key={s.id} onClick={()=>{ setSort(s.id); setSortOpen(false); }} style={{padding:'10px 12px',borderRadius:8,fontSize:15,fontWeight:sort===s.id?700:500,color:T.ink,fontFamily:C.P,cursor:'pointer',background:sort===s.id?T.crSoft:'transparent'}}>{s.label}</div>)}
             </div>}
           </div>
         </div>
@@ -523,7 +523,7 @@ function RestaurantScript({back}){
                 <Icon n="wine" sz={14} col={C.cr}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</div>
+                <div style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{WineDNA.shownName(w)}</div>
                 <div style={{fontSize:15,color:C.mid,fontFamily:C.P}}>{w.sub}</div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:3}}>
@@ -553,11 +553,19 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
     catch(e){ return {}; }
   },[]);
   const isDemo=data.demo===true;
+  // A shelf scan (the camera's Shelf mode) shares this screen: bottles read from a shop shelf, best match first.
+  const shelf=!!data.shelf;
   // Why the read failed, in words that point at the real fix: the Worker refusing (sign in, Pro,
   // this week's limit, can't reach it) is never the photo's fault, so only a list Claude couldn't
   // read says to reframe the page.
   const failure=(()=>{
     const retry={cta:'Try Again',icon:'camera',act:()=>nav('camera')};
+    if(shelf){
+      if(data.code==='fair_use'||data.code==='rate_limited') return {title:'Shelf scanning is paused for now',body:data.reason,...retry};
+      if(/reach the wine-ID service/.test(data.reason||'')) return {title:'Couldn’t reach Vinterest',body:'Check your connection, then try again.',...retry};
+      if(data.status>=400||data.code) return {title:'That didn’t work this time',body:data.reason,...retry};
+      return {title:'No labels could be read',body:'Move closer, so each label fills more of the photo, and keep the bottles facing you.',...retry};
+    }
     if(data.code==='pro_required'&&data.signIn) return Account.available()
       ?{title:'Sign in to scan wine lists',body:'Wine list scanning is part of Pro, which belongs to your account.',cta:'Sign in',icon:'user',act:()=>{ Handoff.accountIntent.set('listscan'); nav('account'); }}
       // This copy of the app hasn't got the sign-in settings yet (Platform.start fetches them online).
@@ -600,7 +608,7 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
       for(let i=0;i<wines.length;i++){
         if(cancelled) return;
         const w=wines[i];
-        if(!w||!w.price) continue;
+        if(shelf||!w||!w.price) continue; // a shelf's price is the shop's own: nothing to compare it with
         try{
           const d=await fetchRetailEstimate(w,curr);
           if(cancelled) return;
@@ -635,14 +643,21 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
     return wines.map(w=>TasteMatch.assess(TasteMatch.fromListEntry(w),all,cache));
   });
 
-  const [sortMode,setSortMode]=React.useState('list'); // 'list' | 'match'
+  const [sortMode,setSortMode]=React.useState(shelf?'match':'list'); // 'list' | 'match'
   const [typeFilter,setTypeFilter]=React.useState(null); // null = all
   const types=['red','white','rosé','sparkling'];
 
-  const indexed=wines.map((w,i)=>({w,i,m:matches[i]}));
+  // A bottle they've already rated (the same wine and year) shows that rating, not the match, and
+  // one they rated 90+ goes to the top of the match sort as their own pick (TasteMatch.ratedOf).
+  const [ratedOf]=React.useState(()=>wines.map(w=>TasteMatch.ratedOf(TasteMatch.fromListEntry(w))));
+  const indexed=wines.map((w,i)=>({w,i,m:matches[i],r:ratedOf[i]}));
+  const sortKey=x=>x.r>=ParkerScale.LOVED?200+x.r:((x.m&&x.m.pct)??-1);
   const filtered=typeFilter?indexed.filter(x=>(x.w.type||'red').toLowerCase().replace('é','e')===typeFilter.replace('é','e')):indexed;
-  const shown=sortMode==='match'?[...filtered].sort((a,b)=>((b.m&&b.m.pct)??-1)-((a.m&&a.m.pct)??-1)):filtered;
+  const shown=sortMode==='match'?[...filtered].sort((a,b)=>sortKey(b)-sortKey(a)):filtered;
   const toneCol={good:T.green,neutral:T.amber,bad:T.tone.bad};
+  // The shelf's best bottle for them: the highest match, named only when it's at least a good bet.
+  const best=shelf?indexed.filter(x=>x.r>=ParkerScale.LOVED||(!x.r&&x.m&&x.m.pct!=null&&x.m.pct>=TasteMatch.GOOD_FROM)).sort((a,b)=>sortKey(b)-sortKey(a))[0]:null;
+  const anyMatch=indexed.some(x=>x.m&&x.m.pct!=null);
 
   return(
     <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden',background:T.bg}}>
@@ -652,8 +667,8 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
           <Icon n="back" sz={16} col="#fff"/>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>Wine List Results</div>
-          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{wines.length} wines · prices in {listCurrency} · match scores included</div>
+          <div style={{fontSize:19,fontWeight:700,color:'#fff',fontFamily:C.P}}>{shelf?'On This Shelf':'Wine List Results'}</div>
+          <div style={{fontSize:15,color:'rgba(255,255,255,0.65)',fontFamily:C.P}}>{shelf?`${wines.length} wine${wines.length===1?'':'s'} read · matched to your taste`:`${wines.length} wines · prices in ${listCurrency} · match scores included`}</div>
         </div>
         <div onClick={()=>nav('camera')} style={{padding:'6px 14px',borderRadius:20,background:'rgba(255,255,255,0.18)',cursor:'pointer'}}>
           <span style={{fontSize:16,fontWeight:600,color:'#fff',fontFamily:C.P}}>Rescan</span>
@@ -677,7 +692,7 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
       {/* Sort + filter controls */}
       <div style={{padding:'10px 16px 0',display:'flex',flexDirection:'column',gap:8,flexShrink:0}}>
         <div style={{display:'flex',gap:6}}>
-          {[{k:'list',l:'List Order'},{k:'match',l:'Match Rate'}].map(o=>(
+          {[{k:'list',l:shelf?'Shelf Order':'List Order'},{k:'match',l:'Match Rate'}].map(o=>(
             <div key={o.k} onClick={()=>setSortMode(o.k)} style={{flex:1,textAlign:'center',padding:'8px 6px',borderRadius:10,border:`1.5px solid ${sortMode===o.k?cr:T.line}`,background:sortMode===o.k?cr:'transparent',cursor:'pointer'}}>
               <span style={{fontSize:15,fontWeight:600,color:sortMode===o.k?'#fff':T.mid,fontFamily:C.P}}>Sort: {o.l}</span>
             </div>
@@ -701,14 +716,16 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
 
       <div style={{flex:1,overflowY:'auto'}}>
 <div style={{padding:'12px 16px',display:'flex',flexDirection:'column',gap:8}}>
-        <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':'Wine List Order'}</div>
-        {shown.map(({w,i,m})=>{
+        <div style={{fontSize:15,fontWeight:600,color:T.mid,letterSpacing:'0.08em',textTransform:'uppercase',fontFamily:C.P,marginBottom:2}}>{sortMode==='match'?'Sorted by Match Rate':shelf?'Left to Right':'Wine List Order'}</div>
+        {shelf&&!isDemo&&data.unread>0&&<div data-testid="shelf-unread" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,padding:'9px 12px',borderRadius:10,background:T.amberBg,border:`1px solid ${T.amber}40`}}>{data.unread===1?'1 other bottle was':`${data.unread} other bottles were`} too small or turned away to read. Move closer and scan again to include {data.unread===1?'it':'them'}.</div>}
+        {shelf&&wines.length>0&&!anyMatch&&<div data-testid="shelf-early" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,padding:'9px 12px',borderRadius:10,background:T.glass,border:`1px solid ${T.line}`}}>Too early for a match on these. Once you've rated {TasteMatch.MIN_SCORED} wines of a type, every bottle of that type on a shelf comes with one.</div>}
+        {shown.map(({w,i,m,r})=>{
           const col=colFor(w.type);
           const val=valueInfo(w,i);
           const mCol=m&&m.pct!=null?toneCol[m.tone]:T.mid;
           const bottle=(parsePriceTiers(w.price).find(t=>t.label==='Bottle')||parsePriceTiers(w.price)[0]||{}).value;
           return(
-            <Card key={i} style={{padding:12,cursor:'pointer'}} onClick={()=>{
+            <Card key={i} style={{padding:12,cursor:'pointer',...(best&&best.i===i?{border:`1.5px solid ${T.green}`}:{})}} onClick={()=>{
               // A wine picked from a list is a look, not a purchase: it's saved as a shelf check.
               const {style,grape,...rest}=TasteMatch.fromListEntry(w);
               Handoff.openWine({demo:false,source:'list',wine:rest,listPrice:bottle?Number(bottle):null,listCurrency});
@@ -720,8 +737,12 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:6}}>
-                    <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{w.name}</div>
-                    {m&&m.pct!=null
+                    <div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.2,flex:1}}>{WineDNA.shownName(w)}</div>
+                    {r>0
+                      ?<div data-testid="list-rated" style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:T.tone[ParkerScale.tone(r)]+'14',flexShrink:0}}>
+                        <span style={{fontSize:14,fontWeight:700,color:T.tone[ParkerScale.tone(r)],fontFamily:C.P}}>You rated {r}</span>
+                      </div>
+                    :m&&m.pct!=null
                       ?<div style={{display:'inline-flex',alignItems:'center',padding:'3px 8px',borderRadius:7,background:mCol+'14',flexShrink:0}}>
                         <span style={{fontSize:16,fontWeight:700,color:mCol,fontFamily:C.P}}>{m.pct}%</span>
                       </div>
@@ -730,8 +751,10 @@ function WineListScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr)
                   <div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:2}}>
                     {[w.region,w.country].filter(Boolean).join(' · ')}{w.vintage?` · ${w.vintage}`:''}
                   </div>
-                  {m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
-                  {m&&m.reasons[0]&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
+                  {best&&best.i===i&&<div data-testid="shelf-best" style={{fontSize:14,fontWeight:700,color:T.green,fontFamily:C.P,marginTop:3}}>{r?'Your pick on this shelf: you loved it':'Your best match on this shelf'}</div>}
+                  {r>0&&<div style={{fontSize:14,fontWeight:600,color:T.tone[ParkerScale.tone(r)],fontFamily:C.P,marginTop:3}}>{ParkerScale.label(r)}{m&&m.expected!=null?<span style={{fontWeight:400,color:T.mid}}> · we'd have expected about {m.expected}</span>:null}</div>}
+                  {!r&&m&&m.pct!=null&&<div style={{fontSize:14,fontWeight:600,color:mCol,fontFamily:C.P,marginTop:3}}>{m.label}{m.confidence==='low'?' · rough guess':''}</div>}
+                  {!r&&m&&m.reasons[0]&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.reasons[0].text}</div>}
                   {m&&!m.reasons[0]&&m.style&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,marginTop:2,lineHeight:1.4}}>{m.style}</div>}
                   <div style={{display:'flex',gap:5,marginTop:6,alignItems:'center',flexWrap:'wrap'}}>
                     <Pill sm style={{background:col+'12',color:col,border:`1px solid ${col}25`,textTransform:'capitalize'}}>{w.type||'Red'}</Pill>

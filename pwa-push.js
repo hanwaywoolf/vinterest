@@ -101,9 +101,4 @@ const Push = {
   },
   /* The server forgets this phone's token (sign-out, or switched off). */
   async unlink(){ const s=this.state(); if(s.token) await this._api('/push/unregister',{token:s.token}); },
-  /* A notification to this person's own phones, to check it all works. */
-  async test(delay=0){
-    const r=await this._api('/push/test',{delay});
-    return r.ok?{ok:true}:{ok:false,error:(r.body&&r.body.error)||'We couldn\'t send that just now.'};
-  },
 };

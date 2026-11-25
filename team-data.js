@@ -10,6 +10,7 @@
 const TeamData = {
   KEY:'vbiz_venue_v1',
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
+  PITCH_BATCH:8,      // wines per short-card call (a pitch demo's cards carry no questions)
   PAIR_BATCH:12,      // dishes per pairing call
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
@@ -26,9 +27,27 @@ const TeamData = {
     const d=raw?Store.getJSON(this.KEY,null):null, v=d&&d.wines?d:this._empty(); this._raw=raw; this._val=v; this._fresh=raw!==null; return v; },
   _fresh:false,
   save(d){ this._relist(); Store.setJSON(this.KEY,d); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
-  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  reset(){ Store.remove(this.KEY); Store.remove(this.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined') TeamBuyer.clear(); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   setVenue(fields){ const d=this.get(); d.venue={...d.venue,...fields}; this.save(d); },
   setSetting(k,v){ const d=this.get(); d.settings={...(d.settings||{}),[k]:v}; this.save(d); },
+  setting(k,def){ const v=(this.get().settings||{})[k]; return v===undefined?def:v; },
+  /* Whether this restaurant trains allergens here. Off where they're managed in the kitchen's own system: nobody is
+     asked about one and no dish counts for it (allergensOf answers none confirmed). On unless switched off. */
+  trainsAllergens(){ return this.setting('allergens',true)!==false; },
+  /* Which console a manager gets: the new look (team-console2.jsx) where the restaurant's file asks for it
+     (venue.console 'preview', as The Larkspur's does), unless this device chose the other; tests pin it with
+     window.VINTEREST_CONSOLE ('classic' or 'preview'). */
+  consoleLook(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_CONSOLE; if(o==='classic'||o==='preview') return o; }catch(e){}
+    const mine=Store.get('vbiz_console_look'); if(mine==='classic'||mine==='preview') return mine;
+    return this.offersNewLook()?'preview':'classic'; },
+  /* Whether this restaurant is offered the new look: its stored details say so, or its seed's list file does (a device
+     that opened the seed before the file asked for it keeps its old copy of the details until the training changes). */
+  offersNewLook(){ const v=this.get().venue||{}, asks=c=>c==='preview'||!!(c&&c.look==='preview'); if(asks(v.console)) return true; // a string, or {look:'preview'} beside other console settings (Eloise's `hide`)
+    try{ return !!v.sample&&asks(((TeamSample.list(v.sample)||{}).venue||{}).console); }catch(e){ return false; } },
+  /* The new console's navigation: 'side' is hidden at the left edge and slides over the page; 'top' runs along the top. */
+  navStyle(){ try{ const o=typeof window!=='undefined'&&window.VINTEREST_NAV; if(o==='side'||o==='top') return o; }catch(e){} return Store.get('vbiz_console_nav')==='top'?'top':'side'; },
+  setNavStyle(v){ Store.set('vbiz_console_nav',v==='top'?'top':'side'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
+  setConsoleLook(v){ Store.set('vbiz_console_look',v==='preview'?'preview':'classic'); try{ window.dispatchEvent(new Event('vbiz:data')); }catch(e){} },
   isDemo(){ return (this.get().venue||{}).sample==='demo'; },
   /* Tonight (docs/business.md, "Pre-shift"): what's 86'd and what's on feature, set at four o'clock by whoever runs the
      floor (the manager's phone or the console) and gone at the end of the phone's calendar day. Nothing here is scored:
@@ -94,7 +113,7 @@ const TeamData = {
   allergenList(){ return this.ALLERGENS[this.allergenCountry()].map(([code,name])=>({code,name})); },
   allergenName(code){ const a=this.allergenList().find(x=>x.code===code); return a?a.name:code; },
   /* The allergens a server is taught for a dish: only what the kitchen confirmed. null until then. */
-  allergensOf(id){ const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
+  allergensOf(id){ if(!this.trainsAllergens()) return null; const c=this.dishCard(id); return c&&c.allergens&&Array.isArray(c.allergens.confirmed)?c.allergens.confirmed:null; },
   confirmAllergens(id,codes,by){ const doc=this.get(); doc.dishCards=doc.dishCards||{}; const c=doc.dishCards[id]||{say:'',allergens:{draft:[],note:''},mods:[],ask:[]};
     doc.dishCards[id]={...c,allergens:{...(c.allergens||{}),confirmed:[...new Set((codes||[]).filter(Boolean))],confirmedAt:Date.now(),by:by||null}}; this.save(doc);
     if(typeof TeamLearn!=='undefined') TeamLearn.assignAllergen(id); },
@@ -129,7 +148,11 @@ const TeamData = {
   short(w){ return [w.producer,w.name].filter(Boolean).join(' '); },
   /* A wine's name where a long one won't fit (a list row's "Best with", a suggestion): the producer when the full
      name runs past four words ("Mionetto" for "Mionetto Prosecco DOC Treviso"), else the short name. */
-  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer?String(w.producer):s; },
+  nick(w){ const s=this.short(w); return s.split(/\s+/).length>4&&w.producer&&!this._twoBy(w.producer)?String(w.producer):s; },
+  /* Whether the list has two or more wines from one producer, so its name alone wouldn't say which ("Envínate" for two
+     bottles on Eloise's list). Counted once per list. */
+  _twoBy(producer){ const ws=this.wines(); if(this._byMemo!==ws){ this._byMemo=ws; this._byN={}; ws.forEach(w=>{ const k=String(w.producer||'').toLowerCase(); if(k) this._byN[k]=(this._byN[k]||0)+1; }); }
+    return (this._byN[String(producer).toLowerCase()]||0)>1; },
 
   // One id per wine whatever the vintage, so a new vintage on the list is the same wine moving on.
   _slug(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); },
@@ -279,12 +302,16 @@ const TeamData = {
       catch(e){ last=e; if(e&&(e.code==='pro'||e.status===402||e.status===429||e.code==='refused')) throw e; if(i<this.RETRY_WAITS.length) await new Promise(r=>setTimeout(r,(window.VINTEREST_RETRY_FAST?10:this.RETRY_WAITS[i]))); } }
     throw last; },
   /* Staff cards and their questions for these wines, a few a call (prompts/team-cards.txt). */
-  async writeCards(ids,onStep){
-    const tpl=_loadTextSync('prompts/team-cards.txt');
+  /* opts.short: the pitch demo's short card (prompts/team-pitch-cards.txt, docs/business.md "Pitch demos"): what a server
+     reads and says, with no written questions, so more wines fit a call (PITCH_BATCH). The app builds its Essentials
+     questions from such a card itself (TeamLearn.lightQs). */
+  async writeCards(ids,onStep,opts){
+    const short=!!(opts&&opts.short), size=short?this.PITCH_BATCH:this.CARD_BATCH;
+    const tpl=short?_loadTextSync('prompts/team-pitch-cards.txt'):_loadTextSync('prompts/team-cards.txt');
     const venue=this.get().venue.name||'the restaurant';
     let done=0; onStep&&onStep(0,ids.length);
-    for(let i=0;i<ids.length;i+=this.CARD_BATCH){
-      const ws=ids.slice(i,i+this.CARD_BATCH).map(id=>this.wine(id)).filter(Boolean);
+    for(let i=0;i<ids.length;i+=size){
+      const ws=ids.slice(i,i+size).map(id=>this.wine(id)).filter(Boolean);
       const prompt=tpl.replace(/\{\{venue\}\}/g,venue).replace('{{about}}',this.about()).replace('{{facts}}',ws.map(w=>this.facts(w)).join('\n'))
         .replace('{{list}}',this._listLines()).replace('{{menu}}',this._menuLines())
         .replace('{{wines}}',ws.map(w=>`${w.id} | ${this.label(w)} | ${w.type} | ${w.region}, ${w.country} | grapes: ${(w.grapes||[]).join(', ')||'unknown'} (${w.grapes_basis}) | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}`).join('\n'))
@@ -424,7 +451,10 @@ const TeamData = {
       catch(e){ if(xs.length<2) throw e; j={pairings:[]}; for(const one of xs){ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); } }
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
-        const x=xs.find(x=>x.name===p.dish); if(!x) return;
+        // The answer's dish is found by its name as sent, else by the same letters (a curly apostrophe typed straight,
+        // the description added after the name): ten of a 32-dish menu once came back unmatched and stayed unpaired.
+        const nm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,''), pn=nm(p.dish);
+        const x=xs.find(x=>x.name===p.dish)||xs.find(x=>nm(x.name)===pn)||(pn&&xs.find(x=>pn.startsWith(nm(x.name))||nm(x.name+x.desc).startsWith(pn))); if(!x) return;
         const ok=id=>id&&d.wines[id]&&d.wines[id].onList;
         const wine=id=>ok(id)&&!this.isDrink(d.wines[id]), drink=id=>!!(d.cocktails||{})[id];
         d.pairings[x.id]={best:(p.best||[]).filter(b=>wine(b.id)),glass:p.glass&&wine(p.glass.id)?p.glass:null,avoid:p.avoid&&wine(p.avoid.id)?p.avoid:null,cocktail:p.cocktail&&drink(p.cocktail.id)?p.cocktail:null,at:Date.now()};
@@ -522,7 +552,7 @@ const TeamData = {
   },
   /* A single bottle from its label (the consumer app's label_scan), as a list item ready for a draft. */
   async readLabel(b64){
-    const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:_loadTextSync('prompts/label-scan.txt')}]}]});
+    const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:ScanFlow.labelPrompt()}]}]});
     const w=WineDNA.cleanWine(JSON.parse(String(text).replace(/```json|```/g,'').trim()));
     if(!w||w.error==='no_wine_label'||!w.name) return null;
     // The year belongs in `vintage`, never in the name, or "Viña Ardanza Reserva 2016" is a different wine from the list's "Viña Ardanza Reserva".
@@ -569,12 +599,12 @@ const TeamSample = {
      `eloise`: Eloise, Toronto, the same again from its site's menus and drink menu (intake/eloise/), in Canadian dollars. */
   /* Every seed the build carries. `kind` is how it behaves (a real install's copy, 'social', or a demo, 'demo'); the
      paths are literal in file() and list() because the build collects _loadJSON's paths by scanning for them. */
-  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'},eloise:{kind:'social',label:'Eloise'}},
+  SEEDS:{sample:{kind:'sample'},demo:{kind:'demo'},social:{kind:'social',label:'The Social Corner'},'princess-royal':{kind:'social',label:'The Princess Royal'},eloise:{kind:'social',label:'Eloise'},barbary:{kind:'social',label:'The Barbary'}},
   kind(which){ return (this.SEEDS[which]||{}).kind||null; },
   social(which){ return this.kind(which)==='social'; },
-  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):which==='eloise'?_loadJSON('data/team-eloise.json'):_loadJSON('data/team-sample.json'); },
+  file(which){ return which==='demo'?_loadJSON('data/team-demo.json'):which==='social'?_loadJSON('data/team-social.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal.json'):which==='eloise'?_loadJSON('data/team-eloise.json'):which==='barbary'?_loadJSON('data/team-barbary.json'):_loadJSON('data/team-sample.json'); },
   /* The list file: where an installed restaurant's venue details, cocktails and staff live. */
-  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):which==='eloise'?_loadJSON('data/team-eloise-list.json'):null; },
+  list(which){ return which==='demo'?_loadJSON('data/team-demo-list.json'):which==='social'?_loadJSON('data/team-social-list.json'):which==='princess-royal'?_loadJSON('data/team-princess-royal-list.json'):which==='eloise'?_loadJSON('data/team-eloise-list.json'):which==='barbary'?_loadJSON('data/team-barbary-list.json'):null; },
   // ?seed=perse was The Social Corner's first name on another branch; ?seed=princess is The Princess Royal's short address.
   ALIAS:{perse:'social',princess:'princess-royal'},
   load(which='sample'){ which=this.ALIAS[which]||which;
@@ -614,6 +644,9 @@ const TeamSample = {
     d.versions.push({kind:'list',at:now,added:Object.keys(d.wines),removed:[],changed:[]});
     if(mixes.length) d.versions.push({kind:'cocktails',at:now,added:Object.keys(d.cocktails),removed:[],changed:[]});
     TeamData.save(d);
+    // Vinny's read of the list as a buyer (shop prices, gaps), when the file was handed over with one (npm run team:buyer);
+    // a restaurant loaded afresh never keeps another's, and a kept one keeps a newer review of its own.
+    if(typeof TeamBuyer!=='undefined'){ const mine=keep&&TeamBuyer.reviewed(); if(!keep) TeamBuyer.save(s.buyer&&s.buyer.at?s.buyer:{}); else if(s.buyer&&s.buyer.at&&!(mine&&mine.at>=s.buyer.at)) TeamBuyer.save(s.buyer); }
     // The install's training depth (venue.training in its list file: the tier, and a tier per role) applies to a
     // restaurant that hasn't set one yet, on a fresh load or a kept team alike; a manager's own choice is never undone.
     const training=meta.training||{}; const applyTier=()=>{ if(TeamLearn.team().tier!=null) return; if(training.tier) TeamLearn.setTier(training.tier); Object.entries(training.roleTiers||{}).forEach(([r,t])=>TeamLearn.setRoleTier(r,t)); };
@@ -625,7 +658,7 @@ const TeamSample = {
       if(newStory&&typeof TeamSales!=='undefined') TeamSales.clear();
       if((which==='demo'||this.social(which))&&typeof TeamSales!=='undefined'&&!(TeamSales.get().rows||[]).length) TeamSales.seedDemo();
       return true; }
-    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset();
+    Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); if(typeof TeamSales!=='undefined') TeamSales.clear(); Store.remove(TeamData.TONIGHT); if(typeof TeamShift!=='undefined') TeamShift.reset(); if(typeof TeamPlans!=='undefined') TeamPlans.clear(); if(typeof TeamBuyer!=='undefined'){ TeamBuyer.clear(); if(s.buyer&&s.buyer.at) TeamBuyer.save(s.buyer); }
     // The Social Corner's demo team is the Larkspur's people and photos in its own roles (data/team-social-list.json staff).
     (s.staff||(this.social(which)?(this.list(which)||{}).staff||[]:this.DEMO_STAFF)).forEach(p=>TeamLearn.addPerson(p.name,p.role,p.photo||null));
     applyTier();
@@ -678,6 +711,28 @@ const TeamSample = {
 /* The demo's staff at different stages of training (docs/business.md), seeded with dated answers so
    readiness, Slipping, overdue assignments and the retention checks all show something true. */
 const TeamDemo = {
+  /* A demo restaurant stays as of today. Its team's answers and its sales are invented at the moment it's first
+     opened, and answers fade by the clock: a browser that kept the demo for a few days showed a team that had
+     forgotten the menu and sales that ended last week. So once a day, everything invented moves forward by the days
+     gone by (answers, review dates, assignments, plans, sales rows and nights, when wines joined the list), and what
+     someone did in the demo moves with it. Only for a restaurant loaded from a seed (`venue.sample`); a real
+     restaurant's dates are never touched. */
+  keepFresh(now=Date.now()){ const d=TeamData.get(), v=d.venue||{}; if(!v.sample) return false; const DAY=86400000, sod=t=>new Date(t).setHours(0,0,0,0), today=sod(now), from=sod(v.fresh||v.created||now), days=Math.round((today-from)/DAY);
+    if(days<=0){ if(!v.fresh){ v.fresh=today; TeamData.save(d); } return false; } const by=days*DAY, mv=t=>t?Math.min(now,t+by):t;
+    const all=TeamLearn._all(); Object.values(all).forEach(m=>{ Object.values(m.items||{}).forEach(it=>{ if(it.last) it.last=mv(it.last); if(it.due) it.due+=by; if(it.first&&it.first.at) it.first.at=mv(it.first.at); });
+      Object.values(m.assigned||{}).forEach(a=>{ ['at','from','done'].forEach(k=>{ if(a[k]) a[k]=mv(a[k]); }); if(a.due) a.due+=by; }); (m.checks||[]).forEach(c=>{ if(c.at) c.at=mv(c.at); }); if(m.wasReady) m.wasReady=mv(m.wasReady);
+      if(m.drills){ const day=k=>{ const [y,mo,dd]=String(k).split('-').map(Number), t=new Date(y,mo-1,dd,12).getTime(); return isNaN(t)?k:TeamLearn._day(t+by); }; m.drills=Object.fromEntries(Object.entries(m.drills).map(([k,x])=>[day(k),x])); } });
+    TeamLearn._saveAll(all);
+    if(typeof TeamSales!=='undefined'&&TeamSales.demo()){ const sd=TeamSales.get(); sd.rows.forEach(r=>{ r.t+=by; }); sd.nights=Object.fromEntries(Object.entries(sd.nights||{}).map(([k,n])=>{ const [y,mo,dd]=k.split('-').map(Number); return [TeamSales.night(new Date(y,mo-1,dd,12).getTime()+by),n]; })); TeamSales.save(sd); }
+    if(typeof TeamPlans!=='undefined'){ const pd=TeamPlans.get(); pd.plans.forEach(p=>{ p.at=mv(p.at); if(p.pushedAt) p.pushedAt=mv(p.pushedAt); }); if(pd.plans.length) TeamPlans.save(pd); }
+    Object.values(d.wines||{}).forEach(w=>{ if(w.addedAt) w.addedAt=mv(w.addedAt); }); v.fresh=today; TeamData.save(d); return true; },
+  /* The demo restaurant's Tonight, set once a day where the console's new look opens on an empty one, so the Tonight
+     tile shows what a manager's four o'clock looks like: a bottle to push, a dish that's off and a note. Never for a
+     real restaurant, and never again that day once the manager has changed or cleared it. */
+  seedTonight(){ if(!TeamData.isDemo()) return false; const t=TeamData.tonight(), day=t.day; if(t.off.length||t.feature.length||t.note||Store.get('vbiz_tonight_demo')===day) return false;
+    const ws=TeamData.wines().filter(w=>!TeamData.isDrink(w)), ds=TeamData.dishes(), push=ws.find(w=>/barolo/i.test(TeamData.label(w)))||ws.find(w=>!TeamData.byGlass(w))||ws[0], off=ds.find(x=>/sole|scallop/i.test(x.name))||ds[ds.length-1];
+    Store.set('vbiz_tonight_demo',day); if(!push) return false;
+    TeamData.setTonight({feature:[push.id],off:off?[off.id]:[],note:`Two large tables at 7:30. Lead with the ${TeamData.nick(push)} for the red meat.`}); return true; },
   DAY:86400000,
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a
@@ -766,7 +821,32 @@ const TeamLayout = {
   toggle(pid,ids,id){ const {order,folded}=this.get(pid,ids); folded.has(id)?folded.delete(id):folded.add(id); this._save(pid,order,folded); },
   reset(pid){ const all=this._all(); delete all[pid]; Store.setJSON(this.KEY,all); },
 };
-Object.assign(window,{TeamDemo,TeamJobs,TeamLayout});
+/* Where the cards of a console page sit, per person: {pid:{page:{stack:[card keys]}}}. A page has stacks (its columns);
+   a card can be moved within its stack or into another. `arrange` lays the saved order over the page's own: a card
+   the page no longer has is dropped, a new one joins the stack the page puts it in. */
+const TeamBoard = {
+  KEY:'vbiz_console_boards_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  saved(pid,page){ return ((this._all()[pid]||{})[page])||null; },
+  arrange(saved,def){ const ids=Object.keys(def), all=new Set(ids.flatMap(id=>def[id])), out={}, seen=new Set(); ids.forEach(id=>{ out[id]=((saved||{})[id]||[]).filter(k=>all.has(k)&&!seen.has(k)&&seen.add(k)); });
+    ids.forEach(id=>def[id].forEach((k,i)=>{ if(seen.has(k)) return; const before=def[id].slice(0,i).reverse().find(x=>out[id].includes(x)); out[id].splice(before?out[id].indexOf(before)+1:0,0,k); seen.add(k); })); return out; },
+  /* Every change keeps what was there before it (the last HIST of them), so a move or a reset can be undone. */
+  HKEY:'vbiz_console_boards_undo', HIST:20,
+  _set(pid,page,lay,keep=true){ const all=this._all(), h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page;
+    if(keep){ (h[k]=h[k]||[]).push(((all[pid]||{})[page])||null); h[k]=h[k].slice(-this.HIST); Store.setJSON(this.HKEY,h); }
+    if(lay) (all[pid]=all[pid]||{})[page]=lay; else if(all[pid]) delete all[pid][page]; Store.setJSON(this.KEY,all); },
+  /* Move a card to a stack, before `at` (a card key) or, with `after`, behind it; with no `at`, to the stack's end. */
+  move(pid,page,def,key,to,at,after){ const lay=this.arrange(this.saved(pid,page),def), was=JSON.stringify(lay); Object.keys(lay).forEach(id=>{ lay[id]=lay[id].filter(k=>k!==key); }); if(!lay[to]) return null;
+    const i=at&&at!==key?lay[to].indexOf(at):-1; lay[to].splice(i<0?lay[to].length:i+(after?1:0),0,key); if(JSON.stringify(lay)===was) return null; this._set(pid,page,lay); return lay; },
+  changed(pid,page,def){ const s=this.saved(pid,page); return !!s&&JSON.stringify(this.arrange(s,def))!==JSON.stringify(def); },
+  canUndo(pid,page){ return (((Store.getJSON(this.HKEY,{})||{})[pid+'|'+page])||[]).length>0; },
+  undo(pid,page){ const h=Store.getJSON(this.HKEY,{})||{}, k=pid+'|'+page; if(!(h[k]||[]).length) return false; const prev=h[k].pop(); Store.setJSON(this.HKEY,h); this._set(pid,page,prev,false); return true; },
+  /* Back to the page's own layout; that too can be undone. */
+  reset(pid,page){ if(this.saved(pid,page)) this._set(pid,page,null); },
+  /* Whether a card that needs `fit` pixels of width goes into a stack `width` wide laid `across` columns (a card that spans them all gets the whole width). */
+  fits(fit,width,across=1,span=1){ if(!fit) return true; const n=Math.max(1,across), cell=n>1&&span<n?(width-16*(n-1))/n:width; return cell>=fit-1; },
+};
+Object.assign(window,{TeamDemo,TeamJobs,TeamLayout,TeamBoard});
 Object.assign(window,{TeamData,TeamSample});
 
 /* A restaurant's own accent (venue.brand.accent, from its list file) in place of Vinterest's crimson. apply()
@@ -775,7 +855,10 @@ Object.assign(window,{TeamData,TeamSample});
 const TeamBrand = {
   _crimson:null,
   get(){ return TeamData.brand(); },
-  apply(){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:this._crimson; return b; },
+  /* The console is gold for a restaurant with no accent of its own: crimson there read as an alarm beside the
+     red of a fall or a gap. The staff app keeps Vinterest's crimson. */
+  GOLD:'#D4A84B',
+  apply(console){ if(this._crimson==null) this._crimson=C.cr; const b=this.get(); C.cr=b&&b.accent?b.accent:console?this.GOLD:this._crimson; return b; },
 };
 Object.assign(window,{TeamBrand});
 
@@ -811,10 +894,23 @@ Object.assign(window,{TeamTour});
 /* Which sections of a wine's or cocktail's card this person keeps folded, on this device (vbiz_fold_v1, never
    synced): someone checking a price or a pairing in service gets straight to it, and the sections they never use
    stay out of the way. {section key: true when folded}; a section not yet touched takes its default. */
+/* What a console page's "Needs you" has had cleared (docs/business.md "Needs you"): each item is known by its tag and
+   what it says, so one that's been dealt with or dismissed stays away until the facts behind it change and it says
+   something new. Kept on the device, per page. */
+const TeamNeeds = {
+  KEY:'vbiz_needs_v1',
+  _all(){ return Store.getJSON(this.KEY,{})||{}; },
+  id(b){ const t=String(b.tag||'')+'|'+String(b.fact||b.title||''); let h=2166136261; for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  cleared(page){ return this._all()[page]||{}; },
+  left(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>!c[this.id(b)]); },
+  gone(page,items){ const c=this.cleared(page); return (items||[]).filter(b=>c[this.id(b)]).length; },
+  clear(page,b){ const a=this._all(); a[page]={...(a[page]||{}),[this.id(b)]:Date.now()}; Store.setJSON(this.KEY,a); },
+  restore(page){ const a=this._all(); delete a[page]; Store.setJSON(this.KEY,a); },
+};
 const TeamFold = {
   KEY:'vbiz_fold_v1',
   _all(){ return Store.getJSON(this.KEY,{})||{}; },
   folded(k,def=false){ const v=this._all()[k]; return typeof v==='boolean'?v:def; },
   set(k,v){ const a=this._all(); a[k]=!!v; Store.setJSON(this.KEY,a); },
 };
-Object.assign(window,{TeamFold});
+Object.assign(window,{TeamFold,TeamNeeds});

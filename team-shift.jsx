@@ -10,7 +10,7 @@ const _shInput=(T)=>({width:'100%',boxSizing:'border-box',padding:'10px 12px',bo
 /* The wine poured with a special: its name, how it's sold, and why. */
 function _ShPour({T,label,p,onPick}){ const w=p&&TeamData.wine(p.id); if(!w) return onPick?<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'6px 0'}}>{label}: none picked. {_shLink(T,'Pick one',onPick)}</div>:null;
   const pr=label==='By the glass'?(w.glass?`${w.glass} a glass`:''):(w.bottle?`${w.bottle} a bottle`:w.glass?`${w.glass} a glass`:'');
-  return <div style={{padding:'8px 0',borderTop:`1px solid ${T.line}`}}>
+  return <div style={{padding:'8px 0 8px 12px',borderTop:`1px solid ${T.line}`,..._tWineRule(T,w)}}>
     <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'baseline'}}><div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>{label}</div>{onPick&&_shLink(T,'Swap',onPick)}</div>
     <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3,marginTop:2}}>{TeamData.short(w)}{pr&&<span style={{fontSize:14,fontWeight:500,color:T.mid}}> · {pr}</span>}</div>
     {p.why&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{p.why}</div>}</div>; }

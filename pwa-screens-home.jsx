@@ -172,7 +172,7 @@ function WaitingOnYou({nav}){ const T=useTheme();
     {toScore.slice(0,3).map(w=>(
       <div key={w.name+'|'+w.vintage} onClick={()=>open(w)} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{w.name}</div>
+          <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{WineDNA.shownName(w)}</div>
           <div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>{w.bought&&w.scan_intent==='checking'?'Bought':'Tasted'}, not rated yet</div>
         </div>
         <span style={{fontSize:13,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0}}>Rate it →</span>
@@ -194,6 +194,24 @@ function BackupOffer({nav,count}){ const T=useTheme();
       <span onClick={()=>{ Flags.dismissBackupOffer(); setGone(true); }} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>
     </div>
   </Card>;
+}
+
+/* "A new version is out" (AppUpdate in pwa-update.js): the phone apps only, when the Worker's
+   /config names a newer version in this store. "Not now" hides it until the next one; below the
+   oldest supported version it stays, and says why. */
+function UpdateOffer(){ const T=useTheme();
+  const [u,setU]=React.useState(()=>AppUpdate.offer());
+  React.useEffect(()=>{ const h=()=>setU(AppUpdate.offer()); window.addEventListener('vinterest:update',h); return ()=>window.removeEventListener('vinterest:update',h); },[]);
+  if(!u) return null;
+  const store=Platform.name()==='ios'?'the App Store':'Google Play';
+  return <div data-testid="update-offer"><Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${T.line}`}}>
+    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{u.required?'Time to update Vinterest':`Vinterest ${u.latest} is out`}</div>
+    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>{u.required?`This version is too old to keep working properly. Update in ${store}; your wines and progress stay as they are.`:(u.note||`Update in ${store} for the newest features and fixes. Your wines and progress stay as they are.`)}</div>
+    <div style={{display:'flex',gap:14,alignItems:'center',marginTop:2}}>
+      <div role="button" data-testid="update-open" onClick={()=>AppUpdate.open(u.url)} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Update</div>
+      {!u.required&&<span role="button" data-testid="update-dismiss" onClick={()=>{ AppUpdate.dismiss(u.latest); setU(null); }} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>}
+    </div>
+  </Card></div>;
 }
 
 /* Home is "what next": Waiting on you, one Up next action and two more (LearnNext.home), the
@@ -268,6 +286,7 @@ function HomeScreen({nav, showPro, isTablet}){
 
   /* Home in two halves: what to do next, and what they've done. Side by side on an iPad. */
   const doNext=<>
+        <UpdateOffer/>
         <WaitingOnYou nav={nav}/>
         {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
 
@@ -298,7 +317,7 @@ function HomeScreen({nav, showPro, isTablet}){
         {/* Recently scanned */}
         {recentWines.length>0&&<Card style={{padding:0,overflow:'hidden'}}>
           {head('Recently scanned','All →',()=>nav('mywines'))}
-          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),w.name,<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
+          {recentWines.map((w,i)=>row('r'+i,'wine',colFor(w),WineDNA.shownName(w),<><Flag wine={w} size={13} style={{marginRight:5}}/>{MyWines.subline(w)}</>,()=>openWine(w),
             w.rating>0?<span style={{fontSize:15,fontWeight:700,color:T.tone[ParkerScale.tone(w.rating)],fontFamily:C.P,flexShrink:0}}>{w.rating}</span>
               :<span style={{fontSize:13,color:T.lift(C.cr),fontFamily:C.P,flexShrink:0,fontWeight:600}}>Rate it →</span>))}
         </Card>}

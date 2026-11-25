@@ -98,11 +98,16 @@ function App(){
   React.useEffect(()=>{ setXpBadge(XPSystem.get()); },[screen]);
   // How much detail screens show (DetailLevel): checked on calm screens, a moment's wait after
   // arriving, so a rise from a quiz or a scan is told on Home, Learn or another tab.
+  const [whatsNew,setWhatsNew]=React.useState(null); // WhatsNewSheet's items while it's up
   React.useEffect(()=>{
     if(!Settings.onboarded()||!MOMENT_SCREENS.includes(screen)) return;
-    const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} try{ Notices.check(); }catch(e){} },400);
+    const t=setTimeout(()=>{ try{ DetailLevel.check(); }catch(e){} try{ Notices.check(); }catch(e){}
+      // What's new in this version (WhatsNew): once, on the first calm screen after an update.
+      try{ if(!whatsNew){ const items=WhatsNew.items(); if(items.length) setWhatsNew(items); } }catch(e){} },400);
     return()=>clearTimeout(t);
   },[screen]);
+  const closeWhatsNew=()=>{ WhatsNew.markSeen(); setWhatsNew(null); };
+  const openFromWhatsNew=o=>{ closeWhatsNew(); if(o.camera){ Handoff.cameraMode.set(o.camera); nav('camera'); } else if(o.screen) nav(o.screen); };
   const showXpBadge=!['home','notices','camera','onboarding','learn','quiz','article','gen-article','guide','identified','detail','mywines','profile','style-explore','winelist','account','settings','mastery-map','grape','region-page','palate-trait','dna-trait'].includes(screen);
 
   // XP and the moments behind it (pwa-moments.jsx): a quiet chip, and cards that wait for a calm screen.
@@ -208,6 +213,7 @@ function App(){
       {showNav&&MOMENT_SCREENS.includes(screen)&&xpDel.moment?<MomentCard m={xpDel.moment} more={xpDel.more} onAct={actOnMoment} onClose={xpDel.dismiss}/>
         :showNav&&!showXpBadge&&<XPChip chip={xpDel.chip} overNav/>}
       {showNav&&<BottomNav active={screen} nav={nav} showPro={setProGate} dark={darkChrome}/>}
+      {whatsNew&&MOMENT_SCREENS.includes(screen)&&<WhatsNewSheet items={whatsNew} version={WhatsNew.installed()} onOpen={openFromWhatsNew} onClose={closeWhatsNew}/>}
       {screen==='home'&&<NoticeBell nav={nav} dark={darkChrome}/>}
       {showXpBadge&&(
         <div onClick={()=>setShowXpOverlay(true)} style={{position:'absolute',top:'calc(env(safe-area-inset-top) + 15px)',right:14,zIndex:200,display:'flex',alignItems:'center',gap:5,padding:'5px 11px',borderRadius:20,background:darkChrome?'rgba(255,255,255,0.08)':C.crSoft,border:`1px solid ${darkChrome?'rgba(255,255,255,0.16)':C.crDim}`,cursor:'pointer',boxShadow:'0 1px 8px rgba(0,0,0,0.08)',pointerEvents:'auto'}}>
@@ -337,7 +343,7 @@ function DiscoverScreen({nav,back}){
               </div>
               <div style={{flex:1}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{w.name}</span>
+                  <span style={{fontSize:17,fontWeight:600,color:C.ink,fontFamily:C.P}}>{WineDNA.shownName(w)}</span>
                   <div style={{display:'inline-flex',alignItems:'center',gap:2,padding:'3px 8px',borderRadius:7,background:C.greenBg}}>
                     <span style={{fontSize:16,fontWeight:700,color:C.green,fontFamily:C.P}}>{w.score}%</span>
                   </div>

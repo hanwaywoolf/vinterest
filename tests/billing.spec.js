@@ -152,8 +152,8 @@ test.describe('Worker', () => {
 
 // ---- The app: the Pro sheet with a fake store plugin ----
 
-async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant', platform = 'ios' } = {}) {
-  await page.addInitScript(({ purchase, restore, offer, platform }) => {
+async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant', platform = 'ios', trial = null } = {}) {
+  await page.addInitScript(({ purchase, restore, offer, platform, trial }) => {
     window.CapacitorCustomPlatform = { name: platform };
     window.Capacitor = { isNativePlatform: () => true, getPlatform: () => platform };
     const calls = (window.__rc = []);
@@ -162,9 +162,13 @@ async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant
       logIn: async (o) => { calls.push(['logIn', o.appUserID]); },
       logOut: async () => { calls.push(['logOut']); },
       getOfferings: async () => ({ current: { availablePackages: [
-        { identifier: '$rc_monthly', packageType: 'MONTHLY', product: { priceString: '£4.99', title: 'Vinterest Pro' } },
-        { identifier: '$rc_annual', packageType: 'ANNUAL', product: { priceString: '£39.99', title: 'Vinterest Pro' } },
+        { identifier: '$rc_monthly', packageType: 'MONTHLY', product: { identifier: 'VINPRO_M', priceString: '£4.99', title: 'Vinterest Pro',
+          ...(trial && platform === 'ios' ? { introPrice: { price: 0, priceString: '£0.00', cycles: 1, period: 'P1W', periodUnit: 'WEEK', periodNumberOfUnits: 1 } } : {}),
+          ...(trial === 'eligible' && platform === 'android' ? { defaultOption: { freePhase: { billingPeriod: { unit: 'DAY', value: 7 } } } } : {}) } },
+        { identifier: '$rc_annual', packageType: 'ANNUAL', product: { identifier: 'VINPRO_A', priceString: '£39.99', title: 'Vinterest Pro' } },
       ] } }),
+      checkTrialOrIntroductoryPriceEligibility: async (o) => { calls.push(['eligibility', o.productIdentifiers]);
+        return Object.fromEntries(o.productIdentifiers.map((id) => [id, { status: trial === 'eligible' ? 2 : trial === 'unknown' ? 0 : 1 }])); },
       purchasePackage: async (o) => {
         calls.push(['purchase', o.aPackage.identifier]);
         if (purchase === 'cancel') throw Object.assign(new Error('cancelled'), { userCancelled: true });
@@ -177,7 +181,7 @@ async function asIosApp(page, { purchase = 'ok', restore = 'pro', offer = 'grant
     };
     let native;
     Object.defineProperty(window, 'VinterestNative', { configurable: true, get: () => native, set: (v) => { native = { ...v, Purchases: fake }; } });
-  }, { purchase, restore, offer, platform });
+  }, { purchase, restore, offer, platform, trial });
 }
 async function setup(context, page, { signedIn = true, source = null, typedPromo = false } = {}) {
   await makeDeterministic(page);
@@ -223,6 +227,33 @@ test.describe('the Pro sheet in the app', () => {
     expect(hits).toContain('/billing/sync');
     await expect(page.getByTestId('manage-subscription')).toBeVisible();
     expect(await page.evaluate(() => Account.tier())).toBe('pro');
+  });
+
+  test('a free trial is said only to someone who can still have it, with the price that follows', async ({ context, page }) => {
+    await asIosApp(page, { trial: 'eligible' });
+    await setup(context, page);
+    await openSheet(page);
+    const offers = page.locator('[data-sheet="pro"]').getByTestId('pro-offer');
+    await expect(offers.first()).toContainText('Try 7 days free');
+    await expect(offers.first()).toContainText('Then £4.99 / month · Cancel anytime');
+    await expect(offers.nth(1)).toContainText('Subscribe · £39.99 / year');
+    expect(await page.evaluate(() => window.__rc.find((c) => c[0] === 'eligibility'))).toEqual(['eligibility', ['VINPRO_M']]);
+  });
+  for (const trial of ['used', 'unknown']) {
+    test(`a trial already ${trial === 'used' ? 'used' : 'in doubt'} is never promised (iPhone)`, async ({ context, page }) => {
+      await asIosApp(page, { trial });
+      await setup(context, page);
+      await openSheet(page);
+      const sheet = page.locator('[data-sheet="pro"]');
+      await expect(sheet.getByTestId('pro-offer').first()).toContainText('Subscribe · £4.99 / month');
+      await expect(sheet).not.toContainText('free');
+    });
+  }
+  test('Android says the trial Play offers them', async ({ context, page }) => {
+    await asIosApp(page, { trial: 'eligible', platform: 'android' });
+    await setup(context, page);
+    await openSheet(page);
+    await expect(page.locator('[data-sheet="pro"]').getByTestId('pro-offer').first()).toContainText('Try 7 days free');
   });
 
   test('closing the store sheet is not an error and nobody is charged or made Pro', async ({ context, page }) => {

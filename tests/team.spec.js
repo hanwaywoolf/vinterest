@@ -67,6 +67,22 @@ test('The Social Corner opens from ?seed=social on its own team, logo, dollars a
 // The Princess Royal (Notting Hill, Cubitt House), installed from the menus and wine list on its site
 // (intake/princess-royal/): ?seed=princess opens it in pounds on the same invented team and sales as The Social Corner,
 // with its own one-line logo (white, supplied by Carey) and the POS item its list doesn't carry.
+// A browser already holding the consumer app's data has little room left on this address. The venue and team fit; the
+// sales, written last, once didn't, and Sales Insights said "No sales yet" with no word of why.
+test('a nearly full browser still opens The Princess Royal with its sales', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=sample`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  // Fill the device until about 2.2MB is left: enough for the venue and the team, not for the sales as well.
+  await page.evaluate(() => { localStorage.clear(); const chunk = 'x'.repeat(100000); let i = 0; try { for (;; i++) localStorage.setItem('vinterest_fill_' + i, chunk); } catch (e) {} for (let k = 0; k < 11; k++) localStorage.removeItem('vinterest_fill_' + (i - 1 - k)); });
+  await page.goto(`${BASE}/team/?seed=princess&view=console`);
+  await expect(page.getByTestId('console-nav-sales')).toBeVisible();
+  const st = await page.evaluate(() => ({ rows: (TeamSales.get().rows || []).length, held: Store.full(), wines: TeamData.wines().length, people: TeamLearn.people().length }));
+  expect(st.wines).toBeGreaterThan(100); expect(st.people).toBe(7);
+  expect(st.held).toBe(true);                                                                   // the test really did run out of room
+  expect(st.rows).toBeGreaterThan(1000);
+});
+
 test('The Princess Royal opens from ?seed=princess on its own team, pounds and invented sales', async ({ context, page }) => {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -224,7 +240,7 @@ test('The Social Corner cocktails: cards, their own part of readiness, drilled, 
   expect(lower).toEqual([]);
   await expect(page.getByTestId('team-cocktail')).toContainText('Gin');
   // The drill asks a cocktail question as four options.
-  await page.getByText(/Practise this cocktail|Start this cocktail/).click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   await expect(page.getByTestId('drill-opt')).toHaveCount(4);
   // The console has a Cocktails section beside Wines.
   await page.goto(`${BASE}/team/?view=console`);
@@ -254,6 +270,17 @@ test('the setup screen offers The Social Corner and The Larkspur, a device left 
   await page.getByTestId('team-who').click();
   await page.getByTestId('team-change-restaurant').click();
   await expect(page.getByTestId('team-load-demo')).toBeVisible();
+});
+
+test('the console is gold for a restaurant with no accent of its own, and the staff app stays crimson', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } }); await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/team/?seed=princess&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  expect(await page.evaluate(() => [TeamData.brand().accent || null, C.cr])).toEqual([null, '#D4A84B']);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`); await expect(page.getByTestId('team-console')).toHaveCount(0);
+  expect(await page.evaluate(() => C.cr)).toBe('#8B1A2F');
+  await ctx.close();
 });
 
 test('?seed=perse opens The Social Corner in its own accent, prices in Canadian dollars, its description in what Claude writes from', async ({ context, page }) => {
@@ -361,7 +388,7 @@ test('readiness: ready once every part meets the role minimum, then slipping whe
     return { ready: ready.state, parts: Object.keys(ready.parts), slipping: slipping.state };
   }, [DAY]);
   expect(out.ready).toBe('ready');
-  expect(out.parts).toEqual(['glass', 'dishes']); // a bartender's minimum leaves bottles out
+  expect(out.parts).toContain('glass'); expect(out.parts).toContain('pairings'); expect(out.parts).not.toContain('bottle'); expect(out.parts).not.toContain('dishes'); // a bartender's minimum leaves bottles out; the menu is two areas, pairings and menu
   expect(out.slipping).toBe('slipping');
 });
 
@@ -656,6 +683,7 @@ test('the demo restaurant: 30 wines, photos, and a wine added from its label upd
   expect(reqs.filter((r) => r.purpose === 'team_cards')).toHaveLength(1);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Prunotto Barolo Bussia').click();
+  await page.getByTestId('wine-tab-know').click(); // the taste, grape, life and serving are the card's third tab
   await expect(page.getByTestId('team-window')).toContainText('Still young'); // folded to its one line
   await page.getByTestId('fold-wine-life').getByRole('button').first().click();
   await expect(page.getByTestId('team-window')).toContainText('Best from 2027 to 2036');
@@ -753,7 +781,7 @@ test('the drill asks typed questions as pills, keeps the wine out of the header 
   await page.goto(`${BASE}/team/`);
   await page.getByTestId('team-tab-wines').click();
   await page.getByText('Nyetimber Classic Cuvée').click();
-  await page.getByText('Practise this wine').first().click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   const seen = [];
   for (let i = 0; i < 5; i++) {
     const q = page.getByTestId('drill-q'); if (!(await q.isVisible().catch(() => false))) break;
@@ -782,7 +810,7 @@ test('practise by the glass from Today, and a perfect wine moves the readiness f
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
   await startFresh(page);
-  expect(await page.getByTestId('team-part').count()).toBe(3);
+  expect(await page.getByTestId('team-part').count()).toBe(4); // glasses, bottles, pairings, menu
   await page.getByTestId('team-part-practise').first().click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
   const header = await page.locator('[data-testid="team-drill"] > div').nth(1).innerText();
@@ -1649,15 +1677,18 @@ test('training levels: the console sets them, cards and drills follow, a role ca
   await expect(page.getByTestId('team-pitch')).toBeVisible();
   await expect(page.getByTestId('team-fact')).toBeVisible();
   await expect(page.getByTestId('team-grape-region')).toHaveCount(0);
-  await expect(page.getByTestId('team-window')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
+  await expect(page.getByTestId('team-grape-region')).toHaveCount(0); await expect(page.getByTestId('team-window')).toHaveCount(0);
+  await page.getByTestId('wine-tab-pair').click();
   await expect(page.locator('#root')).toContainText('With our menu');
   // Back to High: the full card again, and the answers held were never touched.
   await page.evaluate(() => TeamLearn.setLevel('high'));
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').first().click();
-  await expect(page.getByTestId('team-grape-region')).toBeVisible();
   await expect(page.getByTestId('team-fact')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
+  await expect(page.getByTestId('team-grape-region')).toBeVisible();
   expect(errors).toEqual([]);
   await ctx.close();
 });
@@ -2154,7 +2185,7 @@ test('a drill about one wine never asks which wine: its table question asks only
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').filter({ hasText: 'Tondonia' }).first().click();
-  await page.getByText(/Start this wine|Practise this wine/).click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
   await expect(page.getByTestId('drill-q')).toBeVisible();
   const seen = await page.evaluate(() => [...document.querySelectorAll('[data-testid="team-drill"]')].length);
   expect(seen).toBe(1);
@@ -2191,6 +2222,10 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   const top = async (id) => page.getByTestId(id).first().evaluate((el) => el.getBoundingClientRect().top);
   expect(await top('team-standing')).toBeLessThan(await top('team-pitch'));
   await expect(page.getByText('Practise this wine', { exact: true })).toHaveCount(0); // the standing card's button is the one
+  // Three tabs under the standing: the line to say, the dishes, then what the wine is.
+  await expect(page.getByTestId('wine-pane-sell')).toBeVisible(); expect(await top('team-standing')).toBeLessThan(await top('wine-tabs'));
+  await page.getByTestId('wine-tab-pair').click(); await expect(page.getByTestId('team-wine-dishes')).toBeVisible(); await expect(page.getByTestId('team-pitch')).toHaveCount(0);
+  await page.getByTestId('wine-tab-know').click();
   const taste = page.getByTestId('fold-wine-taste');
   await expect(taste).toHaveAttribute('data-folded', '0');
   await taste.getByRole('button').first().click();
@@ -2198,6 +2233,7 @@ test('a wine card: where you stand near the top, sections that fold and stay fol
   await page.reload();
   await page.getByTestId('team-tab-wines').click();
   await page.getByTestId('team-wine-row').nth(1).click();
+  await page.getByTestId('wine-tab-know').click();
   await expect(page.getByTestId('fold-wine-taste')).toHaveAttribute('data-folded', '1'); // remembered on this phone
 });
 
@@ -2494,6 +2530,34 @@ test('the pre-shift briefing: a special read, paired and approved, a gate everyo
   expect(errors).toEqual([]);
 });
 
+// A pitch demo's short card (docs/business.md "Pitch demos"): written from its own prompt with no questions, more wines a
+// call, and enough for the app to build its Essentials questions, so every wine on the list still counts and can be drilled.
+test('a short card has no written questions and the app still builds Essentials questions from it', async ({ context, page }) => {
+  const asked = [];
+  const errors = await openSample(context, page, { claudeRequests: asked, claudeText: (body) => {
+    const text = JSON.stringify(body), ids = [...new Set((text.slice(text.lastIndexOf('Write a card for EACH of these wines')).match(/w-[a-z0-9-]+(?= \|)/g)) || [])];
+    return JSON.stringify({ cards: ids.map((id) => ({ id, hook: 'From the house on the list.', pitch: 'It is fresh and bright. You will enjoy it with the fish.', say: '', taste: 'Fresh, bright and dry.', style: { body: 2, acid: 4, tannin: 0, sweet: 1 }, serve: { temp: '8-10°C', glass: 'white wine glass', decant: 'no' }, dishes: [], alts: [] })) }); } });
+  const out = await page.evaluate(async () => {
+    const ids = TeamData.wines().map((w) => w.id), d = TeamData.get(), dishes = {};
+    ids.forEach((id) => { dishes[id] = (d.cards[id] || {}).dishes || []; }); d.cards = {}; TeamData.save(d);
+    await TeamData.writeCards(ids, null, { short: true });
+    const now = TeamData.get(); ids.forEach((id) => { now.cards[id].dishes = dishes[id]; }); TeamData.save(now); // the dishes a real answer would carry
+    TeamLearn.setTier('essentials');
+    const server = TeamLearn.people().find((p) => p.role === 'server') || TeamLearn.me();
+    return { wines: ids.length, cards: Object.keys(TeamData.get().cards).length, written: Object.values(TeamData.get().cards).reduce((n, c) => n + (c.qs || []).length, 0),
+      built: ids.map((id) => TeamLearn.qsFor(server.role, id).length), drill: TeamLearn.drill(server.id).length, readiness: !!TeamLearn.readiness(server.id) };
+  });
+  expect(out.cards).toBe(out.wines);
+  expect(out.written).toBe(0);                                   // nothing written to ask
+  expect(Math.min(...out.built)).toBeGreaterThanOrEqual(1);      // and still something to ask of every wine
+  expect(out.drill).toBeGreaterThan(0);
+  expect(out.readiness).toBe(true);
+  const calls = asked.filter((b) => b.purpose === 'team_cards');
+  expect(calls.length).toBe(Math.ceil(out.wines / 8));           // eight wines a call, not four
+  expect(JSON.stringify(calls[0])).toContain('Write nothing else for a wine');
+  expect(errors).toEqual([]);
+});
+
 // The console's first-use tour: by itself on a person's first visit, a spotlight down the sidebar with a card at each
 // stop, each stop opening its section; nothing under it takes a click; Done (or Skip) is remembered for that person on the
 // device, and "Take the tour" at the sidebar's foot brings it back.
@@ -2555,4 +2619,671 @@ test('the console tour: first visit only, each stop opens its section, skippable
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('console-tour')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+// One text size on the cards (docs/business.md "One size on the cards"): on a wine's, a cocktail's and a dish's card every
+// line is 14px, the size of the sentence in Where you stand, only the name is larger (20px), and nothing is heavier
+// than 600. On every restaurant, on the phone and in the console's drawer. Sizes had drifted between 11 and 22.
+const CARD_SEEDS = ['demo', 'social', 'princess', 'eloise'];
+for (const seed of CARD_SEEDS) {
+  test(`the cards keep one text size and light weights (${seed})`, async ({ browser }) => {
+    const stray = (page, tid) => page.getByTestId(tid).first().evaluate((root) => {
+      const bad = [], own = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim().length > 1);
+      root.querySelectorAll('*').forEach((el) => { if (!own(el) || !el.offsetParent || el.closest('svg')) return; const cs = getComputedStyle(el), name = !!el.closest('[data-card-name]');
+        const size = Math.round(parseFloat(cs.fontSize)), w = Number(cs.fontWeight);
+        // The name, the prices and the line to say are a card's display text (data-card-big); everything else is one size.
+        if ((!el.closest('[data-card-big],[data-pill],[data-cap],[data-team-btn]') && size !== (name ? 20 : 14)) || w > 600) bad.push(`${el.textContent.trim().slice(0, 40)}: ${size}px ${w}`); });
+      return bad; });
+    // The phone: a wine, a dish and (where the venue has them) a cocktail, each opened from its list.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), page = await ctx.newPage();
+    await stubNetwork(ctx);
+    await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+    await expect(page.getByTestId('team-state')).toBeVisible();
+    await page.getByTestId('team-tab-wines').click();
+    await page.getByTestId('team-wine-row').first().click();
+    await expect(page.getByTestId('team-wine')).toBeVisible(); expect(await stray(page, 'team-wine')).toEqual([]);
+    await page.getByLabel('Back').click();
+    if (await page.getByTestId('team-list-switch').count()) {
+      await page.getByTestId('team-list-switch').getByText('Cocktails').click();
+      await page.getByTestId('team-cocktail-row').first().click();
+      await expect(page.getByTestId('team-cocktail')).toBeVisible(); expect(await stray(page, 'team-cocktail')).toEqual([]);
+      await page.getByLabel('Back').click();
+    }
+    await page.getByTestId('team-tab-menu').click();
+    await page.getByTestId('team-dish-row').first().click();
+    await expect(page.getByTestId('team-dish')).toBeVisible(); expect(await stray(page, 'team-dish')).toEqual([]);
+    await ctx.close();
+  });
+}
+
+// The console's new look (team-console2.jsx), shown where a restaurant's file asks for it: The Larkspur's does, as a
+// preview. Tests elsewhere pin the classic console (helpers.stubNetwork); this one asks for the new one.
+test('the console\'s new look: four pages, the same drawer, and the way back to classic', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const con = page.getByTestId('team-console');
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  // A device that opened The Larkspur before its file asked for the new look still gets it.
+  expect(await page.evaluate(() => { const d = TeamData.get(); delete d.venue.console; TeamData.save(d); const o = window.VINTEREST_CONSOLE; window.VINTEREST_CONSOLE = null; const look = TeamData.consoleLook(); window.VINTEREST_CONSOLE = o; return look; })).toBe('preview');
+  // One standout fact with quick ones beneath, about what knowing the list sells.
+  await expect(page.getByTestId('c2-fact')).toContainText('with a server trained on it');
+  expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
+  await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
+  await expect(page.getByTestId('c2-person')).toHaveCount(7);
+  // Five figures under the sentence, the pairing among them; then what training is worth, wine by wine, and what
+  // needs the manager as what's so and what to do.
+  await expect(page.getByTestId('c2-kpi-pairing')).toContainText('pairing');
+  await expect(page.getByTestId('c2-lift')).toContainText('×'); expect(await page.getByTestId('c2-lift-row').count()).toBeGreaterThan(1);
+  // Needs you is a button in the page's head with how many are left, as on Wines, Cocktails and Menu: no card on the page.
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); expect(Number(await page.getByTestId('c2-needs-count').innerText())).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('c2-needs')).not.toContainText(/know(s|n)? it|known by|the floor/i); await page.getByTestId('c2-needs-close').click();
+  await expect(page.getByTestId('console-dash')).not.toContainText(/know(s|n)? it|known by/);
+  await expect(page.getByTestId('console-dash')).not.toContainText(/the floor/i);
+  // Training's worth is said in weeks, and a wine can be put first for the people not trained on it.
+  await expect(page.getByTestId('c2-lift')).toContainText('a week'); await expect(page.getByTestId('c2-lift')).not.toContainText('a shift');
+  await page.getByTestId('c2-lift-assign').first().click(); await expect(page.getByTestId('c2-lift-assign').first()).toContainText('First in their drills');
+  // How far training has spread leaves room to grow: whole team, at least half, fewer.
+  await expect(page.getByTestId('c2-spread').first()).toContainText('whole team trained');
+  // A line of Needs you opens a plan: where things stand, then steps, with a button where the console can do one.
+  await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs').getByTestId('c2-need').first().locator('[role="button"]').first().click();
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
+  await page.getByTestId('c2-plan-do').first().click(); await expect(page.getByTestId('c2-plan-do').first()).toContainText('Done');
+  await page.getByTestId('c2-plan-close').click();
+  // A figure opens the card it summarises.
+  await page.getByTestId('c2-kpi-pairing').click(); await expect(page.getByTestId('c2-pairing-panel')).toHaveAttribute('data-lit', '1');
+  await page.getByTestId('console-nav-dash').click();
+  // The demo's Tonight is set for it, so the tile is never empty.
+  await expect(page.getByTestId('c2-tonight')).toContainText('Pushing');
+  // The summary is Poppins at a light weight, loaded from the build's own fonts.
+  expect(await page.getByTestId('c2-fact').evaluate(el => getComputedStyle(el).fontWeight)).toBe('300');
+  expect(await page.evaluate(() => document.fonts.check('300 38px Poppins'))).toBe(true);
+  // A best seller opens the same wine drawer as the classic console.
+  await page.getByTestId('c2-seller').first().click();
+  await expect(page.getByTestId('console-panel')).toBeVisible();
+  await page.getByTestId('console-panel-close').click();
+  await page.getByTestId('console-nav-sales').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
+  // Every line of the briefing is what the sales say, then what to do; nothing in the console's own shorthand.
+  // It sits behind a button in the page's head with its count, as Needs you does on the other pages.
+  await expect(page.getByTestId('sales-brief')).toHaveCount(0); await expect(page.getByTestId('c2-needs-btn')).toContainText('What you need to know');
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); await expect(page.getByTestId('sales-brief')).toContainText(/things? to know/);
+  expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/); await page.getByTestId('c2-needs-close').click();
+  // Best sellers is the first card on the page, above Wine sales by week.
+  expect(await page.evaluate(() => { const y = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect().top; return y('sales-wines') < y('sales-trend') && y('sales-wines') < y('c2-upside') && y('c2-mix') > y('sales-trend'); })).toBe(true);
+  await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
+  const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
+  await page.getByTestId('c2-chart-bottles').click();
+  await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
+  await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
+  // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
+  await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');
+  await expect(page.getByTestId('c2-weekday-act')).toContainText('→');
+  expect(await page.evaluate(() => { const w = TeamReport.byWeekday(28), open = w.days.filter(d => d.nights); return [open.length, open.every(d => d.revenue > 0 && d.nights <= 4), w.best[w.key] >= w.worst[w.key]]; })).toEqual([6, true, true]);
+  await page.getByTestId('console-nav-wines').click();
+  await expect(page.getByTestId('c2-list-row')).toHaveCount(30);
+  // The list narrows to one kind of wine from chips in each kind's colour, and back.
+  { const reds = await page.evaluate(() => TeamBuyer.wines().filter(w => _tWineKey(w) === 'red').length); await page.getByTestId('c2-wine-kind-red').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(reds); await page.getByTestId('c2-wine-kind-all').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(30); }
+  await page.getByTestId('c2-wine-filter-glass').click(); await expect(page.getByTestId('c2-list-row')).toHaveCount(15);
+  // Wines is the buyer's page: five figures about the list itself, each opening what it's about; what needs the
+  // buyer as what's so and what to do; the list's balance against its sales; the price ladder; markup against the shop.
+  await page.getByTestId('c2-wine-filter-all').click();
+  await expect(page.getByTestId('c2-kpi-topfive')).toContainText('%'); await expect(page.getByTestId('c2-kpi-markup')).toContainText('×');
+  await page.getByTestId('c2-kpi-through').click(); await expect(page.getByTestId('c2-wine-filter-through')).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.getByTestId('c2-list-row').count()).toBeLessThan(30);
+  await page.getByTestId('c2-wine-filter-all').click();
+  for (const t of ['Glasses sold', 'Bottles sold', 'Drinking window', 'On the menu', 'Shop price', 'Markup']) await expect(page.getByTestId('c2-list')).toContainText(t);
+  // Needs you is a button with its count; the dialog lists them, Done clears one, and it stays cleared.
+  { const n = Number(await page.getByTestId('c2-needs-count').innerText()); expect(n).toBeGreaterThan(1); await page.getByTestId('c2-needs-btn').click();
+    expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1); await page.getByTestId('c2-need-done').first().click();
+    expect(await page.getByTestId('c2-needs').getByTestId('c2-need').count()).toBe(n - 1); await page.getByTestId('c2-needs-close').click(); await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n - 1));
+    await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs-restore').click(); await page.getByTestId('c2-needs-close').click(); await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n)); }
+  expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
+  const colours = await page.getByTestId('c2-balance').innerText();
+  await page.getByTestId('c2-balance-grape').click(); expect(await page.getByTestId('c2-balance').innerText()).not.toBe(colours);
+  expect(await page.getByTestId('c2-ladder-rung').count()).toBe(await page.evaluate(() => TeamBuyer.bands().edges.length));
+  // No bottle's name is cut off: the chips wrap instead of squeezing into columns.
+  expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => el.firstElementChild.scrollWidth > el.firstElementChild.clientWidth + 1).length)).toBe(0); await expect(page.getByTestId('c2-ladder-sum')).toContainText('No step up');
+  // The ladder is a grid on one price scale: every bottle named in its band, and under each band what's listed against what sells.
+  // A rung opens on a few bottles of each colour; the foot opens every one, and that is remembered.
+  if (await page.getByTestId('c2-ladder-all').count()) { expect(await page.getByTestId('c2-ladder-chip').count()).toBeLessThan(await page.evaluate(() => TeamBuyer.bands().listed)); await expect(page.getByTestId('c2-ladder-more').first()).toBeVisible(); await page.getByTestId('c2-ladder-all').click(); expect(await page.evaluate(() => TeamFold.folded('c2-ladder-all'))).toBe(true); }
+  expect(await page.getByTestId('c2-ladder-chip').count()).toBe(await page.evaluate(() => TeamBuyer.bands().listed));
+  expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return [b.edges.length <= TeamBuyer.BANDS_MAX, b.rows.every(r => r.cells.every((c, i) => c.every(y => y.p >= b.edges[i].lo && y.p <= b.edges[i].hi))), b.totals.length === b.edges.length]; })).toEqual([true, true, true]);
+  await expect(page.getByTestId('c2-ladder-sum')).toContainText('bottle sales');
+  // The summary under the ladder is three lines at most, however long the list.
+  expect(await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').count()).toBeLessThanOrEqual(3);
+  // The ladder's tags are one width with their word centred, each level with the first line of its sentence.
+  const tags = await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').evaluateAll(els => els.map(el => { const t = el.querySelector('[data-pill]').getBoundingClientRect(), r = document.createRange(); r.selectNodeContents(el.children[1].firstElementChild); const l = r.getClientRects()[0]; return { w: Math.round(t.width), x: Math.round(t.left), off: Math.abs((t.top + t.bottom) / 2 - (l.top + l.bottom) / 2) }; }));
+  expect(new Set(tags.map(t => t.w)).size).toBe(1); expect(new Set(tags.map(t => t.x)).size).toBe(1); for (const t of tags) expect(t.off).toBeLessThan(2.5);
+  await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  // Any card folds to its title and opens again, and the device remembers which are folded.
+  const bal = page.getByTestId('c2-balance'), foldBtn = bal.getByTestId('c2-card-fold');
+  await foldBtn.click(); await expect(foldBtn).toHaveAttribute('aria-expanded', 'false'); expect(await page.getByTestId('c2-balance-row').count()).toBe(0); await expect(bal.getByTestId('c2-card-summary')).toContainText(/\w+ \d+ · \w+/); // folded, it says what it holds
+  expect(await page.evaluate(() => TeamFold.folded('c2card-c2-balance'))).toBe(true);
+  await page.reload(); await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('c2-balance').getByTestId('c2-card-fold')).toHaveAttribute('aria-expanded', 'false');
+  await page.getByTestId('c2-balance').getByTestId('c2-card-fold').click(); expect(await page.getByTestId('c2-balance-row').count()).toBeGreaterThan(3);
+  // What the page says is what TeamBuyer worked out: the list's shares add up, and a markup is the bottle over its shop price.
+  expect(await page.evaluate(() => { const b = TeamBuyer.balance('colour'), m = TeamBuyer.markups(), w = TeamBuyer.wines()[0], k = TeamBuyer.markup(w); return [Math.round(100 * b.reduce((a, g) => a + g.share, 0)), Math.abs(k.x - TeamBuyer._m(w.bottle) / k.retail) < 0.01, m.source]; })).toEqual([100, true, 'demo']);
+  // Training has left this page: who is trained on a wine is on the Training page.
+  await expect(page.getByTestId('c2-list').locator('thead')).not.toContainText(/trained/i);
+  // The list's header row stays in view as the list scrolls under it.
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
+  await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-list"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 600; });
+  expect(await page.getByTestId('c2-list').locator('thead th').first().evaluate(el => { const r = el.getBoundingClientRect(), s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(r.top - s.top); })).toBeLessThan(175);
+  // The search box and the filters are locked with the title, above the header.
+  await expect(page.getByTestId('c2-list')).toHaveAttribute('data-stuck', '');
+  expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none', !!el.querySelector('[data-testid="c2-wine-find"]'), !!el.querySelector('[data-testid="c2-wine-filter-glass"]')]; })).toEqual([0, true, true, true]);
+  // A wine opened while the header is locked lies over it: the locked header never shows through a drawer or a dialog.
+  await page.getByTestId('c2-list').locator('tbody tr').nth(8).click(); await expect(page.getByTestId('console-panel')).toBeVisible();
+  expect(await page.getByTestId('c2-list').getByTestId('c2-card-head').evaluate(el => { const r = el.getBoundingClientRect(), p = document.querySelector('[data-testid="console-panel"]').getBoundingClientRect(), x = Math.max(r.left, p.left) + 20, top = document.elementFromPoint(x, r.top + 10); return !!top.closest('[data-testid="console-panel"]'); })).toBe(true);
+  await page.getByTestId('console-scrim').click();
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
+  await expect(page.getByTestId('console-wines')).not.toContainText(/know(s|n)? it|known by|the floor/i);
+  // Training: everything about training in one place. Each person's areas and next step, pushed from here; a person opens on Team.
+  await page.getByTestId('console-nav-training').click();
+  await expect(page.getByTestId('c2-training-row')).toHaveCount(7);
+  for (const t of ['Glasses', 'Bottles', 'Pairings', 'Menu', 'Next step']) await expect(page.getByTestId('c2-training-people')).toContainText(t);
+  await expect(page.getByTestId('c2-training-spread').getByTestId('c2-spread')).toHaveCount(4);
+  await page.getByTestId('c2-training-push').first().click(); await expect(page.getByTestId('c2-training-push').first()).toContainText('Pushed');
+  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible(); await page.getByTestId('c2-tracks-close').click();
+  await expect(page.getByTestId('c2-training')).not.toContainText(/know(s|n)? it|known by|the floor|overdue/i);
+  // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
+  await page.getByTestId('console-nav-menu').click();
+  await expect(page.getByTestId('c2-dish-row')).toHaveCount(27);
+  // Every dish shows a wine by the glass and a bottle to offer, each with who is trained on it; the figures and the
+  // training spread are split the same way, and what needs the manager is a fact then an action.
+  await expect(page.getByTestId('c2-dishes')).toContainText('By the glass'); await expect(page.getByTestId('c2-dishes')).toContainText('By the bottle');
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasText: 'a bottle' }).count()).toBe(27);
+  expect(await page.getByTestId('c2-dish-bottle').filter({ hasNotText: 'The same wine' }).count()).toBeGreaterThan(15);
+  await expect(page.getByTestId('c2-kpi-pairglass')).toContainText('glass'); await expect(page.getByTestId('c2-kpi-pairbottle')).toContainText('bottle');
+  await expect(page.getByTestId('c2-pair-spread').getByTestId('c2-spread')).toHaveCount(2);
+  await page.getByTestId('c2-needs-btn').click(); expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1); await page.getByTestId('c2-needs-close').click();
+  // Every table's header stays in view as it scrolls, and the side column scrolls by itself beside the long table.
+  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => getComputedStyle(el).position)).toBe('sticky');
+  await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), l = document.querySelector('[data-testid="c2-dishes"]'); sc.scrollTop += l.getBoundingClientRect().top - sc.getBoundingClientRect().top + 500; });
+  expect(await page.getByTestId('c2-dishes').locator('thead th').first().evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(); return Math.round(el.getBoundingClientRect().top - s.top); })).toBeLessThan(70);
+  // The card's title is locked above the header, so the header never floats alone.
+  await expect(page.getByTestId('c2-dishes')).toHaveAttribute('data-stuck', '');
+  expect(await page.getByTestId('c2-dishes').getByTestId('c2-card-head').evaluate(el => { const s = document.querySelector('[data-testid="team-console"] [data-scroll]').getBoundingClientRect(), th = el.parentElement.querySelector('thead th').getBoundingClientRect(), r = el.getBoundingClientRect(); return [Math.round(r.top - s.top), th.top <= r.bottom && r.bottom - th.top < 3 && getComputedStyle(el).boxShadow !== 'none']; })).toEqual([0, true]);
+  // The other cards sit under the table now, so the dishes run the page's width.
+  expect(await page.evaluate(() => { const h = document.querySelector('[data-testid="c2-head"]').parentElement.getBoundingClientRect(), d = document.querySelector('[data-k="c2-dishes"]').getBoundingClientRect(), sd = document.querySelector('[data-testid="c2-side"]').getBoundingClientRect(); return [d.width > h.width - 120, sd.top >= d.bottom - 1]; })).toEqual([true, true]);
+  await page.evaluate(() => { document.querySelector('[data-testid="team-console"] [data-scroll]').scrollTop = 0; });
+  // Under every header but the first, the data is centred beneath it.
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(4)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).toBe('center'); // the pairings read left, as names do
+  expect(await page.getByTestId('c2-dish-glass').first().evaluate(el => getComputedStyle(el).textAlign)).toBe('left'); await expect(page.getByTestId('c2-dish-known').first()).toContainText('trained');
+  expect(await page.getByTestId('c2-dishes').locator('thead th').nth(3).evaluate(el => getComputedStyle(el).textAlign)).toBe('center');
+  expect(await page.getByTestId('c2-dishes').locator('tbody td:nth-child(1)').nth(1).evaluate(el => getComputedStyle(el).textAlign)).not.toBe('center');
+  // Every dish with a wine poured by the glass or a bottle-only pick has a bottle question, counted under Pairings.
+  const bq = await page.evaluate(() => { const qs = TeamData.dishes().map((x) => TeamLearn.dishQs(x.id).find((q) => q.bottle)).filter(Boolean); return { n: qs.length, pairing: qs.every((q) => TeamLearn.isPairing(q)), four: qs.every((q) => q.opts.length === 4 && q.opts[q.a]), which: qs.filter((q) => /Which do you offer/.test(q.q)).length, upsell: qs.filter((q) => /Offer the bottle at/.test(q.opts[q.a])).length }; });
+  expect(bq.n).toBeGreaterThan(12); expect(bq.pairing).toBe(true); expect(bq.four).toBe(true); expect(bq.which).toBeGreaterThan(0); expect(bq.upsell).toBeGreaterThan(0);
+  await page.getByTestId('c2-kpi-pairbottle').click(); expect(await page.getByTestId('c2-dish-row').count()).toBeLessThan(27);
+  await page.getByTestId('c2-menu-filter-all').click();
+  await expect(page.getByTestId('c2-dishes')).toContainText('Allergens');
+  await page.getByTestId('c2-allergens-switch').click();
+  await expect(page.getByTestId('c2-dishes')).not.toContainText('Allergens');
+  expect(await page.evaluate(() => TeamData.trainsAllergens())).toBe(false);
+  await page.getByTestId('c2-allergens-switch').click();
+  // The other sections are the classic ones inside the new shell.
+  await page.getByTestId('console-nav-cocktails').count();
+  // Team: a sentence, five figures, each person's areas against the minimum with what they sell, and a next step to push.
+  await page.getByTestId('console-nav-team').click();
+  await expect(page.getByTestId('c2-fact')).toContainText('ready for service');
+  await expect(page.getByTestId('c2-team-row')).toHaveCount(7);
+  // Pick a person: their areas against the minimum, what they sell, and a next step to push.
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click();
+  await expect(page.getByTestId('c2-stands')).toContainText('to go'); await expect(page.getByTestId('c2-sells')).toContainText('a week');
+  await expect(page.getByTestId('c2-sells')).toContainText('About Priya'); expect(await page.getByTestId('c2-about-row').count()).toBeGreaterThan(4);
+  // Where they stand also says what comes next in each area, so the card carries its weight beside About.
+  expect(await page.getByTestId('c2-left-row').count()).toBeGreaterThan(0);
+  await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
+  await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
+  await expect(page.getByTestId('c2-mins')).toHaveCount(0); // the minimums are set on Admin, not here
+  await expect(page.getByTestId('c2-stands')).toContainText('set on Admin');
+  // The demo opens with bespoke training in flight, tracked.
+  await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
+  // The figure counts every track the window lists, drafts included.
+  expect(await page.evaluate(() => TeamPlans.all().length)).toBe(Number((await page.getByTestId('c2-kpi-bespoke').innerText()).match(/\n(\d+)/)[1]));
+  // Four areas: glasses, bottles, pairings and the menu.
+  for (const t of ['By the glass', 'Bottles', 'Pairings', 'Menu']) await expect(page.getByTestId('c2-stands')).toContainText(t);
+  // The bespoke figure opens every track: who it's for, what it covers, how far along.
+  await page.getByTestId('c2-kpi-bespoke').click();
+  await expect(page.getByTestId('c2-track').first()).toContainText(/For \w+/); await expect(page.getByTestId('c2-track').first()).toContainText(/questions?/); await expect(page.getByTestId('c2-tracks')).toContainText(/running/);
+  await page.getByTestId('c2-track').filter({ hasText: 'Dani' }).first().click();
+  await expect(page.getByTestId('c2-person-detail')).toContainText('Dani'); await expect(page.getByTestId('c2-tracks')).toHaveCount(0);
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Priya' }).click(); await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText(/\d+ of \d+ done/);
+  // The classic team tools stay under Manage.
+  await page.getByTestId('c2-manage-c2-manage-team').click(); await expect(page.getByTestId('console-team')).toBeVisible();
+  // And back to the classic console, remembered on the device.
+  await page.evaluate(() => { window.VINTEREST_CONSOLE = null; });
+  await page.getByTestId('c2-classic').click();
+  await expect(con).not.toHaveAttribute('data-look', 'preview');
+  await page.getByTestId('console-new-look').click();
+  await expect(con).toHaveAttribute('data-look', 'preview');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// Bespoke training (team-plans.js): the manager asks Vinny for a plan in their own words, reads the draft, pushes
+// it; it shows on that person's Today as its own training, and a question that covers one of their own counts.
+test('bespoke training: Vinny writes a plan, the manager pushes it, and it counts towards readiness', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = [];
+  // Vinny's answer is built from what the prompt offered: a new question on the first wine, covering one of its own.
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, wine = /^(w-[^ ]+) \| WINE/m.exec(text)[1], own = new RegExp('^  (' + wine.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '#\\d+) \\| not known', 'm').exec(text);
+    const q = (n, covers) => ({ on: wine, q: `Bespoke question ${n} about this wine?`, opts: ['Right ' + n, 'Wrong a' + n, 'Wrong b' + n, 'Wrong c' + n], a: 0, why: 'Because.', covers });
+    return JSON.stringify({ title: 'Reds: prices and pairings', summary: 'Three short parts on the reds she misses.', parts: [{ title: 'Prices', why: 'What each costs.', qs: [q(1, own ? own[1] : ''), q(2, '')] }, { title: 'Pairings', why: 'What to pour.', qs: [q(3, ''), q(4, ''), { on: 'not-a-wine', q: 'Dropped?', opts: ['a', 'b', 'c', 'd'], a: 0 }] }] }); };
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-team').click();
+  await page.getByTestId('c2-team-row').filter({ hasText: 'Amara' }).click();
+  // Vinny's suggestions are this person's own: built from their answers and sales, each with its evidence, and no two
+  // people are offered the same three.
+  const sugs = await page.evaluate(() => TeamLearn.people().map(p => ({ name: p.name.split(' ')[0], s: TeamPlans.suggest(p.id) })));
+  for (const p of sugs) { expect(p.s.length, p.name).toBeGreaterThan(0); expect(p.s.length).toBeLessThanOrEqual(3); expect(new Set(p.s.map(x => x.kind)).size).toBe(p.s.length);
+    for (const g of p.s) { expect(g.title + g.why + g.ask).not.toMatch(/undefined|NaN|\{\{/); expect(g.ask).toContain(p.name); expect(g.why).toMatch(/\d|everything|best sellers/); } }
+  expect(new Set(sugs.map(p => p.s.map(g => g.why.replaceAll(p.name, '')).join('|'))).size).toBeGreaterThan(sugs.length / 2);
+  const mine = sugs.find(p => p.name === 'Amara').s;
+  await expect(page.getByTestId('c2-vinny-sug')).toHaveCount(mine.length);
+  await expect(page.getByTestId('c2-vinny-why').first()).toHaveText(mine[0].why);
+  expect(reqs.filter(r => r.purpose === 'team_plan')).toHaveLength(0);
+  await page.getByTestId('c2-vinny-sug').first().getByTestId('c2-vinny-go').click(); // Write it starts the plan from that suggestion
+  const draft = page.getByTestId('c2-plan-draft');
+  await expect(draft).toContainText('Reds: prices and pairings'); await expect(draft).toContainText('2 parts · 4 questions · 1 count');
+  const sent = reqs.find(r => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
+  expect(sent).toContain(mine[0].ask);
+  await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  // Pushed: tracked on the console, and on Amara's phone as its own training.
+  await draft.getByTestId('c2-draft-push').click();
+  await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText('0 of 4 done');
+  const state = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')), plan = TeamPlans.forPerson(a.id)[0], qs = TeamPlans.questions(plan.id), q = qs.find(x => x.covers);
+    const items = () => TeamLearn._mine(TeamLearn._all(), a.id).items, before = !!(items()[q.covers] && items()[q.covers].reps);
+    TeamLearn.record(a.id, q, true, 'think'); TeamLearn.record(a.id, qs.find(x => !x.covers), false, 'think');
+    return { before, covered: !!items()[q.covers].reps, prog: TeamPlans.progress(plan), id: a.id }; });
+  expect(state.before).toBe(false); expect(state.covered).toBe(true); expect(state.prog.done).toBe(1); expect(state.prog.total).toBe(4);
+  await page.goto(`${BASE}/team/?seed=demo&view=phone`);
+  await page.evaluate((id) => { TeamLearn.setMe(id); window.dispatchEvent(new Event('vbiz:data')); }, state.id); await page.reload();
+  const card = page.getByTestId('today-plan').first();
+  await expect(card).toContainText('Reds: prices and pairings'); await expect(card).toContainText('1 of 4');
+  await card.getByText(/Carry on|Start/).click(); await expect(page.getByTestId('team-drill')).toBeVisible();
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+
+// On a phone the new console is one page of the key figures from every section, with no section navigation to get
+// lost in; a person or a wine still opens, and the way back to the staff app is in the header.
+test('the console on a phone: one page of key figures from every section', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const m = page.getByTestId('c2-mobile'); await expect(m).toBeVisible();
+  await expect(page.getByTestId('console-nav-wines')).toHaveCount(0); await expect(page.getByTestId('c2-classic')).toHaveCount(0);
+  for (const t of ['Wine sales', 'Wine per guest', 'Glasses sold', 'Bottles sold', 'Training done', 'Needs you', 'Tonight', 'The team', 'Best sellers', 'The list', 'The menu']) await expect(m).toContainText(t, { ignoreCase: true });
+  await expect(page.getByTestId('c2m-person')).toHaveCount(7); expect(await page.getByTestId('c2m-fact').count()).toBeGreaterThan(4);
+  await expect(page.getByTestId('c2m-more')).toContainText('tablet or a computer');
+  // Nothing runs off the side of the phone.
+  expect(await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'); return sc.scrollWidth <= sc.clientWidth + 1; })).toBe(true);
+  await page.getByTestId('c2m-wine').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-panel-close').click();
+  await page.getByTestId('console-to-phone').click(); await expect(page.getByTestId('team-console')).toHaveCount(0);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// On an iPad the new console keeps every section in reach and nothing is cut off: a table too wide for its card
+// scrolls sideways inside it, and the page itself never runs off the side.
+for (const [W, H, name] of [[1194, 834, 'on its side'], [834, 1194, 'upright']]) test(`the new console on an iPad ${name}: every section reachable, no table cut off`, async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: W, height: H } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  await expect(page.getByTestId('console-nav-admin')).toHaveCount(0);
+  if (W > 1000) expect(await page.getByTestId('console-nav-pos').evaluate(el => el.parentElement.scrollWidth <= el.parentElement.clientWidth + 1)).toBe(true);
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu']) {
+    await page.getByTestId('console-nav-' + k).click(); await page.waitForTimeout(250);
+    const r = await page.evaluate(() => { const sc = document.querySelector('[data-testid="team-console"] [data-scroll]'), cut = [];
+      sc.querySelectorAll('table').forEach(t => { const w = t.parentElement, c = t.closest('[data-testid]'); if (t.getBoundingClientRect().right > c.getBoundingClientRect().right + 1 && getComputedStyle(w).overflowX !== 'auto') cut.push(c.getAttribute('data-testid')); });
+      return { side: sc.scrollWidth - sc.clientWidth, cut }; });
+    expect(r, k).toEqual({ side: 0, cut: [] });
+  }
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// The new console's navigation starts hidden at the left edge and slides over the page, never pushing it across;
+// and a page's cards can be dragged by their grip, within a column or into another, kept per person, with a way back.
+test('the new console: navigation hidden at the left edge, and cards dragged to a new place', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  // The mouse starts in the middle of the page, as a person's would: Playwright parks it at (0, 0), on the strip at the
+  // left edge that opens the navigation, and whether that counts as reaching the edge depends on timing.
+  await page.mouse.move(700, 450);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const drawer = page.getByTestId('c2-nav-drawer'); await expect(drawer).toHaveAttribute('data-open', '0');
+  // With no bar across the top, the restaurant's logo sits top right of the page.
+  await expect(page.getByTestId('c2-page-venue').getByTestId('team-venue-logo')).toBeVisible();
+  expect(await page.getByTestId('c2-page-venue').evaluate(el => el.getBoundingClientRect().left > innerWidth / 2)).toBe(true);
+  const left = () => page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().left)), before = await left();
+  await page.mouse.move(500, 400); await page.mouse.move(3, 400); await expect(drawer).toHaveAttribute('data-open', '1');
+  expect(await left()).toBe(before); // a layer over the page: nothing moved across
+  await page.getByTestId('console-nav-sales').click(); await expect(drawer).toHaveAttribute('data-open', '0');
+  await expect(page.getByTestId('console-sales')).toBeVisible();
+  // No bar across the top: the page runs full height, the logo sits top right and the section's name leads the sentence at its head.
+  await expect(page.getByTestId('c2-top')).toHaveCount(0); await expect(page.getByTestId('c2-head')).toContainText('Sales Insights');
+  expect(await page.getByTestId('c2-head').evaluate(el => Math.round(el.getBoundingClientRect().top))).toBeLessThan(60);
+  // The mouse leaving the open drawer closes it; the small tab on the edge opens it too, and the drawer says who is signed in.
+  await page.getByTestId('c2-nav-tab').click(); await expect(page.getByTestId('c2-nav-me')).toContainText('Elena'); await expect(drawer).toHaveAttribute('data-open', '1');
+  await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
+  // Drag "Where the next £ is" from the left column to the top of the right one.
+  const order = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="c2-stack-"]')].map(s => [s.getAttribute('data-testid').slice(9), [...s.querySelectorAll(':scope>[data-testid="c2-drag"]')].map(d => d.getAttribute('data-k'))])));
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
+  const g = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g.scrollIntoViewIfNeeded();
+  const gb = await g.boundingBox(), tb = await page.locator('[data-k="sales-servers"]').boundingBox();
+  await page.mouse.move(gb.x + 24, gb.y + 8); await page.mouse.down(); await page.mouse.move(gb.x + 60, gb.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+  await page.mouse.move(tb.x + 200, Math.min(880, Math.max(90, tb.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up();
+  await expect.poll(order).toEqual({ top: ['sales-wines'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] }); // the emptied left column folds away
+  // A mistake is one step back: Undo (or Ctrl+Z) puts the card where it was, and the move can be made again.
+  await expect(page.getByTestId('c2-board-note')).toContainText('Card moved');
+  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['c2-upside']);
+  // Undone back to the page's own layout, the pill says so and fades by itself.
+  await expect(page.getByTestId('c2-board-note')).toContainText('Move undone'); await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 });
+  // A move asks: Undo, Default layout or Save. Save keeps it and the pill fades away; the way back to the default stays at the foot.
+  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id; window.__pid = pid; });
+  { const g5 = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g5.scrollIntoViewIfNeeded(); const a = await g5.boundingBox(), t = await page.locator('[data-k="sales-servers"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 200, Math.min(880, Math.max(90, t.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
+  await expect(page.getByTestId('c2-note-save')).toBeVisible(); await expect(page.getByTestId('c2-note-reset')).toBeVisible();
+  await page.waitForTimeout(3500); await expect(page.getByTestId('c2-board-note')).toContainText('Card moved'); // it waits for an answer
+  await page.getByTestId('c2-note-save').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Layout saved');
+  await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toBeVisible();
+  expect((await order()).right[1]).toBe('c2-upside');
+  await page.getByTestId('c2-board-reset').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Back to the default layout');
+  await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toHaveCount(0);
+  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] };
+    TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-servers', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
+  await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
+  expect((await order()).right[1]).toBe('c2-upside');
+  // A card only goes where it fits: Best sellers needs the full width, so the narrow left column won't take it.
+  expect(await page.evaluate(() => [TeamBoard.fits(860, 430), TeamBoard.fits(860, 1300), TeamBoard.fits(420, 900, 2), TeamBoard.fits(520, 900, 2), TeamBoard.fits(520, 900, 2, 2)])).toEqual([false, true, true, false, true]);
+  await page.getByTestId('c2-board-reset').click(); // back to two columns, so there is a narrow one to refuse it
+  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="c2-upside"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 100, Math.min(880, Math.max(40, t.y + 40)), { steps: 10 }); await page.waitForTimeout(150);
+    await expect(page.getByTestId('c2-stack-left')).toHaveAttribute('data-fits', 'no'); await expect(page.getByTestId('c2-stack-top')).toHaveAttribute('data-fits', 'yes');
+    await page.mouse.up(); await page.waitForTimeout(200); }
+  expect((await order()).top).toEqual(['sales-wines']);
+  // It's kept: another section and back, and after a reload.
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
+  // Team's cards for a person sit two across and move the same way: About swapped in front of Where they stand.
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-team').click();
+  expect((await order()).detail).toEqual(['c2-stands', 'c2-sells', 'c2-next', 'c2-vinny', 'c2-bespoke']);
+  { const g2 = page.locator('[data-k="c2-sells"] [data-testid="c2-grip"]'); await g2.scrollIntoViewIfNeeded(); const a = await g2.boundingBox(), t = await page.locator('[data-k="c2-stands"]').boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
+    await page.mouse.move(t.x + 30, Math.min(880, Math.max(90, t.y + 80)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
+  await expect.poll(async () => (await order()).detail.slice(0, 2)).toEqual(['c2-sells', 'c2-stands']);
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click(); expect((await order()).side).toEqual(['c2-pair-spread', 'c2-trains']);
+  // The full-width tables move too: the dishes table on Menu and Best sellers on Sales Insights are cards like the rest.
+  expect((await order()).main).toEqual(['c2-dishes']); await expect(page.locator('[data-k="c2-dishes"] [data-testid="c2-grip"]')).toHaveCount(1);
+  expect(await page.evaluate(() => { const def = { top: ['c2-mix'], left: ['a'], right: ['b'], bottom: ['sales-wines'] }; return TeamBoard.arrange({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] }, def); })).toEqual({ top: ['sales-wines', 'c2-mix'], left: ['a'], right: ['b'], bottom: [] });
+  // Every side card moved under the table: the empty column folds away and the table takes the page's width; a drag brings it back to drop into.
+  await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { side: ['c2-pair-spread', 'c2-trains'], main: ['c2-dishes'] };
+    for (const k of def.side) TeamBoard.move(pid, 'menu', def, k, 'main', null, true); });
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-sales').click(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-menu').click();
+  expect((await order()).main).toEqual(['c2-dishes', 'c2-pair-spread', 'c2-trains']);
+  await expect(page.getByTestId('c2-side')).toHaveCount(0); await expect(page.getByTestId('c2-stack-side')).toHaveCount(0);
+  expect(await page.evaluate(() => { const h = document.querySelector('[data-testid="c2-head"]').parentElement.getBoundingClientRect(), d = document.querySelector('[data-k="c2-dishes"]').getBoundingClientRect(); return d.width > h.width - 120; })).toBe(true);
+  { const g4 = page.locator('[data-k="c2-trains"] [data-testid="c2-grip"]'); await g4.scrollIntoViewIfNeeded(); const a = await g4.boundingBox();
+    await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(150);
+    await expect(page.getByTestId('c2-stack-side')).toHaveCount(1); await page.mouse.up(); await page.keyboard.press('Escape'); }
+  await page.getByTestId(await page.getByTestId('c2-note-reset').count() ? 'c2-note-reset' : 'c2-board-reset').click(); expect((await order()).side).toEqual(['c2-pair-spread', 'c2-trains']);
+  // A new card the page gains later joins its own column, and one it loses is dropped.
+  expect(await page.evaluate(() => TeamBoard.arrange({ left: ['b', 'gone'], right: ['a'] }, { left: ['a', 'b'], right: ['c', 'd'] }))).toEqual({ left: ['b'], right: ['c', 'd', 'a'] });
+  // The drawer offers no way to move the navigation to the top and no phone view.
+  await page.getByTestId('c2-nav-tab').click(); await expect(page.getByTestId('c2-classic-side')).toBeVisible();
+  await expect(page.getByTestId('c2-nav-top')).toHaveCount(0); await expect(page.getByTestId('console-to-phone-side')).toHaveCount(0);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// With no mouse, a small tab on the left edge opens the navigation, and a touch outside it closes it.
+test('the new console on a touch screen: a tab on the left edge opens the navigation', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1194, height: 834 }, hasTouch: true, isMobile: true });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.mouse.move(700, 450); // off the left edge's strip, which a parked mouse at (0, 0) can open
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const drawer = page.getByTestId('c2-nav-drawer'), tab = page.getByTestId('c2-nav-tab');
+  await expect(tab).toBeVisible(); expect((await tab.boundingBox()).x).toBe(0);
+  await tab.tap(); await expect(drawer).toHaveAttribute('data-open', '1'); await expect(tab).toHaveCount(0);
+  await page.touchscreen.tap(800, 500); await expect(drawer).toHaveAttribute('data-open', '0');
+  await tab.tap(); await page.getByTestId('console-nav-wines').tap(); await expect(page.getByTestId('console-wines')).toBeVisible(); await expect(drawer).toHaveAttribute('data-open', '0');
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// The Social Corner, Eloise and The Princess Royal are offered the new console by their own files, as The Larkspur is; every page opens
+// for each with its own currency, and Eloise's file keeps its other console setting beside it.
+for (const [seed, money] of [['social', '$'], ['eloise', '$'], ['princess', '£']]) test(`the new console is offered to ${seed}, and every page opens`, async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=${seed}&view=console`);
+  await expect(page.getByTestId('team-console')).toHaveAttribute('data-look', 'preview', { timeout: 30000 });
+  expect(await page.evaluate(() => [TeamData.offersNewLook(), TeamData.consoleLook()])).toEqual([true, 'preview']);
+  for (const [k, tid] of [['dash', 'console-dash'], ['sales', 'console-sales'], ['team', 'c2-team'], ['training', 'c2-training'], ['wines', 'console-wines'], ['menu', 'c2-dishes']]) {
+    await page.getByTestId('console-nav-' + k).click(); await expect(page.getByTestId(tid)).toBeVisible(); await expect(page.getByTestId('c2-head')).toBeVisible();
+  }
+  await page.getByTestId('console-nav-sales').click(); await expect(page.getByTestId('sales-revenue')).toContainText(money);
+  // The ladder's bands follow the list's prices, so no band holds most of it, and two bottles from one producer are named apart.
+  expect(await page.evaluate(() => { const b = TeamBuyer.bands(); return Math.max(...b.totals.map((t) => t.n)) / b.listed; })).toBeLessThan(0.5);
+  expect(await page.evaluate(() => { const ns = TeamBuyer.bands().rows.flatMap((r) => r.cells.flat().map((y) => TeamData.nick(y.w))); return ns.length - new Set(ns).size; })).toBe(0);
+  // Eloise's file carries Vinny's buyer review, so the Wines page opens with shop prices and his read of the list.
+  if (seed === 'eloise') { expect(await page.evaluate(() => [!!TeamBuyer.reviewed(), TeamBuyer.markups() && TeamBuyer.markups().source])).toEqual([true, 'estimate']);
+    await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('console-wines')).toContainText('times their shop price'); }
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// Cocktails in the new look: every cocktail on the list with who is trained on it and the dishes its card pours it with,
+// the bar team's progress, what needs the manager, and a cocktail opening its card in the drawer; its cards move like the rest.
+test('the new console: Upload and Admin are one page in its own look', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; window.VINTEREST_NAV = 'side'; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+  // Admin has no entry of its own: its settings and the restaurant's data sit under the uploads.
+  await page.getByTestId('c2-nav-tab').click();
+  await expect(page.getByTestId('console-nav-admin')).toHaveCount(0);
+  await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  await expect(page.getByTestId('console-nav-upload')).toHaveText(/^Admin$/);
+  await expect(page.getByTestId('c2-head')).toContainText('Admin'); await expect(page.getByTestId('c2-head')).not.toContainText('Upload &');
+  for (const t of ['c2-upload', 'c2-live', 'c2-published', 'c2-restaurant', 'c2-data', 'c2-accounts']) await expect(page.getByTestId(t)).toBeVisible();
+  // Nothing on the page runs under the restaurant's logo at the top right (the classic Upload's side column did).
+  const logo = await page.getByTestId('c2-page-venue').boundingBox();
+  const hit = await page.evaluate(({ x, y, w, h }) => [...document.querySelectorAll('[data-testid="console-upload"] [data-testid^="c2-"]:not([data-testid="c2-head"])')].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.left < x + w && r.right > x && r.top < y + h && r.bottom > y; }).map(el => el.dataset.testid), { x: logo.x, y: logo.y, w: logo.width, h: logo.height });
+  expect(hit).toEqual([]);
+  // The three ways in sit side by side, and no button is stretched across its tile.
+  const tiles = await Promise.all(['list', 'menu', 'label'].map(k => page.getByTestId('c2-upload-' + k).boundingBox()));
+  expect(new Set(tiles.map(b => Math.round(b.y))).size).toBe(1);
+  expect(await page.getByTestId('c2-upload-list').locator('[data-team-btn]').evaluate(el => el.offsetWidth < el.parentElement.clientWidth * 0.7)).toBe(true);
+  // A prepared arrival goes to review and publishes from here, with buttons that hug their labels.
+  await page.getByTestId('team-arrival').first().click();
+  await expect(page.getByTestId('team-found')).toBeVisible();
+  await page.getByText('Add to the list').click();
+  await expect(page.getByTestId('team-review')).toBeVisible();
+  await expect(page.getByTestId('c2-fact')).toContainText('waiting for you');
+  expect(await page.getByTestId('team-review').locator('[data-team-btn]').evaluateAll(els => els.every(el => el.offsetWidth < 260))).toBe(true);
+  await page.getByText('Discard').click();
+  // Every restaurant's logo takes one standard box in the drawer and at the page's corner, whatever its shape.
+  const boxes = {};
+  for (const seed of ['demo', 'eloise', 'social']) { await page.goto(`${BASE}/team/?seed=${seed}&view=console`); await expect(page.getByTestId('team-console')).toBeVisible({ timeout: 30000 }); await page.getByTestId('c2-nav-tab').click();
+    boxes[seed] = await page.evaluate(() => ['c2-nav-venue', 'c2-page-venue'].map(t => { const el = document.querySelector(`[data-testid="${t}"] [data-testid="team-venue-logo"]`), r = el.getBoundingClientRect(), nav = el.closest('[data-testid="c2-nav-venue"]'); return [Math.round(r.width), Math.round(r.height), nav ? r.right <= nav.getBoundingClientRect().right : true]; })); }
+  expect(boxes.eloise).toEqual(boxes.demo); expect(boxes.social).toEqual(boxes.demo); expect(boxes.demo[0][2]).toBe(true); expect(boxes.demo[0][1]).toBeLessThanOrEqual(36);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  // The minimum for each role is set here: a step down changes what the role needs, and readiness with it.
+  await expect(page.getByTestId('c2-mins')).toContainText('Server'); await expect(page.getByTestId('c2-mins')).toContainText('Pairings');
+  const before = await page.evaluate(() => TeamLearn.need('server').glass);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Lower').click();
+  expect(await page.evaluate(() => TeamLearn.need('server').glass)).toBeCloseTo(before - 0.1, 5);
+  await expect(page.getByTestId('c2-min-row').first().getByTestId('c2-min').first()).toContainText(`${Math.round((before - 0.1) * 100)}%`);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Raise').click();
+  // Folded, every card on every page says what's in it (figures and names), never what kind of card it is.
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu', 'pos', 'upload']) { await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-' + k).click(); await page.mouse.move(700, 400);
+    const n = await page.getByTestId('c2-card-fold').count(); for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click();
+    const lines = await page.getByTestId('c2-card-summary').allInnerTexts(); expect(lines.length, k).toBe(n);
+    for (const t of lines) { expect(t, k).not.toMatch(/undefined|NaN|\[object/); expect(t.length, k + ': ' + t).toBeGreaterThan(8); }
+    expect(lines.filter(t => /\d/.test(t)).length, k + ': ' + lines.join(' | ')).toBeGreaterThanOrEqual(lines.length - 3); // a few name what's in them (the wines to train on next) with no figure
+    for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click(); }
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  // The settings save, and the card folds to a line saying what it holds.
+  await page.getByLabel('Days to learn').fill('9');
+  await page.getByTestId('c2-admin-save').click();
+  expect(await page.evaluate(() => TeamData.get().settings.dueDays)).toBe(9);
+  await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
+  await expect(page.getByTestId('c2-restaurant').getByTestId('c2-card-summary')).toContainText('9 days');
+  await page.getByTestId('c2-restaurant').getByTestId('c2-card-fold').click();
+  // Integrations is in the same look: its cards, the POS items as a table, and a sales file read from the page's head.
+  await page.getByTestId('c2-nav-tab').click();
+  expect(await page.locator('[data-testid^="console-nav-"]').last().getAttribute('data-testid')).toBe('console-nav-upload');
+  await page.getByTestId('console-nav-pos').click(); await page.mouse.move(700, 400);
+  await expect(page.getByTestId('c2-head')).toContainText('Integrations');
+  for (const t of ['c2-pos', 'c2-connectors', 'c2-pos-map', 'c2-stock']) await expect(page.getByTestId(t)).toBeVisible();
+  await expect(page.getByTestId('console-pos')).not.toContainText(/demo data/i);
+  expect(await page.getByTestId('pos-import').evaluate(el => el.offsetWidth < 320)).toBe(true);
+  await expect(page.getByTestId('pos-unmapped').first()).toBeVisible();
+  const left = await page.getByTestId('pos-unmapped').count();
+  await page.getByTestId('pos-unmapped').first().locator('select').selectOption('');
+  await expect(page.getByTestId('pos-unmapped')).toHaveCount(left - 1);
+  await page.getByTestId('pos-csv').setInputFiles({ name: 'sales.csv', mimeType: 'text/csv', buffer: Buffer.from('date,item,qty,price,server\n2026-11-19,Picpoul de Pinet 175,2,9.5,Dani\n') });
+  await expect(page.getByTestId('pos-import-msg')).toContainText('1 new line');
+  expect(errors).toEqual([]);
+  await ctx.close();
+});
+test('the new console\'s Cocktails page', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = null; });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=social&view=console`);
+  await expect(page.getByTestId('team-console')).toHaveAttribute('data-look', 'preview', { timeout: 30000 });
+  await page.getByTestId('console-nav-cocktails').click(); await expect(page.getByTestId('console-cocktails')).toBeVisible();
+  const n = await page.evaluate(() => TeamData.cocktails().length); expect(n).toBeGreaterThan(10);
+  await expect(page.getByTestId('c2-mix-row')).toHaveCount(n);
+  await expect(page.getByTestId('c2-head')).toContainText('Cocktails'); await expect(page.getByTestId('c2-fact')).toContainText('cocktails have most of the team trained');
+  // Who is trained on each, as the wines show it; the figures are TeamReport's.
+  expect(await page.getByTestId('c2-mix-list').getByTestId('c2-knowers').count()).toBe(n);
+  const most = await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.kb.of && x.kb.people.length >= Math.ceil(x.kb.of / 2)).length);
+  await expect(page.getByTestId('c2-kpi-mix-most')).toContainText(String(most));
+  expect(await page.getByTestId('c2-mix-dishes').filter({ hasNotText: '—' }).count()).toBe(await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.dishes.length).length));
+  await expect(page.getByTestId('c2-mix-spread').getByTestId('c2-spread')).toHaveCount(1);
+  expect(await page.getByTestId('c2-mix-person').count()).toBe(await page.evaluate(() => TeamReport.cocktailPeople().length));
+  // A filter narrows the list; a cocktail opens its card; a person opens theirs.
+  await page.getByTestId('c2-mix-filter-few').click();
+  expect(await page.getByTestId('c2-mix-row').count()).toBe(await page.evaluate(() => TeamReport.cocktailRows().filter(x => x.kb.of && x.kb.people.length < Math.ceil(x.kb.of / 2)).length));
+  await page.getByTestId('c2-mix-filter-all').click();
+  await page.getByTestId('c2-mix-row').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  await page.getByTestId('c2-mix-person').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
+  expect(await page.locator('[data-testid="c2-stack-side"] > [data-testid="c2-drag"]').count()).toBe(2);
+  expect((await page.getByTestId('console-cocktails').innerText()).match(/know(s|n)? it|known by|the floor|overdue/i)).toBe(null);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// A wine shown as a pill is outlined in its colour as the consumer app does (a red crimson, a white gold…), never filled,
+// so its text stays readable: every wine pill on the price ladder and the menu is unfilled with 4.5:1 text, and its kind matches its wine.
+test('wine pills are outlined in the wine\'s colour, never filled', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  await stubNetwork(ctx);
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  const check = () => page.evaluate(() => [...document.querySelectorAll('[data-kind]')].filter(el => el.getAttribute('data-kind') !== 'drink').map(el => {
+    const cs = getComputedStyle(el), rgb = c => c.match(/\d+/g).slice(0, 3).map(Number), L = a => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(a[0]) + 0.7152 * f(a[1]) + 0.0722 * f(a[2]); };
+    const a = L(rgb(cs.backgroundColor)), b = L(rgb(cs.color)); return { kind: el.getAttribute('data-kind'), ratio: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) }; }));
+  await page.getByTestId('console-nav-wines').click(); await expect(page.getByTestId('c2-ladder-chip').first()).toBeVisible();
+  const ladder = await check(); expect(ladder.length).toBeGreaterThan(20);
+  expect(await page.getByTestId('c2-ladder-chip').evaluateAll(els => els.filter(el => getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)').length)).toBe(0);
+  expect(await page.locator('[data-kind="red"]').first().evaluate(el => getComputedStyle(el).borderTopColor)).not.toBe(await page.locator('[data-kind="white"]').first().evaluate(el => getComputedStyle(el).borderTopColor));
+  expect(new Set(ladder.map(x => x.kind))).toEqual(new Set(['red', 'white', 'sparkling', 'dessert', 'rose']));
+  expect(ladder.filter(x => x.ratio < 4.5)).toEqual([]);
+  expect(await page.evaluate(() => [_tWineKey(TeamData.wines().find(w => /Malbec/.test(w.name))), _tWineKey(TeamData.wines().find(w => /Chablis/.test(w.name))), _tWineKey(TeamData.wines().find(w => /Taylor/.test(w.producer || '')))])).toEqual(['red', 'white', 'dessert']);
+  await page.getByTestId('console-nav-menu').click(); await expect(page.getByTestId('c2-dish-wine').first()).toBeVisible();
+  expect((await check()).filter(x => x.ratio < 4.5)).toEqual([]);
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// Vinny's read of the list: one call, the buyer's view. Shop prices replace the demo's, only wines and dishes that
+// exist are kept, a "missing" dish already on the menu is dropped, and a failure says so.
+test('the buyer\'s review: Vinny reads the list against the menu, and only what is real is kept', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const reqs = []; let fail = true;
+  await stubNetwork(ctx, { claudeRequests: reqs, claudeText: (b) => { if (b.purpose !== 'team_buyer') return ''; if (fail) { fail = false; return 'no'; }
+    const text = b.messages[0].content, ws = [...text.matchAll(/^(w-[^ ]+) \|/mg)].map(m => m[1]), ds = [...text.matchAll(/^(d-[^ ]+) \| ([^|\n]+)/mg)];
+    return JSON.stringify({ retail: [{ id: ws[0], price: 20 }, { id: 'w-nothing', price: 9 }], missing_dishes: [{ wine: ws[1], dish: 'Grilled sardines on toast', why: 'Its salt and acidity want oily fish.' }, { wine: ws[1], dish: ds[0][2].split(',')[0].trim(), why: 'Already here.' }, { wine: 'w-nothing', dish: 'Soup', why: 'x' }],
+      weak_dishes: [{ dish: ds[1][1], why: 'Nothing on the list has the weight for it.', wants: 'a ripe, fuller white with some oak' }, { dish: 'd-nothing', why: 'x', wants: 'y' }], gaps: [{ what: 'A red under £45', why: 'The cheapest red is a jump from the house pour.' }], cut: [{ wine: ws[2], why: 'It overlaps and hasn\'t sold.' }] }); } });
+  const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('console-nav-wines').click();
+  // Asked from a button in the page's head: a dialog says what it is, and the result is read in the same dialog.
+  await expect(page.getByTestId('c2-buyer-open')).toHaveText(/Ask Vinny to review the list/i); await page.getByTestId('c2-buyer-open').click(); await expect(page.getByTestId('c2-buyer-review')).toContainText('changes nothing on your list');
+  await page.getByTestId('c2-buyer-ask').click(); await expect(page.getByTestId('c2-buyer-error')).toBeVisible();
+  await page.getByTestId('c2-buyer-ask').click(); const res = page.getByTestId('c2-buyer-result'); await expect(res).toBeVisible();
+  await expect(res).toContainText('Grilled sardines on toast'); await page.getByTestId('c2-buyer-close').click(); await expect(page.getByTestId('c2-buyer-open')).toHaveText(/Vinny's review/i); await page.getByTestId('c2-buyer-open').click(); await expect(res).toBeVisible(); await expect(res).toContainText('Wants a ripe, fuller white with some oak'); await expect(res).toContainText('A red under £45');
+  const sent = reqs.filter(r => r.purpose === 'team_buyer'); expect(sent).toHaveLength(2); expect(sent[0].messages[0].content).toContain('The Larkspur');
+  const kept = await page.evaluate(() => { const r = TeamBuyer.reviewed(), id = Object.keys(r.retail)[0]; return { retail: Object.keys(r.retail).length, missing: r.missing.length, weak: r.weak.length, cut: r.cut.length, source: TeamBuyer.markups().source, shop: TeamBuyer.retail(TeamData.wine(id)) }; });
+  expect(kept).toMatchObject({ retail: 1, missing: 1, weak: 1, cut: 1, source: 'estimate', shop: { price: 20 } });
+  await expect(page.getByTestId('c2-kpi-markup')).toContainText('Vinny');
+  expect(errors).toEqual([]); await ctx.close();
+});
+
+// "Pairings" means the wine for the dish, never the menu on its own: Vinny's test and a bespoke plan asked for
+// pairings ask only pairing questions, and a written question about a dish that names no wine is dropped.
+test('a request for pairings is about the wine for each dish, not the menu', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const answer = (b) => { if (b.purpose !== 'team_plan') return ''; const text = b.messages[0].content, dish = /^(\S+) \| DISH: ([^|\n,]+)/m.exec(text), pour = /pour with: ([^(]+) \(/.exec(text.slice(text.indexOf(dish[0])));
+    const wines = [...text.matchAll(/^\S+ \| WINE: (.+?) (?:\d{4}|NV) \|/gm)].map((m) => m[1]);
+    return JSON.stringify({ title: 'Pairings', summary: 's', parts: [{ title: 'The wine for the dish', why: 'w', qs: [
+      { on: dish[1], q: `A guest orders the ${dish[2].trim()}. Which wine do you pour?`, opts: [pour[1].trim(), ...wines.filter((w) => w !== pour[1].trim()).slice(0, 3)], a: 0, why: 'y', covers: '' },
+      { on: dish[1], q: `What is the ${dish[2].trim()} served with?`, opts: ['Chips', 'Rice', 'Salad', 'Bread'], a: 0, why: 'menu, not pairing', covers: '' },
+      { on: dish[1], q: `Which wine by the glass suits the ${dish[2].trim()}?`, opts: [wines[1], wines[2], wines[3], wines[4]], a: 0, why: 'y', covers: '' }] }] }); };
+  const reqs = []; await stubNetwork(ctx, { claudeRequests: reqs, claudeText: answer });
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const out = await page.evaluate(async () => { const p = TeamLearn.people().find((x) => x.name.startsWith('Priya')), ask = 'Priya needs custom training on pairings';
+    const t = TeamVinny.test(p.id, { ask: 'pairings' }), s = TeamPlans.subjects(p.id, ask), plan = await TeamPlans.write(p.id, ask, null), cards = TeamPlans.fromCards(p.id, ask, null);
+    return { test: t.qs.length, testAll: t.qs.every((q) => TeamLearn.isPairing(q)), dishes: s.dishes.length, wines: s.wines.length, pairing: s.pairing, written: plan.parts[0].qs.map((q) => q.q), cards: cards.parts.flatMap((x) => x.qs).every((q) => TeamLearn.isPairing({ ...q, id: q.covers })) }; });
+  expect(out.test).toBeGreaterThan(3); expect(out.testAll).toBe(true);
+  expect(out.pairing).toBe(true); expect(out.dishes).toBeGreaterThan(2); expect(out.wines).toBeGreaterThan(2);
+  expect(out.written).toHaveLength(2); expect(out.written.join(' ')).not.toContain('served with'); expect(out.cards).toBe(true);
+  const sent = reqs.find((r) => r.purpose === 'team_plan').messages[0].content;
+  expect(sent).toContain('This is a PAIRING plan'); expect(sent).toContain('pour with:'); expect(sent).not.toMatch(/#know \|/);
+  await ctx.close();
+});
+
+// A demo restaurant kept on a device for days stays as of today: without that its invented answers fade by the
+// clock and its sales end last week, and the whole team reads as slipping.
+test('a demo restaurant held for days is brought forward to today', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } }); await stubNetwork(ctx);
+  const page = await ctx.newPage(); await page.clock.install({ time: new Date('2026-11-10T16:00:00') });
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await page.getByTestId('team-console').waitFor();
+  const read = () => page.evaluate(() => ({ avg: TeamReport.overview().avg, ready: TeamReport.overview().ready, week: Math.round(TeamReport.salesSummary(7).revenue), fresh: TeamData.get().venue.fresh }));
+  const day0 = await read(); expect(day0.ready).toBeGreaterThan(0);
+  // Five days on, untouched, the team has faded and the week's sales have thinned out.
+  await page.clock.setFixedTime(new Date('2026-11-15T16:00:00'));
+  const stale = await read(); expect(stale.avg).toBeLessThan(day0.avg - 10);
+  // Opening the app again brings it forward.
+  await page.reload(); await page.getByTestId('team-console').waitFor();
+  const fresh = await read(); expect(Math.abs(fresh.avg - day0.avg)).toBeLessThanOrEqual(3); expect(fresh.ready).toBe(day0.ready);
+  expect(Math.abs(fresh.week - day0.week)).toBeLessThan(day0.week * 0.25); expect(fresh.fresh).toBeGreaterThan(day0.fresh || 0);
+  await ctx.close();
 });

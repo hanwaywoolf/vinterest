@@ -57,6 +57,24 @@ const Entitlement = {
   // The server said the month is used up (another phone, a reinstall): this phone agrees from now on.
   noteScanLimit(){ Store.setJSON(this.MONTH_KEY,{m:this._month(),n:this.FREE_SCANS}); if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{}); },
   atScanLimit(){ return this.scansLeft()<=0; },
+  /* Shelf scans (one photo of many bottles): FREE_SHELF a calendar month on the free plan, counted apart
+     from label scans, so everyone can try one in a shop; Pro has only the weekly fair-use cap. Counted
+     like label scans: the server's figure when signed in (/me's `month`), this phone's otherwise. */
+  FREE_SHELF:2, SHELF_KEY:'vinterest_shelf_month',
+  _deviceShelf(){ const v=Store.getJSON(this.SHELF_KEY,null); return v&&v.m===this._month()?(v.n||0):0; },
+  shelfThisMonth(){
+    if(typeof Account!=='undefined'&&Account.signedIn()){
+      const m=(Account.me()||{}).month;
+      return Math.max(this._deviceShelf(),m&&m.start&&m.start.slice(0,7)===this._month()&&m.used?(m.used.shelf_scan||0):0);
+    }
+    return this._deviceShelf();
+  },
+  shelfLeft(){ return this.isPro()?Infinity:Math.max(0,this.FREE_SHELF-this.shelfThisMonth()); },
+  addShelfScan(){
+    Store.setJSON(this.SHELF_KEY,{m:this._month(),n:this._deviceShelf()+1});
+    if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{});
+  },
+  noteShelfLimit(){ Store.setJSON(this.SHELF_KEY,{m:this._month(),n:this.FREE_SHELF}); if(typeof Account!=='undefined'&&Account.signedIn()) Account.refreshMe().catch(()=>{}); },
   /* What wine list scanning still needs: null (go ahead), 'signin' or 'pro'. The Worker checks this
      itself (list_scan is PRO_ONLY in _worker.js) and never trusts the device flag, so with sign-in
      configured a signed-out phone needs to sign in even after "Start Pro", and a signed-in one needs
@@ -76,7 +94,7 @@ const Settings = {
   ONBOARDED_KEY:'vinterest_onboarded', REGION_KEY:'vinterest_region', CURRENCY_KEY:'vinterest_currency',
   SCRIPT_LENGTH_KEY:'vinterest_script_length', SCANCARD_STYLE_KEY:'vinterest_scancard_style', THEME_KEY:'vinterest_theme',
   onboarded(){ return !!Store.get(this.ONBOARDED_KEY); },
-  setOnboarded(){ Store.set(this.ONBOARDED_KEY,'1'); },
+  setOnboarded(){ Store.set(this.ONBOARDED_KEY,'1'); if(typeof WhatsNew!=='undefined') WhatsNew.markSeen(); }, // someone new isn't told what's "new"
   region(){ return Store.get(this.REGION_KEY); },
   currency(){ return Store.get(this.CURRENCY_KEY); },
   /* Appearance: 'dark' (the story's stage, the default) or 'light'. Picked on Profile (ThemeControl);
@@ -92,6 +110,25 @@ const Settings = {
 
 /* Per-device choices that shouldn't follow the user: the phone-layout override used by the
    preview panel, which WineDNA sections are folded away, and what the grape cluster last showed. */
+/* When to ask for a store rating: straight after they rate a wine they loved (MIN_SCORE or more), once
+   they've rated MIN_RATED wines, so the app has shown what it does, never within GAP_DAYS of the last
+   ask and MAX times at most. Kept on this phone only (never synced or backed up). */
+const ReviewAsk = {
+  KEY:'vinterest_review_asked', MIN_SCORE:90, MIN_RATED:5, GAP_DAYS:120, MAX:3, DELAY_MS:1800,
+  asked(){ const v=Store.getJSON(this.KEY,[]); return Array.isArray(v)?v:[]; },
+  due(score,now=Date.now()){
+    if(!(score>=this.MIN_SCORE)||!Platform.native()) return false;
+    const rated=WineHistory.getAll().filter(w=>w.rating>0).length, a=this.asked();
+    return rated>=this.MIN_RATED&&a.length<this.MAX&&(!a.length||now-a[a.length-1]>=this.GAP_DAYS*864e5);
+  },
+  afterRating(score){
+    if(!this.due(score)) return false;
+    Store.setJSON(this.KEY,[...this.asked(),Date.now()]);
+    setTimeout(()=>{ Platform.requestReview(); },this.DELAY_MS);
+    return true;
+  },
+};
+
 const Device = {
   FORCE_MOBILE_KEY:'vinterest_force_mobile', DNA_COLLAPSE_KEY:'vinterest_dna_collapsed_v1',
   forceMobile(){ return Store.get(this.FORCE_MOBILE_KEY)==='1'; },

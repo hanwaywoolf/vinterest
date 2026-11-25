@@ -164,6 +164,13 @@ const WineDNA = {
     return out;
   },
   /* A wine's name with its vintage, unless the name already carries the year ("Mlavac 2016"). */
+  /* A wine's name as it's shown, without its vintage: the label reader sometimes puts the year in the
+     name ("Viña Ardanza Reserva 2016"), and the year has its own place beside it. Only the wine's own
+     vintage comes out, so a year that is part of a name stays. Stored names aren't changed: they key
+     the wine in sync. */
+  shownName(w){ const n=String(w&&w.name||'').trim(), v=w&&w.vintage; if(!v||!/^\d{4}$/.test(String(v))) return n;
+    const out=n.replace(new RegExp('(^|[\\s,(])'+v+'(?=[\\s,)]|$)'),'$1').replace(/\(\s*\)/g,'').replace(/\s{2,}/g,' ').replace(/[\s,]+$/,'').trim();
+    return out||n; },
   nameYear(w){ const n=String(w&&w.name||''), v=w&&w.vintage; return v&&!n.includes(String(v))?`${n} ${v}`:n; },
   _list(xs){ return xs.length<2?(xs[0]||''):xs.slice(0,-1).join(', ')+' and '+xs[xs.length-1]; },
   TIPS:{

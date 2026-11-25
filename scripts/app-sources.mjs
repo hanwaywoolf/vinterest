@@ -34,6 +34,8 @@ export const APP_SOURCES = [
   'pwa-backup.js',
   'pwa-account.js',
   'pwa-billing.js',
+  'pwa-update.js',
+  'pwa-whatsnew.js',
   'pwa-push.js',
   'pwa-install.js',
   'pwa-sync.js',
@@ -73,10 +75,13 @@ export const TEAM_SOURCES = [
   'team-voice.js',
   'team-vinny.js',
   'team-shift.js',
+  'team-plans.js',
+  'team-buyer.js',
   'team-screens.jsx',
   'team-shift.jsx',
   'team-vinny.jsx',
   'team-console.jsx',
+  'team-console2.jsx',
   'team-app.jsx',
 ];
 export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];

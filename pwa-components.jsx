@@ -255,6 +255,7 @@ function ProBadge({style:s}){
 function ProGate({feature,onClose}){
   const FEAT={
     'wine-list':{icon:'📋',title:'Wine List Scanning',desc:'Snap any restaurant menu and get instant match scores for every bottle.',bullets:['Scan full wine lists in seconds','AI ranks every wine by your taste profile','Works at any restaurant worldwide']},
+    'shelf-scan':{icon:'🛒',title:`That's your ${Entitlement.FREE_SHELF} free shelf scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans any shelf, and every bottle on it comes with your match.`,bullets:['Scan any shelf and see which bottle suits you','Wine list scanning at restaurants','Every bottle you open, every month']},
     'unlimited-scans':{icon:'📷',title:'Keep scanning',desc:`Free includes ${Entitlement.FREE_SCANS} label scans a month. Pro scans every bottle you open.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'scan-limit':{icon:'📷',title:`That's your ${Entitlement.FREE_SCANS} free scans this month`,desc:`They come back on 1 ${Entitlement.scansBackOn()}. Pro scans every bottle you open, and whole wine lists too.`,bullets:['Every bottle you open, every month','Wine list scanning at restaurants','Every grape and region you meet']},
     'taste-depth':{icon:'🎭',title:'Full Taste Profile',desc:'Unlock your complete taste breakdown across all wine types.',bullets:['Whites, Rosé & Sparkling profiles','Personalised sommelier scripts for each','Full food pairing analysis']},
@@ -267,30 +268,30 @@ function ProGate({feature,onClose}){
   const f=FEAT[feature]||FEAT['wine-list'];
   return(
     <div onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)',zIndex:600,display:'flex',alignItems:'flex-end',backdropFilter:'blur(4px)'}}>
-      {/* A floating card, rounded all round with a gap below, so its end is plain to see; it
+      {/* A floating card, rounded all round with a gap below, so its end is plain to see, kept clear of the notch; it
           scrolls inside when a small phone at large text can't fit it. */}
-      <div data-sheet="pro" onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:22,width:'calc(100% - 20px)',margin:'0 10px calc(10px + env(safe-area-inset-bottom,0px))',maxHeight:'calc(100% - 30px)',overflowY:'auto',boxSizing:'border-box',paddingBottom:18,boxShadow:'0 10px 40px rgba(0,0,0,0.25)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
+      <div data-sheet="pro" onClick={e=>e.stopPropagation()} style={{background:C.white,borderRadius:22,width:'calc(100% - 20px)',margin:'0 10px calc(10px + env(safe-area-inset-bottom,0px))',maxHeight:'calc(100% - 30px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))',overflowY:'auto',boxSizing:'border-box',paddingBottom:12,boxShadow:'0 10px 40px rgba(0,0,0,0.25)',animation:'slideUp .3s cubic-bezier(.34,1.2,.64,1)'}}>
         <div style={{display:'flex',justifyContent:'center',padding:'10px 0 0'}}>
           <div style={{width:36,height:4,borderRadius:2,background:C.line}}/>
         </div>
-        <div style={{textAlign:'center',padding:'6px 0 8px'}}>
+        <div style={{textAlign:'center',padding:'4px 0 2px'}}>
           <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 14px',borderRadius:20,background:'linear-gradient(135deg,#9B5E00,#C4870A)'}}>
             <span style={{fontSize:15,fontWeight:700,color:'#fff',fontFamily:C.P,letterSpacing:'0.08em'}}>VINTEREST PRO</span>
           </span>
         </div>
-        <div style={{padding:'6px 24px 4px',display:'flex',flexDirection:'column',gap:14}}>
+        <div style={{padding:'4px 22px 4px',display:'flex',flexDirection:'column',gap:9}}>
           <div style={{textAlign:'center'}}>
-            <div style={{fontSize:42,marginBottom:8}}>{f.icon}</div>
-            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:6}}>{f.title}</div>
-            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.55}}>{f.desc}</div>
+            <div style={{fontSize:30,lineHeight:1.1,marginBottom:4}}>{f.icon}</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.ink,fontFamily:C.P,lineHeight:1.2,marginBottom:4}}>{f.title}</div>
+            <div style={{fontSize:16,color:C.mid,fontFamily:C.P,lineHeight:1.4}}>{f.desc}</div>
           </div>
-          <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{display:'flex',flexDirection:'column',gap:6}}>
             {f.bullets.map((b,i)=>(
               <div key={i} style={{display:'flex',alignItems:'center',gap:10}}>
                 <div style={{width:20,height:20,borderRadius:10,background:C.greenBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <Icon n="check" sz={12} col={C.green}/>
                 </div>
-                <span style={{fontSize:16,color:C.ink2,fontFamily:C.P}}>{b}</span>
+                <span style={{fontSize:16,color:C.ink2,fontFamily:C.P,lineHeight:1.35}}>{b}</span>
               </div>
             ))}
           </div>
@@ -312,9 +313,20 @@ function ProGate({feature,onClose}){
   );
 }
 
+/* The text colour for a solid fill: white or near-black, whichever reads better on it, so a filled
+   pill never has white on yellow or a colour on its own colour. Tinted pills (a wash of a colour) use
+   the screen's own text colour (T.ink) instead; the colour stays in the wash and the border. */
+function inkOn(bg){
+  const m=String(bg||'').match(/^#([0-9a-f]{6})$/i), p=m?[0,2,4].map(i=>parseInt(m[1].slice(i,i+2),16)):(String(bg).match(/\d+(\.\d+)?/g)||[]).slice(0,3).map(Number);
+  if(p.length<3) return '#fff';
+  const L=p.map(v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); }), lum=0.2126*L[0]+0.7152*L[1]+0.0722*L[2];
+  return (1.05/(lum+0.05))>=((lum+0.05)/(0.0075+0.05))?'#fff':'#151515';
+}
 function Pill({children,active,sm,style:s}){
-  const T=typeof useTheme==='function'?useTheme():null, cr=T?T.lift(C.cr):C.cr, mid=T?T.mid:C.mid, line=T?T.line:C.line;
-  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?cr:'transparent',color:active?'#fff':mid,border:`1px solid ${active?cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
+  const T=typeof useTheme==='function'?useTheme():null, mid=T?T.mid:C.mid, line=T?T.line:C.line;
+  // Filled, it's brand crimson (never the lifted pink, which white can't be read on) with the text that contrasts with the fill.
+  const fill=(s&&s.background)||C.cr;
+  return <span style={{display:'inline-flex',alignItems:'center',padding:sm?'3px 9px':'5px 12px',borderRadius:20,background:active?C.cr:'transparent',color:active?inkOn(fill):mid,border:`1px solid ${active?C.cr:line}`,fontSize:sm?12:13,fontWeight:500,fontFamily:C.P,...s}}>{children}</span>;
 }
 function Prog({val=0.5,col,h=4,style:s}){
   const T=typeof useTheme==='function'?useTheme():null;
@@ -329,7 +341,7 @@ function Card({children,style:s,onClick}){
 function Btn({children,primary,full,small,style:s,onClick}){
   // On the scan story's dark stage (DeckTheme, pwa-scancards.jsx) a plain button is a dark glass pill.
   const T=typeof useTheme==='function'?useTheme():null, dark=!!(T&&T.dark);
-  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:dark?T.soft:C.white,color:primary?'#fff':dark?T.ink:C.ink,border:primary?'none':`1px solid ${dark?T.line:C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
+  return <div onClick={onClick} style={{padding:small?'8px 14px':'12px 20px',borderRadius:12,background:primary?C.cr:dark?T.soft:C.white,color:primary?inkOn(C.cr):dark?T.ink:C.ink,border:primary?'none':`1px solid ${dark?T.line:C.line}`,fontFamily:C.P,fontSize:small?13:15,fontWeight:600,textAlign:'center',width:full?'100%':'auto',boxShadow:primary?`0 4px 16px ${C.cr}40`:'none',cursor:'pointer',boxSizing:'border-box',...s}}>{children}</div>;
 }
 
 /* Catches a render-time exception in a screen (e.g. static data that failed to load) so the

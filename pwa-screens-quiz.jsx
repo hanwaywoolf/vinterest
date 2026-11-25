@@ -36,7 +36,7 @@ function LearnJumpRow({sections,onJump,active}){ const T=useTheme(), cr=T.lift(C
     {sections.map(x=>{ const on=x.id===active;
       return <div key={x.id} role="button" aria-current={on?'true':undefined} onClick={()=>onJump(x.id)} style={{flex:'0 0 auto',padding:'7px 13px',borderRadius:999,background:on?(T.dark?_alpha(cr,0.25):cr):T.glass,border:`1px solid ${on?cr:T.line}`,cursor:'pointer',display:'flex',alignItems:'center',gap:6,transition:'background .25s, border-color .25s'}}>
         <span style={{fontSize:14,fontWeight:600,color:on?'#fff':T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{x.label}</span>
-        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:cr,background:on&&!T.dark?'#fff':T.crSoft,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
+        {x.count>0&&<span style={{fontSize:12,fontWeight:700,color:on&&!T.dark?C.cr:'#fff',background:on&&!T.dark?'#fff':C.cr,borderRadius:999,padding:'1px 7px',fontFamily:C.P}}>{x.count}</span>}
       </div>; })}
   </div>;
 }
@@ -577,7 +577,7 @@ function QuizHubScreen({nav,back,showPro}){ const T=useTheme(), cr=T.lift(C.cr);
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{c.title}</div>
                 <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{c.sub}</div>
-                <span style={{display:'inline-block',marginTop:6,fontSize:'10px',fontWeight:800,color:T.amber,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',padding:'3px 7px',borderRadius:999,background:_alpha(T.amber,0.15),whiteSpace:'nowrap',lineHeight:1.2}}>Coming soon</span>
+                <span style={{display:'inline-block',marginTop:6,fontSize:'10px',fontWeight:800,color:T.ink,fontFamily:C.P,letterSpacing:'0.05em',textTransform:'uppercase',padding:'3px 7px',borderRadius:999,background:_alpha(T.amber,0.22),whiteSpace:'nowrap',lineHeight:1.2}}>Coming soon</span>
               </div>
             </div>
           ))}
@@ -1812,12 +1812,20 @@ function _QuizConfetti({col,T}){
 const _QZ_TRAITS={body:'body',tannin:'tannins',tannins:'tannins',acidity:'acidity',acid:'acidity',texture:'texture'};
 function _QuizFact({text,T,cr}){
   const [open,setOpen]=React.useState(null);
+  // Each trait is marked once, and "acid" only on its own: malic or lactic acid is the name of an
+  // acid, not the acidity you taste.
   const parts=String(text).split(/(\b(?:body|tannins?|acidity|acid|texture)\b)/i);
+  const seen={};
+  const isTerm=(w,i)=>{ const k=_QZ_TRAITS[w.toLowerCase()]; if(!k||seen[k]) return null;
+    if(/^acid$/i.test(w)&&/(malic|lactic|tartaric|citric|succinic|acetic|volatile|amino)\s*$/i.test(parts[i-1]||'')) return null;
+    seen[k]=1; return k; };
   const tr=open&&typeof Palate!=='undefined'&&Palate.TRAITS[open];
   return <div style={{paddingTop:10,borderTop:`1px solid ${T.line}`}}>
     <div style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>
-      {parts.map((w,i)=>{ const k=_QZ_TRAITS[w.toLowerCase()]; return k
-        ?<span key={i} role="button" onClick={e=>{ e.stopPropagation(); setOpen(o=>o===k?null:k); }} style={{textDecoration:'underline dotted',textUnderlineOffset:3,textDecorationColor:cr,cursor:'pointer'}}>{w}</span>
+      {/* A tappable term reads as one: in the accent, semi-bold, with a small "?" after it. A dotted
+          underline looked like the iPhone's own spelling marks. */}
+      {parts.map((w,i)=>{ const k=isTerm(w,i); return k
+        ?<span key={i} role="button" data-testid="quiz-term" aria-label={`${w}: what it means`} onClick={e=>{ e.stopPropagation(); setOpen(o=>o===k?null:k); }} style={{color:cr,fontWeight:600,cursor:'pointer',whiteSpace:'nowrap'}}>{w}<span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'1.05em',height:'1.05em',marginLeft:3,borderRadius:'50%',border:`1.5px solid ${cr}`,fontSize:'0.62em',fontWeight:700,lineHeight:1,verticalAlign:'0.35em'}}>?</span></span>
         :<React.Fragment key={i}>{w}</React.Fragment>; })}
     </div>
     {tr&&<div className="qz-rise" onClick={e=>e.stopPropagation()} style={{marginTop:8,padding:'10px 12px',borderRadius:10,background:T.glass,border:`1px solid ${T.line}`,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>

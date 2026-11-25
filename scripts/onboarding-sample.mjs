@@ -43,7 +43,10 @@ try {
     if (fav.regions[0]) chips.push({ label: 'Top-scoring region', value: `${fav.regions[0].name} · ${fav.regions[0].avg}` });
     const dna = { key: 'red', label: 'Reds', personality: p.personality, basis: p.basis, lovedCount: p.loved.length, wineCount: p.wines.length,
       scoredCount: p.scored.length, confidence: p.confidence, chips, axes: p.axes.filter(p.showAxis),
-      avg: p.avg, lovedAvg: p.lovedAvg, axisNotes: p.axisNotes, sweetSpot: p.value && p.value.sweetSpot };
+      avg: p.avg, lovedAvg: p.lovedAvg, axisNotes: p.axisNotes, sweetSpot: p.value && p.value.sweetSpot,
+      // Today's WineDNA leads with Your rules and the portrait's scales (DnaRules, DnaTasteTiles).
+      rules: WineDNA.rules(p, ExploreNext.suggest('red', wines, 'Reds')).map((r) => ({ kind: r.kind, lead: r.lead, why: r.why })),
+      signals: (p.signals || []).map((g) => ({ axis: g.axis, text: g.text })) };
     // Slide 4: a Written for you card from the real archetype, and the Grapes area of the mastery map.
     const arch = _loadJSON('data/archetypes.json').find((a) => a.id === u.article.archetype);
     const fill = (t) => t.replace(/\{\{(\w+)\}\}/g, (_, k) => u.article.slots[k]);

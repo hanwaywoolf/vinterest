@@ -15,14 +15,14 @@ const UMD = {
 // claudeText(body) returns the text the stubbed /claude answers with (a promise is awaited, so a
 // test can make Claude slow); the default is empty,
 // which every caller treats as a failed generation.
-async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' , detail = 'all', reveal = 'off' } = {}) {
+async function stubNetwork(context, { claudeRequests = [], claudeText = () => '' , detail = 'all', reveal = 'off', whatsNew = 'off' } = {}) {
   // Tests check the free plan as it will ship, not the everyone-is-Pro testing switch
   // (Entitlement.ALL_PRO_FOR_TESTING); tests of the switch itself don't call stubNetwork.
   // Screens show all their detail (DetailLevel) unless a test asks for the levels as they ship
   // ({ detail: 'real' }), so tests of a section don't depend on how far the test user has learnt.
   // The post-scan reveal (ScanReveal) plays only for tests of it ({ reveal: 'real' }); the rest
   // open straight on the result, as before it existed.
-  await context.addInitScript(({ d, r }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; window.VINTEREST_QUIZ_SPEED = 8; window.VINTEREST_TOUR = 'off'; /* the Teams console's first-use tour, which would sit over every console test (tests/team.spec.js turns it back on to test it) */ window.VINTEREST_RETRY_FAST = true; }, { d: detail, r: reveal });
+  await context.addInitScript(({ d, r, w }) => { window.VINTEREST_REAL_PLANS = true; window.VINTEREST_NAV = 'top'; window.VINTEREST_DETAIL = d; window.VINTEREST_REVEAL = r; window.VINTEREST_WHATSNEW = w; /* the What's new sheet sits over Home until Got it; tests of it pass { whatsNew: 'real' } */ window.VINTEREST_QUIZ_SPEED = 8; window.VINTEREST_TOUR = 'off'; /* the Teams console's first-use tour, which would sit over every console test (tests/team.spec.js turns it back on to test it) */ window.VINTEREST_RETRY_FAST = true; if (!window.VINTEREST_CONSOLE) window.VINTEREST_CONSOLE = 'classic'; /* the Teams console as every restaurant has it; the new look's own test asks for 'preview' */ }, { d: detail, r: reveal, w: whatsNew });
   await context.route(/^https?:\/\/(?!localhost[:/])/, (route) => {
     const url = route.request().url();
     const umd = Object.entries(UMD).find(([k]) => url.includes(k));

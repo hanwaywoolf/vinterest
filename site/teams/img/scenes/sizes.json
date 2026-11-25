@@ -1,0 +1,60 @@
+{
+ "look": "preview",
+ "nav": 0,
+ "navTap": {
+  "dash": {
+   "x": 82,
+   "y": 91
+  },
+  "sales": {
+   "x": 82,
+   "y": 134
+  },
+  "team": {
+   "x": 82,
+   "y": 177
+  },
+  "training": {
+   "x": 82,
+   "y": 220
+  },
+  "wines": {
+   "x": 82,
+   "y": 263
+  },
+  "menu": {
+   "x": 82,
+   "y": 306
+  }
+ },
+ "navW": 249,
+ "dash": 2088,
+ "sales": 2386,
+ "team": 1991,
+ "training": 2284,
+ "wines": 5145,
+ "menu": 3237,
+ "cardAt": 0.4511,
+ "cardTap": {
+  "x": 179,
+  "y": 416
+ },
+ "cardX": 840,
+ "cardW": 600,
+ "card": 900,
+ "dishAt": 0.1549,
+ "dishTap": {
+  "x": 165,
+  "y": 416
+ },
+ "dishX": 840,
+ "dishW": 600,
+ "dish": 1105,
+ "mgrW": 820,
+ "mgrNav": 0,
+ "mgr": 3286,
+ "plan": [
+  921,
+  795
+ ]
+}

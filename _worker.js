@@ -50,6 +50,7 @@
 const CLAUDE_PURPOSE_LIMITS = {
   label_scan: 4096,       // pwa-screens-main.jsx — photo -> wine JSON
   list_scan: 8192,         // pwa-screens-main.jsx — photo of a wine list -> wine[]
+  shelf_scan: 8192,        // pwa-screens-main.jsx — photo of a shop shelf -> the wines whose labels can be read (prompts/shelf-scan.txt)
   scancard: 2048,          // pwa-scancards.jsx — the scan story's line to say and a fact
   wine_deep: 4096,         // pwa-deep.js WineDeep — "Learn more about this wine" cards, on demand
   price: 4096,             // pwa-components.jsx fetchRetailEstimate — retail price estimate
@@ -83,6 +84,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   team_guest: 700,         // team-vinny.js TeamVinny.guest — Vinny plays a guest at a table and marks the server (prompts/team-guest.txt)
   team_fix: 6144,
   team_review: 6144,       // team-data.js TeamData.sommelierReview — a head sommelier reads every question as the drill shows it (prompts/team-review.txt)          // team-data.js TeamData.checkQuestions — rewrites the questions that failed the publish check (prompts/team-fix.txt)
+  team_buyer: 6000,        // team-buyer.js TeamBuyer.review — the list read as a buyer: shop prices, dishes the menu lacks, wines the list lacks (prompts/team-buyer.txt)
+  team_plan: 6000,         // team-plans.js TeamPlans.write — a bespoke training plan for one person, written by Vinny from the manager's request (prompts/team-plan.txt)
   team_special: 4096,      // team-shift.js TeamShift.read — tonight's specials from a photo of the chef's board or a typed note, each paired from the list (prompts/team-special.txt)
   team_dishes: 12288       // team-data.js TeamData.writeDishCards — a dish in a sentence, its likely allergens for the kitchen to confirm, changes, what guests ask (prompts/team-dish-cards.txt)
 };
@@ -94,7 +97,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { team_buyer: "medium", team_plan: "medium", team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -144,7 +147,7 @@ function modelFor(purpose, env, draft) {
 /* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
    writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
    could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
-const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1 };
+const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1, team_plan: 1, team_buyer: 1 };
 // The short team answers (a guest's line with its choices, Ask Vinny, a marked answer) were sized for a model that
 // doesn't think: on Opus the thinking used the whole cap and the answer came back cut off mid-JSON. They get room.
 const THINKING_FLOOR = { team_vinny: 4096, team_guest: 4096, team_grade: 2048 };
@@ -172,14 +175,14 @@ const PREVIEW_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.pages\.dev$/;
 const VENUE_ORIGIN_RE = /^https:\/\/[a-z0-9-]+\.vinterest\.team$/;
 // Which restaurant each of those addresses opens (TeamSample.hostSeed in team-data.js reads the same list):
 // its root goes straight to the staff app.
-const VENUE_HOSTS = { "socialcorner.vinterest.team": "social", "princessroyal.vinterest.team": "princess-royal" };
+const VENUE_HOSTS = { "socialcorner.vinterest.team": "social" };
 
 // A restaurant's address that opens the page written for it, with its demo beside it (eloise.vinterest.team): the root
 // is the Teams site's private page (site/teams/for/<name>.html, fetched from TEAMS_SITE_ORIGIN, default vinterest.team,
 // with the stylesheet, script, images and cards it asks for by path; fonts and the logo are this project's own, the same
 // files), and /demo/ is the staff app (dist/team/), which opens that restaurant from the address (TeamSample.HOSTS).
 // The API routes answer as on any other address.
-const VENUE_PAGES = { "eloise.vinterest.team": "eloise" };
+const VENUE_PAGES = { "eloise.vinterest.team": "eloise", "princessroyal.vinterest.team": "princess-royal" };
 const VENUE_PAGE_FILE = /^\/(site\.css$|site\.js$|for\/|img\/)/;
 async function serveVenuePage(request, url, env) {
   const name = VENUE_PAGES[url.hostname], site = (env.TEAMS_SITE_ORIGIN || "https://vinterest.team").replace(/\/+$/, ""), p = url.pathname;
@@ -260,9 +263,13 @@ export default {
         // subscription is approved and don't redeem reliably from TestFlight. Set it back before the
         // App Store submission (review rule 3.1.1).
         iosTypedPromo: env.IOS_TYPED_PROMO === "1",
+        // "A new version is out" on Home (AppUpdate in pwa-update.js), set here so announcing a
+        // release is a Cloudflare variable, not an app build (docs/app-store.md "Telling people about
+        // an update").
+        update: appUpdate(env),
       });
     }
-    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/test" || url.pathname === "/push/run") {
+    if (url.pathname === "/push/register" || url.pathname === "/push/unregister" || url.pathname === "/push/run") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       if (url.pathname === "/push/run") return handlePushRun(request, env);
@@ -585,10 +592,10 @@ async function handleClaude(request, env, ctx) {
    purposes need Pro in `entitlements`, which only the server writes. The caps are cost guards,
    set generously, never product limits (spec D5). */
 const FAIR_USE = {
-  free: { label_scan: 100, list_scan: 30, price_search: 50, _other: 500 },
-  pro:  { label_scan: 600, list_scan: 150, price_search: 300, _other: 3000 },
+  free: { label_scan: 100, list_scan: 30, shelf_scan: 30, price_search: 50, _other: 500 },
+  pro:  { label_scan: 150, list_scan: 40, shelf_scan: 40, price_search: 100, _other: 600 },
 };
-/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
+/* The team purposes (team_list, team_menu, team_cards, team_cocktails, team_pairings, team_dishes, team_special, team_plan, team_buyer, team_grade, team_vinny, team_guest, team_fix, team_review) are open while the
    pilot is two people on one laptop: no sign-in, metered only by the per-IP limit. Add them here
    with TEAM_PRO once restaurants have accounts. */
 const TEAM_PRO = "Vinterest Teams needs a Pro account while it's in pilot.";
@@ -643,7 +650,13 @@ async function tierOf(env, userId) {
 /* The free plan's label scans are counted per calendar month (UTC), not per week: FREE_MONTHLY a
    month, through use_quota_month (0009_monthly_scans.sql), kind "<purpose>:month". Pro keeps only the
    weekly fair-use cap. The app shows what's left from /me's `month` and says so before the camera. */
-const FREE_MONTHLY = { label_scan: 10 };
+const FREE_MONTHLY = { label_scan: 10, shelf_scan: 2 };
+/* What the free plan is told at each monthly cap, and the code the app reads (a shelf scan is one photo
+   of many bottles, free twice a month so everyone can try it; it costs about what a label scan does). */
+const MONTHLY_SAID = {
+  label_scan: { code: "scan_limit", text: (n, back) => `You've used your ${n} free scans this month. They come back on 1 ${back}, or go Pro to keep scanning.` },
+  shelf_scan: { code: "shelf_limit", text: (n, back) => `You've used your ${n} free shelf scans this month. They come back on 1 ${back}, or go Pro to scan any shelf.` },
+};
 function monthStart(d = new Date()) { return d.toISOString().slice(0, 7) + "-01"; }
 function nextMonthName(d = new Date()) { return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)).toLocaleString("en-GB", { month: "long", timeZone: "UTC" }); }
 function capFor(tier, kind) { const t = FAIR_USE[tier] || FAIR_USE.free; return kind in t ? t[kind] : t._other; }
@@ -668,7 +681,8 @@ async function gateAccount(request, env, purpose) {
   if (tier !== "pro" && FREE_MONTHLY[purpose]) {
     const m = await db(env, "rpc/use_quota_month", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose + ":month", p_cap: FREE_MONTHLY[purpose] }) });
     if (m.ok && (await m.json()) === null) {
-      return { response: json(429, { error: `You've used your ${FREE_MONTHLY[purpose]} free scans this month. They come back on 1 ${nextMonthName()}, or go Pro to keep scanning.`, code: "scan_limit" }) };
+      const said = MONTHLY_SAID[purpose] || MONTHLY_SAID.label_scan;
+      return { response: json(429, { error: said.text(FREE_MONTHLY[purpose], nextMonthName()), code: said.code }) };
     }
   }
   const r = await db(env, "rpc/use_quota", { method: "POST", body: JSON.stringify({ p_user: user.id, p_kind: purpose, p_cap: capFor(tier, purpose) }) });
@@ -746,14 +760,34 @@ async function handlePromo(request, env) {
    bell, Notices): a bottle waiting for its rating and a long gap since the last scan (Reminders,
    switched off by vinterest_notify.reminder in their synced settings), and Pro access ending
    soon or a payment that didn't go through (the account, always on). At most one a day and
-   three a week, at about 6pm where they are. POST /push/run is the hourly job (a GitHub
+   three a week, in their evening (PUSH_HOUR to PUSH_HOUR + PUSH_WINDOW hours, where they are). POST /push/run is the hourly job (a GitHub
    workflow with PUSH_CRON_SECRET, since Pages has no cron). Nothing here moves a match or a rating. */
 // A run handles a few people (each costs about seven requests to Supabase and the services, and Pages
 // allows 50 on the free plan); it says when there are more and the workflow asks again from there.
-const PUSH_HOUR = 18, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
+// The evening window: GitHub's scheduler starts the "hourly" job only every few hours, so a single hour
+// missed most people most days. Anyone whose local time is in the window when a run comes is reached;
+// the one-a-day rule (PUSH_RATE_AFTER_MS) keeps it to one.
+const PUSH_HOUR = 17, PUSH_WINDOW = 6, PUSH_MAX_PER_WEEK = 3, PUSH_BATCH = 5, PUSH_MAX_DEVICES = 10;
 const PUSH_RATE_AFTER_MS = 20 * 3600 * 1000, PUSH_LAPSE_DAYS = 14, PUSH_PRO_ENDING_DAYS = 3;
 function apnsOn(env) { return !!(env.APNS_KEY_P8 && env.APNS_KEY_ID && env.APNS_TEAM_ID); }
 function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
+/* The newest version in each store, the oldest still supported, and where to get it, from the
+   Cloudflare variables APP_LATEST (or APP_LATEST_IOS / APP_LATEST_ANDROID when the two stores are
+   out of step), APP_MIN (optional), APP_UPDATE_NOTE (an optional line on what's new) and
+   APP_STORE_ID (the App Store's numeric id; iPhone gets nothing without it). Null when no latest
+   version is set, so nothing shows. */
+function appUpdate(env) {
+  const v = (s) => (/^\d+(\.\d+){1,2}$/.test(String(s || "").trim()) ? String(s).trim() : null);
+  const note = String(env.APP_UPDATE_NOTE || "").trim().slice(0, 140) || null, min = v(env.APP_MIN);
+  const ios = v(env.APP_LATEST_IOS) || v(env.APP_LATEST), android = v(env.APP_LATEST_ANDROID) || v(env.APP_LATEST);
+  const storeId = /^\d{6,12}$/.test(String(env.APP_STORE_ID || "")) ? env.APP_STORE_ID : null;
+  const out = {
+    ios: ios && storeId ? { latest: ios, min, note, url: `https://apps.apple.com/app/id${storeId}` } : null,
+    android: android ? { latest: android, min, note, url: "https://play.google.com/store/apps/details?id=app.vinterest" } : null,
+  };
+  return out.ios || out.android ? out : null;
+}
+
 function pushOn(env) { return accountsOn(env) && (apnsOn(env) || fcmOn(env)); }
 
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
@@ -835,7 +869,7 @@ async function pushRecord(env, userId, kind, keys) {
     body: JSON.stringify(keys.map((key) => ({ user_id: userId, kind, key, sent_at: new Date().toISOString() }))) }).catch(() => null);
 }
 
-/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}, /push/test: signed-in app calls. */
+/* POST /push/register {token, platform, tz, app_version}, /push/unregister {token}: signed-in app calls. */
 async function handlePush(request, env, action) {
   const origin = request.headers.get("origin");
   if (!originAllowed(origin)) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
@@ -866,18 +900,7 @@ async function handlePush(request, env, action) {
     await db(env, token ? `push_devices?user_id=eq.${uid}&token=eq.${encodeURIComponent(token)}` : `push_devices?user_id=eq.${uid}`, { method: "DELETE" }).catch(() => null);
     return json(200, { ok: true });
   }
-  // test: one notification to their own phones, three an hour at most.
-  const since = new Date(Date.now() - 3600 * 1000).toISOString();
-  const recent = await db(env, `push_sent?user_id=eq.${uid}&kind=eq.test&sent_at=gte.${since}&select=key`);
-  if (recent.ok && (await recent.json()).length >= 3) return json(429, { error: "That's three tests this hour. Try again later.", code: "rate_limited" });
-  // A phone shows a notification only while the app isn't open, so the app asks for a pause (up to 15s)
-  // to give them time to close it or lock the screen.
-  const wait = Math.min(15, Math.max(0, parseInt(body.delay, 10) || 0));
-  if (wait) await new Promise((r) => setTimeout(r, wait * 1000));
-  const out = await pushToUser(env, user.id, { title: "Vinterest notifications are on", body: "This is how a reminder will look.", link: { screen: "home" } });
-  if (!out.sent) return json(502, { error: out.gone ? "This phone's notification token had expired. Open the app again and turn notifications off and on." : "We couldn't reach your phone just now. Try again in a minute.", code: "push_failed" });
-  await pushRecord(env, user.id, "test", [Date.now() + "-" + Math.random().toString(36).slice(2, 8)]);
-  return json(200, { ok: true, sent: out.sent });
+  return json(404, { error: "Not found" });
 }
 
 function localHour(tz, now) {
@@ -926,14 +949,15 @@ async function pushPlan(env, userId, now) {
   }
   return null;
 }
-/* Everyone whose local time is the push hour gets at most one. dry: say what would go, send nothing. */
+/* Everyone whose local time is in the evening window gets at most one. dry: say what would go, send nothing. */
 async function runPushJob(env, { now = Date.now(), dry = false, hour = PUSH_HOUR, offset = 0 } = {}) {
   const r = await db(env, "push_devices?select=user_id,tz&order=last_seen.desc&limit=2000");
   const devices = r.ok ? await r.json() : [];
   const tzOf = new Map();
   for (const d of devices) if (!tzOf.has(d.user_id)) tzOf.set(d.user_id, d.tz);
   const batch = Math.max(1, parseInt(env.PUSH_BATCH, 10) || PUSH_BATCH);
-  const all = [...tzOf].filter(([, tz]) => localHour(tz, now) === hour).map(([u]) => u).sort();
+  const inWindow = (h) => (h - hour + 24) % 24 < PUSH_WINDOW;
+  const all = [...tzOf].filter(([, tz]) => inWindow(localHour(tz, now))).map(([u]) => u).sort();
   const users = all.slice(offset, offset + batch);
   const out = { users: all.length, sent: [], skipped: 0, errors: [], more: all.length > offset + batch, next: offset + batch };
   for (const u of users) {

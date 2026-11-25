@@ -3,7 +3,7 @@
    Vinny's test (a drill aimed at what this person needs, or at what they ask for). */
 
 /* The Vinny badge, as on the consumer app's Ask Vinny bar. */
-function TeamVinnyMark({size=28}){ return <div aria-hidden="true" style={{width:size,height:size,borderRadius:size/2,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><span style={{fontSize:Math.round(size*0.47)+'px',fontWeight:800,color:'#fff',fontFamily:C.P,lineHeight:1}}>V</span></div>; }
+function TeamVinnyMark({size=28}){ return <div aria-hidden="true" style={{width:size,height:size,borderRadius:size/2,background:C.cr,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><span style={{fontSize:Math.round(size*0.47)+'px',fontWeight:800,color:inkOn(C.cr),fontFamily:C.P,lineHeight:1}}>V</span></div>; }
 
 /* The chips under an answer: the wines and dishes it named, each opening its card. */
 function _TVChips({wines,dishes,open}){ const T=useTheme();
@@ -131,7 +131,7 @@ function _GuestHelpSwitch({level,onPick}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div data-testid="guest-help" style={{marginBottom:12}}>
     <div role="radiogroup" aria-label="Help at the table" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,background:T.soft}}>
       {TeamVinny.LEVELS.map(k=><div key={k} role="radio" aria-checked={level===k} data-testid={`guest-help-${k}`} onClick={()=>onPick(k)}
-        style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:9,cursor:'pointer',fontSize:14,fontWeight:700,fontFamily:C.P,background:level===k?cr:'transparent',color:level===k?'#fff':T.mid}}>{TeamVinny.LEVEL_LABEL[k]}</div>)}
+        style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:9,cursor:'pointer',fontSize:14,fontWeight:700,fontFamily:C.P,background:level===k?cr:'transparent',color:level===k?inkOn(cr):T.mid}}>{TeamVinny.LEVEL_LABEL[k]}</div>)}
     </div>
     <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{_GUEST_HELP[level]}</div>
   </div>; }
