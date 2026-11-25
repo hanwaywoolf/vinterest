@@ -45,8 +45,8 @@ try {
     const before = heldOnly ? await page.evaluate(() => TeamData.reviewed()) : null;
     if (heldOnly && !(before && before.held && before.held.length)) { console.log(`${seed}: nothing held to read again.`); continue; }
     const r = await page.evaluate(async (only) => {
-      if (!only) await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`)); // repeats and giveaways rewritten first
-      const res = await TeamData.sommelierReview({ only: only || undefined, onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
+      if (!only) await TeamData.checkQuestions(null, (a, b) => console.log(`review: rule rewrites ${a} of ${b}`), { fresh: true }); // repeats and giveaways rewritten first
+      const res = await TeamData.sommelierReview({ only: only || undefined, fresh: !only, onStep: (a, b) => console.log(`review: ${a} of ${b}`) });
       if (!res) return null;
       const d = TeamData.get();
       return { res, cards: d.cards, notes: res.held.map((id) => ({ id, ...res.notes[id] })), name: d.venue.name };

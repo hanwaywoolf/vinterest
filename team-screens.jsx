@@ -37,16 +37,19 @@ const _tPill=(T,kind,text,col)=>{ const st={glass:{border:col,color:col,bg:_alph
 /* One text size on a wine's, cocktail's and dish's card (docs/business.md "One size on the cards"): every line is 14, the
    size of the sentence in Where you stand, and only the name is larger (20). Weights are light: the name 600, anything
    emphasised and every label 500, the rest 400. tests/team.spec.js fails if a card strays from it. */
+// A card's dishes, best first, as the pairings and the "best match" question have them (TeamLearn.poursWith).
+const _tPours=id=>TeamLearn.poursWith(id).map(y=>({dish:y.name,why:y.why}));
 const _TC_BTN={fontSize:14,fontWeight:500};
 /* The Teams button (the new console and the cards): square and hollow, small spaced capitals in the accent, filling
    solid with the accent while the pointer is on it or it is pressed. A secondary one takes a white hairline and white
    text. It hugs its label, never a card's width. On a card its text is the card's own 14; in the console's pages 12. */
-function TeamBtn({children,primary,small,card,onClick,testid,disabled,style}){ const T=useTheme(), acc=T.lift?T.lift(C.cr):C.cr, [hot,setHot]=React.useState(false);
-  const line=primary?acc:'rgba(255,255,255,0.22)', fill=primary?acc:'#ffffff', on=hot&&!disabled;
+function TeamBtn({children,primary,solid,small,card,onClick,testid,disabled,style}){ const T=useTheme(), acc=T.lift?T.lift(C.cr):C.cr, [hot,setHot]=React.useState(false);
+  // `solid` is the one main action of a screen (Today's drill): filled from the start, dimming a little when pressed.
+  const line=primary||solid?acc:'rgba(255,255,255,0.22)', fill=primary||solid?acc:'#ffffff', on=(hot||solid)&&!disabled;
   return <div role="button" data-testid={testid} data-team-btn aria-disabled={disabled||undefined} onClick={disabled?undefined:onClick}
     onPointerEnter={e=>{ if(e.pointerType==='mouse') setHot(true); }} onPointerLeave={()=>setHot(false)} onPointerDown={()=>setHot(true)} onPointerUp={e=>{ if(e.pointerType!=='mouse') setHot(false); }} onPointerCancel={()=>setHot(false)}
     style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,boxSizing:'border-box',padding:small?'9px 13px':'12px 18px',borderRadius:0,border:`1px solid ${on?fill:line}`,background:on?fill:'transparent',color:on?inkOn(fill):primary?acc:T.ink,
-      fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:1,transition:'background .12s, color .12s',userSelect:'none',...style}}>{children}</div>; }
+      fontFamily:C.P,fontSize:card?14:'12px',fontWeight:500,letterSpacing:card?'0.1em':'0.14em',textTransform:'uppercase',whiteSpace:'nowrap',lineHeight:1.2,cursor:disabled?'default':'pointer',opacity:disabled?0.35:solid&&hot?0.82:1,transition:'background .12s, color .12s, opacity .12s',userSelect:'none',...style}}>{children}</div>; }
 const _tcH=(T,t,sub)=><div style={{marginBottom:10}}><div data-card-name style={{fontSize:20,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
 /* One scale on a card: its name 20, a figure 16, every line 14, and every caption, tab, pill and button 12px spaced capitals
    (data-cap), with 8 to 12px between blocks. */
@@ -57,7 +60,7 @@ const _tcSpk=(col,size=16)=><svg width={size} height={size} viewBox="0 0 24 24" 
 const _tcDots=(T,v,col)=><span aria-label={`${v} out of 5`} style={{display:'inline-flex',gap:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{width:9,height:9,borderRadius:5,background:i<=v?col:T.line}}/>)}</span>;
 /* The head of a card, in the console's own style: a light headline on the page, then figure tiles (a price, how many
    are trained on it). The name and the tiles are the card's display text (data-card-big); every other line keeps one size. */
-const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:10,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:'7px 11px'});
+const _tcTile=(T,manage)=>({flex:'1 1 0',minWidth:0,borderRadius:0,border:`1px solid ${T.line}`,background:'rgba(255,255,255,0.035)',padding:'7px 11px'});
 function _TcHead({manage,eye,eyeCol,meta=[],extra,name,under,tiles=[],note}){ const T=useTheme(), tile=_tcTile(T,manage), bits=[eye&&<span key="e" style={{color:eyeCol||T.ink2,fontWeight:500}}>{eye}</span>,...meta.filter(Boolean).map((m,i)=><span key={i}>{m}</span>)].filter(Boolean);
   return <div data-testid="team-hero" data-card-big style={{marginBottom:8}}>
     <div style={{fontSize:13,color:T.mid,fontFamily:C.P,display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',paddingRight:manage?40:0}}>{bits.map((b,i)=><React.Fragment key={i}>{i>0&&<span>·</span>}{b}</React.Fragment>)}{extra}</div>
@@ -106,7 +109,7 @@ function useTeamJob(){ const [,bump]=React.useReducer(x=>x+1,0); React.useEffect
    while it runs, "Published" when done, and the reason with Resume if it stopped. A tap opens Upload. */
 function TeamJobChip({onOpen,style}){ const T=useTheme(), cr=T.lift(C.cr), job=useTeamJob(); if(!job) return null;
   const col=job.error?T.amber:job.done?T.green:cr;
-  return <div data-testid="team-job" data-state={job.error?'error':job.done?'done':'running'} role="button" onClick={onOpen} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:12,border:`1px solid ${col}66`,background:T.soft,marginBottom:12,cursor:'pointer',...style}}>
+  return <div data-testid="team-job" data-state={job.error?'error':job.done?'done':'running'} role="button" onClick={onOpen} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',borderRadius:0,border:`1px solid ${col}66`,background:T.soft,marginBottom:12,cursor:'pointer',...style}}>
     <div style={{flex:1,minWidth:0}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:14,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:700,color:col}}>{job.error?'Writing stopped':job.done?'Published':'Writing in the background'}</span><span style={{color:T.mid,whiteSpace:'nowrap'}}>{job.error?'':job.done?TeamData.checkedLine():job.b?`${job.step} · ${job.a} of ${job.b}`:job.step}</span></div>
       {job.error?<div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:2}}>{job.error} What was written is kept.</div>:!job.done&&<Prog val={job.b?job.a/job.b:0.05} col={cr} h={4} style={{marginTop:6}}/>}
@@ -115,18 +118,22 @@ function TeamJobChip({onOpen,style}){ const T=useTheme(), cr=T.lift(C.cr), job=u
   </div>; }
 /* The figures a manager wants on the move, on the phone's Today: the console has the rest. */
 function TeamKpiStrip({open}){ const T=useTheme(), o=TeamReport.overview(), s=TeamReport.salesSummary(7);
-  const tile=(label,value,sub,col,onClick,testid)=><div key={label} role="button" data-testid={testid} onClick={onClick} style={{flex:'1 1 120px',padding:'10px 12px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer',minWidth:0}}>
-    <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{label}</div><div style={{fontSize:22,fontWeight:700,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:2}}>{value}</div>{sub&&<div style={{fontSize:11,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.35}}>{sub}</div>}</div>;
+  // The console's figure tiles: square, joined by hairlines, a capitals caption that never wraps, the figure, one line under.
+  const tile=(span,label,value,sub,col,onClick,testid)=><div key={label} role="button" data-testid={testid} onClick={onClick} style={{gridColumn:`span ${span}`,padding:'12px 12px 11px',background:'#000',cursor:'pointer',minWidth:0}}>
+    <div data-cap style={{..._T_CAPS,fontSize:'11px',fontWeight:500,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</div>
+    <div style={{fontSize:22,fontWeight:600,color:col||T.ink,fontFamily:C.P,lineHeight:1.1,marginTop:6}}>{value}</div>
+    {sub&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.3}}>{sub}</div>}</div>;
+  const more=(o.adoption.length>0?1:0)+(s?1:0), wide2=more===1?6:3;
   return <div data-testid="team-kpis" style={{marginBottom:14}}>
-    <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-      {tile('Team readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({console:'team'}),'kpi-readiness')}
-      {tile('Behind',o.behind,o.behind?'past their wave':'all on track',o.behind?T.tone.bad:null,()=>open({console:'team'}))}
-      {tile('Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({console:'team'}))}
-      {o.adoption.length>0&&tile('New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not yet known by all`,null,()=>open({console:'wines'}))}
-      {s&&tile('Wine sales, 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({console:'sales'}),'kpi-sales')}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(6,minmax(0,1fr))',gap:1,background:T.line,border:`1px solid ${T.line}`}}>
+      {tile(2,'Readiness',`${o.avg}%`,`${o.ready} of ${o.total} ready`,null,()=>open({console:'team'}),'kpi-readiness')}
+      {tile(2,'Behind',o.behind,o.behind?'past wave':'on track',o.behind?T.tone.bad:null,()=>open({console:'team'}))}
+      {tile(2,'Slipping',o.slipping,o.slipping?'were ready':'none',o.slipping?T.amber:null,()=>open({console:'team'}))}
+      {o.adoption.length>0&&tile(wide2,'New on the list',o.adoption.length,`${o.adoption.filter(a=>a.knows<a.of).length} not known by all`,null,()=>open({console:'wines'}))}
+      {s&&tile(wide2,'Wine sales · 7 nights',TeamData.money(Math.round(s.revenue)),`${s.delta.revenue==null?'':(s.delta.revenue>0?'▲':'▼')+Math.abs(s.delta.revenue)+'% · '}${TeamSales.demo()?'demo data':'from your POS'}`,null,()=>open({console:'sales'}),'kpi-sales')}
     </div>
     {/* Each figure opens its part of the console; the console works on a phone too, and wider on a tablet or laptop. */}
-    <div data-testid="kpi-console" style={{marginTop:10}}><Btn small primary onClick={()=>open({console:'dash'})}>Open the console</Btn></div>
+    <div data-testid="kpi-console" style={{marginTop:10}}><TeamBtn small primary onClick={()=>open({console:'dash'})}>Open the console</TeamBtn></div>
   </div>; }
 
 /* The installed restaurant's own logo (venue.brand): its wordmark in white on the dark stage. */
@@ -150,7 +157,7 @@ function TeamRing({pct,col,size=88}){ const T=useTheme(), r=size/2-7, c=2*Math.P
 /* First run: the restaurant's name and who's setting it up. */
 function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
   const [venue,setVenue]=React.useState(''), [name,setName]=React.useState(''), [role,setRole]=React.useState('server');
-  const field={width:'100%',padding:'12px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'};
+  const field={width:'100%',padding:'12px 14px',borderRadius:0,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'};
   // A restaurant installed with its list and training (/team/?seed=social) needs only the person setting it up.
   const installed=TeamData.get().venue, brand=TeamData.brand();
   if(installed&&installed.name&&TeamData.wines().length) return <div data-testid="team-setup-installed" style={{padding:'calc(env(safe-area-inset-top) + 28px) 20px 24px',maxWidth:520,margin:'0 auto'}}>
@@ -176,7 +183,7 @@ function TeamSetup({onDone}){ const T=useTheme(), cr=T.lift(C.cr);
       <div style={{textAlign:'center',fontSize:14,color:T.mid,fontFamily:C.P,margin:'6px 0'}}>or</div>
       {/* The Social Corner, the first real restaurant's install, first: a phone opening plain /team/ (a link that lost
           its ?seed=social) can still get to it. */}
-      <div data-testid="team-load-social" role="button" onClick={()=>go('social')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer'}}>
+      <div data-testid="team-load-social" role="button" onClick={()=>go('social')} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:0,border:`1px solid ${T.line}`,background:T.soft,cursor:'pointer'}}>
         <img src="brand/social-corner/mark.png" alt="" style={{width:36,height:36,borderRadius:18,flexShrink:0}} onError={e=>{ e.target.style.display='none'; }}/>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Open The Social Corner</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{TeamSample.socialLine()}</div></div>
         <Icon n="chevron" sz={12} col={T.mid}/></div>
@@ -196,10 +203,10 @@ function TeamTonightCard({pid,open,manage}){ const T=useTheme(), cr=T.lift(C.cr)
       {line(w)&&<div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{line(w)}</div>}</div>
     <div role="button" aria-label={`Say ${TeamData.short(w)}`} onClick={e=>{ e.stopPropagation(); say(w); }} style={{width:36,height:36,borderRadius:18,border:`1px solid ${T.line}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>🔊</div></div>;
   if(!off.length&&!feat.length&&!look.length&&!sps.length&&!manage) return null;
-  return <div data-testid="team-tonight" style={{marginBottom:12}}><Card style={{borderColor:_alpha(cr,0.5)}}>
+  return <div data-testid="team-tonight" style={{marginBottom:12}}><Card style={{borderColor:_alpha(cr,0.5),borderRadius:0}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Tonight</div>
       {manage&&<span role="button" data-testid="tonight-edit" onClick={()=>open({view:'tonight'})} style={{fontSize:14,fontWeight:700,color:cr,fontFamily:C.P,cursor:'pointer'}}>{off.length||feat.length||sps.length?'Change':'Set tonight'}</span>}</div>
-    {gone.length>0&&<div data-testid="tonight-soldout" style={{marginTop:8,padding:'8px 12px',borderRadius:10,background:_alpha('#F28B7D',0.14),border:`1px solid ${_alpha('#F28B7D',0.5)}`,fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b>Sold out:</b> {gone.map(e=>`${e.name} (${TeamShift.time(e.at)})`).join(', ')}</div>}
+    {gone.length>0&&<div data-testid="tonight-soldout" style={{marginTop:8,padding:'8px 12px',borderRadius:0,background:_alpha('#F28B7D',0.14),border:`1px solid ${_alpha('#F28B7D',0.5)}`,fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b>Sold out:</b> {gone.map(e=>`${e.name} (${TeamShift.time(e.at)})`).join(', ')}</div>}
     {off.length>0&&<div data-testid="tonight-off" style={{marginTop:8,fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b style={{color:'#F28B7D'}}>86'd:</b> {off.map(x=>x.name).join(', ')}</div>}
     {sps.length>0&&<div data-testid="tonight-specials" style={{marginTop:8}}><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Specials</div>{sps.map(s=>{ const sold=s.status==='soldout', w=TeamData.wine((s.pairing.glass||s.pairing.bottle||{}).id);
       return <div key={s.id} role="button" onClick={()=>open({view:'briefing'})} style={{padding:'8px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer',marginTop:4}}><div style={{fontSize:16,fontWeight:700,color:sold?T.mid:T.ink,fontFamily:C.P,textDecoration:sold?'line-through':'none'}}>{s.name}{TeamShift.price(s)&&<span style={{fontWeight:500,color:T.mid}}> · {TeamShift.price(s)}</span>}</div>
@@ -216,9 +223,9 @@ function TeamTonightEdit({back,pid,open}){ const T=useTheme(), cr=T.lift(C.cr), 
   const tn=TeamData.tonight(), norm=x=>String(x||'').toLowerCase(), hit=x=>!q.trim()||norm(x).includes(norm(q.trim()));
   const row=(kind,id,name,sub,on,col)=><div key={kind+id} role="button" data-testid={`tonight-${kind}`} aria-pressed={on} onClick={()=>{ TeamData.toggleTonight(kind,id); bump(); }} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderTop:`1px solid ${T.line}`,cursor:'pointer',background:on?_alpha(col,0.12):'transparent',...(kind==='feature'?_tWineRule(T,TeamData.wine(id)):{})}}>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{name}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{sub}</div>}</div>
-    <span style={{fontSize:13,fontWeight:700,fontFamily:C.P,color:on?col:T.mid,padding:'4px 10px',borderRadius:10,border:`1px solid ${on?col:T.line}`}}>{on?(kind==='off'?"86'd":'On feature'):(kind==='off'?'86 it':'Feature')}</span></div>;
+    <span style={{fontSize:13,fontWeight:700,fontFamily:C.P,color:on?col:T.mid,padding:'4px 10px',borderRadius:0,border:`1px solid ${on?col:T.line}`}}>{on?(kind==='off'?"86'd":'On feature'):(kind==='off'?'86 it':'Feature')}</span></div>;
   return <div data-testid="team-tonight-edit">{_tH(T,'Tonight',"What's 86'd, the specials and what's on feature. Send it as the briefing everyone accepts before their shift.")}
-    <input aria-label="Find a dish or wine" placeholder="Find a dish, wine or cocktail" value={q} onChange={e=>setQ(e.target.value)} style={{width:'100%',padding:'11px 14px',borderRadius:12,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',marginBottom:4}}/>
+    <input aria-label="Find a dish or wine" placeholder="Find a dish, wine or cocktail" value={q} onChange={e=>setQ(e.target.value)} style={{width:'100%',padding:'11px 14px',borderRadius:0,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none',marginBottom:4}}/>
     {_tLabel(T,`86'd (${tn.off.length})`)}<Card style={{padding:0}}>{TeamData.dishes().filter(x=>hit(x.name)||tn.off.includes(x.id)).slice(0,q?30:12).map(x=>row('off',x.id,x.name,x.section,tn.off.includes(x.id),'#F28B7D'))}</Card>
     {_tLabel(T,`On feature (${tn.feature.length})`)}<Card style={{padding:0}}>{[...TeamData.wines(),...TeamData.cocktails()].filter(x=>hit(x.producer?TeamData.short(x):x.name)||tn.feature.includes(x.id)).slice(0,q?30:12).map(x=>row('feature',x.id,x.producer?TeamData.short(x):x.name,x.glass?`glass ${x.glass}`:x.price||x.bottle,tn.feature.includes(x.id),'#5FD48F'))}</Card>
     <TeamShiftManage pid={pid} preview={open?()=>open({view:'briefing'}):null}/>
@@ -246,49 +253,59 @@ function TeamToday({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=useLay
     {empty?<Card><div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.5}}>No wine list yet. {TeamLearn.ROLES[person.role].label==='Manager'||person.role==='buyer'?'Upload it from the Upload tab and your training is written from it.':'Your manager uploads it, then your training appears here.'}</div></Card>:(()=>{
     // The drill button: under the parts on a phone, straight under the readiness card on a tablet (the main thing to do, in view).
     const drill=(()=>{ const dn=TeamLearn.doneToday(pid);
-      if(!dn) return <Btn primary full style={{marginTop:14}} onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</Btn>;
-      return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:14,padding:'12px 14px',borderRadius:14,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
+      if(!dn) return <div data-testid="today-next" style={{marginTop:12}}>
+          <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,marginBottom:6}}>Next</div>
+          <TeamBtn primary onClick={()=>open({view:'drill'})}>{r.due||as.length?`Start today's drill`:'Practise'} · 5 questions</TeamBtn></div>;
+      return <><div data-testid="today-done" style={{display:'flex',gap:12,alignItems:'center',marginTop:12,padding:'12px 14px',borderRadius:0,border:`1px solid ${_alpha('#5FD48F',0.5)}`,background:_alpha('#5FD48F',0.08)}}>
           <div style={{width:32,height:32,borderRadius:16,background:'#5FD48F',color:'#0F1A13',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,flexShrink:0}}>✓</div>
           <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Today's drill done</div>
             <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{dn.right} of {dn.of} right{dn.n>1?` over ${dn.n} drills`:''}. The next one is ready tomorrow; more now only helps.</div></div></div>
-        <Btn full style={{marginTop:10}} onClick={()=>open({view:'drill'})}>Do another 5 questions</Btn></>; })();
+        <TeamBtn onClick={()=>open({view:'drill'})} style={{marginTop:10}}>Do another 5 questions</TeamBtn></>; })();
     const colA=<div>
-    {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6)}}>
+    {fresh?<div data-testid="team-plan"><Card style={{borderColor:_alpha(cr,0.6),borderRadius:0}}>
       <div style={{fontSize:12,fontWeight:700,color:cr,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase'}}>Your first {pl.current.days} days</div>
       <div data-testid="team-state" data-pct={r.pct} style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,marginTop:4}}>{pl.current.part==='dishes'?`The ${pl.current.total} dishes on the menu`:pl.current.part==='cocktails'?`The ${pl.current.total} cocktails`:pl.current.part==='glass'?`The ${pl.current.total} wines by the glass`:`The ${pl.current.total} bottles`}</div>
       <div style={{fontSize:15,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:4}}>Day {pl.current.day} of {pl.current.days}. Five questions a day, what sells most first; {pl.waves.length>1?`then ${pl.waves.slice(1).map(w=>w.label.toLowerCase()).join(', then ')}`:'that\'s the whole list'}. Your readiness shows once you've done a drill.</div>
-    </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center'}}>
+    </Card></div>:<Card style={{display:'flex',gap:14,alignItems:'center',borderRadius:0}}>
       <TeamRing pct={r.pct} col={st.col}/>
       <div style={{flex:1,minWidth:0}}>
         <div data-testid="team-state" data-pct={r.pct} style={{fontSize:17,fontWeight:800,color:r.tier==='essentials'?T.ink:st.col,fontFamily:C.P}}>{r.tier==='essentials'?`You know ${r.count.known} of ${r.count.total}`:st.label}</div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{r.tier==='essentials'?(r.count.known>=r.count.total&&r.count.total?'Every wine and dish you sell. Keep the daily drill going so it stays that way.':'Five questions a day, what sells most first. A wine or dish counts once every question on it is right.'):r.state==='ready'?'You know what your role sells. Keep the daily drill going so it stays that way.':r.state==='slipping'?'Some answers have faded or new wines arrived. A few drills puts you back.':'Your minimum for working the floor, below.'}</div>
       </div>
     </Card>}
-    {wide&&<div style={{marginBottom:12}}>{drill}</div>}
-    {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'10px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
-    <Card style={{marginTop:10}}>
-      {Object.entries(r.parts).map(([k,p])=><div key={k} data-testid="team-part" style={{marginBottom:18}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,fontSize:14,fontFamily:C.P,color:T.ink2}}><span style={{fontWeight:700,color:T.ink}}>{TeamLearn.PART_LABEL[k]}</span><span>{p.known} of {p.total} known{r.tier==='essentials'&&k!=='allergens'?'':` · need ${Math.round(p.need*100)}%`}</span></div>
-        <div style={{position:'relative',marginTop:5}}><Prog val={p.partial} col={r.tier==='essentials'&&k!=='allergens'?'#5FD48F':p.share>=p.need?'#5FD48F':cr} h={6}/>{!(r.tier==='essentials'&&k!=='allergens')&&<div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:12,background:T.ink,opacity:0.6}}/>}</div>
-        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>{Math.round(p.partial*100)}% of the answers held</div>
-        {/* A clear button per part: a green outline with white text, so practising one part is an obvious next step. */}
-        <div role="button" data-testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginTop:8,padding:'11px 14px',borderRadius:12,border:'1.5px solid #5FD48F',background:_alpha('#5FD48F',0.1),color:T.ink,fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Practise {TeamLearn.PART_LABEL[k].toLowerCase()}<span style={{color:'#5FD48F'}}>→</span></div>
-      </div>)}
-      <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>A wine, dish or cocktail is known once every question on it is right and still fresh; the line fills with every answer you hold.</div>
-      {ret.asked>=3&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>Surprise re-checks this month: {ret.right} of {ret.asked} remembered.</div>}
-    </Card>
-    {!wide&&drill}
+    {/* The one thing to do next sits straight under the readiness: today's drill. The areas follow as rows, each with its
+        own small Practise; the area to work on (the wave's, else the one furthest under its minimum) is marked Up next. */}
+    <div style={{marginBottom:wide?12:0}}>{drill}</div>
+    {!fresh&&waveLine&&<div data-testid="team-wave" style={{fontSize:14,color:pl.behind?'#F28B7D':T.mid,fontFamily:C.P,margin:'14px 2px 0',lineHeight:1.4}}>{waveLine}{pl.behind?` · ${pl.behind} day${pl.behind===1?'':'s'} behind`:' · on track'}</div>}
+    {(()=>{ const parts=Object.entries(r.parts), ess=k=>r.tier==='essentials'&&k!=='allergens', short=([k,p])=>ess(k)?1-p.partial:p.need-p.share;
+      const open1=parts.filter(([k,p])=>p.total&&p.known<p.total), wave=pl&&pl.current&&open1.find(([k])=>k===pl.current.part);
+      const next=(wave||open1.slice().sort((x,y)=>short(y)-short(x))[0]||[])[0];
+      return <div data-testid="team-parts" style={{marginTop:12,border:`1px solid ${T.line}`,background:T.glass}}>
+        <div data-cap style={{..._T_CAPS,fontWeight:600,color:T.mid,fontFamily:C.P,padding:'12px 14px 10px'}}>Or practise one area</div>
+        {parts.map(([k,p])=>{ const done=p.total>0&&p.known>=p.total, met=ess(k)?done:p.share>=p.need, isNext=k===next, col=met?'#5FD48F':isNext?cr:T.mid;
+          return <div key={k} data-testid="team-part" data-next={isNext||undefined} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderTop:`1px solid ${T.line}`,boxShadow:isNext?`inset 3px 0 0 ${cr}`:'none'}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}><span style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{TeamLearn.PART_LABEL[k]}</span>
+                {isNext&&<span data-cap style={{..._T_CAPS,fontSize:'11px',fontWeight:600,color:cr,fontFamily:C.P}}>Up next</span>}
+                {done&&<span style={{fontSize:14,color:'#5FD48F',fontFamily:C.P}}>✓</span>}</div>
+              <div style={{position:'relative',marginTop:7}}><Prog val={p.partial} col={col} h={4}/>{!ess(k)&&<div style={{position:'absolute',left:`${p.need*100}%`,top:-3,width:2,height:10,background:T.ink,opacity:0.6}}/>}</div>
+              <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.35}}>{p.known} of {p.total} known{ess(k)?'':` · need ${Math.round(p.need*100)}%`}</div>
+            </div>
+            <TeamBtn small primary={isNext} testid="team-part-practise" onClick={()=>open({view:'drill',part:k})} style={{flexShrink:0}}>Practise</TeamBtn>
+          </div>; })}
+        <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,padding:'10px 14px 12px',borderTop:`1px solid ${T.line}`}}>Known means every question on it is right and still fresh. The line fills with every answer you hold.{ret.asked>=3?` Surprise re-checks this month: ${ret.right} of ${ret.asked} remembered.`:''}</div>
+      </div>; })()}
     {/* Bespoke training their manager pushed (team-plans.js): its own card, a part at a time, apart from the daily drill. */}
     {TeamPlans.forPerson(pid).map(plan=>{ const pr=TeamPlans.progress(plan), i=pr.next<0?0:pr.next, part=plan.parts[i], by=plan.by&&TeamLearn.person(plan.by);
-      return <div key={plan.id} data-testid="today-plan" style={{marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${pr.finished?T.line:_alpha('#C9A96E',0.5)}`,background:pr.finished?'transparent':_alpha('#C9A96E',0.07)}}>
+      return <div key={plan.id} data-testid="today-plan" style={{marginTop:10,padding:'12px 14px',borderRadius:0,border:`1px solid ${pr.finished?T.line:_alpha('#C9A96E',0.5)}`,background:pr.finished?'transparent':_alpha('#C9A96E',0.07)}}>
         <div style={{fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',fontWeight:600,color:T.mid,fontFamily:C.P}}>{by?`From ${by.name.split(' ')[0]}`:'From your manager'} · your own training</div>
         <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,marginTop:4}}>{plan.title}</div>
         <div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><Prog val={pr.total?pr.done/pr.total:0} col={pr.finished?'#5FD48F':'#C9A96E'} h={6} style={{flex:1}}/><span style={{fontSize:13,color:T.mid,fontFamily:C.P,whiteSpace:'nowrap'}}>{pr.done} of {pr.total}</span></div>
         {pr.finished?<div style={{fontSize:14,color:'#5FD48F',fontFamily:C.P,marginTop:8}}>Finished. Every part done.</div>
           :<><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:8}}>Part {i+1} of {plan.parts.length}: {part.title}{part.why?`. ${part.why}`:''}</div>
-            <Btn small primary style={{marginTop:10}} onClick={()=>open({view:'drill',qs:TeamPlans.questions(plan.id),intro:{title:plan.title,why:`Part ${i+1} of ${plan.parts.length}: ${part.title}.`}})}>{pr.done?'Carry on':'Start'} · {pr.parts[i].total-pr.parts[i].done} question{pr.parts[i].total-pr.parts[i].done===1?'':'s'}</Btn></>}
+            <TeamBtn small primary style={{marginTop:10}} onClick={()=>open({view:'drill',qs:TeamPlans.questions(plan.id),intro:{title:plan.title,why:`Part ${i+1} of ${plan.parts.length}: ${part.title}.`}})}>{pr.done?'Carry on':'Start'} · {pr.parts[i].total-pr.parts[i].done} question{pr.parts[i].total-pr.parts[i].done===1?'':'s'}</TeamBtn></>}
       </div>; })}
-    {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:14,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
+    {(()=>{ const vt=TeamVinny.test(pid); return vt.none?null:<div data-testid="today-vinny" role="button" onClick={()=>open({view:'drill',qs:vt.qs,intro:{title:vt.title,why:vt.why}})} style={{display:'flex',gap:12,alignItems:'center',marginTop:10,padding:'12px 14px',borderRadius:0,border:`1px solid ${T.line}`,cursor:'pointer'}}><TeamVinnyMark size={32}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>Vinny's test · {vt.qs.length} questions</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:2}}>{vt.why}</div></div><Icon n="chevron" sz={12} col={T.mid}/></div>; })()}
     </div>; const colB=<div>
     {wide&&<TeamTonightCard pid={pid} open={open} manage={TeamLearn.canConsole(person)}/>}
     {wide&&TeamLearn.canConsole(person)&&<TeamKpiStrip open={open}/>}
@@ -311,7 +328,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     const nonce=Date.now().toString(36); return raw.map((q,i)=>TeamLearn.deal(q,nonce+i)); });
   // Where they stood as the drill began, so the summary can say what moved.
   const [before]=React.useState(()=>{ const r=TeamLearn.readiness(pid); const items={};
-    qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,items}; });
+    qs.forEach(q=>{ const id=q.wine||q.cocktail||q.dish; if(id&&!items[id]) items[id]=TeamLearn.progress(pid,id,{dish:!q.wine&&!q.cocktail}); }); return {pct:r?r.pct:0,known:r&&r.count?r.count.known:0,items}; });
   const [i,setI]=React.useState(0), [ans,setAns]=React.useState(null), [picks,setPicks]=React.useState([]), [sure,setSure]=React.useState('think');
   // When the question doesn't ask how sure they are, a right answer inside QUICK_MS reads as sure (confidence from speed, not a tap).
   const shownAt=React.useRef(Date.now());
@@ -335,7 +352,9 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const daily=!given&&!only&&!part, marked=React.useRef(false);
   React.useEffect(()=>{ if(!q&&qs.length&&daily&&!marked.current){ marked.current=true; TeamLearn.drillDone(pid,tally.right,tally.of); } },[q]);
   if(!qs.length) return <div>{_tH(T,'Nothing to drill yet','Your training appears once the wine list has staff cards.')}<Btn full onClick={back}>Back</Btn></div>;
-  if(!q){ const r=TeamLearn.note(pid), rise=r.pct-before.pct, right=rightRef.current;
+  // At Essentials readiness is a count, so the change is counted in wines and dishes: one more known of 130 is under a
+  // point of the percentage, and a test that finished a wine once said "no change".
+  if(!q){ const r=TeamLearn.note(pid), rise=r.tier==='essentials'&&r.count?r.count.known-before.known:r.pct-before.pct, right=rightRef.current;
     const rows=Object.entries(before.items).map(([id,was])=>{ const mix=TeamLearn.isCocktail(id), dish=!mix&&!qs.some(x=>x.wine===id), now=TeamLearn.progress(pid,id,{dish}), name=mix?(TeamData.cocktail(id)||{}).name:dish?(TeamData.dish(id)||{}).name:TeamData.short(TeamData.wine(id)||{}); return {id,name,was,now,dish,mix}; });
     // The summary says the result in words (what they now know, when it comes back), then the figures; the mechanism waits behind a tap.
     const known=TeamLearn.knownLine(right), when=TeamLearn.comesBack(pid,right);
@@ -375,7 +394,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
   const tier=TeamLearn.tier((TeamLearn.person(pid)||{}).role), kindLabel=TeamLearn.rungLabel(q,tier);
   // An option: while answering it's a choice; at the reveal the picks turn green or red and the right ones show, the
   // rest dim; then they slide out to the left one after another.
-  const opt=(label,k,{picked,right,wrong,onClick,n=0})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:12,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:right?_alpha('#5FD48F',0.12):wrong?_alpha('#F28B7D',0.12):picked?T.soft:'transparent',color:T.ink,fontSize:16,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35,
+  const opt=(label,k,{picked,right,wrong,onClick,n=0})=><div key={k} role="button" aria-pressed={picked} data-testid="drill-opt" onClick={onClick} style={{padding:'12px 14px',borderRadius:0,border:`1.5px solid ${right?'#5FD48F':wrong?'#F28B7D':picked?cr:T.line}`,background:right?_alpha('#5FD48F',0.12):wrong?_alpha('#F28B7D',0.12):picked?T.soft:'transparent',color:T.ink,fontSize:16,fontFamily:C.P,cursor:res?'default':'pointer',lineHeight:1.35,
     opacity:res&&!right&&!wrong?0.4:1,transition:'opacity .25s, background .25s, border-color .25s',animation:phase==='leaving'?`tq-out ${260/sp}ms ease-in ${n*40/sp}ms both`:res&&(right||wrong)?`${wrong?'tq-shake':'tq-pop'} ${320/sp}ms ease-out both`:undefined}}>{right?'✓ ':wrong?'✗ ':''}{label}</div>;
   return <div ref={rootRef} data-testid="team-drill">
     {intro&&i===0&&!res&&<div data-testid="drill-intro" style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:14}}><TeamVinnyMark size={28}/><div><div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{intro.title}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{intro.why}</div></div></div>}
@@ -396,7 +415,7 @@ function TeamDrill({pid,only,part,given,intro,back,open}){ const T=useTheme(), c
     {!res&&<>
       {/* Only a price or an allergen asks how sure they are (TeamLearn.asksConfidence): a wrong one reaches the bill or a guest, and it counts double. */}
       {TeamLearn.asksConfidence(q,tier)&&<div data-testid="drill-sure"><div style={{fontSize:14,color:T.mid,fontFamily:C.P,margin:'14px 0 6px'}}>How sure are you? <span style={{color:T.faint||T.mid}}>{q.allergen?'A wrong allergen comes back this shift.':'A wrong price counts double.'}</span></div>
-      <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'10px 0',borderRadius:10,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:15,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div></div>}
+      <div style={{display:'flex',gap:6}}>{[['sure','Sure'],['think','Think so'],['guess','Guessing']].map(([k,l])=><div key={k} role="button" onClick={()=>setSure(k)} style={{flex:1,textAlign:'center',padding:'10px 0',borderRadius:0,border:`1px solid ${sure===k?cr:T.line}`,background:sure===k?T.soft:'transparent',color:sure===k?T.ink:T.mid,fontSize:15,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div></div>}
       <Btn primary full style={{marginTop:14,opacity:(multi?picks.length:ans!==null)?1:0.45}} onClick={submit}>{busy?'Marking…':'Check'}</Btn>
     </>}
     {res&&fb&&<div data-testid="drill-result" style={{animation:`tq-rise ${360/sp}ms ease-out both`}}>
@@ -428,8 +447,8 @@ const _T_QUIZ_CSS=`@keyframes tq-out{to{opacity:0;transform:translateX(-28px)}}@
 /* Wines | Cocktails at the top of the list tab, where the restaurant has cocktails. */
 let _teamListView='wines';
 function _TListSwitch({view,set}){ const T=useTheme(), cr=T.lift(C.cr);
-  return <div data-testid="team-list-switch" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,marginBottom:14}}>{[['wines',`Wines (${TeamData.wines().length})`],['cocktails',`Cocktails (${TeamData.cocktails().length})`]].map(([k,l])=>
-    <div key={k} role="button" aria-pressed={view===k} data-testid={'team-list-'+k} onClick={()=>{ _teamListView=k; set(k); }} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:9,background:view===k?_alpha(cr,0.18):'transparent',color:view===k?T.ink:T.mid,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>; }
+  return <div data-testid="team-list-switch" style={{display:'flex',gap:4,padding:3,borderRadius:0,border:`1px solid ${T.line}`,marginBottom:14}}>{[['wines',`Wines (${TeamData.wines().length})`],['cocktails',`Cocktails (${TeamData.cocktails().length})`]].map(([k,l])=>
+    <div key={k} role="button" aria-pressed={view===k} data-testid={'team-list-'+k} onClick={()=>{ _teamListView=k; set(k); }} style={{flex:1,textAlign:'center',padding:'8px 0',borderRadius:0,background:view===k?_alpha(cr,0.18):'transparent',color:view===k?T.ink:T.mid,fontSize:14,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>{l}</div>)}</div>; }
 // `selected`: the row open beside the list on a tablet, tinted (team-app.jsx).
 function TeamWines({pid,open,selected}){ const T=useTheme(), cr=T.lift(C.cr);
   const ws=TeamData.wines(), person=TeamLearn.person(pid), items=(TeamLearn._all()[pid]||{}).items||{};
@@ -484,7 +503,7 @@ function TeamCocktail({id,pid,open,manage}){ const T=useTheme(), x=TeamData.cock
       {c&&(c.explain||[]).length>0&&<div style={{marginTop:10}}>{c.explain.map(e=><div key={e.term} style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:6}}><b style={{fontWeight:500,color:T.ink}}>{_tCap(e.term)}</b>: {_tCap(e.means)}</div>)}</div>}</_TcFlat></_TFold>
     {c&&<><_TFold rule k="drink-taste" title="What it tastes like" summary={c.taste}><_TcFlat><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>{c.taste}</div>
       {c.style&&<>{_tcBar(T,'st','Strength',c.style.strength,'How boozy it tastes.',acc)}{_tcBar(T,'sw','Sweetness',c.style.sweet,'Sugar and fruit: syrups, liqueurs, juice.',acc)}{_tcBar(T,'so','Sourness',c.style.sour,'The citrus edge that makes your mouth water.',acc)}{_tcBar(T,'bi','Bitterness',c.style.bitter,'The pleasant bite of Campari, vermouth or bitters.',acc)}</>}</_TcFlat></_TFold>
-      {(c.dishes||[]).length>0&&<_TFold rule k="drink-menu" title="With the menu" summary={c.dishes.map(d=>d.dish).join(', ')}><_TcFlat>{c.dishes.map((d,i)=>{ const dish=TeamData.dishes().find(z=>z.name===d.dish); return <div key={d.dish} role="button" onClick={()=>dish&&open({view:'dish',id:dish.id})} style={_tcRow(T,i,dish)}>
+      {_tPours(id).length>0&&<_TFold rule k="drink-menu" title="With the menu" summary={_tPours(id).map(d=>d.dish).join(', ')}><_TcFlat>{_tPours(id).map((d,i)=>{ const dish=TeamData.dishes().find(z=>z.name===d.dish); return <div key={d.dish} role="button" onClick={()=>dish&&open({view:'dish',id:dish.id})} style={_tcRow(T,i,dish)}>
         <div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{d.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{d.why}</div></div>; })}</_TcFlat></_TFold>}
       {(c.alts||[]).length>0&&<_TFold rule k="drink-alts" title="Offer instead" def summary={c.alts.map(a=>(TeamData.cocktail(a.id)||{}).name).filter(Boolean).join(', ')}><_TcFlat>{c.alts.map((a,i)=>{ const o=TeamData.cocktail(a.id); return o&&<div key={a.id} role="button" onClick={()=>open({view:'cocktail',id:a.id})} style={_tcRow(T,i,true)}>
         <div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{o.name} <span style={{fontWeight:400,color:T.mid,fontSize:14}}>{o.price}</span></div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:2}}>{_tCap(a.when)}</div></div>; })}</_TcFlat></_TFold>}
@@ -516,7 +535,7 @@ function TeamDrink({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id
       {sh.usually&&c.usually&&sec('How a drink like this is usually served',<>{text([c.usually.method,c.usually.glass,c.usually.garnish].filter(Boolean).join(' · '))}
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>The menu doesn't say how ours is made: check with the bar.</div></>,'team-usually')}
       {sh.story&&c.story&&sec('The story',text(c.story))}
-      {c.dishes&&c.dishes.length>0&&sec('With our menu',c.dishes.map((x,i)=><div key={i} style={_tcRow(T,i)}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{x.why}</div></div>))}
+      {_tPours(id).length>0&&sec('With our menu',_tPours(id).map((x,i)=><div key={i} style={_tcRow(T,i)}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{x.why}</div></div>))}
       {sh.alts&&c.alts&&c.alts.length>0&&sec('Offer instead',c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{..._tcRow(T,i,true),paddingLeft:12,..._tWineRule(T,o)}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{a.when}</div></div>; }))}
       {!(st&&st.total)&&<div style={{display:'flex',marginTop:16}}><TeamBtn card small primary onClick={()=>open({view:'drill',only:id})}>Practise</TeamBtn></div>}</>}
     {!c&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,borderTop:`1px solid ${T.line}`,paddingTop:14,marginTop:6}}>This drink's card is written when the list is published.</div>}
@@ -544,7 +563,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
   const [busy,setBusy]=React.useState(false), [err,setErr]=React.useState(''), [,bump]=React.useReducer(x=>x+1,0);
   const writeIt=async()=>{ setBusy(true); setErr(''); try{ await TeamData.writeCards([id]); if(w.vintage&&!w.peak) await TeamData.writeWindows([id]); }catch(x){ setErr(x.message||'Stopped.'); } setBusy(false); bump(); };
   if(!w) return null; const col=_tTypeCol(T,w.type);
-  const TABS=[['sell','Sell it'],c&&(c.dishes||[]).length>0&&['pair','Pair it'],['know','Know it']].filter(Boolean);
+  const TABS=[['sell','Sell it'],c&&TeamLearn.poursWith(id).length>0&&['pair','Pair it'],['know','Know it']].filter(Boolean);
   const bar=(k,label,v,how)=>v==null?null:<div key={k} style={{padding:'10px 0',borderTop:`1px solid ${T.line}`}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',fontSize:14,fontFamily:C.P,color:T.ink}}><span style={{fontWeight:500}}>{label}</span>{_tcDots(T,v,manage?C.cr:col)}</div>{how&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.4}}>{how}</div>}</div>;
   return <div data-testid="team-wine">
     {/* The head in the console's own style: a light headline, then figure tiles on one line (in the console's panel the
@@ -565,7 +584,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
       {tab==='sell'&&<div data-testid="wine-pane-sell">
       {c.hook&&<div data-testid="team-hook" style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P,lineHeight:1.4,padding:'2px 0 2px 12px',borderLeft:`2px solid ${col}`,marginBottom:12}}>{c.hook}</div>}
       <div data-testid="team-say-card"><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><div data-cap style={{fontSize:'12px',fontWeight:500,color:T.mid,fontFamily:C.P,textTransform:'uppercase',letterSpacing:'0.12em'}}>Say it to a guest{c.edited?' · edited by a manager':''}</div>{manage&&!editing&&<span role="button" data-testid="team-pitch-edit" onClick={()=>{ setPitch(c.pitch||''); setEditing(true); }} style={{fontSize:14,fontWeight:500,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Edit</span>}</div>
-        {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.55,outline:'none',resize:'vertical'}}/>
+        {editing?<div style={{marginTop:6}}><textarea aria-label="What to say" value={pitch} onChange={e=>setPitch(e.target.value)} rows={4} style={{width:'100%',padding:'10px 12px',borderRadius:0,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.55,outline:'none',resize:'vertical'}}/>
           <div style={{display:'flex',gap:8,marginTop:8}}><TeamBtn card small primary onClick={()=>{ if(pitch.trim()) TeamData.setCard(id,{pitch:pitch.trim()}); setEditing(false); }}>Save</TeamBtn><TeamBtn card small onClick={()=>setEditing(false)}>Cancel</TeamBtn></div>
           <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Your words replace the written line on every phone at once; the questions stay as they are.</div></div>
         :<div style={{display:'flex',gap:12,alignItems:'flex-start',marginTop:8}}><div data-testid="team-pitch" style={{flex:1,fontSize:14,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{c.pitch}</div>
@@ -574,11 +593,11 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
       {sh.alts&&c.alts&&c.alts.length>0&&<_TFold rule k="wine-alts" title="If they want something else" def summary={c.alts.map(a=>{ const o=TeamData.wine(a.id); return o&&TeamData.short(o); }).filter(Boolean).join(', ')}><_TcFlat>{c.alts.map((a,i)=>{ const o=TeamData.wine(a.id); return o&&<div key={i} role="button" onClick={()=>open({view:'wine',id:a.id})} style={{padding:'10px 0',borderTop:i?`1px solid ${T.line}`:'none',cursor:'pointer'}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{TeamData.short(o)}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>{_tCap(a.when)}{o.glass?` · glass ${o.glass}`:o.bottle?` · bottle ${o.bottle}`:''}</div></div>; })}</_TcFlat></_TFold>}
       </div>}
       {tab==='pair'&&<div data-testid="wine-pane-pair">{_tcLabel(T,'With our menu')}
-        <div data-testid="team-wine-dishes" style={{display:'flex',flexDirection:'column'}}>{(c.dishes||[]).map((x,i)=>{ const dish=TeamData.dishes().find(z=>z.name===x.dish); return <div key={i} role={dish?'button':undefined} onClick={()=>dish&&open({view:'dish',id:dish.id})} style={{display:'flex',gap:12,borderTop:i?`1px solid ${T.line}`:'none',padding:'12px 0',cursor:dish?'pointer':'default'}}>
-            <span style={{width:28,height:28,borderRadius:9,background:_alpha(manage?C.cr:col,0.16),border:`1px solid ${_alpha(manage?C.cr:col,0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{i+1}</span>
+        <div data-testid="team-wine-dishes" style={{display:'flex',flexDirection:'column'}}>{TeamLearn.poursWith(id).map((y,i)=>{ const dish=y.dish, x={dish:y.name,why:y.why}; return <div key={i} role={dish?'button':undefined} onClick={()=>dish&&open({view:'dish',id:dish.id})} style={{display:'flex',gap:12,borderTop:i?`1px solid ${T.line}`:'none',padding:'12px 0',cursor:dish?'pointer':'default'}}>
+            <span style={{width:28,height:28,borderRadius:0,background:_alpha(manage?C.cr:col,0.16),border:`1px solid ${_alpha(manage?C.cr:col,0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{i+1}</span>
             <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{x.dish}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{x.why}</div></div></div>; })}
           {TeamData.dishes().filter(d=>{ const pr=TeamData.pairing(d.id); return pr&&pr.avoid&&pr.avoid.id===id; }).slice(0,1).map(d=><div key={d.id} role="button" onClick={()=>open({view:'dish',id:d.id})} style={{display:'flex',gap:12,borderTop:`1px solid ${T.line}`,padding:'12px 0',cursor:'pointer'}}>
-            <span style={{width:28,height:28,borderRadius:9,background:_alpha('#F2B84B',0.16),border:`1px solid ${_alpha('#F2B84B',0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>!</span>
+            <span style={{width:28,height:28,borderRadius:0,background:_alpha('#F2B84B',0.16),border:`1px solid ${_alpha('#F2B84B',0.5)}`,color:T.ink,fontSize:14,fontWeight:500,fontFamily:C.P,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>!</span>
             <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.amber,fontFamily:C.P}}>Steer away: {d.name}</div><div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>{TeamData.pairing(d.id).avoid.why}</div></div></div>)}
         </div></div>}
       {tab==='know'&&<div data-testid="wine-pane-know">
@@ -589,7 +608,7 @@ function TeamWine({id,pid,open,manage}){ const T=useTheme(), w=TeamData.wine(id)
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.55,marginTop:4}}>{text}</div></div>)}</_TcFlat></_TFold></div>}
       {(()=>{ const dw=sh.window&&TeamData.window(w); return dw&&<div data-testid="team-window"><_TFold rule k="wine-life" title="Where it is in its life" def summary={dw.word}><_TcFlat>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}><div style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:dw.stage==='ready'?'#5FD48F':dw.stage==='young'?'#7FB3F0':'#F2B84B'}}>{dw.word}</div>
-          {w.peak&&w.peak.rating&&<span style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink,padding:'3px 9px',borderRadius:8,background:T.soft,border:`1px solid ${T.line}`}}>{w.peak.rating} vintage</span>}</div>
+          {w.peak&&w.peak.rating&&<span style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink,padding:'3px 9px',borderRadius:0,background:T.soft,border:`1px solid ${T.line}`}}>{w.peak.rating} vintage</span>}</div>
         <div style={{fontSize:14,color:T.ink2,fontFamily:C.P,marginTop:4}}>{dw.line}</div>
         {(()=>{ const v=w.vintage, span=Math.max(2,(dw.until-v)*1.3), yr=new Date().getFullYear(), at=x=>Math.max(0.02,Math.min(0.98,(x-v)/span))*100;
           return <div style={{position:'relative',height:10,marginTop:12,borderRadius:5,background:T.line}}>
@@ -668,10 +687,10 @@ function _tReadFile(file){ return new Promise((res,rej)=>{ const fr=new FileRead
 function TeamUpload({onChanged,background,c2}){ const T=useTheme(), cr=T.lift(C.cr), job=useTeamJob();
   // `c2` is the new console's look (team-console2.jsx): the page gives the heading, the three ways in sit side by side
   // as tiles, boxes are flat with a hairline and every button is a TeamBtn that hugs its label.
-  const Box=c2?({children,style,onClick})=><div onClick={onClick} style={{border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'14px 16px',...style}}>{children}</div>:Card;
+  const Box=c2?({children,style,onClick})=><div onClick={onClick} style={{border:'1px solid rgba(255,255,255,0.12)',borderRadius:0,padding:'14px 16px',...style}}>{children}</div>:Card;
   const B=c2?({style,...p})=><TeamBtn {...p}/>:Btn;
   const H=(t,sub)=>c2?<div style={{marginBottom:12}}><div style={{fontSize:20,fontWeight:400,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{t}</div>{sub&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:4,lineHeight:1.5,maxWidth:760}}>{sub}</div>}</div>:_tH(T,t,sub);
-  const way=(k,icon,title,text,cta,onClick)=>c2?<div key={k} role="button" data-testid={'c2-upload-'+k} onClick={onClick} style={{flex:'1 1 230px',border:'1px solid rgba(255,255,255,0.12)',borderRadius:10,padding:'16px 16px 14px',cursor:'pointer',display:'flex',flexDirection:'column',gap:8,alignItems:'flex-start',minWidth:0}}>
+  const way=(k,icon,title,text,cta,onClick)=>c2?<div key={k} role="button" data-testid={'c2-upload-'+k} onClick={onClick} style={{flex:'1 1 230px',border:'1px solid rgba(255,255,255,0.12)',borderRadius:0,padding:'16px 16px 14px',cursor:'pointer',display:'flex',flexDirection:'column',gap:8,alignItems:'flex-start',minWidth:0}}>
       <div style={{display:'flex',alignItems:'center',gap:10}}><Icon n={icon} sz={20} col={cr}/><div style={{fontSize:16,fontWeight:500,color:T.ink,fontFamily:C.P}}>{title}</div></div>
       <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,flex:1}}>{text}</div><TeamBtn small primary>{cta}</TeamBtn></div>
     :<Card key={k} onClick={onClick} style={{cursor:'pointer',display:'flex',gap:12,alignItems:'center'}}><Icon n={icon} sz={22} col={cr}/><div><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{title}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{text}</div></div></Card>;
@@ -731,7 +750,7 @@ function TeamUpload({onChanged,background,c2}){ const T=useTheme(), cr=T.lift(C.
         {arrivals.length>0&&TeamData.wines().length>0&&<div data-testid="team-arrivals" style={c2?{flex:'1 1 100%'}:undefined}><Box><div style={{fontSize:12,fontWeight:c2?500:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>New arrivals, prepared for the demo</div>
           <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>Two real bottles read ahead, their card, pairings and drinking window written: they publish in seconds with no connection. Any other bottle goes through the live reading above.</div>
           <div style={{display:'flex',gap:10,marginTop:10,flexWrap:'wrap'}}>{arrivals.map(a=>{ const cur=TeamData.wine(TeamData.wineId(a.label)), onList=!!cur&&cur.onList&&cur.vintage===a.label.vintage;
-            return <div key={a.key} role="button" data-testid="team-arrival" aria-disabled={onList} onClick={()=>!onList&&pickPrepared(a)} style={{flex:'1 1 150px',display:'flex',gap:10,alignItems:'center',padding:8,borderRadius:12,border:`1px solid ${T.line}`,opacity:onList?0.5:1,cursor:onList?'default':'pointer'}}>
+            return <div key={a.key} role="button" data-testid="team-arrival" aria-disabled={onList} onClick={()=>!onList&&pickPrepared(a)} style={{flex:'1 1 150px',display:'flex',gap:10,alignItems:'center',padding:8,borderRadius:0,border:`1px solid ${T.line}`,opacity:onList?0.5:1,cursor:onList?'default':'pointer'}}>
               <img src={a.photo} alt="" width={44} height={60} style={{width:44,height:60,objectFit:'cover',borderRadius:6,flexShrink:0}}/>
               <div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.25}}>{[a.label.producer,a.label.name].filter(Boolean).join(' ')}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{onList&&a.kind!=='changed'?'Already on the list':[a.label.vintage,a.label.region,a.kind==='changed'?'a new vintage of one on the list':'new to the list'].filter(Boolean).join(' · ')}</div></div></div>; })}</div></Box></div>}
       </div>
@@ -740,7 +759,7 @@ function TeamUpload({onChanged,background,c2}){ const T=useTheme(), cr=T.lift(C.
     {stage==='found'&&found&&<div data-testid="team-found">
       {H('New arrival',found.prepared?'Read from the label ahead of the demo; its training is already written. Set where it sits on the list and its prices, then add it.':`Read from the label${found.confidence!=='high'?', check it':''}. Set where it sits on the list and its prices, then add it.`)}
       <Box style={c2?{maxWidth:620}:undefined}><div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {found.photo&&<div style={{display:'flex',gap:10,alignItems:'center'}}><img src={found.photo} alt="" width={56} height={76} style={{width:56,height:76,objectFit:'cover',borderRadius:8}}/><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>Prepared for the demo. <span role="button" data-testid="team-read-live" onClick={readLive} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Read this label live instead</span> to show the real scan (needs a connection, about ten seconds).</div></div>}
+        {found.photo&&<div style={{display:'flex',gap:10,alignItems:'center'}}><img src={found.photo} alt="" width={56} height={76} style={{width:56,height:76,objectFit:'cover',borderRadius:0}}/><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45}}>Prepared for the demo. <span role="button" data-testid="team-read-live" onClick={readLive} style={{color:cr,fontWeight:700,cursor:'pointer'}}>Read this label live instead</span> to show the real scan (needs a connection, about ten seconds).</div></div>}
         <div style={{display:'flex',gap:8}}><input aria-label="Producer" value={found.producer} onChange={e=>setFound({...found,producer:e.target.value})} placeholder="Producer" style={{...fld,flex:1}}/><input aria-label="Vintage" value={found.vintage||''} onChange={e=>setFound({...found,vintage:/^\d{4}$/.test(e.target.value)?+e.target.value:null})} placeholder="Year" style={{...fld,width:90}}/></div>
         <input aria-label="Wine" value={found.name} onChange={e=>setFound({...found,name:e.target.value})} placeholder="Wine" style={fld}/>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P}}>{[found.type,found.region,found.country,(found.grapes||[]).join(', ')].filter(Boolean).join(' · ')}</div>

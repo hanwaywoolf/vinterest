@@ -581,6 +581,17 @@ test('the publish check: every question is checked, the ones that fail are rewri
   const fix = reqs.filter((x) => x.purpose === 'team_fix');
   expect(fix.length).toBeGreaterThan(0);
   expect(fix.map((x) => x.messages[0].content).join('\n')).toMatch(/PROBLEM giveaway/);
+  // What still fails after its rewrites waits for a change: the next publish sends none of it again, a question that
+  // changes goes back, and asking afresh sends everything.
+  const again = await page.evaluate(async () => {
+    const one = await TeamData.checkQuestions(), sentOne = one.sent, left = one.left;
+    const d = TeamData.get(); d.cards['w-ardanza-reserva'].qs.push({ id: 'w-ardanza-reserva#bad2', k: 'recall', q: 'Is the La Rioja Alta Viña Ardanza Reserva red or white?', ans: 'Red', acc: [], why: 'x' }); TeamData.save(d);
+    const two = await TeamData.checkQuestions(), fresh = await TeamData.checkQuestions(null, null, { fresh: true });
+    return { sentOne, left, sentTwo: two.sent, fresh: fresh.sent, failed: fresh.failed };
+  });
+  expect(again.sentOne).toBe(0);
+  expect(again.sentTwo).toBe(1);
+  expect(again.fresh).toBe(again.failed);
   // The demo restaurant runs offline: it's counted, never sent.
   await page.goto(`${BASE}/team/?seed=demo`);
   await expect(page.getByTestId('team-state')).toBeVisible();
@@ -589,6 +600,41 @@ test('the publish check: every question is checked, the ones that fail are rewri
   expect(reqs.length).toBe(n);
   expect(demo.asked).toBeGreaterThan(100);
   expect(errors).toEqual([]);
+});
+
+// A list change keeps the pairings it can (TeamData.pairingsFor): pairing every dish again for one wine reworded them
+// all, and a third of a restaurant's questions were checked and read again at each change.
+test('a list change pairs again only the dishes it moves', async ({ context, page }) => {
+  const reqs = []; let named = [];
+  await openSample(context, page, { claudeRequests: reqs, claudeText: (b) => {
+    if (b.purpose !== 'team_pairings') return '';
+    const text = JSON.stringify(b.messages);
+    return text.includes('wines chosen again') ? JSON.stringify({ dishes: named }) : JSON.stringify({ pairings: [{ dish: 'Braised lamb shoulder, white beans, rosemary', best: [{ id: 'w-catena-malbec', why: 'Again.' }] }] });
+  } });
+  const pairs = () => page.evaluate(() => Object.fromEntries(TeamData.dishes().map((x) => [x.id, JSON.stringify(TeamData.pairing(x.id))])));
+  const ask = (res) => page.evaluate((res) => TeamData.pairingsFor(res, TeamData.dishes().map((x) => x.id)), res);
+  const all = await page.evaluate(() => TeamData.dishes().map((x) => x.id)), before = await pairs();
+  // One new wine that moves nothing: one short call, no dish paired again.
+  expect(await ask({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] })).toEqual([]);
+  expect(reqs.filter((r) => r.purpose === 'team_pairings')).toHaveLength(1);
+  // It moves the lamb: only the lamb is paired again, and a whole publish leaves every other pairing as it was.
+  named = ['Braised lamb shoulder, white beans, rosemary'];
+  expect(await ask({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] })).toEqual(['d-lamb']);
+  await page.evaluate(() => TeamData.refresh({ kind: 'list', added: ['w-catena-malbec'], changed: [], removed: [] }));
+  const after = await pairs();
+  expect(JSON.parse(after['d-lamb']).best[0].why).toBe('Again.');
+  expect(Object.keys(before).filter((id) => before[id] !== after[id])).toEqual(['d-lamb']);
+  // A wine taken off the list: the dishes that leant on it are paired again without asking.
+  named = [];
+  const gone = await page.evaluate(() => { const d = TeamData.get(), id = TeamData.pairing('d-lamb').best[0].id; d.wines[id].onList = false; TeamData.save(d);
+    return TeamData.dishes().filter((x) => { const p = TeamData.pairing(x.id); return p && [...p.best, p.glass, p.avoid].some((b) => b && b.id === id); }).map((x) => x.id); });
+  const n = reqs.length;
+  expect((await ask({ kind: 'list', added: [], changed: [], removed: ['x'] })).sort()).toEqual(gone.sort());
+  expect(reqs.length).toBe(n);
+  // A menu change pairs its own dishes; a big list change, or an answer that can't be read, pairs every dish.
+  expect(await ask({ kind: 'menu', added: ['d-lamb'], changed: [], removed: [] })).toEqual(expect.arrayContaining(['d-lamb']));
+  expect((await ask({ kind: 'menu', added: ['d-lamb'], changed: [], removed: [] })).length).toBeLessThan(all.length);
+  expect(await page.evaluate(() => TeamData.pairingsFor({ kind: 'list', added: TeamData.wines().slice(0, TeamData.PAIR_FULL_AT).map((w) => w.id), changed: [], removed: [] }, TeamData.dishes().map((x) => x.id)))).toEqual(all);
 });
 
 test('an uploaded list is reviewed before it goes live; publishing writes cards and pairings and assigns the new wine', async ({ context, page }) => {
@@ -2156,6 +2202,114 @@ for (const [name, viewport] of [['landscape', { width: 1180, height: 820 }], ['p
   });
 }
 
+// At Essentials readiness is a count ("You know 55 of 130"): one wine finished is under a point of the percentage,
+// and the summary once said "no change" beside a wine that had just gone to 3 of 3.
+test('finishing a wine at Essentials shows on the drill summary', async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=princess&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'server'); TeamLearn.setMe(s.id); });
+  await page.reload();
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.me());
+  // Every answer of this drill is taken as right, so the test is of the summary, not of the picking.
+  const n = await page.evaluate(() => { const me = TeamLearn.me(), rec = TeamLearn.record; TeamLearn.record = function (pid, q) { return rec.call(TeamLearn, pid, q, true, 'sure'); };
+    const w = TeamData.wines().find((w) => { const st = TeamLearn.standing(me.id, w.id); return st && st.total > 1 && st.known === 0; }); window.__w = w.id;
+    return { tier: TeamLearn.readiness(me.id).tier, total: TeamLearn.standing(me.id, w.id).total, name: TeamData.short(w) }; });
+  expect(n.tier).toBe('essentials');
+  await page.getByTestId('team-tab-wines').click();
+  await page.getByTestId('team-wine-row').filter({ hasText: n.name }).first().click();
+  await page.getByTestId('team-standing').getByText(/^(Practise|Start)$/).click();
+  for (let i = 0; i < n.total; i++) {
+    await expect(page.getByTestId('drill-q')).toBeVisible();
+    const choose = page.getByText(/Choose \d+/).first();
+    if (await choose.isVisible().catch(() => false)) { const k = Number((await choose.innerText()).match(/Choose (\d+)/)[1]); for (let j = 0; j < k; j++) await page.getByTestId('drill-opt').nth(j).click(); }
+    else await page.getByTestId('drill-opt').first().click();
+    const check = page.getByText('Check'); if (await check.isVisible().catch(() => false)) await check.click();
+    await expect(page.getByTestId('drill-result')).toBeVisible();
+    await page.getByText(/^Next$|^Finish$/).click();
+  }
+  const done = page.getByTestId('drill-done');
+  await expect(done).toBeVisible();
+  await expect(done).toContainText(/You know \d+ of \d+ ▲1/);
+  await expect(done).not.toContainText('no change');
+});
+
+// A card's Pair it and the "best match" question read one list (TeamLearn.poursWith): the Chablis at Eloise was asked
+// with Caesar Salad right while its card listed three other dishes.
+for (const seed of ['demo', 'social', 'eloise', 'princess']) test(`the dish a "best match" question wants is the first on the card's Pair it (${seed})`, async ({ context, page }) => {
+  await stubNetwork(context);
+  await page.goto(`${BASE}/team/?seed=${seed}&view=phone`);
+  await page.waitForFunction(() => window.TeamLearn && TeamLearn.people().length > 0);
+  const r = await page.evaluate(() => { let n = 0; const off = []; [...TeamData.wines(), ...TeamData.cocktails()].forEach((w) => { const q = TeamLearn.lightQs(w.id, { all: true }).find((q) => /#pair$/.test(q.id)); if (!q) return; n++;
+    const list = TeamLearn.poursWith(w.id).map((x) => x.name); if (q.opts[q.a] !== list[0] || new Set(list).size !== list.length) off.push(w.id); }); return { n, off }; });
+  expect(r.n).toBeGreaterThan(10); expect(r.off).toEqual([]);
+});
+
+// Running costs are Vinterest's own business: counted on the device from what the Worker reports, drawn only on a
+// superuser's device (TeamSuper), and never for a restaurant.
+test('what a publish cost is kept for Vinterest only: no customer sees a running cost', async ({ browser }) => {
+  const open = async (sup) => { const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } }); await stubNetwork(ctx);
+    await ctx.addInitScript((sup) => { window.VINTEREST_CONSOLE = 'preview'; if (sup != null) window.VINTEREST_SUPER = sup; }, sup);
+    const page = await ctx.newPage(); await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible();
+    await page.evaluate(async () => { const say = (purpose, i, o) => window.dispatchEvent(new CustomEvent('vinterest:claude-usage', { detail: { purpose, model: 'claude-opus-5-5', usage: { input_tokens: i, output_tokens: o, cache_read_input_tokens: 1000 } } }));
+      TeamCosts.begin({ kind: 'list', added: ['a'], changed: [], removed: [] }); say('team_cards', 10000, 5000); say('team_review', 50000, 20000); say('label_scan', 9, 9); TeamCosts.end();
+      say('team_vinny', 20000, 500); });
+    return { ctx, page }; };
+  // A restaurant's manager: the ledger is kept, and nothing on any page of the console says a cost.
+  const a = await open(null);
+  const kept = await a.page.evaluate(() => { const c = TeamCosts.get(), p = c.publishes[0]; return { n: c.publishes.length, purposes: Object.keys(p.by).sort(), cost: TeamCosts.dollars(p.by), month: Object.keys(Object.values(c.months)[0]).sort(), sup: TeamSuper.on() }; });
+  expect(kept.n).toBe(1); expect(kept.purposes).toEqual(['team_cards', 'team_review']); expect(kept.sup).toBe(false);
+  expect(kept.cost).toBeCloseTo((60000 * 4 + 2000 * 0.4 + 25000 * 20) / 1e6, 5);
+  expect(kept.month).toEqual(['team_cards', 'team_review', 'team_vinny']);
+  await a.page.evaluate(() => document.querySelector('[data-testid=c2-nav-edge], [data-testid=console-nav-upload]'));
+  for (const k of ['dash', 'sales', 'team', 'wines', 'menu', 'upload']) { await a.page.getByTestId('console-nav-' + k).click(); await expect(a.page.getByTestId('c2-costs')).toHaveCount(0); await expect(a.page.getByText(/Running costs|Vinterest only/)).toHaveCount(0); }
+  expect(await a.page.evaluate(() => JSON.stringify(TeamData.get()).includes('team_review'))).toBe(false); // not in the restaurant's document or its export
+  await a.ctx.close();
+  // One of ours: Admin shows each publish and the month.
+  const b = await open(true);
+  await b.page.getByTestId('console-nav-upload').click();
+  const card = b.page.getByTestId('c2-costs');
+  await expect(card).toContainText('Vinterest only'); await expect(card.getByTestId('c2-cost-row')).toHaveCount(1);
+  await expect(card.getByTestId('c2-cost-row')).toContainText('1 new'); await expect(card.getByTestId('c2-cost-row')).toContainText('$0.741');
+  await expect(card.getByTestId('c2-cost-month')).toContainText('vinny');
+  await b.ctx.close();
+});
+
+// The reporting window (TeamWindow): a manager picks the stretch the console's sales figures are over; the staff app's
+// own figures never move with it.
+test('the reporting window: the last N days, weeks or months, or a range, on the console only', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } }); await stubNetwork(ctx);
+  await ctx.addInitScript(() => { window.VINTEREST_CONSOLE = 'preview'; });
+  const page = await ctx.newPage(); await page.goto(`${BASE}/team/?seed=demo&view=console`);
+  await page.getByTestId('console-nav-sales').click();
+  const head = page.getByTestId('c2-head'), rev = page.getByTestId('sales-revenue');
+  await expect(head).toContainText('the last 7 nights'); await expect(page.getByTestId('c2-trend')).toHaveAttribute('data-unit', 'night');
+  const week = await rev.innerText();
+  // A usual stretch: eight weeks, drawn week by week, compared with the eight before.
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-8weeks').click();
+  await expect(head).toContainText('the last 8 weeks'); await expect(page.getByTestId('c2-trend')).toHaveAttribute('data-unit', 'week');
+  await expect(rev).toContainText('the 8 weeks before'); expect(await rev.innerText()).not.toBe(week);
+  expect(await page.evaluate(() => TeamReport.salesSummary(TeamWindow.days()).days)).toBe(56);
+  // The last N of anything.
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-n').fill('3'); await page.getByTestId('c2-window-unit').selectOption('weeks'); await page.getByTestId('c2-window-last').click();
+  await expect(head).toContainText('the last 3 weeks'); await expect(page.getByTestId('c2-window')).toContainText('Last 3 weeks');
+  // A range of dates that ended a fortnight ago: every figure is of those nights, none after them.
+  const day = (back) => page.evaluate((back) => TeamSales.night(Date.now() - back * 86400000), back), from = await day(27), to = await day(14);
+  await page.getByTestId('c2-window').click(); await page.getByTestId('c2-window-from').fill(from); await page.getByTestId('c2-window-to').fill(to); await page.getByTestId('c2-window-range').click();
+  const r = await page.evaluate(({ from, to }) => { const rows = TeamSales.rows(TeamWindow.days()), nights = [...new Set(rows.map((x) => TeamSales.night(x.t)))].sort();
+    return { days: TeamWindow.days(), first: nights[0], last: nights[nights.length - 1], sum: Math.round(rows.reduce((a, x) => a + x.q * x.p, 0)), shown: Math.round(TeamReport.salesSummary(TeamWindow.days()).revenue) }; }, { from, to });
+  expect(r.days).toBe(14); expect(r.first >= from).toBe(true); expect(r.last <= to).toBe(true); expect(r.shown).toBe(r.sum);
+  await expect(rev).toContainText('the 14 nights before');
+  // It's kept for the console (a reload opens on it), and the Dashboard reads it too.
+  await page.reload(); await page.getByTestId('console-nav-sales').click(); await expect(rev).toContainText('the 14 nights before');
+  await page.getByTestId('console-nav-dash').click(); await expect(page.getByTestId('c2-window')).toBeVisible();
+  // The staff app's own figures stay on the last seven nights, whatever the manager is looking at.
+  await page.goto(`${BASE}/team/?seed=demo&view=phone`);
+  await expect(page.getByTestId('team-state')).toBeVisible();
+  expect(await page.evaluate(() => ({ scope: TeamWindow.scope, days: TeamWindow.days(), end: Math.abs(TeamSales.clock() - Date.now()) < 5000 }))).toEqual({ scope: false, days: 7, end: true });
+  await ctx.close();
+});
+
 test('a drill about one wine never asks which wine: its table question asks only the reason', async ({ context, page }) => {
   await stubNetwork(context);
   await page.goto(`${BASE}/team/?seed=princess&view=phone`);
@@ -2169,16 +2323,18 @@ test('a drill about one wine never asks which wine: its table question asks only
       const o = TeamLearn.oneWine(q); if (!o) { bad.push(q.q); return; }
       const oc = TeamLearn.choices(o); if ((oc.groups || []).some((g) => /suggest/i.test(g.label)) || /What would you suggest/.test(o.q)) bad.push(o.q); else reworded.push(o.q);
     }));
-    // Essentials: the wine-only table question isn't asked alone; a narrowed test on one wine carries no "which wine".
+    // Essentials: the wine-only table question stays, as it stands, or the wine could never be finished from its own
+    // Practise (it sat at "2 of 3"); every role's one-wine drill asks every question its standing counts.
     const ess = TeamData.wines().flatMap((w) => TeamLearn.qsFor('server', w.id).filter((q) => q.k === 'apply' && q.mc));
-    const essGone = ess.every((q) => TeamLearn.oneWine(q) === null);
+    const essGone = ess.every((q) => TeamLearn.oneWine(q) === q);
+    const short = Object.keys(TeamLearn.ROLES).flatMap((role) => TeamData.wines().filter((w) => TeamLearn.qsFor(role, w.id).some((q) => !TeamLearn.oneWine(q))).map((w) => role + ' ' + w.id));
     const t = TeamVinny.test(som.id, { ask: 'Tondonia' });
-    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, test: t.qs.map((q) => q.q), title: t.title };
+    return { bad, reworded: reworded.length, sample: reworded[0], essN: ess.length, essGone, short, test: t.qs.map((q) => q.q), title: t.title };
   });
   expect(r.bad).toEqual([]);
   expect(r.reworded).toBeGreaterThan(20);
   expect(r.sample).toMatch(/You suggest the .+\. Why does it work\?$/);
-  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true);
+  expect(r.essN).toBeGreaterThan(20); expect(r.essGone).toBe(true); expect(r.short).toEqual([]);
   expect(r.test.some((q) => /What would you suggest/.test(q))).toBe(false);
   // On the screen: Practise this wine from a card with a table question.
   await page.evaluate(() => { const s = TeamLearn.people().find((p) => p.role === 'sommelier'); TeamLearn.setMe(s.id); });
@@ -2292,9 +2448,20 @@ test('the sommelier review rewrites what it doubts, holds what it still doubts, 
   expect(out.inDrill).toBe(false);
   expect(out.rewritten).toMatch(/mostly made from/);
   expect(seen.length).toBeGreaterThan(300); // every question was read
+  // A second publish reads only what changed: nothing when nothing did (the held question stays held), one wine's
+  // questions and whatever they moved when its card changes, and everything again when asked afresh.
+  // (The first rewrite moved the options a few other questions show: those were read once more in that same review, as
+  // they now stand (`settled`), so the next publish has nothing left over from it.)
+  expect(r.settled).toBeGreaterThan(0); expect(r.read).toBe(r.asked + r.settled);
+  const sent = seen.length, r2 = await page.evaluate(() => TeamData.sommelierReview());
+  expect(r2.read).toBe(0); expect(seen.length).toBe(sent); expect(r2.held).toEqual([ids.dish]); expect(r2.notes[ids.dish].problem).toBe('two_right');
+  const r3 = await page.evaluate(() => { const d = TeamData.get(), w = TeamData.wines()[1], q = d.cards[w.id].qs[0]; q.q = q.q.replace(/\?*$/, ', as the list has it?'); TeamData.save(d); return TeamData.sommelierReview(); });
+  expect(r3.read).toBeGreaterThan(0); expect(r3.read).toBeLessThan(r3.asked / 5); expect(r3.held).toEqual([ids.dish]);
   await page.reload();
   await page.getByTestId('console-nav-wines').click();
   await expect(page.getByTestId('console-sommelier')).toContainText('1 held out of the drill');
+  const r4 = await page.evaluate(() => TeamData.sommelierReview({ fresh: true }));
+  expect(r4.read).toBe(r4.asked);
 });
 
 // The demo tells the story a working team would: the house pours sell most and are the ones the team knows, so
@@ -2729,9 +2896,13 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // Best sellers is the first card on the page, above Wine sales by week.
   expect(await page.evaluate(() => { const y = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect().top; return y('sales-wines') < y('sales-trend') && y('sales-wines') < y('c2-upside') && y('c2-mix') > y('sales-trend'); })).toBe(true);
   await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
-  const all = await page.getByTestId('sales-trend').locator('svg text').first().textContent();
+  // The chart: its figures are a scale down the side and a note under the pointer, never written on the line.
+  const scale = () => page.getByTestId('c2-trend').locator('text').allTextContents().then((t) => t.join('|'));
+  const all = await scale();
   await page.getByTestId('c2-chart-bottles').click();
-  await expect(page.getByTestId('sales-trend').locator('svg text').first()).not.toHaveText(all);
+  await expect.poll(scale).not.toBe(all);
+  await page.getByTestId('c2-trend').hover({ position: { x: 300, y: 80 } });
+  await expect(page.getByTestId('c2-trend-tip').locator('text').first()).toHaveText(/^[£$][\d,]+$/);
   await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
   // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
   await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');

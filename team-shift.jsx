@@ -3,9 +3,9 @@
    special by photo, typing or speaking, approve what was read, send the briefing, see who has read it. TeamBriefing is
    what every person reads and accepts before the app opens that day (the layer in team-app.jsx). */
 const _SH_RED='#F28B7D', _SH_GREEN='#5FD48F';
-const _shTag=(T,text,col)=><span style={{fontSize:12,fontWeight:700,fontFamily:C.P,color:col,padding:'2px 8px',borderRadius:8,border:`1px solid ${_alpha(col,0.6)}`,background:_alpha(col,0.12),whiteSpace:'nowrap'}}>{text}</span>;
+const _shTag=(T,text,col)=><span style={{fontSize:12,fontWeight:700,fontFamily:C.P,color:col,padding:'2px 8px',borderRadius:0,border:`1px solid ${_alpha(col,0.6)}`,background:_alpha(col,0.12),whiteSpace:'nowrap'}}>{text}</span>;
 const _shLink=(T,text,onClick,tid)=><span role="button" data-testid={tid} onClick={onClick} style={{fontSize:14,fontWeight:700,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>{text}</span>;
-const _shInput=(T)=>({width:'100%',boxSizing:'border-box',padding:'10px 12px',borderRadius:10,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'});
+const _shInput=(T)=>({width:'100%',boxSizing:'border-box',padding:'10px 12px',borderRadius:0,border:`1px solid ${T.line}`,background:T.soft,color:T.ink,fontFamily:C.P,fontSize:16,outline:'none'});
 
 /* The wine poured with a special: its name, how it's sold, and why. */
 function _ShPour({T,label,p,onPick}){ const w=p&&TeamData.wine(p.id); if(!w) return onPick?<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'6px 0'}}>{label}: none picked. {_shLink(T,'Pick one',onPick)}</div>:null;
@@ -22,7 +22,7 @@ function _ShWinePick({T,s,slot,done}){ const [q,setQ]=React.useState(''), n=x=>T
   const found=q.trim()?TeamData.wines().filter(w=>!TeamData.isDrink(w)&&(!glass||TeamData.byGlass(w))&&n(TeamData.label(w)).includes(n(q))).slice(0,6):[];
   const row=(id,why)=>{ const w=TeamData.wine(id); return w&&<div key={id} role="button" data-testid="special-wine-option" onClick={()=>{ TeamShift.setWine(s.id,slot,id,why); done(); }} style={{padding:'9px 0',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
     <div style={{fontSize:15,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamData.short(w)}</div>{why&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{why}</div>}</div>; };
-  return <div data-testid="special-wine-pick" style={{margin:'8px 0',padding:12,borderRadius:12,border:`1px solid ${T.line}`,background:T.soft}}>
+  return <div data-testid="special-wine-pick" style={{margin:'8px 0',padding:12,borderRadius:0,border:`1px solid ${T.line}`,background:T.soft}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}><div style={{fontSize:14,fontWeight:700,color:T.ink,fontFamily:C.P}}>{glass?'Another wine by the glass':'Another bottle'}</div>{_shLink(T,'Cancel',done)}</div>
     {offered.map(p=>row(p.id,p.why))}
     <input aria-label="Find a wine on the list" placeholder={glass?'Or find a wine by the glass':'Or find any wine on the list'} value={q} onChange={e=>setQ(e.target.value)} style={{..._shInput(T),marginTop:8}}/>
@@ -36,10 +36,10 @@ function TeamSpecialCard({s,bump}){ const T=useTheme(), [pick,setPick]=React.use
     return <div data-testid="special-live" style={{padding:'10px 0',borderTop:`1px solid ${T.line}`,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
       <div style={{flex:'1 1 200px',minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:sold?T.mid:T.ink,fontFamily:C.P,textDecoration:sold?'line-through':'none'}}>{s.name}{TeamShift.price(s)&&<span style={{fontWeight:500,color:T.mid}}> · {TeamShift.price(s)}</span>}</div>
         <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{sold?`Sold out at ${TeamShift.time(s.soldAt)}`:TeamShift.runLine(s)}{w&&!sold?` · pour the ${TeamData.short(w)}`:''}</div></div>
-      <span role="button" data-testid="special-soldout" aria-pressed={sold} onClick={()=>{ TeamShift.soldOut(s.id,!sold); bump(); }} style={{fontSize:14,fontWeight:700,fontFamily:C.P,padding:'7px 12px',borderRadius:10,cursor:'pointer',color:sold?T.ink:_SH_RED,border:`1px solid ${sold?T.line:_SH_RED}`,background:sold?'transparent':_alpha(_SH_RED,0.12)}}>{sold?'Back on':'Sold out'}</span>
+      <span role="button" data-testid="special-soldout" aria-pressed={sold} onClick={()=>{ TeamShift.soldOut(s.id,!sold); bump(); }} style={{fontSize:14,fontWeight:700,fontFamily:C.P,padding:'7px 12px',borderRadius:0,cursor:'pointer',color:sold?T.ink:_SH_RED,border:`1px solid ${sold?T.line:_SH_RED}`,background:sold?'transparent':_alpha(_SH_RED,0.12)}}>{sold?'Back on':'Sold out'}</span>
       <span role="button" data-testid="special-off" onClick={()=>{ TeamShift.discard(s.id); bump(); }} style={{fontSize:14,fontWeight:600,fontFamily:C.P,color:T.mid,cursor:'pointer'}}>Take off</span></div>; }
   const shown=all?list:list.filter(a=>has(a.code));
-  return <div data-testid="special-draft" style={{margin:'10px 0',padding:14,borderRadius:14,border:`1px solid ${_alpha(T.amber,0.6)}`,background:_alpha(T.amber,0.06)}}>
+  return <div data-testid="special-draft" style={{margin:'10px 0',padding:14,borderRadius:0,border:`1px solid ${_alpha(T.amber,0.6)}`,background:_alpha(T.amber,0.06)}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:8}}>{_shTag(T,s.source==='photo'?'Read from the photo · check it':s.source==='again'?'Back again · check it':'To approve',T.amber)}{_shLink(T,'Discard',()=>{ TeamShift.discard(s.id); bump(); },'special-discard')}</div>
     {s.unclear&&<div style={{fontSize:14,color:T.amber,fontFamily:C.P,lineHeight:1.4,marginBottom:8}}>Hard to read: {s.unclear}</div>}
     <div style={{display:'flex',gap:8}}>
@@ -48,16 +48,16 @@ function TeamSpecialCard({s,bump}){ const T=useTheme(), [pick,setPick]=React.use
     <textarea aria-label="How to describe it" data-testid="special-desc" placeholder="How a server describes it, in a sentence" value={s.description} onChange={e=>set({description:e.target.value})} rows={2} style={{..._shInput(T),marginTop:8,resize:'vertical',lineHeight:1.4}}/>
     <div style={{marginTop:12,fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.06em',textTransform:'uppercase'}}>Allergens</div>
     <div style={{marginTop:6}}>{shown.map(a=>{ const on=has(a.code), likely=on&&s.allergens.find(x=>x.code===a.code).sure==='likely';
-      return <span key={a.code} role="button" data-testid="special-allergen" aria-pressed={on} onClick={()=>{ TeamShift.toggleAllergen(s.id,a.code); bump(); }} style={{display:'inline-block',margin:'0 6px 6px 0',padding:'5px 11px',borderRadius:12,fontSize:14,fontFamily:C.P,cursor:'pointer',border:`1px solid ${on?_SH_RED:T.line}`,background:on?_alpha(_SH_RED,0.14):'transparent',color:on?T.ink:T.mid}}>{a.name}{likely?' (likely)':''}</span>; })}
+      return <span key={a.code} role="button" data-testid="special-allergen" aria-pressed={on} onClick={()=>{ TeamShift.toggleAllergen(s.id,a.code); bump(); }} style={{display:'inline-block',margin:'0 6px 6px 0',padding:'5px 11px',borderRadius:0,fontSize:14,fontFamily:C.P,cursor:'pointer',border:`1px solid ${on?_SH_RED:T.line}`,background:on?_alpha(_SH_RED,0.14):'transparent',color:on?T.ink:T.mid}}>{a.name}{likely?' (likely)':''}</span>; })}
       {!shown.length&&<span style={{fontSize:14,color:T.mid,fontFamily:C.P,marginRight:8}}>None found.</span>}
       {_shLink(T,all?'Fewer':'Add or check all',()=>setAll(x=>!x),'special-allergen-all')}</div>
-    <div role="checkbox" aria-checked={!!s.confirmed} data-testid="special-confirm" onClick={()=>set({confirmed:!s.confirmed})} style={{display:'flex',gap:10,alignItems:'center',marginTop:6,padding:'10px 12px',borderRadius:10,cursor:'pointer',border:`1px solid ${s.confirmed?_SH_GREEN:T.line}`,background:s.confirmed?_alpha(_SH_GREEN,0.12):'transparent'}}>
+    <div role="checkbox" aria-checked={!!s.confirmed} data-testid="special-confirm" onClick={()=>set({confirmed:!s.confirmed})} style={{display:'flex',gap:10,alignItems:'center',marginTop:6,padding:'10px 12px',borderRadius:0,cursor:'pointer',border:`1px solid ${s.confirmed?_SH_GREEN:T.line}`,background:s.confirmed?_alpha(_SH_GREEN,0.12):'transparent'}}>
       <span style={{width:22,height:22,borderRadius:6,border:`2px solid ${s.confirmed?_SH_GREEN:T.mid}`,display:'flex',alignItems:'center',justifyContent:'center',color:_SH_GREEN,fontSize:15,fontWeight:800,flexShrink:0}}>{s.confirmed?'✓':''}</span>
       <span style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.35}}>The kitchen has confirmed {s.allergens.length?'these allergens':'it has none of these allergens'}</span></div>
     <div style={{marginTop:10}}>
       {pick==='bottle'?<_ShWinePick T={T} s={s} slot="bottle" done={()=>{ setPick(null); bump(); }}/>:<_ShPour T={T} label="Pour with it" p={s.pairing.bottle} onPick={()=>setPick('bottle')}/>}
       {pick==='glass'?<_ShWinePick T={T} s={s} slot="glass" done={()=>{ setPick(null); bump(); }}/>:<_ShPour T={T} label="By the glass" p={s.pairing.glass} onPick={()=>setPick('glass')}/>}</div>
-    <div style={{marginTop:10,display:'flex',gap:6,flexWrap:'wrap'}}>{TeamShift.RUNS.map(r=><span key={r.k} role="button" data-testid={`special-run-${r.k}`} aria-pressed={(s.run||'tonight')===r.k} onClick={()=>set({run:r.k})} style={{padding:'6px 12px',borderRadius:12,fontSize:14,fontFamily:C.P,cursor:'pointer',border:`1px solid ${(s.run||'tonight')===r.k?T.lift(C.cr):T.line}`,color:(s.run||'tonight')===r.k?T.ink:T.mid,background:(s.run||'tonight')===r.k?_alpha(T.lift(C.cr),0.14):'transparent'}}>{r.label}</span>)}</div>
+    <div style={{marginTop:10,display:'flex',gap:6,flexWrap:'wrap'}}>{TeamShift.RUNS.map(r=><span key={r.k} role="button" data-testid={`special-run-${r.k}`} aria-pressed={(s.run||'tonight')===r.k} onClick={()=>set({run:r.k})} style={{padding:'6px 12px',borderRadius:0,fontSize:14,fontFamily:C.P,cursor:'pointer',border:`1px solid ${(s.run||'tonight')===r.k?T.lift(C.cr):T.line}`,color:(s.run||'tonight')===r.k?T.ink:T.mid,background:(s.run||'tonight')===r.k?_alpha(T.lift(C.cr),0.14):'transparent'}}>{r.label}</span>)}</div>
     <div data-testid="special-approve" aria-disabled={!s.confirmed||!s.name.trim()} style={{marginTop:12,opacity:s.confirmed&&s.name.trim()?1:0.45}}><Btn primary full onClick={()=>{ if(TeamShift.approve(s.id)) bump(); }}>Approve for tonight's briefing</Btn></div>
     {!s.confirmed&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:6,textAlign:'center'}}>Confirm the allergens with the kitchen first.</div>}
   </div>; }
@@ -96,10 +96,10 @@ function TeamShiftManage({pid,preview}){ const T=useTheme(), [,bump]=React.useRe
     {drafts.map(s=><TeamSpecialCard key={s.id} s={s} bump={bump}/>)}
     {live.map(s=><TeamSpecialCard key={s.id} s={s} bump={bump}/>)}
     {!drafts.length&&!live.length&&!adding&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>No specials tonight. Add one from a photo of the chef's board, or type it.</div>}
-    {past.length>0&&<div data-testid="special-past" style={{marginTop:8,fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.9}}>Bring back: {past.map(s=><span key={s.id} role="button" data-testid="special-again" onClick={()=>{ TeamShift.bringBack(s.id); bump(); }} style={{display:'inline-block',marginRight:6,padding:'2px 10px',borderRadius:10,border:`1px solid ${T.line}`,color:T.ink2,cursor:'pointer'}}>{s.name}</span>)}</div>}
+    {past.length>0&&<div data-testid="special-past" style={{marginTop:8,fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.9}}>Bring back: {past.map(s=><span key={s.id} role="button" data-testid="special-again" onClick={()=>{ TeamShift.bringBack(s.id); bump(); }} style={{display:'inline-block',marginRight:6,padding:'2px 10px',borderRadius:0,border:`1px solid ${T.line}`,color:T.ink2,cursor:'pointer'}}>{s.name}</span>)}</div>}
     <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase',margin:'16px 0 6px'}}>A note for the team</div>
     <textarea aria-label="A note for the team" data-testid="shift-note" rows={2} placeholder="Large party at 8, push the tasting menu, new glassware on the pass…" defaultValue={tn.note} onBlur={e=>{ if(e.target.value!==tn.note){ TeamData.setTonight({note:e.target.value}); bump(); } }} style={{..._shInput(T),resize:'vertical',lineHeight:1.4}}/>
-    <div data-testid="shift-send" style={{marginTop:14,padding:14,borderRadius:14,border:`1px solid ${T.line}`,background:T.soft}}>
+    <div data-testid="shift-send" style={{marginTop:14,padding:14,borderRadius:0,border:`1px solid ${T.line}`,background:T.soft}}>
       <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>Tonight's briefing</div>
       <div data-testid="shift-status" style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:2}}>{st.empty?"Nothing in it yet: 86 a dish, feature a wine, add a special or write a note."
         :!st.sent?`Not sent yet. Everyone reads and accepts it before the app opens for them today.${st.drafts?` ${st.drafts} special${st.drafts>1?'s':''} still to approve.`:''}`
@@ -136,7 +136,7 @@ function TeamBriefing({pid,onAck,back,preview}){ const T=useTheme(), cr=T.lift(C
         <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline'}}><div style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2,textDecoration:sold?'line-through':'none'}}>{sp.name}{isNew(fr.specials.has(sp.id))}</div><div style={{fontSize:17,fontWeight:700,color:T.ink,fontFamily:C.P}}>{TeamShift.price(sp)}</div></div>
         {sold&&<div style={{marginTop:6}}>{_shTag(T,`Sold out at ${TeamShift.time(sp.soldAt)}`,_SH_RED)}</div>}
         {sp.description&&<div style={{fontSize:16,color:T.ink2,fontFamily:C.P,lineHeight:1.5,marginTop:6}}>{sp.description}</div>}
-        <div data-testid="briefing-allergens" style={{marginTop:10,padding:'8px 12px',borderRadius:10,background:_alpha(_SH_RED,0.1),border:`1px solid ${_alpha(_SH_RED,0.4)}`,fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b>Allergens:</b> {TeamShift.allergenLine(sp)||'none of the listed allergens'} <span style={{color:T.mid}}>· confirmed by the kitchen</span></div>
+        <div data-testid="briefing-allergens" style={{marginTop:10,padding:'8px 12px',borderRadius:0,background:_alpha(_SH_RED,0.1),border:`1px solid ${_alpha(_SH_RED,0.4)}`,fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}><b>Allergens:</b> {TeamShift.allergenLine(sp)||'none of the listed allergens'} <span style={{color:T.mid}}>· confirmed by the kitchen</span></div>
         <div style={{marginTop:8}}><_ShPour T={T} label={same?'Pour with it':'By the glass'} p={g||b}/>{!same&&g&&b&&<_ShPour T={T} label="By the bottle" p={b}/>}</div>
         {TeamShift.sayLine(sp)&&<div style={{marginTop:8,paddingLeft:12,borderLeft:`3px solid ${cr}`,fontSize:16,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>“{TeamShift.sayLine(sp)}”</div>}
       </Card></div>; })}</div>}
