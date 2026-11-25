@@ -1,8 +1,8 @@
-// The first social post: a vertical film (1080 x 1920, 9:16, for TikTok and Instagram Reels) of the app
-// itself for the sample user, with large captions in the upper middle (clear of each app's buttons and
-// caption at the foot and side) and an end card with the download link. Silent: add a sound in TikTok or
-// Instagram, where a trending one helps reach. Run after `npm run build`: `node social/first-post.mjs`.
-// Writes video/first-post.mp4 (H.264, needs a full ffmpeg) and video/first-post-cover.jpg.
+// The announcement film for TikTok and Instagram Reels (1080 x 1920, 9:16): clean words on slides of their
+// own (other apps give you strangers' stars and critics' scores; Vinterest is built for you) between short
+// shots of the app itself for the sample user, with no captions over the app. Silent: add a sound in the
+// app you post from. Run after `npm run build`: `node social/announce.mjs`. Writes video/announce.mp4
+// (H.264, needs a full ffmpeg) and video/announce-cover.jpg.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
@@ -12,8 +12,8 @@ import { chromium } from '@playwright/test';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const SAMPLE = require(path.join(ROOT, 'data/onboarding-sample.json'));
-const PORT = 4187, W = 414, H = 736, SCALE = 1080 / 414, FPS = 30, SECONDS = 18;
-const OUT = path.join(ROOT, 'video/first-post.mp4');
+const PORT = 4187, W = 414, H = 736, SCALE = 1080 / 414, FPS = 30, SECONDS = 25;
+const OUT = path.join(ROOT, 'video/announce.mp4');
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 const SHELF = { u: 0, wines: [
   { n: 'Reserva', pr: 'Marqués de Riscal', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '16.00', g: 'Tempranillo', s: '766' },
@@ -77,29 +77,31 @@ try {
   await page.locator('[data-testid="scan-file"]').waitFor({ state: 'attached', timeout: 30000 });
   const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');
 
-  /* Captions in the upper middle, big, on a dark rounded box (the way people caption these films), and the
-     end card over everything. */
+  /* The word slides: the whole screen, dark with a crimson glow, one line of words rising in. */
   await page.evaluate((logo) => {
     const st = document.createElement('style');
     st.textContent = '.xp-chip,[data-testid="moment-card"]{display:none !important}' +
-      '#cap{position:fixed;left:22px;right:46px;top:104px;z-index:99999;pointer-events:none;display:flex;justify-content:center}' +
-      '#cap span{font:800 29px/1.14 Poppins,sans-serif;letter-spacing:-0.6px;color:#fff;text-align:center;background:rgba(10,8,9,.86);padding:12px 18px 14px;border-radius:16px;' +
-      'box-shadow:0 10px 40px rgba(0,0,0,.5);opacity:0;transform:scale(.92) translateY(6px);transition:opacity .22s ease,transform .3s cubic-bezier(.2,1.4,.4,1)}' +
-      '#cap span.on{opacity:1;transform:none}#cap b{font-weight:800;color:#ff8fa3}' +
-      '#end{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 34px;' +
-      'background:radial-gradient(ellipse 90% 55% at 50% 30%,#8B1A2Fdd,transparent 72%),#0d0d0f;color:#fff;font-family:Poppins,sans-serif;opacity:0;transition:opacity .4s ease}' +
-      '#end.on{opacity:1}#end img{height:30px;filter:brightness(0) invert(1);margin-bottom:34px}' +
-      '#end h1{font-size:44px;line-height:1.04;font-weight:800;letter-spacing:-1.2px;margin:0 0 18px}#end h1 b{color:#ff8fa3}' +
-      '#end p{font-size:18px;line-height:1.4;color:rgba(255,255,255,.8);margin:0 0 30px}' +
-      '#end .get{font-size:21px;font-weight:700;background:#8B1A2F;border-radius:14px;padding:12px 22px}';
+      '#sl{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 38px;' +
+      'background:radial-gradient(ellipse 85% 50% at 50% 42%,#6d1526,transparent 74%),#0b0a0b;color:#fff;font-family:Poppins,sans-serif;transition:opacity .28s ease}' +
+      '#sl.off{opacity:0}#sl h1{font-size:40px;line-height:1.08;font-weight:800;letter-spacing:-1.2px;margin:0}#sl h1 b{color:#ff8fa3;font-weight:800}' +
+      '#sl h1 span{display:inline-block;opacity:0;transform:translateY(14px);animation:w .5s cubic-bezier(.2,.9,.3,1) forwards}' +
+      '@keyframes w{to{opacity:1;transform:none}}#sl img{height:28px;filter:brightness(0) invert(1);margin-bottom:30px;opacity:0;animation:w .5s ease forwards}' +
+      '#sl p{font-size:17px;line-height:1.45;color:rgba(255,255,255,.78);margin:22px 0 0;opacity:0;animation:w .5s ease .5s forwards}' +
+      '#sl .get{display:inline-block;margin-top:26px;font-size:20px;font-weight:700;background:#8B1A2F;border-radius:14px;padding:12px 22px;opacity:0;animation:w .5s ease .8s forwards}';
     document.head.appendChild(st);
-    const d = document.createElement('div'); d.id = 'cap'; d.innerHTML = '<span></span>'; document.body.appendChild(d);
-    const e = document.createElement('div'); e.id = 'end';
-    e.innerHTML = '<img src="' + logo + '"><h1>The wine app built just for <b>you</b>.</h1><p>Free on iPhone and Android.<br>Your taste. Nobody else\'s.</p><div class="get">vinterest.app/get</div>';
-    document.body.appendChild(e);
-    window.__cap = (html, top) => { const s = d.firstChild; s.className = ''; setTimeout(() => { d.style.top = (top || 104) + 'px'; s.innerHTML = html; s.style.display = html ? '' : 'none'; s.className = html ? 'on' : ''; }, 120); };
+    const d = document.createElement('div'); d.id = 'sl'; document.body.appendChild(d);
+    // Each word rises in turn; <b> words keep their colour.
+    window.__slide = (html, opt) => {
+      opt = opt || {};
+      if (!html) { d.className = 'off'; return; }
+      const words = html.replace(/<b>(.*?)<\/b>/g, (m, w) => w.split(' ').map((x) => '\u0001' + x).join(' ')).split(' ');
+      const h = words.map((w, i) => { const b = w[0] === '\u0001'; const t = b ? w.slice(1) : w;
+        return '<span style="animation-delay:' + (i * 0.09).toFixed(2) + 's">' + (b ? '<b>' + t + '</b>' : t) + '</span>'; }).join(' ');
+      d.innerHTML = (opt.logo ? '<img src="' + logo + '">' : '') + '<h1>' + h + '</h1>' + (opt.sub ? '<p>' + opt.sub + '</p>' : '') + (opt.get ? '<div class="get">' + opt.get + '</div>' : '');
+      d.className = '';
+    };
   }, logo);
-  const caption = (html, top) => page.evaluate(([h, t]) => window.__cap(h, t), [html, top]);
+  const slide = (html, opt) => page.evaluate(([h, o]) => window.__slide(h, o), [html, opt || null]);
   const swipe = (back) => page.evaluate(async (back) => {
     const st = document.querySelector('.rv-stage'); if (!st) return;
     const r = st.getBoundingClientRect(), y = r.top + r.height * 0.5, a = r.left + r.width * 0.74, b = r.left + r.width * 0.26, x0 = back ? b : a, x1 = back ? a : b;
@@ -125,24 +127,27 @@ try {
   await page.locator('[data-testid="scan-file"]').setInputFiles({ name: 'label.png', mimeType: 'image/png', buffer: PNG });
   await page.getByTestId('reveal-scene').waitFor({ timeout: 15000 });
   await swipe(); await wait(700); await swipe(true);
-  await caption('Which bottle will <b>you</b> actually like?');
+  await slide('Stars from strangers.');
   await wait(400);
   await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 95, everyNthFrame: 1 });
   rec = true;
   const t0 = Date.now();
   const at = (s) => wait(Math.max(0, t0 + s * 1000 - Date.now()));
 
-  // The film, second by second: the hook, the match, why, the shelf, Vinny, the end card.
-  await at(2.0); await caption('Scan the label.'); await swipe();
-  await at(3.4); await caption('<b>94%</b> you\'ll love it.');
-  await at(6.0); await caption('Worked out from wines <b>you</b> rated. Not critics.');
-  await at(9.0); await caption('Scan a whole <b>shelf</b>. Your best bottle comes first.', 440);
-  await page.evaluate((shelf) => { const r = ScanFlow.shelfWines(JSON.stringify(shelf)); Handoff.wineList.set({ demo: false, shelf: true, wines: r.wines, unread: r.unread, currency: 'GBP' }); window.location.hash = '#winelist'; }, SHELF);
-  await wait(500); await scroll(0.12, 2400);
-  await at(12.2); await caption('Ask <b>Vinny</b> anything.', 470); await page.evaluate(() => { window.location.hash = '#home'; });
-  await at(12.8); await page.locator('input[aria-label="Ask Vinny"]').pressSequentially(VINNY.q, { delay: 26 });
-  await at(14.0); await page.locator('input[aria-label="Ask Vinny"]').press('Enter');
-  await at(15.6); await caption(''); await page.evaluate(() => document.getElementById('end').classList.add('on'));
+  // Words, then the app, three times, then the end card.
+  await at(1.7); await slide('Critic scores.');
+  await at(3.2); await slide('None of them know <b>your</b> taste.');
+  await at(5.4); await slide('Built for <b>you</b>.', { logo: true });
+  await at(7.5); await slide(''); await swipe(); // the match dial sweeps up
+  await at(11.2); await slide('Every match comes from wines <b>you</b> rated.');
+  await at(11.8); await page.evaluate(() => { window.location.hash = '#profile'; });
+  await at(13.3); await slide(''); await scroll(0.28, 2600);
+  await at(16.4); await slide('Questions answered from <b>your</b> taste.');
+  await at(17.0); await page.evaluate(() => { window.location.hash = '#home'; });
+  await at(18.4); await slide('');
+  await at(18.7); await page.locator('input[aria-label="Ask Vinny"]').pressSequentially(VINNY.q, { delay: 24 });
+  await at(19.8); await page.locator('input[aria-label="Ask Vinny"]').press('Enter');
+  await at(22.0); await slide('The wine app built just for <b>you</b>.', { logo: true, sub: 'Free on iPhone and Android.', get: 'vinterest.app/get' });
   await at(SECONDS + 0.2);
   rec = false;
   await cdp.send('Page.stopScreencast').catch(() => {});
@@ -158,7 +163,7 @@ try {
   if (!full) throw new Error('needs an ffmpeg with H.264');
   await run(full, [...input, '-vf', 'scale=1080:1920', '-c:v', 'libx264', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-b:v', '12M', '-movflags', '+faststart', OUT], feed);
   // The cover: the moment the dial lands, with its caption.
-  const cover = frames.reduce((best, f) => (Math.abs(f.t - (t0 + 5200)) < Math.abs(best.t - (t0 + 5200)) ? f : best));
+  const cover = frames.reduce((best, f) => (Math.abs(f.t - (t0 + 9600)) < Math.abs(best.t - (t0 + 9600)) ? f : best));
   await run(full, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-c:v', 'mjpeg', '-i', 'pipe:0', '-vf', 'scale=1080:1920', '-q:v', '2', OUT.replace(/\.mp4$/, '-cover.jpg')], (s) => { s.end(cover.data); });
   console.log(`Saved ${path.relative(ROOT, OUT)} (${SECONDS}s, ${frames.length} painted frames) and its cover`);
 } finally {
