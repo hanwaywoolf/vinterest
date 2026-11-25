@@ -101,9 +101,14 @@ const TeamPlans = {
     if(!text||opts.length!==4||uniq.size!==4||!(a>=0&&a<4)) return null;
     const covers=ok.has(String(raw.covers||''))?String(raw.covers):'';
     return {id:`${planId}#${n}`,k:'recognise',mc:true,q:text,opts,a,why:String(raw.why||'').trim(),covers,bespoke:planId,...(w?{wine:w.id}:{dish:dish.id})}; },
+  /* The public demo (The Larkspur at demo.vinterest.team, which the Teams website shows) makes no call for a plan:
+     anyone can press Write it there, and each press was a billed call. A plan is built from the questions already
+     written instead (`fromCards`), and the card says so. Tests switch it with `window.VINTEREST_PLAN_CALLS`. */
+  noCalls(){ try{ if(window.VINTEREST_PLAN_CALLS) return window.VINTEREST_PLAN_CALLS==='off'; return TeamData.isDemo()&&TeamSample.hostSeed()==='demo'; }catch(e){ return false; } },
   /* Vinny writes it: one call. Saved as a draft the manager reads before pushing. Throws in words when it can't. */
   async write(pid,ask,by){ const c=TeamVinny._ctx(pid); if(!c) throw new Error('Pick someone first.'); const text=String(ask||'').trim(); if(text.length<8) throw new Error('Say who it\'s for and what they need, in a sentence.');
     const s=this.subjects(pid,text); if(!s.wines.length&&!s.dishes.length) throw new Error('Nothing on the list matches that. Try a colour, the glass list, the bottles or the menu.');
+    if(this.noCalls()){ const made=this.fromCards(pid,text,by); if(!made) throw new Error('There are no questions written for that yet. Try a colour, the glass list, the bottles or the menu.'); return made; }
     const v=TeamData.get().venue||{}, tpl=_loadTextSync('prompts/team-plan.txt');
     const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':s.named?'This plan is about the wines listed below and nothing else. Every question is about one of them: what to say, its price, what it tastes like, where it is from, or which dish it is poured with (from its "poured with" line). No question asks what a dish is, how it is cooked, what is in it or what a dish costs.':'No question asks what a dish is, how it is cooked or what is in it.')
       .replace('{{subjects}}',[...s.wines.map(w=>this._wineLines(pid,c,w)),...s.dishes.map(x=>this._dishLines(pid,c,x,s.pairing))].join('\n\n'));

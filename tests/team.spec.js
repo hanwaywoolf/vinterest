@@ -2920,6 +2920,11 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
   expect(sent).toContain(mine[0].ask);
   await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  // The public demo makes no call for a plan: it's built from the questions already written, and the card says so.
+  { const before = reqs.filter(r => r.purpose === 'team_plan').length;
+    const made = await page.evaluate(async () => { window.VINTEREST_PLAN_CALLS = 'off'; const a = TeamLearn.people().find(p => p.name.startsWith('Amara')), g = TeamPlans.suggest(a.id)[0]; const d = await TeamPlans.write(a.id, g.ask, null); const out = { source: d.source, qs: d.parts.reduce((n, p) => n + p.qs.length, 0), off: TeamPlans.noCalls() }; TeamPlans.discard(d.id); window.VINTEREST_PLAN_CALLS = ''; return out; });
+    expect(made.off).toBe(true); expect(made.source).toBe('cards'); expect(made.qs).toBeGreaterThan(1); expect(reqs.filter(r => r.purpose === 'team_plan').length).toBe(before);
+    expect(await page.evaluate(() => TeamPlans.noCalls())).toBe(false); await expect(page.getByTestId('c2-vinny-demo')).toHaveCount(0); }
   { const n = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')); const d = TeamPlans.fromCards(a.id, 'the bottles', null); return d ? d.id : null; });
     expect(n).toBeTruthy(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(2);
     await page.evaluate(id => TeamPlans.discard(id), n); await page.getByTestId('console-nav-dash').click(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(1); }
