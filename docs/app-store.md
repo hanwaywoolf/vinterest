@@ -7,7 +7,7 @@ both together.
 ## App Information (General)
 
 - Name: Vinterest: Wine Scanner
-- Subtitle (30 characters): Wine matched to your own taste
+- Subtitle (30 characters): Wine built just for your taste
 - Category: Food & Drink. Secondary: Education.
 - Content rights: Yes, it contains, shows or accesses third-party content, and Yes, we have the rights:
   the Shop tab shows a partner shop's bottle photo and prices from its product feed (Awin's terms) and
@@ -59,51 +59,55 @@ Apple's and Google's own crash reports are theirs).
 
 ## The version page
 
-Promotional text (170):
+Promotional text (170). The theme is the website's, "the wine app built just for you":
 
-> Scan any label and know if you'll love it, from your own ratings, not a critic's. Ask Vinny anything,
-> learn as you sip, and keep every bottle you've had in one place.
+> Most wine apps show you what everyone else thinks. Vinterest learns your taste from the bottles you
+> rate, then matches, teaches and answers from yours alone.
 
 Description:
 
-> Vinterest learns what you like in wine and tells you, before you open the bottle, whether you'll
-> enjoy it.
+> The wine app built just for you.
 >
-> SCAN ANY LABEL
-> Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then
-> tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
+> Most wine apps show you what everyone else thinks: star averages, critic scores, the crowd's favourites.
+> Vinterest learns what you like from the bottles you scan and rate, then matches, teaches and answers from
+> your taste alone. Nobody else's.
 >
-> SCAN A WHOLE SHELF
-> In a shop, take one photo of the shelf. Vinterest reads every label it can and tells you which bottle
-> suits you best. Free twice a month, and as often as you like with Pro.
+> EVERY BOTTLE, MATCHED TO YOU
+> Point your camera at any label. Vinterest reads the wine and the vintage and gives you a match: the
+> chance you'll enjoy this bottle, worked out from the wines you've rated, with one reason for and one
+> against. Then the bottle's story plays: who made it, where it is in its life, how it'll taste, the grape
+> sketched in pen and the map closing in on its region. It ends on the rating dial.
 >
-> A MATCH FROM YOUR OWN RATINGS
-> Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out
-> from the wines you've rated, not from a critic's score. It says why, in plain words: the grapes, regions
-> and producers that lift your ratings, and the ones that hold them back.
+> A WHOLE SHELF, OR A WINE LIST
+> In a shop, take one photo of the shelf and see which bottle suits you best. Free twice a month. With Pro,
+> scan a restaurant's wine list too.
 >
-> WINEDNA
-> Your taste, described: the body, tannins and acidity you reach for, what you love, what to buy again,
-> what to try next and a few words to say to a sommelier.
+> YOUR WINEDNA, MADE JUST FOR YOU
+> Your ratings add up to a profile nobody else has: the grapes, regions, styles and prices you love, three
+> rules for next time you're buying, the wines you'd buy again, new styles to try and a few lines to say to
+> a sommelier. It checks itself too, re-predicting your past ratings and showing how close it got.
 >
-> ASK VINNY
-> Ask anything, from what to drink with steak tonight to whether a bottle is worth the price. Vinny
-> answers from the wines you've actually had.
+> A WINE EXPERT WHO KNOWS YOU
+> Ask Vinny anything, in the shop, at the restaurant or at home: what goes with steak tonight, whether a
+> bottle is worth the price. His answers come from your WineDNA, not a list of bestsellers.
 >
-> LEARN AS YOU SIP
-> Short reads and quizzes written from your own bottles, a map of every region you've tasted, and Mastery
-> to show how your knowledge grows. No wine vocabulary assumed: every term comes with what it means and how
-> to notice it.
+> LEARN WHY YOU LIKE WHAT YOU LIKE
+> Quizzes on the wines you drink and short reads written for you, about the grapes and regions behind your
+> favourites and the ones worth trying next. No wine vocabulary assumed: every term comes with what it means
+> and how to notice it in the glass. Mastery maps what you know, from wine types to your own palate.
 >
-> EVERY BOTTLE, REMEMBERED
-> My Wines keeps what you drank, what you paid, where you had it and what you thought.
+> REMEMBER EVERYTHING YOU'VE TRIED
+> My Wines keeps every bottle with your rating, what you paid, where you had it and what you thought.
+>
+> HERE TO TEACH, NOT TO SELL
+> Vinterest doesn't sell wine. Shop links never change a match or the order of a list.
 >
 > VINTEREST PRO
 > Free includes 10 label scans and 2 shelf scans a month and five grapes and regions to study. Pro adds
-> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region you meet, and the full Mastery map.
-> Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing
-> automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your
-> Apple ID settings.
+> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region
+> you meet, and the full Mastery map. Pro is £4.99 a month or £34.99 a year (prices vary by country),
+> charged to your Apple ID and renewing automatically unless cancelled at least 24 hours before the end of
+> the period. Manage or cancel in your Apple ID settings.
 >
 > Terms: https://vinterest.app/terms/
 > Privacy: https://vinterest.app/privacy/
