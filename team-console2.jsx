@@ -696,7 +696,8 @@ function _C2PlanDraft({plan,onPush,onDiscard,bump}){ const T=useTheme(), acc=_c2
 /* Every bespoke training track at once: who it's for, what it covers, how far along it is. A row opens that person. */
 function _C2Tracks({close,pick}){ const T=useTheme(), acc=_c2Acc(T), plans=TeamPlans.all();
   const covers=p=>{ const n={}; p.parts.forEach(x=>x.qs.forEach(q=>{ const c=_c2Counts(q)||'Extra practice'; n[c]=(n[c]||0)+1; })); return Object.entries(n).sort((a,b)=>b[1]-a[1]); };
-  return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)'}}/>
+  // Drawn from inside the page, which scrolls: fixed to the screen, or it would centre on the page's whole height.
+  return <div style={{position:'fixed',inset:0,zIndex:60}}><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)'}}/>
     <div data-testid="c2-tracks" role="dialog" aria-label="Bespoke training" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(760px, 94%)',maxHeight:'88%',overflowY:'auto',background:'#0E0E10',border:`1px solid ${_alpha(acc,0.34)}`,borderRadius:20,padding:'22px 26px 24px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:14}}><div><div style={{fontSize:20,fontWeight:500,color:T.ink,fontFamily:C.P}}>Bespoke training</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>{plans.length?`${plans.filter(p=>p.status==='pushed'&&!TeamPlans.progress(p).finished).length} running · ${plans.filter(p=>p.status==='pushed'&&TeamPlans.progress(p).finished).length} finished · ${plans.filter(p=>p.status==='draft').length} waiting for you to push`:'Plans you have Vinny write for one person'}</div></div>
         <div role="button" aria-label="Close" data-testid="c2-tracks-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:'1px solid rgba(255,255,255,0.16)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,color:T.ink,flexShrink:0}}>×</div></div>
@@ -712,7 +713,7 @@ function _C2Tracks({close,pick}){ const T=useTheme(), acc=_c2Acc(T), plans=TeamP
             <div style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:10}}>{draft?`Read it and push it to ${f} →`:`See ${f} →`}</div>
           </div></div>; })
       :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.55,marginTop:16}}>No bespoke training yet. Pick someone on the Team page and ask Vinny for a plan in your own words; it appears here once written, and its progress once pushed.</div>}
-    </div></>; }
+    </div></div>; }
 function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc=_c2Acc(T), [,bump]=React.useReducer(x=>x+1,0), [pushed,setPushed]=React.useState({});
   const rows=TeamReport.teamRows(), o=TeamReport.overview(), tw=TeamSales.has()?TeamReport.trainingWorth(28,1):null, f=x=>x.person.name.split(' ')[0];
   const [sel,setSel]=React.useState(()=>{ const want=_c2TeamPick; _c2TeamPick=null; return want&&rows.some(y=>y.person.id===want)?want:(rows.find(x=>x.r.state!=='ready')||rows[0]||{person:{}}).person.id; }), x=rows.find(y=>y.person.id===sel)||rows[0];

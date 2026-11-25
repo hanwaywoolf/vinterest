@@ -2802,7 +2802,10 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   for (const t of ['Glasses', 'Bottles', 'Pairings', 'Menu', 'Next step']) await expect(page.getByTestId('c2-training-people')).toContainText(t);
   await expect(page.getByTestId('c2-training-spread').getByTestId('c2-spread')).toHaveCount(4);
   await page.getByTestId('c2-training-push').first().click(); await expect(page.getByTestId('c2-training-push').first()).toContainText('Pushed');
-  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible(); await page.getByTestId('c2-tracks-close').click();
+  // The tracks dialog is drawn from inside a page that scrolls: it's centred on the screen, not on the page's height.
+  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible();
+  expect(await page.getByTestId('c2-tracks').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && Math.abs((r.top + r.bottom) / 2 - innerHeight / 2) < 4; })).toBe(true);
+  await page.getByTestId('c2-tracks-close').click();
   await expect(page.getByTestId('c2-training')).not.toContainText(/know(s|n)? it|known by|the floor|overdue/i);
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
   await page.getByTestId('console-nav-menu').click();
