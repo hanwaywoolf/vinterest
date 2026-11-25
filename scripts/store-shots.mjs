@@ -217,6 +217,9 @@ p{text-wrap:balance;font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,25
 const CREATIVE = [
   { id: 'header', w: 3840, h: 1646, safe: { w: 1646, h: 661 }, type: 'png', scale: 0.66 },
   { id: 'search', w: 3840, h: 2560, safe: { w: 2168, h: 1030 }, type: 'jpeg', scale: 0.84 },
+  // The Facebook page's cover: shown 820 x 312 on a computer and 640 x 360 on a phone, so at twice that size
+  // only the centre 1280 x 624 shows on both; the whole banner is scaled to fit inside it.
+  { id: 'facebook-cover', w: 1640, h: 720, safe: { w: 1280, h: 624 }, type: 'png', scale: 0.37, origin: '50% 50%' },
 ];
 async function creative(shots) {
   const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');
@@ -230,7 +233,7 @@ async function creative(shots) {
     const html = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/fonts/fonts.css"><style>
 html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff;background:#0d0d0f}
 .stage{position:absolute;inset:0;background:radial-gradient(ellipse 40% 75% at 28% 30%,#8B1A2Fbb,transparent 70%),radial-gradient(ellipse 40% 65% at 68% 62%,#8B1A2F66,transparent 70%),#0d0d0f}
-.art{position:absolute;left:0;top:${(H - AH) / 2}px;width:${AW}px;height:${AH}px;transform:scale(${c.scale});transform-origin:50% 60%;
+.art{position:absolute;left:${(W - AW) / 2}px;top:${(H - AH) / 2}px;width:${AW}px;height:${AH}px;transform:scale(${c.scale});transform-origin:${c.origin || '50% 60%'};
   -webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 98%);mask-image:linear-gradient(to bottom,#000 78%,transparent 98%)}
 .copy{position:absolute;left:${Math.round(AW * 0.075)}px;top:0;bottom:0;width:${Math.round(AW * 0.40)}px;display:flex;flex-direction:column;justify-content:center}
 .logo{height:${Math.round(48 * u)}px;width:auto;align-self:flex-start;margin-bottom:${Math.round(56 * u)}px;filter:brightness(0) invert(1)}
