@@ -21,7 +21,7 @@ try {
     h1{font-size:84px;font-weight:800;letter-spacing:-.035em;line-height:1.04;position:relative;max-width:980px}
     h1 i{font-family:'Instrument Serif',serif;font-weight:400;font-size:1.08em;letter-spacing:-.01em}
     p{font-size:28px;color:rgba(255,255,255,.62);position:relative}
-  </style><div class="a"></div><div class="b"></div><img src="logo.png"><h1>Know if a wine is for you <i>before</i> you buy it.</h1><p>Scan a label. Get a match built from your own taste.</p>`);
+  </style><div class="a"></div><div class="b"></div><img src="logo.png"><h1>The wine app built<br><i>just for you</i>.</h1><p>Scan a label. Get a match from your own taste, not the crowd's.</p>`);
   await page.goto(`http://localhost:${PORT}/og-card.html`);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(300);
