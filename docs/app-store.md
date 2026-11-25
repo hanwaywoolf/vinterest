@@ -6,8 +6,9 @@ both together.
 
 ## App Information (General)
 
-- Name: Vinterest: Wine Scanner
-- Subtitle (30 characters): Wine built just for your taste
+- Name (30 characters, the store page's header and search result): Vinterest: Wine Built for You
+- Subtitle (30 characters, under the name in search): Label scanner matched to you
+- Google Play: the same app name; short description (80): Wine scanner matched to your taste. Scan a label, see if you'll love it.
 - Category: Food & Drink. Secondary: Education.
 - Content rights: Yes, it contains, shows or accesses third-party content, and Yes, we have the rights:
   the Shop tab shows a partner shop's bottle photo and prices from its product feed (Awin's terms) and
@@ -116,7 +117,7 @@ Description:
 
 Keywords (100, no spaces, none already in the name):
 
-> sommelier,label,scan,rioja,tasting,vintage,cellar,pairing,grape,quiz,red,white,list,restaurant,learn
+> sommelier,scan,rioja,tasting,vintage,cellar,pairing,grape,quiz,red,white,list,restaurant,learn,taste
 
 - Support URL: https://vinterest.app/
 - Marketing URL: https://vinterest.app/
