@@ -394,16 +394,18 @@ test.describe('short desktop window', () => {
 test.describe('phone', () => {
   test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
 
-  test('nothing spills sideways, the phone is nearly as wide as the screen, and its caption floats once the phone is on screen', async ({ page }) => {
+  test('nothing spills sideways, the phone and its caption fit on the screen together, and the caption floats once the phone is on screen', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of FITS) {
       const b = await page.evaluate((id) => {
         const r = (q) => document.querySelector(q).getBoundingClientRect();
-        return { wide: document.documentElement.scrollWidth <= window.innerWidth + 1, vw: window.innerWidth, sec: r(`#${id}`), h2: r(`#${id} h2`), phone: r(`#${id} .phone`), steps: r(`#${id} .steps`) };
+        return { wide: document.documentElement.scrollWidth <= window.innerWidth + 1, vw: window.innerWidth, vh: window.innerHeight, sec: r(`#${id}`), h2: r(`#${id} h2`), phone: r(`#${id} .phone`), steps: r(`#${id} .steps`) };
       }, id);
       expect(b.wide, id).toBe(true);
-      // A phone the page scrolls past, not the sliver that fits under a heading in one screen-height.
-      expect(b.phone.width, `${id} phone width`).toBeGreaterThan(b.vw * 0.8);
+      // The phone takes a share of the screen's height, so it and its caption are read together: under the header, the
+      // caption below it, both inside one screen. It's still a phone to look at, never a sliver.
+      expect(b.phone.height + b.steps.height + 68, `${id} phone and caption`).toBeLessThanOrEqual(b.vh);
+      expect(b.phone.width, `${id} phone width`).toBeGreaterThan(b.vw * 0.42);
       expect(b.phone.top, id).toBeGreaterThanOrEqual(b.h2.bottom - 2);
       expect(b.phone.bottom, id).toBeLessThanOrEqual(b.sec.bottom + 2);
     }
@@ -411,13 +413,18 @@ test.describe('phone', () => {
     await page.evaluate(() => document.getElementById('scan').scrollIntoView({ block: 'end', behavior: 'instant' }));
     await page.evaluate(() => window.scrollBy(0, -(document.getElementById('scan').offsetHeight - 80)));
     await expect(page.locator('#scan')).not.toHaveClass(/capon/);
-    await page.evaluate(() => document.querySelector('#scan .stage').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    // The phone just under the header, as a reader would stop on it.
+    await page.evaluate(() => window.scrollTo({ top: document.querySelector('#scan .stage').getBoundingClientRect().top + window.scrollY - 72, behavior: 'instant' }));
     await expect(page.locator('#scan')).toHaveClass(/capon/);
     await expect(page.locator('#scan .steps li.on h3')).toBeVisible();
     await page.waitForTimeout(500); // the card settles into place
     const cap = await page.evaluate(() => { const r = document.querySelector('#scan .steps').getBoundingClientRect(); return { bottom: r.bottom, vh: window.innerHeight }; });
     expect(cap.bottom).toBeLessThanOrEqual(cap.vh);
-    expect(cap.bottom).toBeGreaterThan(cap.vh - 40);
+    expect(cap.bottom).toBeGreaterThan(cap.vh - 60);
+    // And the phone above it is whole, clear of the header.
+    const ph = await page.evaluate(() => { const r = document.querySelector('#scan .phone').getBoundingClientRect(), c = document.querySelector('#scan .steps').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, cap: c.top }; });
+    expect(ph.top).toBeGreaterThanOrEqual(68);
+    expect(ph.bottom).toBeLessThanOrEqual(ph.cap + 1);
   });
 });
 

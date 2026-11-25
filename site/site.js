@@ -175,6 +175,8 @@
       var list = f.el.querySelector('.steps');
       if (!list) return;
       list.style.minHeight = '';
+      // On a phone the captions share one cell (as tall as the longest) and float at the foot of the screen: the stage leaves that much room.
+      if (window.innerWidth <= 900 && !f.el.hasAttribute('data-carousel')) f.el.style.setProperty('--cap', Math.ceil(list.getBoundingClientRect().height) + 'px'); else f.el.style.removeProperty('--cap');
       if (window.innerWidth <= 900 || !f.steps.length || !list || f.el.hasAttribute('data-carousel')) return;
       list.classList.add('measure');
       var lit = f.steps.map(function (li) { return li.classList.contains('on'); }), tallest = 0;
@@ -186,6 +188,7 @@
       list.classList.remove('measure');
       list.style.minHeight = Math.ceil(tallest) + 'px';
     });
+    sizePhones();
   }
   var reserveTimer;
   window.addEventListener('resize', function () { clearTimeout(reserveTimer); reserveTimer = setTimeout(reserveSteps, 120); });

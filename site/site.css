@@ -239,12 +239,15 @@ footer a:hover { color: #fff; }
      screen-height), so its section is taller than the screen and the page scrolls past it. Its height
      is still definite, from the width: the phone is sized from its stage. The lit caption floats at
      the foot of the screen while the phone is in view, then comes to rest under it. */
-  .hero .stage { height: calc(min(100vw - 2 * var(--gutter), 360px) * 2.1073 + 64px); }
+  .hero .stage { height: min(calc(min(100vw - 2 * var(--gutter), 360px) * 2.1073 + 64px), max(72svh, 380px)); }
   .feature { height: auto; }
   .pin { display: flex; flex-direction: column; height: auto; gap: 10px; padding: 84px var(--gutter) 20px; }
   .feature, .beta { scroll-margin-top: 0; }
   .pin .copy, .feature.flip .copy { display: contents; }
-  .pin .stage, .feature.flip .stage { order: 2; flex: none; height: calc(min(100vw - 2 * var(--gutter), 400px) * 2.1073 + 30px); }
+  /* The phone takes a share of the screen's height, never all of it: under the header, with room left
+     at the foot for the caption that floats there, so the demo and its words are read together.
+     (--cap is the caption block's height, measured by site.js.) */
+  .pin .stage, .feature.flip .stage { order: 2; flex: none; height: min(calc(min(100vw - 2 * var(--gutter), 400px) * 2.1073 + 30px), max(calc(100svh - 68px - var(--cap, 150px) - 40px), 340px)); }
   .arrow { display: none; }
   .phone-row { gap: 0; }
   .pin .steps { order: 3; position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; margin-top: 4px; padding: 14px 16px; border-radius: 18px;
