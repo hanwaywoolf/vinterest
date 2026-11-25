@@ -238,8 +238,8 @@ ${phone('dna', Math.round(W * 0.5), Math.round(190 * u), -6, 1)}${phone('vinny',
   await page.goto(`http://localhost:${PORT}/_store-shot.html`);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete));
-  const file = path.join(OUT, `banner-${W}x${H}.jpg`);
-  await page.screenshot({ path: file, type: 'jpeg', quality: 92 });
+  const file = path.join(OUT, `banner-${W}x${H}.png`);
+  await page.screenshot({ path: file, type: 'png' });
   console.log('Saved', path.relative(ROOT, file));
   await context.close();
 }
