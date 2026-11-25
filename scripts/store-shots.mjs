@@ -208,12 +208,49 @@ p{text-wrap:balance;font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,25
   await context.close();
 }
 
+// The header picture in the store page's own look (Apple's product page header, 3840 x 1646 PNG): the logo, the headline and
+// three phones, from the iPhone's own screens. STORE_BANNER=WxH sets its size in pixels.
+async function banner(shots) {
+  const [W, H] = (process.env.STORE_BANNER || '3840x1646').split('x').map(Number);
+  const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  const img = (id) => 'data:image/png;base64,' + shots[id].toString('base64');
+  const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');
+  const u = H / 1000, pw = Math.round(400 * u), ph = Math.round(pw * 852 / 393);
+  const phone = (id, x, y, rot, z) => `<div class="ph" style="left:${x}px;top:${y}px;transform:rotate(${rot}deg);z-index:${z}"><img src="${img(id)}"></div>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/fonts/fonts.css"><style>
+html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff}
+.stage{position:absolute;inset:0;background:radial-gradient(ellipse 55% 90% at 12% 10%,#8B1A2Fbb,transparent 70%),radial-gradient(ellipse 50% 70% at 78% 60%,#8B1A2F66,transparent 70%),#0d0d0f}
+.copy{position:absolute;left:${Math.round(W * 0.075)}px;top:0;bottom:0;width:${Math.round(W * 0.40)}px;display:flex;flex-direction:column;justify-content:center}
+.logo{height:${Math.round(48 * u)}px;width:auto;align-self:flex-start;margin-bottom:${Math.round(56 * u)}px;filter:brightness(0) invert(1)}
+.kick{font-size:${Math.round(24 * u)}px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#F07C93;margin:0 0 ${Math.round(18 * u)}px}
+h1{font-size:${Math.round(104 * u)}px;line-height:1.02;font-weight:800;letter-spacing:-0.03em;margin:0 0 ${Math.round(34 * u)}px}
+h1 b{color:#F07C93;font-weight:800}
+p{font-size:${Math.round(38 * u)}px;line-height:1.35;color:rgba(255,255,255,.76);margin:0}
+.ph{position:absolute;width:${pw}px;height:${ph}px;border-radius:${Math.round(52 * u)}px;overflow:hidden;border:${Math.max(1, Math.round(2 * u))}px solid rgba(255,255,255,.18);
+  box-shadow:0 ${Math.round(40 * u)}px ${Math.round(100 * u)}px rgba(0,0,0,.75),0 0 ${Math.round(80 * u)}px rgba(224,90,116,.2)}
+.ph img{display:block;width:100%;height:100%}
+</style></head><body><div class="stage"></div>
+<div class="copy"><img class="logo" src="${logo}"><div class="kick">Your taste. Nobody else's.</div><h1>The wine app built just for <b>you</b>.</h1><p>Scan any label and know if you'll love it, from your own ratings.</p></div>
+${phone('dna', Math.round(W * 0.5), Math.round(190 * u), -6, 1)}${phone('vinny', Math.round(W * 0.5 + 2 * pw * 0.8), Math.round(190 * u), 6, 1)}${phone('match', Math.round(W * 0.5 + pw * 0.8), Math.round(80 * u), 0, 2)}
+</body></html>`;
+  fs.writeFileSync(path.join(ROOT, 'dist/_store-shot.html'), html);
+  await page.goto(`http://localhost:${PORT}/_store-shot.html`);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => [...document.images].every((i) => i.complete));
+  const file = path.join(OUT, `header-${W}x${H}.png`);
+  await page.screenshot({ path: file, type: 'png' });
+  console.log('Saved', path.relative(ROOT, file));
+  await context.close();
+}
+
+
 // Apple's creative assets (App Store Connect → App Information): the product page header (21:9, 3840 x 1646,
 // PNG, only the centre 1646 x 661 safe on every device) and the search result picture (3:2, 3840 x 2560, the
 // centre 2168 x 1030 safe). The words sit inside the safe area; the phones are the art around it, cropped on
 // some devices. Made from the iPhone's own screens; neither has transparency.
 const CREATIVE = [
-  { id: 'header', w: 3840, h: 1646, safe: { w: 1646, h: 661 }, type: 'png' },
+  { id: 'header-centred', w: 3840, h: 1646, safe: { w: 1646, h: 661 }, type: 'png' },
   { id: 'search', w: 3840, h: 2560, safe: { w: 2168, h: 1030 }, type: 'jpeg' },
 ];
 async function creative(shots) {
@@ -226,7 +263,7 @@ async function creative(shots) {
     const phone = (id, cx, top, ph, rot, z, dim) => { const pw = Math.round(ph * 393 / 852);
       return `<div class="ph" style="left:${Math.round(cx - pw / 2)}px;top:${Math.round(top)}px;width:${pw}px;height:${Math.round(ph)}px;border-radius:${Math.round(pw * 0.12)}px;transform:rotate(${rot}deg);z-index:${z};${dim ? 'filter:brightness(.8)' : ''}"><img src="${img(id)}"></div>`; };
     let body;
-    if (c.id === 'header') {
+    if (c.id === 'header-centred') {
       // Words centred in the safe area; a phone either side of it, and one further out each way.
       const ph = H * 0.98;
       body = `<div class="copy" style="left:${sx}px;top:${sy}px;width:${c.safe.w}px;height:${c.safe.h}px;align-items:center;text-align:center">
@@ -273,6 +310,7 @@ try {
     raw[k] = raw[k] || await capture(dev);
     if (process.env.STORE_ONLY !== 'creative') await compose(dev, raw[k]);
   }
+  await banner(raw['393x852']);
   await creative(raw['393x852']);
 } finally {
   fs.rmSync(path.join(ROOT, 'dist/_store-shot.html'), { force: true });
