@@ -417,3 +417,48 @@ html.js .thanks:not([hidden]) .tick { animation: pop .45s cubic-bezier(.2, 1.4, 
   .hero .phone-slot { transition: none; }
   .btn:hover { transform: none; } .btn.primary:hover::after { animation: none; }
 }
+
+/* ── The console's look ──
+   The Teams console's style, brought to the page: pure black, thin display type with the telling word
+   a step heavier, small tracked capitals for labels, squared buttons with a hairline, and hairline
+   panels in place of filled cards. Kept as one block over the rules above, so it can be read (or
+   taken out) on its own. Crimson stays the accent: the console's gold is a restaurant's brand colour. */
+:root { --bg: #000; --dark: #000; --white: #0B0B0C; --off: #070708; --line: rgba(255, 255, 255, .12); --mid: rgba(255, 255, 255, .56); --dim: rgba(255, 255, 255, .6); --caps: .14em; --lift: #E8536B; }
+h1, h2 { font-weight: 300; letter-spacing: -.012em; line-height: 1.12; }
+h1 { font-size: clamp(40px, 5.6vw, 70px); }
+h2 { font-size: clamp(30px, 3.8vw, 46px); }
+h3 { font-weight: 500; letter-spacing: -.005em; }
+.hero h1 strong, .feature h2 strong, #better-h strong, #beta-h strong { font-weight: 500; color: var(--lift); }
+.lead { font-weight: 300; color: rgba(255, 255, 255, .78); }
+.eyebrow, .stage-card .when { font-size: 12px; font-weight: 500; letter-spacing: var(--caps); color: var(--lift); }
+.btn, .btn.small { border-radius: 0; font-weight: 500; text-transform: uppercase; letter-spacing: var(--caps); font-size: 13px; box-shadow: none; }
+.btn { min-height: 50px; padding: 0 26px; }
+.btn.small { min-height: 40px; padding: 0 18px; font-size: 12px; }
+.btn.primary, .btn.primary:hover { box-shadow: none; }
+.btn.primary { background: var(--cr); border-color: var(--cr); }
+.btn.primary:hover { background: var(--cr-l); border-color: var(--cr-l); }
+.btn.ghost { background: transparent; border-color: rgba(255, 255, 255, .28); }
+.btn.ghost:hover { background: rgba(255, 255, 255, .06); border-color: #fff; }
+.btn:hover { transform: none; }
+.top nav a.link { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: var(--caps); }
+.stage .cap { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: var(--caps); }
+.prog button span { height: 2px; border-radius: 0; }
+.prog button { padding: 8px 0; }
+.dark .prog button i, .dark .steps li.on::before { background: var(--lift); border-color: var(--lift); }
+.steps li::before { border-radius: 0; width: 9px; height: 9px; left: -24.5px; top: 15px; border-width: 1px; }
+.steps li h3 { font-weight: 500; }
+.steps li p { font-weight: 300; }
+.why-card, .stage-card, .faq details, .form { background: transparent; border: 1px solid var(--line); border-radius: 14px; }
+.why-card h3 { font-size: 20px; font-weight: 400; }
+.why-card p, .faq details p { font-weight: 300; }
+.faq summary { font-weight: 400; }
+.field label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--mid); }
+.field input, .field select { border-radius: 0; }
+.arrow { border-radius: 0; background: transparent; border: 1px solid rgba(255, 255, 255, .28); }
+footer { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; }
+footer nav a[href^="mailto"] { text-transform: none; letter-spacing: 0; font-size: 14px; }
+@media (max-width: 900px) {
+  .pin .steps { border-radius: 0; background: rgba(0, 0, 0, .86); border-color: rgba(255, 255, 255, .16); }
+  .top nav a.link.teams { font-size: 11px; }
+}
+@media (max-width: 440px) { .top nav a.link.teams { font-size: 11px; letter-spacing: .1em; } }
