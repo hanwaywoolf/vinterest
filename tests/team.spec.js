@@ -2901,6 +2901,11 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   // Vinny's suggestions are this person's own: built from their answers and sales, each with its evidence, and no two
   // people are offered the same three.
   const sugs = await page.evaluate(() => TeamLearn.people().map(p => ({ name: p.name.split(' ')[0], s: TeamPlans.suggest(p.id) })));
+  // A suggestion about wines writes a plan about those wines: its request names them, and "the dish for each" in it
+  // never turns the plan into one about the menu. Two drafts for one person both show on their page.
+  const subj = await page.evaluate(() => TeamLearn.people().flatMap(p => TeamPlans.suggest(p.id).filter(g => ['blind', 'sellers', 'faded'].includes(g.kind)).map(g => { const s = TeamPlans.subjects(p.id, g.ask); return { kind: g.kind, wines: s.wines.length, dishes: s.dishes.length, menu: !!s.menu, named: s.wines.every(w => g.ask.includes(TeamData.nick(w))) }; })));
+  expect(subj.length).toBeGreaterThan(0);
+  for (const x of subj) { expect(x.wines, x.kind).toBeGreaterThan(0); expect(x.dishes, x.kind).toBe(0); expect(x.menu, x.kind).toBe(false); expect(x.named, x.kind).toBe(true); }
   for (const p of sugs) { expect(p.s.length, p.name).toBeGreaterThan(0); expect(p.s.length).toBeLessThanOrEqual(3); expect(new Set(p.s.map(x => x.kind)).size).toBe(p.s.length);
     for (const g of p.s) { expect(g.title + g.why + g.ask).not.toMatch(/undefined|NaN|\{\{/); expect(g.ask).toContain(p.name); expect(g.why).toMatch(/\d|everything|best sellers/); } }
   expect(new Set(sugs.map(p => p.s.map(g => g.why.replaceAll(p.name, '')).join('|'))).size).toBeGreaterThan(sugs.length / 2);
@@ -2915,6 +2920,9 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
   expect(sent).toContain(mine[0].ask);
   await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  { const n = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')); const d = TeamPlans.fromCards(a.id, 'the bottles', null); return d ? d.id : null; });
+    expect(n).toBeTruthy(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(2);
+    await page.evaluate(id => TeamPlans.discard(id), n); await page.getByTestId('console-nav-dash').click(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(1); }
   // Pushed: tracked on the console, and on Amara's phone as its own training.
   await draft.getByTestId('c2-draft-push').click();
   await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText('0 of 4 done');

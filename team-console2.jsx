@@ -724,7 +724,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
   if(!x) return <div data-testid="c2-team"><_C2Head hi="Team" sub="nobody yet" section="team"/><_C2Manage k="c2-manage-team" title="Add your team"><_CTeam open={open} refresh={refresh}/></_C2Manage></div>;
   const pick=id=>{ setSel(id); setErr(null); setAsk(''); }, pl=pushed[x.person.id]||x.plan, done=!!pushed[x.person.id], st=_tState[x.r.state], name=f(x);
   const push=()=>{ if(TeamReport.pushPlan(x.person.id)) setPushed(d=>({...d,[x.person.id]:x.plan})); };
-  const mine=TeamPlans.forPerson(x.person.id,{drafts:true}), draft=mine.find(p=>p.status==='draft'), sent=mine.filter(p=>p.status==='pushed');
+  const mine=TeamPlans.forPerson(x.person.id,{drafts:true}), drafts1=mine.filter(p=>p.status==='draft'), draft=drafts1[0], sent=mine.filter(p=>p.status==='pushed');
   const write=async text=>{ const t=String(text||ask).trim(); if(!t||busy) return; setBusy(true); setErr(null); try{ await TeamPlans.write(x.person.id,t,me&&me.id); setAsk(''); } catch(e){ setErr({msg:(e&&e.message)||'Vinny couldn\'t be reached just now.',ask:t}); } setBusy(false); bump(); };
   // Vinny's own suggestions for this person, from their answers and sales (TeamPlans.suggest): each one starts its plan with a tap.
   const sug=TeamPlans.suggest(x.person.id,3,x);
@@ -778,7 +778,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             <div style={{position:'relative'}}><textarea aria-label={`What does ${name} need?`} data-testid="c2-vinny-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); write(); } }} rows={2} placeholder={`${name} is struggling with…`} style={{width:'100%',boxSizing:'border-box',resize:'vertical',padding:'12px 44px 12px 14px',borderRadius:12,border:`1px solid ${_alpha(acc,0.4)}`,background:'rgba(0,0,0,0.35)',color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.5,outline:'none'}}/>
               <div role="button" aria-label="Ask Vinny" data-testid="c2-vinny-send" onClick={()=>write()} style={{position:'absolute',right:10,bottom:14,width:28,height:28,borderRadius:14,background:ask.trim()&&!busy?acc:'rgba(255,255,255,0.1)',color:_c2Ink(),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:14}}>➤</div></div></div>
           </_C2Card>
-          <_C2Card title={wide?`${name}'s bespoke training`:'Bespoke training'} right={wide?'tracked to completion':null} testid="c2-bespoke" summary={sent.length||draft?[sent.length&&`${sent.length} pushed`,draft&&'1 draft to read'].filter(Boolean).join(' · '):`Nothing pushed to ${name} yet`}>
+          <_C2Card title={wide?`${name}'s bespoke training`:'Bespoke training'} right={wide?'tracked to completion':null} testid="c2-bespoke" summary={sent.length||draft?[sent.length&&`${sent.length} pushed`,drafts1.length&&`${drafts1.length} draft${drafts1.length===1?'':'s'} to read`].filter(Boolean).join(' · '):`Nothing pushed to ${name} yet`}>
             {sent.length?sent.map((p,i)=>{ const pr=TeamPlans.progress(p), col=pr.finished?_C2_TONE.good:pr.done?acc:_C2_TONE.note; return <div key={p.id} data-testid="c2-bespoke-plan" style={{padding:'10px 0',borderTop:i?'1px solid rgba(255,255,255,0.07)':'none'}}>
               <div style={{display:'flex',justifyContent:'space-between',gap:10}}><div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{p.title}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{p.parts.length} part{p.parts.length===1?'':'s'} · {p.source==='vinny'?'written by Vinny':'from their own questions'} · pushed {_cAgo(p.pushedAt)}</div></div><span style={{fontSize:13,fontWeight:500,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{pr.finished?'Done ✓':`${pr.done} of ${pr.total} done`}</span></div>
               <div style={{display:'flex',gap:3,marginTop:8}}>{pr.parts.map((q,k)=><div key={k} title={p.parts[k].title} style={{flex:q.total,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${Math.round(100*q.done/q.total)}%`,background:col,borderRadius:3}}/></div>)}</div>
@@ -786,7 +786,8 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing pushed to {name} yet. A plan you push appears on {name}'s phone as its own training, apart from the daily drill, and its progress shows here.</div>}
           </_C2Card>
         </>}}>{S=>S.detail}</_C2Board>
-        {draft&&<_C2PlanDraft plan={draft} bump={bump} onPush={()=>{ TeamPlans.push(draft.id); bump(); refresh&&refresh(); }} onDiscard={()=>{ TeamPlans.discard(draft.id); bump(); }}/>}
+        {/* Every draft waiting for this person, newest first: the figure at the top counts them all, so they all show. */}
+        {drafts1.map(d=><_C2PlanDraft key={d.id} plan={d} bump={bump} onPush={()=>{ TeamPlans.push(d.id); bump(); refresh&&refresh(); }} onDiscard={()=>{ TeamPlans.discard(d.id); bump(); }}/>)}
       </div>
     </div>
     <_C2Manage k="c2-manage-team" title="Manage: add or remove people and set training depth"><_CTeam open={open} refresh={refresh} noMins/></_C2Manage>
