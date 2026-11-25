@@ -51,7 +51,7 @@ const SHOTS = [
   { id: 'learn', title: 'Learn why you like what you <b>like</b>.', sub: 'Short reads written from your own bottles.', hash: 'learn' },
   { id: 'quiz', title: 'Quizzes on the wines <b>you</b> drink.', sub: 'Five questions at a time. Learn a fact with every answer.', hash: 'quiz', quiz: true },
   { id: 'mastery', title: 'How well-rounded is your <b>knowledge</b>?', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
-  { id: 'wines', title: "Remember everything you've <b>tried</b>.", sub: 'Every bottle with your rating, what you paid and where you had it.', hash: 'mywines' },
+  { id: 'wines', title: "Every bottle you've <b>tried</b>.", sub: 'Every bottle with your rating, what you paid and where you had it.', hash: 'mywines' },
 ];
 // The app as each device shows it (CSS pixels and scale), and the finished picture (CSS pixels at 3x or 2x).
 const DEVICES = [
@@ -190,9 +190,9 @@ async function compose(dev, shots) {
 html,body{margin:0;width:${dev.out.width}px;height:${dev.out.height}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff}
 .stage{position:absolute;inset:0;background:radial-gradient(ellipse 85% 42% at 50% 2%,#8B1A2Fcc,transparent 72%),radial-gradient(ellipse 70% 40% at 50% 104%,#8B1A2F55,transparent 70%),#0d0d0f}
 .copy{position:absolute;left:0;right:0;top:0;height:${f.top}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 ${Math.round(dev.out.width * 0.08)}px}
-h1{font-size:${dev.h1}px;line-height:1.08;font-weight:800;letter-spacing:-0.025em;margin:0 0 ${Math.round(dev.h1 * 0.32)}px}
+h1{text-wrap:balance;font-size:${dev.h1}px;line-height:1.08;font-weight:800;letter-spacing:-0.025em;margin:0 0 ${Math.round(dev.h1 * 0.32)}px}
 h1 b{color:#F07C93;font-weight:800}
-p{font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;font-weight:400;max-width:${Math.round(dev.out.width * 0.8)}px}
+p{text-wrap:balance;font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;font-weight:400;max-width:${Math.round(dev.out.width * 0.8)}px}
 .shot{position:absolute;left:50%;top:${f.top}px;width:${f.width}px;height:${Math.round(f.width * ratio)}px;transform:translateX(-50%);border-radius:${f.radius}px;overflow:hidden;
   border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 70px rgba(224,90,116,.18)}
 .shot img{display:block;width:100%;height:100%}
