@@ -71,12 +71,51 @@ async function minify(file, loader) {
   return code;
 }
 
+/* The apps' store pages. APP_STORE_URL / PLAY_STORE_URL override them (set one empty to build the page as it was
+   before that app was listed: the beta form instead of the store buttons). The Worker's /get uses the same two. */
+const APP_STORE = 'https://apps.apple.com/app/id6819741453';
+const PLAY_STORE = 'https://play.google.com/store/apps/details?id=app.vinterest';
+/* A store link from the environment: an https URL or nothing (it is written into an attribute). */
+function storeUrl(v) { return /^https:\/\/[^\s"'<>]+$/.test(v || '') ? v : ''; }
+
+/* The store buttons: Apple's and Google's official badges once their files are in site/badges/ (app-store.svg from
+   Apple's marketing tools, google-play.png from Google's badge page, both unaltered), else plain buttons in the page's own style. */
+const PLAIN_IOS = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.5" y1="18.4" x2="13.5" y2="18.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span><small>Download on the</small>App Store</span>';
+const PLAIN_ANDROID = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 4.5v15l12-7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span><small>Get it on</small>Google Play</span>';
+function storeBadges() {
+  const has = (f) => fs.existsSync(path.join(SITE, 'badges', f));
+  return {
+    IOS_BADGE_CLASS: has('app-store.svg') ? 'store-badge ios' : 'btn store',
+    IOS_BADGE: has('app-store.svg') ? '<img src="/badges/app-store.svg" alt="Download on the App Store" width="162" height="54"/>' : PLAIN_IOS,
+    ANDROID_BADGE_CLASS: has('google-play.png') ? 'store-badge android' : 'btn store',
+    ANDROID_BADGE: has('google-play.png') ? '<img src="/badges/google-play.png" alt="Get it on Google Play" width="209" height="81"/>' : PLAIN_ANDROID,
+  };
+}
+
 function fill(html, vars) {
   const out = html.replace(/%%([A-Z_]+)%%/g, (m, k) => {
     if (!(k in vars)) throw new Error(`site: unknown token ${m}`);
     return vars[k];
   });
   return out;
+}
+
+/* Structured data for search engines (schema.org JSON-LD): who makes it, the site, the app, and the
+   page's own questions and answers. The FAQ is read from the page's <details> at build time, so the
+   markup can never say something the page doesn't. */
+export function structuredData(html, origin) {
+  const text = (h) => h.replace(/<[^>]+>/g, '').replace(/&rsquo;|&#39;/g, "'").replace(/&ldquo;|&rdquo;|&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const faq = [...html.matchAll(/<details><summary>([\s\S]*?)<\/summary><p>([\s\S]*?)<\/p><\/details>/g)]
+    .map(([, q, a]) => ({ '@type': 'Question', name: text(q), acceptedAnswer: { '@type': 'Answer', text: text(a) } }));
+  const desc = (html.match(/<meta name="description" content="([^"]*)"/) || [])[1] || '';
+  const graph = [
+    { '@type': 'Organization', '@id': `${origin}/#org`, name: 'Vinterest', url: `${origin}/`, logo: `${origin}/icons/icon-512.png`, email: 'hello@vinterest.app' },
+    { '@type': 'WebSite', '@id': `${origin}/#site`, name: 'Vinterest', url: `${origin}/`, publisher: { '@id': `${origin}/#org` }, inLanguage: 'en-GB' },
+    { '@type': 'MobileApplication', name: 'Vinterest', operatingSystem: 'iOS, Android', applicationCategory: 'LifestyleApplication', description: desc, publisher: { '@id': `${origin}/#org` } },
+  ];
+  if (faq.length) graph.push({ '@type': 'FAQPage', mainEntity: faq });
+  // "<" is escaped so no answer's text can close the script tag.
+  return `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c')}</script>`;
 }
 
 async function build() {
@@ -93,7 +132,11 @@ async function build() {
 
   const token = process.env.CF_ANALYTICS_TOKEN;
   const vars = {
+    JSONLD: structuredData(read('site/index.html'), origin),
     ORIGIN: origin,
+    // The apps' store pages. Empty until they're listed: the page then asks for beta sign-ups instead.
+    IOS_URL: storeUrl(process.env.APP_STORE_URL ?? APP_STORE), ANDROID_URL: storeUrl(process.env.PLAY_STORE_URL ?? PLAY_STORE),
+    ...storeBadges(),
     CSS_V: hash(css), JS_V: hash(js), DEMO_V: hash(demo),
     ANALYTICS: token
       ? `<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "${token}"}'></script>`
@@ -105,16 +148,19 @@ async function build() {
     fs.writeFileSync(path.join(OUT, dest), fill(read(`site/${page}`), vars));
   }
 
-  for (const rel of ['logo.png', 'icons', 'site/_headers', 'site/_worker.js']) {
+  for (const rel of ['logo.png', 'icons', 'site/_headers', 'site/_worker.js', 'site/video/ardanza.png']) { // the bottle in the hero's camera
     const dest = rel.startsWith('site/') ? rel.slice(5) : rel;
     fs.cpSync(path.join(ROOT, rel), path.join(OUT, dest), { recursive: true });
   }
+  // The official store badges, once they're in site/badges/.
+  if (fs.existsSync(path.join(SITE, 'badges'))) fs.cpSync(path.join(SITE, 'badges'), path.join(OUT, 'badges'), { recursive: true });
   // The share card, if one has been made (npm run site:og).
   if (fs.existsSync(path.join(SITE, 'og.png'))) fs.copyFileSync(path.join(SITE, 'og.png'), path.join(OUT, 'og.png'));
   fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    ['/', '/privacy/', '/terms/'].map((p) => `  <url><loc>${origin}${p}</loc></url>\n`).join('') + `</urlset>\n`);
+    // Only pages search engines may index: the legal pages are drafts marked noindex.
+    ['/'].map((p) => `  <url><loc>${origin}${p}</loc><lastmod>${new Date().toISOString().slice(0, 10)}</lastmod></url>\n`).join('') + `</urlset>\n`);
   buildFonts(OUT);
 
   console.log(`Built site-dist/ — demo.js ${(demo.length / 1024).toFixed(0)} KB, site.js ${(js.length / 1024).toFixed(0)} KB, site.css ${(css.length / 1024).toFixed(0)} KB${token ? ', analytics on' : ', no analytics token'}`);

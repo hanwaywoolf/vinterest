@@ -133,6 +133,16 @@ const TasteMatch = {
 
   /* One wine against the user's history. `profiles` is an optional per-type cache for callers
      scoring many wines at once (a wine list). */
+  /* Their own rating of this very bottle (the same wine and year, WineHistory.find), or 0. A
+     bottle they've rated is shown by that rating, never by the match: the match leaves the bottle
+     itself out (it's what their other wines predict), which is the right test of the model and the
+     wrong answer to "should I order it?". */
+  ratedOf(wine){ const w=wine&&WineHistory.find(wine); return (w&&w.rating>0)?w.rating:0; },
+  /* "You rated it 100 · we'd have expected about 91 from your other reds" */
+  ratedLine(match,rating){
+    const exp=match&&match.expected!=null?` · we'd have expected about ${match.expected} from your other ${match.breakdownLabel||'wines'}`:'';
+    return `You rated it ${rating}${exp}`;
+  },
   assess(wine,allWines,profiles){
     if(!wine) return null;
     const typeKey=this._typeKey(wine);

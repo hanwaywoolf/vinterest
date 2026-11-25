@@ -25,10 +25,12 @@ const Billing = {
     try{
       const r=await fetch(Platform.api('/config')); if(!r.ok) return this.config();
       const j=await r.json(), b=j&&j.billing||{}, before=this.allPro();
-      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push,iosTypedPromo:!!j.iosTypedPromo});
+      Store.setJSON(this.CONFIG_KEY,{ios:b.ios||null,android:b.android||null,allPro:typeof j.allPro==='boolean'?j.allPro:null,push:!!j.push,iosTypedPromo:!!j.iosTypedPromo,update:j.update||null});
       if(before!==this.allPro()){ try{ window.dispatchEvent(new Event('vinterest:pro')); }catch(e){} }
       // The same answer says whether push can be used (Push.available), which the Profile switch waits on.
       try{ window.dispatchEvent(new Event('vinterest:push')); }catch(e){}
+      // And whether a newer version is in the store (AppUpdate, Home's update card).
+      try{ window.dispatchEvent(new Event('vinterest:update')); }catch(e){}
     }catch(e){}
     return this.config();
   },
@@ -72,8 +74,30 @@ const Billing = {
       const o=await this.sdk().getOfferings(), cur=o&&o.current;
       const pk=(cur&&cur.availablePackages)||[]; if(!pk.length) return null;
       const NAME={MONTHLY:['Monthly','month'],ANNUAL:['Yearly','year'],WEEKLY:['Weekly','week'],TWO_MONTH:['2 months','2 months'],THREE_MONTH:['3 months','3 months'],SIX_MONTH:['6 months','6 months'],LIFETIME:['Lifetime','']};
-      return pk.map(p=>{ const n=NAME[p.packageType]||[(p.product&&p.product.title)||'Pro','']; return {pkg:p,label:n[0],per:n[1],price:(p.product&&p.product.priceString)||''}; });
+      const elig=await this._trialOk(pk);
+      return pk.map(p=>{ const n=NAME[p.packageType]||[(p.product&&p.product.title)||'Pro','']; return {pkg:p,label:n[0],per:n[1],price:(p.product&&p.product.priceString)||'',trial:this._trial(p.product,elig)}; });
     }catch(e){ return null; }
+  },
+  /* A plan's free trial in words ("7 days free"), or '' when it has none or this person has used it.
+     Android: Play hands back a free phase only to someone who can still have it. iPhone: the product
+     always carries its introductory offer, so it's said only when Apple confirms they're eligible
+     (_trialOk); "unknown" says nothing, since promising a trial they then don't get is the worse mistake. */
+  _trial(product,elig){
+    if(!product) return '';
+    const words=(n,unit)=>{ const u=String(unit||'').toLowerCase(); n=Number(n)||0; if(!n||!u) return '';
+      if(u==='week'&&n===1) return '7 days free';
+      return n+' '+u+(n===1?'':'s')+' free'; };
+    const fp=product.defaultOption&&product.defaultOption.freePhase;
+    if(fp&&fp.billingPeriod) return words(fp.billingPeriod.value,fp.billingPeriod.unit);
+    const ip=product.introPrice;
+    if(ip&&Number(ip.price)===0&&elig&&elig[product.identifier]===2) return words(ip.periodNumberOfUnits,ip.periodUnit);
+    return '';
+  },
+  async _trialOk(pk){
+    const ids=pk.map(p=>p.product&&p.product.introPrice&&p.product.identifier).filter(Boolean);
+    if(!ids.length||!this.sdk().checkTrialOrIntroductoryPriceEligibility) return {};
+    try{ const r=await this.sdk().checkTrialOrIntroductoryPriceEligibility({productIdentifiers:ids}); const o={};
+      Object.keys(r||{}).forEach(k=>{ o[k]=r[k]&&r[k].status; }); return o; }catch(e){ return {}; }
   },
   /* Copies RevenueCat's answer into the account (the Worker), then re-reads /me. */
   async sync(){

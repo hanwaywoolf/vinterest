@@ -106,7 +106,22 @@ function _typeCol(w){ return (typeof _TYPE_COLORS!=='undefined'&&_TYPE_COLORS[Wi
 
 /* The match ring: TasteMatch's percentage, or a dash when it's too early to call. Its text is
    sized to the ring in string px, so a larger text size (TextSize) doesn't spill out of it. */
-function MatchRing({match,size=96}){ const T=useTheme();
+/* rated: a bottle they've rated shows its rating in the ring (filled along ParkerScale.MIN to 100,
+   in its score band's colour) and "rated" under it, never the match (TasteMatch.ratedOf). */
+function MatchRing({match,size=96,rated=0}){ const T=useTheme();
+  if(rated>0){
+    const r=52,circ=2*Math.PI*r, col=T.tone[ParkerScale.tone(rated)], f=Math.max(0,Math.min(1,(rated-ParkerScale.MIN)/(100-ParkerScale.MIN)));
+    return <div data-testid="rated-ring" style={{position:'relative',width:size,height:size,flexShrink:0}}>
+      <svg width={size} height={size} viewBox="0 0 130 130" style={{transform:'rotate(-90deg)'}}>
+        <circle cx="65" cy="65" r={r} fill="none" stroke={T.line} strokeWidth="10"/>
+        <circle cx="65" cy="65" r={r} fill="none" stroke={col} strokeWidth="10" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ*(1-f)}/>
+      </svg>
+      <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
+        <div style={{fontSize:`${size*0.27}px`,fontWeight:800,color:col,fontFamily:C.P,lineHeight:1}}>{rated}</div>
+        <div style={{fontSize:'11px',fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.1em',textTransform:'uppercase',marginTop:2}}>rated</div>
+      </div>
+    </div>;
+  }
   const pct=match?match.pct:null, col=T.tone[match?match.tone:'neutral'];
   const r=52,circ=2*Math.PI*r;
   return <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
@@ -256,7 +271,8 @@ function ScanCardsScreen({nav,back,showPro}){
     const isNew=!WineHistory.find(wine);
     WineHistory.track(wine);
     if(isNew&&source==='list') WineHistory.setScanIntent(wine.name,wine.vintage,'checking');
-    if(source==='camera'){ ScanFlow.awardScanXP(wine); ScanFlow.unlockLearning(wine); }
+    // The grape and region open first: the "New grape" moment is written as the XP is awarded, and reads whether its quiz is open.
+    if(source==='camera'){ ScanFlow.unlockLearning(wine); ScanFlow.awardScanXP(wine); }
   },[wine,confirmed]);
 
   function applyEdit(patch){
@@ -497,18 +513,21 @@ function ScanResult({wine,match,curr,scanData,existingRating,nav,showPro,view,se
     <div style={{padding:'6px 2px 2px',...rise(0)}}>
       <WineIdentity wine={wine}/>
       <div style={{display:'flex',alignItems:'center',gap:10,marginTop:10,flexWrap:'wrap'}}>
-        {existingRating>0&&<span style={{fontSize:13,fontWeight:700,color:T.ink,background:T.greenBg,border:`1px solid ${_alpha(T.green,0.3)}`,borderRadius:20,padding:'3px 10px',fontFamily:C.P}}>You rated it {existingRating} · {ParkerScale.label(existingRating)}</span>}
         <span onClick={onEdit} style={{fontSize:13,fontWeight:600,color:T.lift(C.cr),fontFamily:C.P,cursor:'pointer'}}>Not right? Edit</span>
       </div>
     </div>
 
     <Card style={{padding:16,...rise(1)}}>
       <div style={{display:'flex',alignItems:'center',gap:14}}>
-        <MatchRing match={match} size={104}/>
+        <MatchRing match={match} size={104} rated={existingRating}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:T.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>
-          {match&&match.expected!=null
-            ?<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3}}>{existingRating>0?`We expected about ${match.expected} · you rated ${existingRating}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
+          {existingRating>0
+            ?<div style={{fontSize:20,fontWeight:800,color:T.tone[ParkerScale.tone(existingRating)],fontFamily:C.P,lineHeight:1.2}}>{ParkerScale.label(existingRating)}</div>
+            :<div style={{fontSize:20,fontWeight:800,color:match&&match.pct!=null?col:T.ink,fontFamily:C.P,lineHeight:1.2}}>{match?match.label:'—'}</div>}
+          {existingRating>0
+            ?<div data-testid="rated-line" style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{TasteMatch.ratedLine(match,existingRating)}</div>
+            :match&&match.expected!=null
+            ?<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3}}>{`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>
             :match&&match.verdict==='early'?null
             :<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{match&&match.summary}</div>}
           {match&&match.expected!=null&&match.bar!=null&&!(existingRating>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {match.breakdownLabel}</div>}
@@ -680,14 +699,16 @@ function CardFace({card,ctx}){ const T=useTheme();
     const rated=(ctx.existingRating||(WineHistory.find(wine)||{}).rating||0);
     return <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:14,textAlign:'center'}}>
       {identityRow}
-      <MatchRing match={match} size={120}/>
-      <H>{match?match.label:'—'}</H>
-      {match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{rated>0?`We expected about ${match.expected} · you rated ${rated}`:`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
+      <MatchRing match={match} size={120} rated={rated}/>
+      <H>{rated>0?ParkerScale.label(rated):match?match.label:'—'}</H>
+      {rated>0
+        ?<div data-testid="rated-line" style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8,lineHeight:1.45}}>{TasteMatch.ratedLine(match,rated)}</div>
+        :match&&match.expected!=null&&<div style={{fontSize:15,color:T.mid,fontFamily:P,marginTop:-8}}>{`Likely about ${match.expected} from you · ${match.expectedLabel}`}</div>}
       {match&&match.expected!=null&&match.bar!=null&&!(rated>0)&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>{match.pct}% sure you'd rate it {match.bar}+, your usual for {WineDNA.NOUNS[WineDNA._t(wine.type)]?.[1]||'wines'}</div>}
       {match&&match.confidence==='low'&&<div style={{fontSize:13,color:T.mid,fontFamily:P,marginTop:-8}}>Rough guess</div>}
       {priceBox}
       <div style={{width:'100%',textAlign:'left',padding:'12px 14px',borderRadius:12,background:T.soft,border:`1px solid ${T.line}`}}>
-        <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>How we got this</div>
+        <div style={{fontSize:13,fontWeight:700,color:T.mid,fontFamily:P,letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:6}}>{rated>0?'What your other wines predicted':'How we got this'}</div>
         <MatchReasons match={match} col={T.ink2} brief={!expanded} priceNote={TasteMatch.priceNote(wine,WineDNA.priceOf(wine,curr),WineHistory.getAll(),curr)}/>
         {expanded&&match&&match.breakdown&&<div style={{marginTop:4}}><MatchBreakdown match={match}/></div>}
       </div>
@@ -1031,6 +1052,7 @@ function RatingPanel({wine,existingRating,nav,showPro,curr,onRated,onSaveForLate
     if(existingRating>0){ const e=WineHistory.find(wine); WineHistory.rate(e?e.name:wine.name,e?e.vintage:wine.vintage,score); }
     else WineHistory.add(wine,score);
     try{ if(window.XPSystem&&!existingRating) XPSystem.awardAndToast([{type:'rate'}]); }catch(e){}
+    try{ ReviewAsk.afterRating(score); }catch(e){}
     try{
       const sd=Handoff.scanResult.get({});
       sd.existingRating=score;

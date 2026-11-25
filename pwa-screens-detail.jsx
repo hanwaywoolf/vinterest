@@ -195,6 +195,7 @@ function DetailMerged({wine,nav,existingRating=0,match}){ const T=useTheme(), cr
       if(existingRating>0){ WineHistory.rate(wine.name,wine.vintage,n); }
       else { WineHistory.add(wine,n); }
       if(!ratedOnce.current){ XPSystem.awardAndToast([{type:'rate'}]); ratedOnce.current=true; }
+      try{ ReviewAsk.afterRating(n); }catch(e){}
       setUserRating(n);
       setSaved(true);
       setShowRatingUI(false);
@@ -271,10 +272,12 @@ function DetailMerged({wine,nav,existingRating=0,match}){ const T=useTheme(), cr
   /* Match sentiment, from TasteMatch's verdict */
   const matchConfig=React.useMemo(()=>{
     const v=match?match.verdict:'unknown';
+    // Rated: the match is what their other wines would have predicted, so it's labelled as that.
+    if(existingRating>0){ const blue=T.lift('#2563A8'); return {descriptor:'from your other wines',title:'What we\'d have predicted',bg:T.tint('#2563A8','#EEF6FF'),border:`1px solid ${_alpha(blue,0.25)}`,col:blue}; }
     if(v==='hit'||v==='good') return {descriptor:match.label,title:'Why it should suit you',bg:T.greenBg,border:`1px solid ${T.green}25`,col:T.green};
     if(v==='miss') return {descriptor:match.label,title:'Why it might not be for you',bg:T.crSoft,border:`1px solid ${_alpha(cr,0.4)}`,col:cr};
     const blue=T.lift('#2563A8'); return {descriptor:match?match.label:null,title:'What to expect',bg:T.tint('#2563A8','#EEF6FF'),border:`1px solid ${_alpha(blue,0.25)}`,col:blue};
-  },[match,T]);
+  },[match,T,existingRating]);
   function pairingIcon(text){
     const t=(text||'').toLowerCase();
     if(/lamb|mutton|sheep/.test(t)) return 'food-lamb';

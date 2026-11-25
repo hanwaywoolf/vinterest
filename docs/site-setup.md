@@ -5,6 +5,12 @@ the app (`npm run build` -> `dist/`): its own Cloudflare Pages project, its own 
 
 ## Cloudflare Pages project
 
+The project is `vinterest-site`. Every push of a branch builds a preview of the site, and Cloudflare posts
+its address on the branch's pull request ("Deploying vinterest-site", Preview URL:
+`https://<deploy id>.vinterest-site.pages.dev`). The address changes with each push, so read it from the pull
+request (or its `Cloudflare Pages: vinterest-site` check) rather than building it from the branch name.
+vinterest.app changes only when something is merged to `main`.
+
 | Setting | Value |
 | --- | --- |
 | Framework preset | None |
@@ -24,11 +30,33 @@ Runtime variables (Settings -> Variables and secrets), for the beta sign-up:
 
 ## Database
 
-Run `supabase/migrations/0004_beta_signups.sql` once in the Supabase SQL editor (same steps as the
+Run `supabase/migrations/0004_beta_signups.sql`, `0010_beta_platform.sql` (the iPhone/Android answer) and `0011_beta_source.sql` (where each sign-up came from) once in the Supabase SQL editor (same steps as the
 earlier migrations in `supabase/README.md`). The table has row-level security on and no policy for
 anyone, so only the Worker (secret key) can read or write it. `npm run test:db` proves that.
 
 Read the list in the Supabase dashboard (Table editor -> `beta_signups`), or export it as CSV.
+
+## Where sign-ups come from
+
+Each sign-up keeps the site that linked to the page (`referrer`, its host only, e.g. `google.com`;
+empty when someone typed the address or the browser withheld it) and the UTM tags on the link they
+followed. Tag every link you share so it can be counted, lower case, one word per value:
+
+```
+https://vinterest.app/?utm_source=instagram&utm_medium=social&utm_campaign=beta
+https://vinterest.app/?utm_source=newsletter&utm_medium=email&utm_campaign=launch
+```
+
+`utm_source` is where (instagram, reddit, a friend's name), `utm_medium` the kind (social, email,
+ad, qr) and `utm_campaign` what for (beta, launch). A QR code on a printed card can carry
+`utm_medium=qr`. Count sign-ups by channel in the SQL editor:
+
+```sql
+select coalesce(utm_source, referrer, 'direct') as came_from, count(*)
+from beta_signups group by 1 order by 2 desc;
+```
+
+The notification email says the same in its "Came from" line.
 
 ## /test: the web app moves
 
@@ -62,7 +90,7 @@ placeholder contact address.
 
 ## Confirmation emails (Resend)
 
-A new sign-up gets a short "You're on the list" email, sent by the Worker through Resend. It is optional:
+A new sign-up gets a short "Thank you for registering for the Vinterest beta" email (download links and updates on release and acceptance to follow), sent by the Worker through Resend. It is optional:
 without `RESEND_API_KEY` nothing is sent and the form works as before. A failed email never fails the
 sign-up, and someone who signs up twice is emailed once.
 
@@ -77,6 +105,11 @@ sign-up, and someone who signs up twice is emailed once.
 5. Redeploy (Deployments -> Retry deployment), then sign up with your own address to check it arrives.
 
 Replies go to `hello@vinterest.app`, so that mailbox has to exist (Cloudflare Email Routing can forward it).
+
+To be told about every new sign-up, add `BETA_NOTIFY_TO` (your own address) beside `RESEND_API_KEY`.
+Each new sign-up then also sends you "Beta sign-up: <name> (<phone>, <country>)" with the name, email,
+country, iPhone or Android and the time; replying to it replies to the person. A repeat sign-up sends
+nothing, like the confirmation.
 Legal pages mention that email is used only for the beta; keep the email's wording in step with them.
 
 
@@ -154,3 +187,19 @@ Once:
 
 Without the Supabase pair the form answers "Pilot requests aren't open just yet" with the email
 address, and nothing else breaks.
+
+## When the apps are in the stores
+
+The page asks for beta sign-ups until it is told where the apps are. Set these on the site's Cloudflare
+Pages project (Settings → Environment variables, Production) and redeploy:
+
+- `APP_STORE_URL`: the App Store page, e.g. `https://apps.apple.com/app/id…`
+- `PLAY_STORE_URL`: the Google Play page, e.g. `https://play.google.com/store/apps/details?id=app.vinterest`
+
+With either set, the sign-up form gives way to the store buttons, every main button says to download and
+goes to the visitor's own store on a phone (to both buttons on a computer), and the headline and small
+print change with it. With one set, only that store's button shows. Remove both to go back to sign-ups.
+
+The two store buttons are plain buttons. Apple and Google each require their own badge artwork on a
+marketing page: download them from Apple's Marketing Resources and Google Play's badge generator and
+replace the buttons in `site/index.html` (`#store-ios`, `#store-android`) before launch.

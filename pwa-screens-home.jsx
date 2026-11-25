@@ -196,6 +196,24 @@ function BackupOffer({nav,count}){ const T=useTheme();
   </Card>;
 }
 
+/* "A new version is out" (AppUpdate in pwa-update.js): the phone apps only, when the Worker's
+   /config names a newer version in this store. "Not now" hides it until the next one; below the
+   oldest supported version it stays, and says why. */
+function UpdateOffer(){ const T=useTheme();
+  const [u,setU]=React.useState(()=>AppUpdate.offer());
+  React.useEffect(()=>{ const h=()=>setU(AppUpdate.offer()); window.addEventListener('vinterest:update',h); return ()=>window.removeEventListener('vinterest:update',h); },[]);
+  if(!u) return null;
+  const store=Platform.name()==='ios'?'the App Store':'Google Play';
+  return <div data-testid="update-offer"><Card style={{padding:14,display:'flex',flexDirection:'column',gap:8,border:`1px solid ${T.line}`}}>
+    <div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P}}>{u.required?'Time to update Vinterest':`Vinterest ${u.latest} is out`}</div>
+    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>{u.required?`This version is too old to keep working properly. Update in ${store}; your wines and progress stay as they are.`:(u.note||`Update in ${store} for the newest features and fixes. Your wines and progress stay as they are.`)}</div>
+    <div style={{display:'flex',gap:14,alignItems:'center',marginTop:2}}>
+      <div role="button" data-testid="update-open" onClick={()=>AppUpdate.open(u.url)} style={{padding:'10px 16px',borderRadius:12,background:C.cr,color:'#fff',fontSize:15,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>Update</div>
+      {!u.required&&<span role="button" data-testid="update-dismiss" onClick={()=>{ AppUpdate.dismiss(u.latest); setU(null); }} style={{fontSize:14,color:T.mid,fontFamily:C.P,cursor:'pointer'}}>Not now</span>}
+    </div>
+  </Card></div>;
+}
+
 /* Home is "what next": Waiting on you, one Up next action and two more (LearnNext.home), the
    pieces written for them, their recent scans, their WineDNA at a glance with an Explore Next
    pick, and their knowledge (level, XP and the Mastery teaser). */
@@ -268,6 +286,7 @@ function HomeScreen({nav, showPro, isTablet}){
 
   /* Home in two halves: what to do next, and what they've done. Side by side on an iPad. */
   const doNext=<>
+        <UpdateOffer/>
         <WaitingOnYou nav={nav}/>
         {Sync.offerBackup(allWines)&&<BackupOffer nav={nav} count={allWines.length}/>}
 
