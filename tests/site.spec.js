@@ -220,7 +220,11 @@ test.describe('desktop', () => {
     await show(page, 'scan');   // a demo only plays while its section is on screen, and the click may have scrolled the page
     await expect(phone).toContainText('How was it?', { timeout: 10000 });
     // (The dial is turned to 92 while the sheet is still arriving; on a busy machine a tap can land a point or two short, which a visitor never notices.)
-    await expect(phone.locator('[role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', /^(90|91|92)$/, { timeout: 20000 });
+    // A demo plays only while its section is on screen, and it pauses mid-turn if the page has moved: keep the section in view until the turn is done.
+    await expect(async () => {
+      await show(page, 'scan');
+      await expect(phone.locator('[role="slider"][aria-label="Rating"]')).toHaveAttribute('aria-valuenow', /^(90|91|92)$/, { timeout: 2500 });
+    }).toPass({ timeout: 25000 });
     await jump(page, 'scan', 6);
     await expect(phone).toContainText(/Rated 9[0-2]/, { timeout: 8000 });
     // The three quick answers fill in as the caption plays.
