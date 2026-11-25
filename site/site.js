@@ -192,11 +192,34 @@
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(reserveSteps);
   reserveSteps();
   var ease = function (k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; };
+  // The hero's camera: null when it's away, 'scan' while it covers the phone, 'lift' once the story has been started under it.
+  function heroCam() { var el = document.getElementById('hero-cam'); return el && !reduced && getComputedStyle(el).display !== 'none' ? el : null; }
+  function heroFeature() { for (var i = 0; i < features.length; i++) if (features[i].carousel) return features[i]; return null; }
+  function camPlay(f) {
+    var el = document.getElementById('hero-cam');
+    if (!el || reduced) return;
+    var fresh = el.cloneNode(true);
+    fresh.hidden = false; fresh.classList.remove('wait');
+    el.parentNode.replaceChild(fresh, el);
+    f.cam = 'scan';
+  }
+  function camStop(f) { var el = document.getElementById('hero-cam'); if (el) el.hidden = true; f.cam = null; }
+  function camHandOver(f) {
+    var el = document.getElementById('hero-cam');
+    if (el) el.classList.remove('wait');
+    f.cam = 'lift';
+    f.demos.forEach(function (d) { if (d.api && d.api.restart) d.api.restart(); });
+    hold(f, 0, false);
+  }
   // Stops the autoplay and shows caption i (playing what it plays, if it plays something).
   // `byReader` is a person choosing it: the front page's carousel then stops turning by itself.
   function hold(f, i, byReader) {
     var li = f.steps[i];
     if (byReader) f.auto = false;
+    if (f.carousel) {
+      if (i !== 0) { if (f.cam) camStop(f); }
+      else if (f.started && (byReader || !f.cam)) camPlay(f);
+    }
     f.wait = 0;
     f.phase = 'held';
     f.p = li.holdAt;
@@ -241,7 +264,9 @@
     features.forEach(function (f) { if (fio) fio.observe(f.el); else f.on = true; });
     var last = 0;
     var tick = function (now) {
-      var dt = Math.min(64, now - (last || now));
+      // A frame's elapsed time, capped so a tab coming back from the background doesn't leap; the cap is loose enough that
+      // a busy page (several phones drawing at once) still plays a caption's animation in about its stated time.
+      var dt = Math.min(250, now - (last || now));
       last = now;
       features.forEach(function (f) {
         if (!f.on) return;
@@ -250,11 +275,19 @@
         if (!f.started) {
           // Once its phone is drawn (or, if that's failing, after a few seconds, so the captions still turn).
           f.seen = (f.seen || 0) + dt;
-          if (f.demos.every(function (d) { return d.api; }) || f.seen > 4000) { f.started = true; hold(f, 0, false); }
+          if (f.demos.every(function (d) { return d.api; }) || f.seen > 4000) {
+            // The hero's camera is already over the phone when the page opens: it isn't played again here, and if it was
+            // waiting for the story to be drawn, it lifts now.
+            var cam = f.carousel ? heroCam() : null;
+            if (cam && !cam.hidden) f.cam = 'scan';
+            f.started = true;
+            if (cam && cam.classList.contains('wait')) camHandOver(f); else hold(f, 0, false);
+          }
           return;
         }
         if (f.auto) {
-          f.wait += dt;
+          // While the camera is scanning, the first part's reading time hasn't begun.
+          f.wait = f.cam === 'scan' ? 0 : f.wait + dt;
           var dwell = f.steps[f.step].dwell / speed;
           f.nav.segs[f.step].firstChild.firstChild.style.setProperty('--f', clamp(f.wait / dwell, 0, 1).toFixed(3));
           if (f.wait > dwell) {
@@ -267,7 +300,9 @@
           f.animT += dt;
           var k = Math.min(1, f.animT / f.animMs);
           f.p = f.animFrom + (f.animTo - f.animFrom) * (f.animLinear ? k : ease(k));
-          if (k >= 1) f.phase = 'held';
+          // The last frame always lands: apply() skips a move under 0.0002, and the end of an animation can fall inside
+          // that, leaving the demo one frame short of the part it was animating to.
+          if (k >= 1) { f.phase = 'held'; f.shown = -1; }
           apply(f);
         }
       });
@@ -276,6 +311,94 @@
     raf(tick);
   } else {
     features.forEach(function (f) { f.steps.forEach(function (li) { li.classList.add('on'); }); apply(f); });
+  }
+
+  /* ── Entrances ──
+     The hero's headline rises a word at a time (its words are wrapped here, the bold ones kept bold), and
+     anything marked .reveal arrives as it's reached. Without an observer, or with reduced motion, nothing
+     is ever hidden. */
+  var h1 = document.querySelector('.hero h1');
+  if (h1 && !reduced) {
+    var wi = 0;
+    var wrapWords = function (node) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 1) { wrapWords(n); return; }
+        if (n.nodeType !== 3) return;
+        var frag = document.createDocumentFragment();
+        n.textContent.split(/(\s+)/).forEach(function (part) {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
+          var w = document.createElement('span');
+          w.className = 'w'; w.style.setProperty('--i', wi++); w.textContent = part;
+          frag.appendChild(w);
+        });
+        node.replaceChild(frag, n);
+      });
+    };
+    wrapWords(h1);
+  }
+  var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+  if (!reduced && 'IntersectionObserver' in window) {
+    var rio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    reveals.forEach(function (el) { rio.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add('in'); });
+  }
+  /* The hero's first part is the scan itself: the camera (drawn in the page, see .hero-cam) over the phone, then the
+     story of what it found. The camera's own timeline is CSS; just before it lifts away (the camCue animation) the story
+     underneath is started from its first scene, while the camera still covers it, so what the fade uncovers is the label
+     scene already in place. Choosing the first part again, or the carousel coming back round to it, plays the scan again
+     (camPlay swaps the camera for a fresh copy, which restarts its timeline); choosing another part puts it away. */
+  document.addEventListener('animationend', function (e) {
+    if (!e.target || e.target.id !== 'hero-cam') return;
+    var f = heroFeature();
+    if (e.animationName === 'camCue') {
+      // Not drawn yet (a slow connection): the camera waits, covering the phone, and lifts once the story is there.
+      if (!f || !f.started) { e.target.classList.add('wait'); return; }
+      camHandOver(f);
+    } else if (e.animationName === 'camOut') { e.target.hidden = true; if (f) f.cam = null; }
+  });
+  /* On a phone a section's caption floats at the foot of the screen; it shows once the section's phone is on
+     screen (before that it would sit over the section's own heading). Without an observer it always shows. */
+  var capStages = Array.prototype.slice.call(document.querySelectorAll('.feature .stage'));
+  if ('IntersectionObserver' in window) {
+    var cio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { e.target.closest('.feature').classList.toggle('capon', e.isIntersecting); });
+    }, { rootMargin: '0px 0px -35% 0px' });
+    capStages.forEach(function (st) { cio.observe(st); });
+  } else capStages.forEach(function (st) { st.closest('.feature').classList.add('capon'); });
+  /* The hero's phone leans a few degrees towards a mouse (never a finger, which is scrolling). */
+  var heroStage = document.querySelector('.hero .stage'), heroSlot = heroStage && heroStage.querySelector('.phone-slot');
+  if (heroSlot && !reduced && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    var hero = document.querySelector('.hero');
+    hero.addEventListener('pointermove', function (e) {
+      var r = hero.getBoundingClientRect();
+      heroSlot.style.setProperty('--tx', (((e.clientX - r.left) / r.width - 0.5) * 9).toFixed(2));
+      heroSlot.style.setProperty('--ty', ((0.5 - (e.clientY - r.top) / r.height) * 6).toFixed(2));
+    });
+    hero.addEventListener('pointerleave', function () { heroSlot.style.setProperty('--tx', 0); heroSlot.style.setProperty('--ty', 0); });
+  }
+
+  /* ── The stores ──
+     Once the apps are listed (the build fills data-ios-url / data-android-url from APP_STORE_URL and
+     PLAY_STORE_URL), the page stops asking for beta sign-ups: the form gives way to the two store
+     buttons, every main button says to download and goes to the visitor's own store (or to the
+     buttons, on a computer), and the copy marked data-live-text / data-live-html changes with it. */
+  var stores = { ios: body.getAttribute('data-ios-url') || '', android: body.getAttribute('data-android-url') || '' };
+  if (stores.ios || stores.android) {
+    var ua = navigator.userAgent || '';
+    var mine = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? stores.ios : /Android/.test(ua) ? stores.android : '';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-live-text]'), function (el) { el.textContent = el.getAttribute('data-live-text'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-live-html]'), function (el) { el.innerHTML = el.getAttribute('data-live-html'); });
+    Array.prototype.forEach.call(document.querySelectorAll('a.cta-main'), function (a) { if (mine) { a.href = mine; a.rel = 'noopener'; } });
+    var storeBox = document.getElementById('stores'), sIos = document.getElementById('store-ios'), sAnd = document.getElementById('store-android');
+    if (stores.ios) sIos.href = stores.ios; else sIos.hidden = true;
+    if (stores.android) sAnd.href = stores.android; else sAnd.hidden = true;
+    storeBox.hidden = false;
+    document.getElementById('beta-form').hidden = true;
+    body.setAttribute('data-stores', 'live');
   }
 
   /* ── Beta form ── */
@@ -288,6 +411,15 @@
     select.appendChild(o);
   });
   // A best guess from where the visit came from (the Worker reads it from Cloudflare); never blocks typing.
+  // The email is where the test invite goes: TestFlight sends it to the Apple ID, and Google Play
+  // lets in the Google account on the phone. Say which, once they've picked their phone.
+  var platformBox = document.getElementById('b-platform'), emailHint = document.getElementById('b-email-hint');
+  var HINTS = {
+    '': emailHint.textContent,
+    ios: 'Use the email of your Apple ID. TestFlight sends your invite there, so it has to be the account on your iPhone.',
+    android: 'Use the Google account email you use for Google Play on your phone. That account is the one let into the test.',
+  };
+  platformBox.addEventListener('change', function () { emailHint.textContent = HINTS[platformBox.value] || HINTS['']; });
   fetch('/api/country').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     var code = j && j.country;
     if (code && !select.value && select.querySelector('option[value="' + code + '"]')) select.value = code;
@@ -306,8 +438,18 @@
     if (!v.first_name) bad.first_name = 'Add your first name.';
     if (!v.last_name) bad.last_name = 'Add your last name.';
     if (!v.country) bad.country = 'Pick your country.';
+    if (!v.platform) bad.platform = 'Pick your phone.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)) bad.email = 'That email address doesn\'t look right.';
     return bad;
+  }
+  // Where this visit came from, for counting sign-ups by channel: the UTM tags on the link they
+  // arrived by and the site that linked here (the Worker keeps only its host). Read from this page's
+  // own address and referrer, so nothing is stored on the visitor's device.
+  function signupSource() {
+    var q = new URLSearchParams(location.search), out = {};
+    ['utm_source', 'utm_medium', 'utm_campaign'].forEach(function (k) { var v = q.get(k); if (v) out[k] = v; });
+    try { if (document.referrer) out.referrer = new URL(document.referrer).origin; } catch (e) { /* none */ }
+    return out;
   }
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
@@ -316,18 +458,21 @@
       first_name: form.elements.first_name.value.trim(),
       last_name: form.elements.last_name.value.trim(),
       country: form.elements.country.value,
+      platform: form.elements.platform.value,
       email: form.elements.email.value.trim(),
       website: form.elements.website.value,
+      source: signupSource(),
     };
     var bad = validate(v);
-    ['first_name', 'last_name', 'country', 'email'].forEach(function (k) { setErr(k, bad[k]); });
+    ['first_name', 'last_name', 'country', 'platform', 'email'].forEach(function (k) { setErr(k, bad[k]); });
     var firstBad = Object.keys(bad)[0];
     if (firstBad) { form.elements[firstBad].focus(); return; }
     go.disabled = true; go.textContent = 'Joining…';
     fetch('/api/beta', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(v) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
       .then(function (res) {
-        if (!res.ok) throw new Error(res.j.error || 'Something went wrong. Please try again in a moment.');
+        // A reply without our own words (an error page from Cloudflare, a static 405) says its status, so it can be traced.
+        if (!res.ok) throw new Error(res.j.error || 'Something went wrong (error ' + res.status + '). Please try again in a moment.');
         document.getElementById('thanks-name').textContent = v.first_name;
         form.hidden = true;
         var t = document.getElementById('beta-thanks');
