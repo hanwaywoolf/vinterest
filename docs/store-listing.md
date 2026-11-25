@@ -22,41 +22,35 @@ wine, and shop links never change a match or the order of a list.
 
     scanner,label,sommelier,tasting,rating,journal,red,white,rose,grape,region,learn,pairing,cellar,quiz
 
-**Description** (4,000 max)
+**Description** (4,000 max, 2,594 used)
 
     The wine app built just for you.
 
-    Most wine apps tell you what everyone else thinks of a bottle. Vinterest learns what you like from the wines you scan and rate, then matches, teaches and answers from your taste alone.
+    Most wine apps tell you what everyone else thinks of a bottle. Vinterest learns what you like from the wines you scan and rate, and tells you, before you open one, whether you'll enjoy it.
 
-    SCAN A LABEL, GET YOUR MATCH
-    Point your camera at any bottle. In moments you see how likely you are to enjoy it, with the reasons in plain words: the grapes, regions and styles your own ratings favor. No star averages and no critic scores. Then the bottle's story plays: who made it, when to drink it, how it will taste, and one thing to say about it at the table.
+    SCAN ANY LABEL: Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
 
-    YOUR WINEDNA
-    Every rating adds to a profile nobody else has. See the body, tannins and acidity of the wines you choose, each explained in everyday words. See which grapes, regions and price ranges lift your ratings and which hold them back. Get three simple rules for the next time you're buying.
+    A MATCH FROM YOUR OWN RATINGS: Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out from the wines you've rated. No star averages and no critic scores. It says why, in plain words: the grapes, regions and producers that lift your ratings, and the ones that hold them back.
 
-    SAY WHAT YOU WANT, WITH CONFIDENCE
-    Your sommelier script is a few sentences written from your own history, ready to read to a server or a shopkeeper. Short for a busy restaurant, longer for a wine shop.
+    YOUR WINEDNA: A profile nobody else has. The body, tannins and acidity you reach for, what you love, what to buy again, what to try next, and three simple rules for the next time you're buying.
 
-    ASK VINNY
-    A wine expert who knows what you've loved and what let you down. Ask what to order with dinner, what to try after a favorite, or what a word on a label means. The answers are written for you.
+    SAY WHAT YOU WANT, WITH CONFIDENCE: Your sommelier script is a few sentences written from your own history, ready to read to a server or a shopkeeper. Short for a busy restaurant, longer for a wine shop.
 
-    LEARN THE WINES YOU DRINK
-    Scanning a bottle opens its grape and its region. Take short quizzes on them, read articles written for you from your own bottles, and follow guides on tasting, ordering out, buying, food pairing and hosting. Explore Next suggests styles close to what you already love, so trying something new is an easy step.
+    ASK VINNY: A wine expert who knows what you've loved and what let you down. Ask anything, from what to drink with steak tonight to whether a bottle is worth the price. Vinny answers from the wines you've actually had.
 
-    REMEMBER EVERY BOTTLE
-    My Wines keeps everything you've scanned with your rating, what you paid and where you had it. Mark the ones you'd buy again.
+    LEARN THE WINES YOU DRINK: Short reads and quizzes written from your own bottles, a map of every region you've tasted, and Mastery to show how your knowledge grows. Explore Next suggests styles close to what you already love, so trying something new is an easy step. No wine vocabulary assumed: every term comes with what it means and how to notice it.
 
-    HERE TO TEACH, NOT TO SELL
-    Vinterest doesn't sell wine. Shop links are there when you want them, and they never change a match or the order of a list.
+    EVERY BOTTLE, REMEMBERED: My Wines keeps what you drank, what you paid, where you had it and what you thought.
 
-    YOURS TO KEEP
-    No account is needed. Sign in with your email if you'd like your wines backed up and on your other devices.
+    HERE TO TEACH, NOT TO SELL: Vinterest doesn't sell wine. Shop links are there when you want them, and they never change a match or the order of a list.
 
-    FREE AND PRO
-    Vinterest is free to start: 10 label scans a month, and your first 5 grapes and 5 regions to learn. Vinterest Pro removes the monthly scan limit and adds wine list scanning, your Mastery map and every grape and region you scan.
+    VINTEREST PRO: Free includes 10 label scans a month and five grapes and regions to study. Pro adds wine list scanning in restaurants, more scans, every grape and region you meet, and the full Mastery map. Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your Apple ID settings.
 
     Terms: https://vinterest.app/terms/
+
     Privacy: https://vinterest.app/privacy/
+
+    Vinterest is for people of legal drinking age. Please drink responsibly.
 
 ## Google Play
 
@@ -64,13 +58,14 @@ wine, and shop links never change a match or the order of a list.
 
     Scan a wine label and get a match from your own taste, not the crowd's.
 
-**Full description** (4,000 max): the App Store description above, as it is.
+**Full description** (4,000 max): the App Store description above, with the Pro paragraph's last two
+sentences saying "charged to your Google Play account" and "Manage or cancel in Google Play".
 
 ## Before pasting
 
-- The description is in US spelling ("favor", "favorite"), for the US listing. The UK, Canadian and
-  Australian listings want "favour" and "favourite"; nothing else changes.
+- The description avoids words that are spelled differently in the US and the UK, so one text serves
+  every English listing. The prices in the Pro paragraph are the UK's: change them per country's listing.
 - Pro's line says what the plans do today (`FREE_SCANS`, `FREE_GRAPE_CAP`, `FREE_REGION_CAP`, `PRO_ONLY`).
-  Change it here when the plans change. Pro's scans are under a fair-use cap, so it says the monthly
-  limit is removed, never "unlimited".
+  Change it here when the plans change. Pro's scans are under a fair-use cap, so it says "more scans",
+  never "unlimited".
 - Screenshots carry the same line: the first one's caption should be the subtitle.
