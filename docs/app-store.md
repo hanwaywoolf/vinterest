@@ -159,6 +159,28 @@ From 1.11.3 the app asks for a store rating with Apple's and Google's own sheet 
 three times and never within 120 days. The store decides whether the sheet shows (Apple: three times a
 year), so it can't be tested in TestFlight, where the sheet appears but can't submit.
 
+### Apple Ads on our own name
+
+Searching "vinterest" in the App Store shows Pinterest: a rare word next to a famous one is read as a typo,
+and a new app has too few installs to win its own name back. Apple Ads (App Store Connect → Apple Ads, or
+ads.apple.com; the Advanced plan, since Basic has no keywords) puts Vinterest first for that search now,
+and every install from it teaches search that the word means us.
+
+Three campaigns, App Store search results, countries UK, US and Canada, audience 18+:
+
+- **Brand** (£3 a day): exact match `vinterest`, `vinterest app`, `vinterest wine`; start the bid at
+  £0.50 a tap and raise it only if impression share is under 90%; negative keyword `pinterest`. The one
+  that matters: nobody else bids on our name, so taps are cheap.
+- **Category** (£10 a day): exact match `wine scanner`, `wine app`, `wine label scanner`, `scan wine`,
+  `wine rating app`, `wine list scanner`, `wine pairing app`; start at Apple's suggested bid and pause any
+  keyword that has spent £15 without an install.
+- **Discovery** (£5 a day): broad match on the category keywords plus search match on, every category and
+  brand keyword added as a negative (so it only finds new searches); each week, move searches that
+  installed into Category as exact match and add junk ones as negatives.
+
+No competitor names as keywords. Judge it on cost per install and, after two weeks, on how many of those
+installs rated a wine (the app's own numbers); turn Category down before Brand.
+
 ### Featuring nomination
 
 App Store Connect → Featuring → Nominations → + . Type: App Launch (or New Content once the trial is live).
