@@ -774,13 +774,14 @@ function fcmOn(env) { return !!env.FCM_SERVICE_ACCOUNT_JSON; }
 /* The newest version in each store, the oldest still supported, and where to get it, from the
    Cloudflare variables APP_LATEST (or APP_LATEST_IOS / APP_LATEST_ANDROID when the two stores are
    out of step), APP_MIN (optional), APP_UPDATE_NOTE (an optional line on what's new) and
-   APP_STORE_ID (the App Store's numeric id; iPhone gets nothing without it). Null when no latest
-   version is set, so nothing shows. */
+   APP_STORE_ID (the App Store's numeric id, which overrides APP_STORE_ID_DEFAULT, the app's own).
+   Null when no latest version is set, so nothing shows. */
+const APP_STORE_ID_DEFAULT = "6819741453"; // App Store Connect → App Information → Apple ID
 function appUpdate(env) {
   const v = (s) => (/^\d+(\.\d+){1,2}$/.test(String(s || "").trim()) ? String(s).trim() : null);
   const note = String(env.APP_UPDATE_NOTE || "").trim().slice(0, 140) || null, min = v(env.APP_MIN);
   const ios = v(env.APP_LATEST_IOS) || v(env.APP_LATEST), android = v(env.APP_LATEST_ANDROID) || v(env.APP_LATEST);
-  const storeId = /^\d{6,12}$/.test(String(env.APP_STORE_ID || "")) ? env.APP_STORE_ID : null;
+  const storeId = /^\d{6,12}$/.test(String(env.APP_STORE_ID || "")) ? env.APP_STORE_ID : APP_STORE_ID_DEFAULT;
   const out = {
     ios: ios && storeId ? { latest: ios, min, note, url: `https://apps.apple.com/app/id${storeId}` } : null,
     android: android ? { latest: android, min, note, url: "https://play.google.com/store/apps/details?id=app.vinterest" } : null,

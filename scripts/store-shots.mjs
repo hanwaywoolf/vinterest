@@ -28,18 +28,30 @@ const WINE = { name: 'Viña Real Gran Reserva', confidence: 'high', alternative:
   effervescence: null, abv: 13.5, tasting_notes: ['dried cherry', 'leather', 'vanilla'], food_pairings: ['Roast lamb', 'Manchego', 'Mushroom risotto'], price_usd: 48, description: 'A classic Gran Reserva from CVNE.' };
 const GEN = { fact: 'CVNE was founded in Haro in 1879, beside the railway that carried Rioja to Bordeaux.', fit: 'x', caution: 'x', origin: 'x', region_style: 'x', estate: 'x',
   talk: ['Gran Reserva means it rested at least five years before release, two of them in oak', 'x', 'x'], fact2: 'x' };
+// A shop shelf as the shelf reader returns it: one bottle they've rated (shown by their rating, first),
+// the rest matched from their other wines.
+const SHELF = { u: 0, wines: [
+  { n: 'Reserva', pr: 'Marqués de Riscal', t: 'red', r: 'Rioja', c: 'Spain', v: 2019, p: '16.00', g: 'Tempranillo', s: '766' },
+  { n: 'Crozes-Hermitage', pr: 'E. Guigal', t: 'red', r: 'Crozes-Hermitage', c: 'France', v: 2020, p: '19.00', g: 'Syrah', s: '776' },
+  { n: 'Viña Ardanza Reserva', pr: 'La Rioja Alta', t: 'red', r: 'Rioja', c: 'Spain', v: 2016, p: '32.00', g: 'Tempranillo', s: '766' },
+  { n: 'Bourgogne Pinot Noir', pr: 'Louis Jadot', t: 'red', r: 'Burgundy', c: 'France', v: 2021, p: '17.00', g: 'Pinot Noir', s: '366' },
+  { n: 'Gran Reserva', pr: 'Faustino I', t: 'red', r: 'Rioja', c: 'Spain', v: 2012, p: '24.00', g: 'Tempranillo', s: '756' },
+  { n: 'Côtes du Rhône Réserve', pr: 'Famille Perrin', t: 'red', r: 'Côtes du Rhône', c: 'France', v: 2021, p: '11.00', g: 'Grenache', s: '665' },
+] };
 const QUESTION = 'Steak tonight. What should I look for?';
 const ANSWER = "Go for a Malbec from Mendoza. It has the ripe dark fruit of the Riojas you rate highest, with firmer tannins to stand up to the steak. You gave the 2021 Catena Malbec an 89, so start there, or try a Ribera del Duero for Tempranillo with more grip.";
 
 // Each screenshot: its headline (the <b> word in crimson), the line under it, and how to get there.
 const SHOTS = [
-  { id: 'match', title: "Know if you'll <b>love</b> it.", sub: "Scan a label. Your match comes from your own ratings, not a critic's.", scene: 1 },
-  { id: 'dna', title: 'Your taste, in <b>words</b>.', sub: 'WineDNA shows what you reach for and what lifts your ratings.', hash: 'profile' },
-  { id: 'vinny', title: 'Ask <b>Vinny</b> anything.', sub: "Answers that know every wine you've had.", hash: 'home', vinny: true },
-  { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it.', scene: 3 },
-  { id: 'learn', title: 'Learn as you <b>sip</b>.', sub: 'Quizzes and short reads, written from your bottles.', hash: 'learn' },
-  { id: 'mastery', title: 'Watch your knowledge <b>grow</b>.', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
-  { id: 'wines', title: 'Every bottle, <b>remembered</b>.', sub: 'What you drank, what you paid and what you thought of it.', hash: 'mywines' },
+  { id: 'match', title: 'The wine app built just for <b>you</b>.', sub: "Scan a label and see if you'll love it, from your own ratings. Nobody else's.", scene: 1 },
+  { id: 'shelf', title: 'Every bottle, matched to <b>you</b>.', sub: 'Scan a whole shelf or a wine list. Your best match comes first.', hash: 'winelist', shelf: true },
+  { id: 'dna', title: 'Your WineDNA, made just for <b>you</b>.', sub: 'The grapes, regions and styles you love, and what to buy next.', hash: 'profile' },
+  { id: 'vinny', title: 'A wine expert who knows <b>you</b>.', sub: "Ask Vinny anything. He answers from the wines you've had.", hash: 'home', vinny: true },
+  { id: 'story', title: 'Every bottle has a <b>story</b>.', sub: 'The grape, the place and something to say about it at the table.', scene: 3 },
+  { id: 'learn', title: 'Learn why you like what you <b>like</b>.', sub: 'Short reads written from your own bottles.', hash: 'learn' },
+  { id: 'quiz', title: 'Quizzes on the wines <b>you</b> drink.', sub: 'Five questions at a time. Learn a fact with every answer.', hash: 'quiz', quiz: true },
+  { id: 'mastery', title: 'How well-rounded is your <b>knowledge</b>?', sub: 'Every grape and region you study, on one map.', hash: 'mastery-map' },
+  { id: 'wines', title: "Every bottle you've <b>tried</b>.", sub: 'Every bottle with your rating, what you paid and where you had it.', hash: 'mywines' },
 ];
 // The app as each device shows it (CSS pixels and scale), and the finished picture (CSS pixels at 3x or 2x).
 const DEVICES = [
@@ -59,7 +71,7 @@ async function appContext(dev) {
   const context = await browser.newContext({ viewport: { width: dev.app.width, height: dev.app.height }, deviceScaleFactor: dev.app.scale, hasTouch: true,
     locale: 'en-GB', timezoneId: 'Europe/London' });
   await context.addInitScript(({ wines }) => {
-    window.VINTEREST_REVEAL = 'real'; window.VINTEREST_DETAIL = 'all';
+    window.VINTEREST_REVEAL = 'real'; window.VINTEREST_DETAIL = 'all'; window.VINTEREST_WHATSNEW = 'off';
     if (!sessionStorage.getItem('__seeded')) {
       sessionStorage.setItem('__seeded', '1');
       const seed = { vinterest_onboarded: '1', vinterest_age_ok: '1', vinterest_region: 'uk', vinterest_currency: 'GBP', vinterest_pro: '1', vinterest_wines: JSON.stringify(wines),
@@ -120,6 +132,9 @@ async function capture(dev) {
   await page.addStyleTag({ content: QUIET });
   await study(page);
   for (const s of SHOTS.filter((x) => x.hash)) {
+    // A shelf scan's results and a Wine Basics quiz are opened the way the app opens them, with their handoff.
+    if (s.shelf) await page.evaluate((shelf) => { const r = ScanFlow.shelfWines(JSON.stringify(shelf)); Handoff.wineList.set({ demo: false, shelf: true, wines: r.wines, unread: r.unread, currency: 'GBP' }); }, SHELF);
+    if (s.quiz) await page.evaluate(() => Handoff.quiz.set({ mode: 'practice', topicId: 'red_grapes' }));
     await page.evaluate((h) => { window.location.hash = '#' + h; }, s.hash);
     await wait(1600);
     if (s.vinny) {
@@ -128,6 +143,20 @@ async function capture(dev) {
       await page.getByText(ANSWER.slice(0, 30)).first().waitFor({ timeout: 10000 }).catch(() => console.warn('no Vinny answer'));
       await page.evaluate(() => document.activeElement && document.activeElement.blur());
       await wait(2500);
+    }
+    // The quiz just after the right answer is tapped: every answer still showing, the right one lit green,
+    // the quiz slowed so the picture is taken before the answers slide away.
+    if (s.quiz) {
+      const right = await page.evaluate(() => {
+        const shown = [...document.querySelectorAll('#root *')].map((e) => e.textContent.trim());
+        const q = QuizMastery.topicPool('red_grapes').find((x) => shown.includes(x.q));
+        return q ? q.opts[q.a] : null;
+      });
+      // STORE_QUIZ=answer: the verdict and its fact instead, once the answers have gone.
+      const tap = process.env.STORE_QUIZ !== 'answer';
+      if (tap) await page.evaluate(() => { window.VINTEREST_QUIZ_SPEED = 0.1; });
+      if (right) { await page.getByText(right, { exact: true }).first().click(); await wait(tap ? 900 : 3500); }
+      else console.warn('quiz: no question found');
     }
     await page.evaluate(() => document.querySelectorAll('#root div').forEach((e) => { e.scrollTop = 0; }));
     await wait(400);
@@ -161,9 +190,9 @@ async function compose(dev, shots) {
 html,body{margin:0;width:${dev.out.width}px;height:${dev.out.height}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff}
 .stage{position:absolute;inset:0;background:radial-gradient(ellipse 85% 42% at 50% 2%,#8B1A2Fcc,transparent 72%),radial-gradient(ellipse 70% 40% at 50% 104%,#8B1A2F55,transparent 70%),#0d0d0f}
 .copy{position:absolute;left:0;right:0;top:0;height:${f.top}px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:0 ${Math.round(dev.out.width * 0.08)}px}
-h1{font-size:${dev.h1}px;line-height:1.08;font-weight:800;letter-spacing:-0.025em;margin:0 0 ${Math.round(dev.h1 * 0.32)}px}
+h1{text-wrap:balance;font-size:${dev.h1}px;line-height:1.08;font-weight:800;letter-spacing:-0.025em;margin:0 0 ${Math.round(dev.h1 * 0.32)}px}
 h1 b{color:#F07C93;font-weight:800}
-p{font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;font-weight:400;max-width:${Math.round(dev.out.width * 0.8)}px}
+p{text-wrap:balance;font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;font-weight:400;max-width:${Math.round(dev.out.width * 0.8)}px}
 .shot{position:absolute;left:50%;top:${f.top}px;width:${f.width}px;height:${Math.round(f.width * ratio)}px;transform:translateX(-50%);border-radius:${f.radius}px;overflow:hidden;
   border:1px solid rgba(255,255,255,.16);box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 70px rgba(224,90,116,.18)}
 .shot img{display:block;width:100%;height:100%}
@@ -179,13 +208,67 @@ p{font-size:${dev.sub}px;line-height:1.4;color:rgba(255,255,255,.74);margin:0;fo
   await context.close();
 }
 
+// Apple's creative assets in the store page's own look: the original banner (the logo, the kicker, the
+// headline and its line on the left; WineDNA, the match and Vinny fanned on the right), drawn at 3840 x 1646
+// and scaled down as one picture until it fits what a phone shows: an iPhone upright shows only about the
+// middle 2470 of the header's 3840, and a search result card about the middle 2168 of its 3840. The phones fade
+// out at their foot rather than stopping in mid-air. The product page header is 3840 x 1646 PNG, the search
+// result picture 3840 x 2560 JPEG. STORE_SAFE=1 outlines Apple's safe area.
+const CREATIVE = [
+  { id: 'header', w: 3840, h: 1646, safe: { w: 1646, h: 661 }, type: 'png', scale: 0.66 },
+  { id: 'search', w: 3840, h: 2560, safe: { w: 2168, h: 1030 }, type: 'jpeg', scale: 0.84 },
+  // The Facebook page's cover: shown 820 x 312 on a computer and 640 x 360 on a phone, so at twice that size
+  // only the centre 1280 x 624 shows on both; the whole banner is scaled to fit inside it.
+  { id: 'facebook-cover', w: 1640, h: 720, safe: { w: 1280, h: 624 }, type: 'png', scale: 0.37, origin: '50% 50%' },
+];
+async function creative(shots) {
+  const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');
+  const img = (id) => 'data:image/png;base64,' + shots[id].toString('base64');
+  const AW = 3840, AH = 1646, u = AH / 1000, pw = Math.round(400 * u), ph = Math.round(pw * 852 / 393);
+  const phone = (id, x, y, rot, z) => `<div class="ph" style="left:${x}px;top:${y}px;transform:rotate(${rot}deg);z-index:${z}"><img src="${img(id)}"></div>`;
+  for (const c of CREATIVE) {
+    const { w: W, h: H } = c, sx = (W - c.safe.w) / 2, sy = (H - c.safe.h) / 2;
+    const context = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+    const page = await context.newPage();
+    const html = `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/fonts/fonts.css"><style>
+html,body{margin:0;width:${W}px;height:${H}px;overflow:hidden;font-family:Poppins,sans-serif;color:#fff;background:#0d0d0f}
+.stage{position:absolute;inset:0;background:radial-gradient(ellipse 40% 75% at 28% 30%,#8B1A2Fbb,transparent 70%),radial-gradient(ellipse 40% 65% at 68% 62%,#8B1A2F66,transparent 70%),#0d0d0f}
+.art{position:absolute;left:${(W - AW) / 2}px;top:${(H - AH) / 2}px;width:${AW}px;height:${AH}px;transform:scale(${c.scale});transform-origin:${c.origin || '50% 60%'};
+  -webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 98%);mask-image:linear-gradient(to bottom,#000 78%,transparent 98%)}
+.copy{position:absolute;left:${Math.round(AW * 0.075)}px;top:0;bottom:0;width:${Math.round(AW * 0.40)}px;display:flex;flex-direction:column;justify-content:center}
+.logo{height:${Math.round(48 * u)}px;width:auto;align-self:flex-start;margin-bottom:${Math.round(56 * u)}px;filter:brightness(0) invert(1)}
+.kick{font-size:${Math.round(24 * u)}px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#F07C93;margin:0 0 ${Math.round(18 * u)}px}
+h1{font-size:${Math.round(104 * u)}px;line-height:1.02;font-weight:800;letter-spacing:-0.03em;margin:0 0 ${Math.round(34 * u)}px}
+h1 b{color:#F07C93;font-weight:800}
+p{font-size:${Math.round(38 * u)}px;line-height:1.35;color:rgba(255,255,255,.76);margin:0}
+.ph{position:absolute;width:${pw}px;height:${ph}px;border-radius:${Math.round(52 * u)}px;overflow:hidden;border:${Math.max(1, Math.round(2 * u))}px solid rgba(255,255,255,.18);
+  box-shadow:0 ${Math.round(40 * u)}px ${Math.round(100 * u)}px rgba(0,0,0,.75),0 0 ${Math.round(80 * u)}px rgba(224,90,116,.2)}
+.ph img{display:block;width:100%;height:100%}
+${process.env.STORE_SAFE ? `.safe{position:absolute;left:${sx}px;top:${sy}px;width:${c.safe.w}px;height:${c.safe.h}px;outline:4px dashed #0f0;z-index:9}` : ''}
+</style></head><body><div class="stage"></div><div class="art">
+<div class="copy"><img class="logo" src="${logo}"><div class="kick">Your taste. Nobody else's.</div><h1>The wine app built just for <b>you</b>.</h1><p>Scan any label and know if you'll love it, from your own ratings.</p></div>
+${phone('dna', Math.round(AW * 0.5), Math.round(190 * u), -6, 1)}${phone('vinny', Math.round(AW * 0.5 + 2 * pw * 0.8), Math.round(190 * u), 6, 1)}${phone('match', Math.round(AW * 0.5 + pw * 0.8), Math.round(80 * u), 0, 2)}
+</div><div class="safe"></div></body></html>`;
+    fs.writeFileSync(path.join(ROOT, 'dist/_store-shot.html'), html);
+    await page.goto(`http://localhost:${PORT}/_store-shot.html`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(() => [...document.images].every((i) => i.complete));
+    const file = path.join(OUT, `${c.id}-${W}x${H}.${c.type === 'png' ? 'png' : 'jpg'}`);
+    await page.screenshot({ path: file, type: c.type, ...(c.type === 'jpeg' ? { quality: 92 } : {}) });
+    console.log('Saved', path.relative(ROOT, file));
+    await context.close();
+  }
+}
+
 try {
   const raw = {}; // one capture per app size, shared by the pictures made from it
-  for (const dev of DEVICES) {
+  // STORE_ONLY=creative makes the header and search pictures alone (STORE_SAFE=1 outlines their safe areas).
+  for (const dev of process.env.STORE_ONLY === 'creative' ? DEVICES.slice(0, 1) : DEVICES) {
     const k = `${dev.app.width}x${dev.app.height}`;
     raw[k] = raw[k] || await capture(dev);
-    await compose(dev, raw[k]);
+    if (process.env.STORE_ONLY !== 'creative') await compose(dev, raw[k]);
   }
+  await creative(raw['393x852']);
 } finally {
   fs.rmSync(path.join(ROOT, 'dist/_store-shot.html'), { force: true });
   await browser.close();

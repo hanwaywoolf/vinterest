@@ -325,8 +325,8 @@ test('the Worker\'s /config announces a new version from Cloudflare variables, p
   const get = (env) => worker.fetch(new Request('https://vinterest.pages.dev/config'), env).then((r) => r.json()).then((j) => j.update);
   expect(await get({})).toBeNull();
   expect(await get({ APP_LATEST: 'soon' })).toBeNull();
-  // Without the App Store id, only Android hears about it.
-  expect(await get({ APP_LATEST: '1.12.0' })).toEqual({ ios: null, android: { latest: '1.12.0', min: null, note: null, url: 'https://play.google.com/store/apps/details?id=app.vinterest' } });
+  // The App Store id defaults to the app's own; APP_STORE_ID overrides it.
+  expect(await get({ APP_LATEST: '1.12.0' })).toEqual({ ios: { latest: '1.12.0', min: null, note: null, url: 'https://apps.apple.com/app/id6819741453' }, android: { latest: '1.12.0', min: null, note: null, url: 'https://play.google.com/store/apps/details?id=app.vinterest' } });
   expect(await get({ APP_LATEST: '1.12.0', APP_LATEST_IOS: '1.12.1', APP_MIN: '1.11.0', APP_STORE_ID: '6740000000', APP_UPDATE_NOTE: 'Shelf scanning is here.' }))
     .toEqual({ ios: { latest: '1.12.1', min: '1.11.0', note: 'Shelf scanning is here.', url: 'https://apps.apple.com/app/id6740000000' },
       android: { latest: '1.12.0', min: '1.11.0', note: 'Shelf scanning is here.', url: 'https://play.google.com/store/apps/details?id=app.vinterest' } });
