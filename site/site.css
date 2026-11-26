@@ -24,7 +24,7 @@ button, input, select { font: inherit; color: inherit; }
 /* ── Header ── */
 .top { position: fixed; top: 0; left: 0; right: 0; z-index: 50; transition: background .25s, box-shadow .25s; }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
-.top .logo { height: 24px; width: auto; filter: invert(1) brightness(2); transition: filter .25s; }
+.top .logo { height: 30px; width: auto; filter: invert(1) brightness(2); transition: filter .25s; }
 .top nav { display: flex; align-items: center; gap: 24px; }
 .top nav a.link { font-size: 15px; font-weight: 500; color: var(--dim); text-decoration: none; }
 .top nav a.link:hover { color: #fff; }
@@ -117,7 +117,8 @@ sup.pro { font-size: .58em; font-weight: 700; color: #C4870A; margin-left: 1px; 
 .feature { height: max(100svh, 640px); display: grid; }
 .pin { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 88px var(--gutter) 40px; min-height: 0; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 56px; }
 .pin .copy { grid-column: 1; grid-row: 1; align-self: safe center; min-width: 0; max-width: 560px; }
-.pin .stage { grid-column: 2; grid-row: 1; height: 100%; justify-content: center; }
+/* No taller than the hero's stage: on a large monitor the phone would otherwise grow with the screen. */
+.pin .stage { grid-column: 2; grid-row: 1; height: min(100%, 76svh, 726px); align-self: center; justify-content: center; }
 .feature.flip .copy { grid-column: 2; }
 .feature.flip .stage { grid-column: 1; }
 /* A short window (a laptop with toolbars) gets tighter padding, so the text and phone still fit. */
@@ -239,12 +240,15 @@ footer a:hover { color: #fff; }
      screen-height), so its section is taller than the screen and the page scrolls past it. Its height
      is still definite, from the width: the phone is sized from its stage. The lit caption floats at
      the foot of the screen while the phone is in view, then comes to rest under it. */
-  .hero .stage { height: calc(min(100vw - 2 * var(--gutter), 360px) * 2.1073 + 64px); }
+  .hero .stage { height: min(calc(min(100vw - 2 * var(--gutter), 360px) * 2.1073 + 64px), max(72svh, 380px)); }
   .feature { height: auto; }
   .pin { display: flex; flex-direction: column; height: auto; gap: 10px; padding: 84px var(--gutter) 20px; }
   .feature, .beta { scroll-margin-top: 0; }
   .pin .copy, .feature.flip .copy { display: contents; }
-  .pin .stage, .feature.flip .stage { order: 2; flex: none; height: calc(min(100vw - 2 * var(--gutter), 400px) * 2.1073 + 30px); }
+  /* The phone takes a share of the screen's height, never all of it: under the header, with room left
+     at the foot for the caption that floats there, so the demo and its words are read together.
+     (--cap is the caption block's height, measured by site.js.) */
+  .pin .stage, .feature.flip .stage { order: 2; flex: none; height: min(calc(min(100vw - 2 * var(--gutter), 400px) * 2.1073 + 30px), max(calc(100svh - 68px - var(--cap, 150px) - 40px), 340px)); }
   .arrow { display: none; }
   .phone-row { gap: 0; }
   .pin .steps { order: 3; position: sticky; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 6; margin-top: 4px; padding: 14px 16px; border-radius: 18px;
@@ -294,6 +298,9 @@ footer a:hover { color: #fff; }
 
 /* The scan story is paused between captions; its "Paused" pill isn't part of what the demo shows. */
 .phone [data-testid="reveal-paused"] { display: none; }
+/* Learn's chips stick to the top of its scrolling area. A phone here is drawn scaled, so that edge falls between pixels and a hairline of the
+   content scrolling underneath showed above the row: the row starts a pixel higher and paints over the seam. */
+.phone [data-testid="learn-chips"] { top: -1px !important; box-shadow: 0 -3px 0 #0F0F0F; }
 
 
 /* ── Motion and interaction ──
@@ -462,3 +469,84 @@ footer nav a[href^="mailto"] { text-transform: none; letter-spacing: 0; font-siz
   .top nav a.link.teams { font-size: 11px; }
 }
 @media (max-width: 440px) { .top nav a.link.teams { font-size: 11px; letter-spacing: .1em; } }
+
+/* ── Vinterest beside Vivino ──
+   Tabs over one panel at a time: on the left what Vivino shows (drawn) or what more Vinterest does, on the
+   right our logo and the app's own screens, whole, in a row. On a phone the row scrolls sideways. Without
+   JavaScript (no .tabbed) every panel shows under its own title. */
+.vs { margin-top: 80px; }
+.vs > h3 { font-size: clamp(26px, 3vw, 38px); font-weight: 300; letter-spacing: -.012em; }
+.vs-tabs { display: none; }
+.vs.tabbed .vs-tabs { display: flex; flex-wrap: wrap; gap: 0; margin-top: 28px; border-bottom: 1px solid var(--line); }
+.vs-tabs button { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 14px 22px 13px; font-size: 12px; font-weight: 500; letter-spacing: var(--caps); text-transform: uppercase; color: var(--mid); cursor: pointer; white-space: nowrap; transition: color .2s, border-color .2s; }
+.vs-tabs button:hover { color: #fff; }
+.vs-tabs button[aria-selected="true"] { color: #fff; border-bottom-color: var(--lift); }
+.vs-panel { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0 56px; padding: 40px 0 36px; align-items: start; border-top: 1px solid var(--line); }
+.vs.tabbed .vs-panel { border-top: 0; }
+.vs-panel[hidden] { display: none; }
+.vs.tabbed .vs-panel:not([hidden]) { animation: vsIn .35s ease both; }
+@keyframes vsIn { from { opacity: 0; transform: translateY(8px); } }
+.vs-ptitle { grid-column: 1 / -1; font-size: 12px; font-weight: 500; letter-spacing: var(--caps); text-transform: uppercase; color: var(--lift); margin-bottom: 20px; }
+.vs.tabbed .vs-ptitle { display: none; }
+.vs-brand { height: 26px; display: flex; align-items: center; font-size: 12px; font-weight: 500; letter-spacing: var(--caps); text-transform: uppercase; color: var(--mid); margin-bottom: 18px; }
+.vs-brand img { height: 24px; width: auto; filter: invert(1) brightness(2); }
+.vs-side.more .vs-brand { color: var(--lift); }
+.vs-line { font-size: 17px; font-weight: 300; color: var(--ink-2); max-width: 34em; }
+.vs-side.them .vs-line { color: var(--mid); margin-top: 18px; font-size: 16px; }
+.vs-line em { font-style: normal; font-weight: 500; color: #fff; }
+.vs-side.more h4 { font-size: 24px; font-weight: 300; line-height: 1.2; letter-spacing: -.01em; }
+.vs-side.more ul { list-style: none; margin-top: 18px; display: grid; gap: 14px; }
+.vs-side.more li { position: relative; padding-left: 20px; font-size: 16px; font-weight: 300; color: var(--ink-2); }
+.vs-side.more li::before { content: ''; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; background: var(--lift); }
+.vs-art { width: 100%; height: 260px; border: 1px dashed rgba(255, 255, 255, .22); border-radius: 14px; padding: 20px; display: grid; gap: 8px; justify-items: center; align-content: center; text-align: center; color: var(--mid); }
+.vs-art .big { font-size: 64px; font-weight: 300; line-height: 1; color: rgba(255, 255, 255, .78); }
+.vs-art .stars { font-size: 24px; letter-spacing: 2px; color: #D9A441; }
+.vs-art .stars i { font-style: normal; opacity: .3; }
+.vs-art small { font-size: 13px; }
+.vs-art.shop .bottle { width: 26px; height: 78px; border-radius: 8px 8px 4px 4px; background: linear-gradient(#3a3a3e 0 26%, #2a2a2d 26%); position: relative; margin-top: 16px; }
+.vs-art.shop .bottle::before { content: ''; position: absolute; left: 8px; top: -17px; width: 10px; height: 18px; border-radius: 3px 3px 0 0; background: #3a3a3e; }
+.vs-art.shop b { font-size: 24px; font-weight: 400; color: rgba(255, 255, 255, .78); margin-top: 6px; }
+.vs-art .buy { font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; border: 1px solid rgba(255, 255, 255, .3); padding: 9px 14px; }
+.vs-art.talk { justify-items: stretch; gap: 10px; }
+.vs-art.talk span { font-size: 14px; line-height: 1.35; text-align: left; background: rgba(255, 255, 255, .06); border-radius: 10px; padding: 10px 12px; }
+/* Our screens: the whole phone screen, never a crop, in a thin frame with what it shows under it. */
+.vs-phones { display: flex; gap: 22px; margin-top: 26px; align-items: flex-start; }
+.vs-ph { flex: 0 1 236px; min-width: 0; }
+.vs-frame { position: relative; aspect-ratio: 410 / 864; }
+.vs-live { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; }
+.vs-live .phone { box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px rgba(139, 26, 47, .18); }
+.vs-ph.live .vs-live { opacity: 1; }
+.vs-ph.live img { opacity: 0; }
+.vs-ph img { transition: opacity .5s ease; width: 100%; height: 100%; display: block; border-radius: 30px; border: 5px solid #161618; outline: 1px solid rgba(255, 255, 255, .2); background: #101010; box-shadow: 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px rgba(139, 26, 47, .18); }
+.vs-ph figcaption { margin-top: 14px; font-size: 14px; color: var(--ink-2); text-align: center; text-wrap: balance; }
+.vs-note { border-top: 1px solid var(--line); padding-top: 16px; font-size: 12px; color: var(--mid); max-width: 64em; }
+@media (max-width: 1040px) { .vs-panel { grid-template-columns: 240px minmax(0, 1fr); gap: 0 32px; } .vs-phones { gap: 14px; } }
+@media (max-width: 900px) {
+  .vs { margin-top: 52px; }
+  .vs.tabbed .vs-tabs { flex-wrap: nowrap; overflow-x: auto; margin: 22px calc(-1 * var(--gutter)) 0; padding: 0 var(--gutter); scrollbar-width: none; }
+  .vs-tabs::-webkit-scrollbar { display: none; }
+  .vs-tabs button { padding: 13px 14px 12px; font-size: 11px; }
+  .vs-panel { grid-template-columns: 1fr; gap: 28px; padding: 28px 0; }
+  .vs-brand { margin-bottom: 12px; }
+  .vs-side.them { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 0 16px; align-items: center; }
+  .vs-side.them .vs-brand { grid-column: 1 / -1; }
+  .vs-side.them .vs-line { margin-top: 0; font-size: 15px; }
+  .vs-art { height: 150px; padding: 10px; }
+  .vs-art .big { font-size: 40px; }
+  .vs-art .stars { font-size: 16px; }
+  .vs-art small, .vs-art.talk span { font-size: 11px; }
+  .vs-art.talk { gap: 6px; }
+  .vs-art.talk span { padding: 6px 7px; }
+  .vs-art.shop .bottle { width: 16px; height: 46px; margin-top: 10px; }
+  .vs-art.shop .bottle::before { left: 4px; top: -11px; width: 8px; height: 12px; }
+  .vs-art.shop b { font-size: 17px; margin-top: 2px; }
+  .vs-art .buy { font-size: 9.5px; padding: 5px 7px; }
+  .vs-line { font-size: 16px; }
+  .vs-side.more h4 { font-size: 21px; }
+  /* The screens run off the edge and scroll sideways, one at a time. */
+  .vs-phones { gap: 14px; margin: 20px calc(-1 * var(--gutter)) 0; padding: 0 var(--gutter) 6px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .vs-phones::-webkit-scrollbar { display: none; }
+  .vs-ph { flex: 0 0 62%; max-width: 250px; scroll-snap-align: center; }
+  .vs-ph img { border-radius: 26px; border-width: 4px; }
+}
+@media (prefers-reduced-motion: reduce) { .vs.tabbed .vs-panel:not([hidden]) { animation: none; } }

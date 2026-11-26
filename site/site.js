@@ -59,6 +59,38 @@
     sec._nav = { segs: segs, prev: prev, next: next, slot: slot, cap: cap };
   });
 
+  /* ── The comparison's tabs: one panel at a time; arrow keys move between them ── */
+  (function () {
+    var vs = document.getElementById('vs');
+    if (!vs) return;
+    var tabs = Array.prototype.slice.call(vs.querySelectorAll('[role="tab"]'));
+    var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
+    function pick(n, focus) {
+      tabs.forEach(function (t, i) {
+        t.setAttribute('aria-selected', i === n ? 'true' : 'false');
+        if (i === n) t.removeAttribute('tabindex'); else t.setAttribute('tabindex', '-1');
+        panels[i].hidden = i !== n;
+      });
+      if (focus) tabs[n].focus();
+      var bar = tabs[n].parentNode;
+      if (bar.scrollWidth > bar.clientWidth) bar.scrollLeft = Math.max(0, tabs[n].offsetLeft - 20);
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { pick(i); });
+      t.addEventListener('keydown', function (e) {
+        var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+        if (to == null) return;
+        e.preventDefault();
+        pick((to + tabs.length) % tabs.length, true);
+        vs._picked();
+      });
+    });
+    vs.classList.add('tabbed');
+    pick(0);
+    vs._picked = function () { if (window.__vsSync) window.__vsSync(); };
+    tabs.forEach(function (t) { t.addEventListener('click', vs._picked); });
+  })();
+
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
   var slots = Array.prototype.slice.call(document.querySelectorAll('.phone-slot'));
   function sizePhones() {
@@ -119,6 +151,80 @@
     demos.forEach(mountDemo);
   }
 
+  /* ── The comparison's phones ──
+     Each picture of the app in the comparison (figure[data-vs]) becomes the app itself once its tab is showing and it's on
+     screen: the same demo.js, in a phone built here over the picture, playing one thing once (data-loop seconds from
+     start to finish), and again whenever its tab is chosen. Out of sight it stops; on another tab it's taken away. With reduced motion, or
+     if demo.js never arrives, the picture stays. */
+  var vsDemos = reduced ? [] : Array.prototype.slice.call(document.querySelectorAll('figure[data-vs]')).map(function (fig) {
+    return { fig: fig, frame: fig.querySelector('.vs-frame'), kind: fig.getAttribute('data-vs'), loop: (parseFloat(fig.getAttribute('data-loop')) || 12) * 1000,
+      panel: fig.closest('.vs-panel'), seen: false, api: null, app: null, t: 0, busy: false };
+  });
+  function vsSize(v) { var w = v.frame.clientWidth; if (w > 0 && v.phone) v.phone.style.setProperty('--s', (w / 410).toFixed(4)); }
+  function vsStart(v) {
+    if (v.api || v.busy) return;
+    v.busy = true;
+    if (!v.phone) {
+      var live = document.createElement('div');
+      live.className = 'vs-live';
+      live.setAttribute('aria-hidden', 'true');
+      live.inert = true;
+      live.innerHTML = '<div class="phone"><div class="phone-screen"><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app"></div></div></div>';
+      v.frame.appendChild(live);
+      v.phone = live.firstChild;
+      v.app = live.querySelector('.phone-app');
+      if (window.ResizeObserver) new ResizeObserver(function () { vsSize(v); }).observe(v.frame);
+    }
+    vsSize(v);
+    loadDemoScript().then(function () {
+      v.busy = false;
+      if (!vsWanted(v) || v.api) return;
+      try { v.api = window.VinterestDemo.mount(v.app, v.kind); } catch (e) { if (window.console) console.warn(e); return; }
+      v.t = 0; v.done = false;
+      v.api.update(0);
+      // The picture gives way once the screen under it has drawn.
+      setTimeout(function () { if (v.api) v.fig.classList.add('live'); }, 700);
+    }, function () { v.busy = false; });
+  }
+  function vsStop(v) {
+    if (!v.api) return;
+    v.fig.classList.remove('live');
+    try { v.api.unmount(); } catch (e) { /* already gone */ }
+    v.api = null;
+  }
+  function vsWanted(v) { return !v.panel.hidden; }
+  // A tab chosen: the other tabs' phones go, and this one's play from the start (again, if they had finished).
+  window.__vsSync = function () {
+    vsDemos.forEach(function (v) {
+      if (!vsWanted(v)) vsStop(v);
+      else if (v.api) { v.t = 0; v.done = false; if (v.api.replay) v.api.replay(); v.api.update(0); }
+      else if (v.seen) vsStart(v);
+    });
+  };
+  if (vsDemos.length) {
+    if ('IntersectionObserver' in window) {
+      var vio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { vsDemos.forEach(function (v) { if (v.fig === e.target) { v.seen = e.isIntersecting; if (v.seen && vsWanted(v)) vsStart(v); } }); });
+      }, { rootMargin: '10% 0px', threshold: 0.2 });
+      vsDemos.forEach(function (v) { vio.observe(v.fig); });
+    } else vsDemos.forEach(function (v) { v.seen = true; vsStart(v); });
+    var vsLast = 0;
+    var vsSpeed = parseFloat(new URLSearchParams(location.search).get('speed')) || 1;
+    var vsTick = function (now) {
+      var dt = Math.min(250, now - (vsLast || now));
+      vsLast = now;
+      vsDemos.forEach(function (v) {
+        if (!v.api || !v.seen) return;
+        if (v.done) return;
+        v.t += dt * vsSpeed;
+        if (v.t >= v.loop) v.done = true;   // played once: it stays on its last frame until its tab is chosen again
+        v.api.update(Math.min(1, v.t / v.loop));
+      });
+      raf(vsTick);
+    };
+    raf(vsTick);
+  }
+
   /* ── Playing the demos ──
      A demo section is one screen tall and the page scrolls past it normally (nothing here reads the
      wheel). When it's mostly on screen it plays by itself: each caption in turn for its reading time
@@ -175,6 +281,8 @@
       var list = f.el.querySelector('.steps');
       if (!list) return;
       list.style.minHeight = '';
+      // On a phone the captions share one cell (as tall as the longest) and float at the foot of the screen: the stage leaves that much room.
+      if (window.innerWidth <= 900 && !f.el.hasAttribute('data-carousel')) f.el.style.setProperty('--cap', Math.ceil(list.getBoundingClientRect().height) + 'px'); else f.el.style.removeProperty('--cap');
       if (window.innerWidth <= 900 || !f.steps.length || !list || f.el.hasAttribute('data-carousel')) return;
       list.classList.add('measure');
       var lit = f.steps.map(function (li) { return li.classList.contains('on'); }), tallest = 0;
@@ -186,6 +294,7 @@
       list.classList.remove('measure');
       list.style.minHeight = Math.ceil(tallest) + 'px';
     });
+    sizePhones();
   }
   var reserveTimer;
   window.addEventListener('resize', function () { clearTimeout(reserveTimer); reserveTimer = setTimeout(reserveSteps, 120); });

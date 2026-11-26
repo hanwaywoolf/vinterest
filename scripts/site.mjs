@@ -152,6 +152,8 @@ async function build() {
     const dest = rel.startsWith('site/') ? rel.slice(5) : rel;
     fs.cpSync(path.join(ROOT, rel), path.join(OUT, dest), { recursive: true });
   }
+  // The app's own screens for the comparison with Vivino (npm run site:shots).
+  if (fs.existsSync(path.join(SITE, 'shots'))) fs.cpSync(path.join(SITE, 'shots'), path.join(OUT, 'shots'), { recursive: true });
   // The official store badges, once they're in site/badges/.
   if (fs.existsSync(path.join(SITE, 'badges'))) fs.cpSync(path.join(SITE, 'badges'), path.join(OUT, 'badges'), { recursive: true });
   // The share card, if one has been made (npm run site:og).

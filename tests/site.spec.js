@@ -96,6 +96,88 @@ test.describe('desktop', () => {
     }
   });
 
+  test('the comparison with Vivino is tabbed, shows our own screens whole, draws theirs, and never claims what Vivino lacks', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    const tabs = vs.getByRole('tab');
+    await expect(tabs).toHaveCount(5);
+    // One panel at a time; a click or an arrow key changes it.
+    await expect(vs.locator('.vs-panel:visible')).toHaveCount(1);
+    await expect(vs.locator('#vs-p-match')).toBeVisible();
+    await tabs.nth(3).click();
+    await expect(vs.locator('#vs-p-learn')).toBeVisible();
+    await expect(vs.locator('#vs-p-match')).toBeHidden();
+    await page.keyboard.press('ArrowRight');
+    await expect(vs.locator('#vs-p-palate')).toBeVisible();
+    await expect(tabs.nth(4)).toHaveAttribute('aria-selected', 'true');
+    // Ours are the app's real screens, uncropped (the phone screen's own shape), under our logo; every one loads.
+    const shots = await vs.locator('.vs-ph img').evaluateAll((xs) => Promise.all(xs.map(async (i) => { i.loading = 'eager'; await i.decode().catch(() => {}); return { w: i.naturalWidth, h: i.naturalHeight, alt: i.alt.length, fit: getComputedStyle(i).objectFit }; })));
+    expect(shots.length).toBe(14);
+    for (const s of shots) { expect(s.w).toBeGreaterThan(600); expect(s.h / s.w).toBeGreaterThan(2); expect(s.alt).toBeGreaterThan(30); expect(s.fit).not.toBe('cover'); }
+    await expect(vs.locator('.vs-side.us .vs-brand img[alt="Vinterest"]')).toHaveCount(5);
+    // Theirs are drawings: no image of their app, no logo, and the footnote says so.
+    await expect(vs.locator('.vs-side.them img')).toHaveCount(0);
+    await expect(vs.locator('.vs-note')).toContainText('not screenshots of its app');
+    // Vivino has a personal match and a taste profile, and what else it has isn't ours to say: the page never claims what it lacks.
+    const said = (await vs.evaluate((el) => { const c = el.cloneNode(true); c.querySelectorAll('.vs-live').forEach((n) => n.remove()); return c.textContent; })).toLowerCase();   // the page's own words, not the app playing in its phones
+    for (const no of ["doesn't learn", "doesn't evolve", 'no match', 'no personal', 'only wants', 'just wants', 'only in vinterest', "vivino doesn't", 'vivino has no', "vivino can't"]) expect(said, no).not.toContain(no);
+  });
+
+  test("the comparison's phones play the app itself: the showing tab's are live, another tab's are taken away", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    await vs.scrollIntoViewIfNeeded();
+    await vs.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    // Thirteen of the fourteen pictures have a demo behind them (how close past matches were stays a picture).
+    await expect(vs.locator('figure[data-vs]')).toHaveCount(13);
+    await expect(vs.locator('figure.vs-ph:not([data-vs]) img')).toHaveAttribute('src', '/shots/knows.jpg');
+    // The match tab: the story's match scene and the deck, drawn by the app over their pictures.
+    const live = vs.locator('.vs-panel:visible figure.live');
+    await expect(live).toHaveCount(2, { timeout: 30000 });
+    await expect(vs.locator('#vs-p-match figure[data-vs="vsmatch"] [data-testid="reveal-scene"][data-scene="match"]')).toBeVisible({ timeout: 30000 });
+    // Each phone fills its frame, the size of its picture.
+    const fit = await vs.locator('#vs-p-match figure[data-vs="vsmatch"]').evaluate((f) => { const a = f.querySelector('.vs-frame').getBoundingClientRect(), b = f.querySelector('.phone').getBoundingClientRect(); return [a.width, b.width, a.height, b.height]; });
+    expect(Math.abs(fit[0] - fit[1])).toBeLessThan(2);
+    expect(Math.abs(fit[2] - fit[3])).toBeLessThan(2);
+    // Another tab: the first tab's phones are unmounted, and this one's play. The quiz is answered by itself, and Blind Call's palate has a texture figure.
+    await vs.getByRole('tab').nth(3).click();
+    await expect(vs.locator('#vs-p-match .phone-app > *')).toHaveCount(0);
+    await expect(vs.locator('figure[data-vs="vsquiz"] [data-testid="quiz-feedback"]')).toBeVisible({ timeout: 30000 });
+    await expect(vs.locator('figure[data-vs="vsmap"] [data-trait="texture"]')).toHaveAttribute('aria-label', /Texture: \d+% on target/, { timeout: 30000 });
+    await vs.getByRole('tab').nth(4).click();
+    await expect(vs.locator('figure[data-vs="vsblind"] [role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^7[2-5]$/, { timeout: 30000 });
+    // The palate phone opens a trait's own page.
+    await expect.poll(() => vs.locator('figure[data-vs="vspalate"] [data-layer]').evaluateAll((ls) => ls.filter((l) => l.dataset.layer !== 'map' && getComputedStyle(l).visibility === 'visible').map((l) => l.dataset.layer).join()), { timeout: 30000 }).toMatch(/^(body|acidity|tannins|texture)$/);
+  });
+
+  test("a comparison phone plays once and stays there, and plays again when its tab is clicked", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    await vs.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await vs.getByRole('tab').nth(1).click();
+    // The script phone: Short, then Long, and it stays on Long (14 seconds from start to finish; it used to go round again).
+    const on = () => vs.locator('figure[data-vs="vsscript"] .phone-app').evaluate((sec) => (sec.textContent.includes('I tend to gravitate') ? 'Long' : 'Short'));   // how only the long script opens
+    await expect.poll(on, { timeout: 30000 }).toBe('Long');
+    await page.waitForTimeout(12000);   // past where a loop would have started over on Short
+    expect(await on()).toBe('Long');
+    // Its tab clicked again: it plays from the start.
+    await vs.getByRole('tab').nth(1).click();
+    await expect.poll(on, { timeout: 15000 }).toBe('Short');
+    await expect.poll(on, { timeout: 30000 }).toBe('Long');
+  });
+
+  test('with reduced motion the comparison keeps its pictures', async ({ browser }) => {
+    const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/');
+    await page.locator('#vs').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#vs .vs-live')).toHaveCount(0);
+    await ctx.close();
+  });
+
   test('the progress bar is centred over the phone', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of ['scan', 'winedna', 'vinny']) {
@@ -394,16 +476,18 @@ test.describe('short desktop window', () => {
 test.describe('phone', () => {
   test.use({ viewport: { width: 375, height: 667 }, hasTouch: true, isMobile: true });
 
-  test('nothing spills sideways, the phone is nearly as wide as the screen, and its caption floats once the phone is on screen', async ({ page }) => {
+  test('nothing spills sideways, the phone and its caption fit on the screen together, and the caption floats once the phone is on screen', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of FITS) {
       const b = await page.evaluate((id) => {
         const r = (q) => document.querySelector(q).getBoundingClientRect();
-        return { wide: document.documentElement.scrollWidth <= window.innerWidth + 1, vw: window.innerWidth, sec: r(`#${id}`), h2: r(`#${id} h2`), phone: r(`#${id} .phone`), steps: r(`#${id} .steps`) };
+        return { wide: document.documentElement.scrollWidth <= window.innerWidth + 1, vw: window.innerWidth, vh: window.innerHeight, sec: r(`#${id}`), h2: r(`#${id} h2`), phone: r(`#${id} .phone`), steps: r(`#${id} .steps`) };
       }, id);
       expect(b.wide, id).toBe(true);
-      // A phone the page scrolls past, not the sliver that fits under a heading in one screen-height.
-      expect(b.phone.width, `${id} phone width`).toBeGreaterThan(b.vw * 0.8);
+      // The phone takes a share of the screen's height, so it and its caption are read together: under the header, the
+      // caption below it, both inside one screen. It's still a phone to look at, never a sliver.
+      expect(b.phone.height + b.steps.height + 68, `${id} phone and caption`).toBeLessThanOrEqual(b.vh);
+      expect(b.phone.width, `${id} phone width`).toBeGreaterThan(b.vw * 0.42);
       expect(b.phone.top, id).toBeGreaterThanOrEqual(b.h2.bottom - 2);
       expect(b.phone.bottom, id).toBeLessThanOrEqual(b.sec.bottom + 2);
     }
@@ -411,13 +495,18 @@ test.describe('phone', () => {
     await page.evaluate(() => document.getElementById('scan').scrollIntoView({ block: 'end', behavior: 'instant' }));
     await page.evaluate(() => window.scrollBy(0, -(document.getElementById('scan').offsetHeight - 80)));
     await expect(page.locator('#scan')).not.toHaveClass(/capon/);
-    await page.evaluate(() => document.querySelector('#scan .stage').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    // The phone just under the header, as a reader would stop on it.
+    await page.evaluate(() => window.scrollTo({ top: document.querySelector('#scan .stage').getBoundingClientRect().top + window.scrollY - 72, behavior: 'instant' }));
     await expect(page.locator('#scan')).toHaveClass(/capon/);
     await expect(page.locator('#scan .steps li.on h3')).toBeVisible();
     await page.waitForTimeout(500); // the card settles into place
     const cap = await page.evaluate(() => { const r = document.querySelector('#scan .steps').getBoundingClientRect(); return { bottom: r.bottom, vh: window.innerHeight }; });
     expect(cap.bottom).toBeLessThanOrEqual(cap.vh);
-    expect(cap.bottom).toBeGreaterThan(cap.vh - 40);
+    expect(cap.bottom).toBeGreaterThan(cap.vh - 60);
+    // And the phone above it is whole, clear of the header.
+    const ph = await page.evaluate(() => { const r = document.querySelector('#scan .phone').getBoundingClientRect(), c = document.querySelector('#scan .steps').getBoundingClientRect(); return { top: r.top, bottom: r.bottom, cap: c.top }; });
+    expect(ph.top).toBeGreaterThanOrEqual(68);
+    expect(ph.bottom).toBeLessThanOrEqual(ph.cap + 1);
   });
 });
 
