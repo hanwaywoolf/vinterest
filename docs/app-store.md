@@ -6,8 +6,9 @@ both together.
 
 ## App Information (General)
 
-- Name: Vinterest: Wine Scanner
-- Subtitle (30 characters): Wine matched to your own taste
+- Name (30 characters, the store page's header and search result): Vinterest: Wine Built for You
+- Subtitle (30 characters, under the name in search): Label scanner matched to you
+- Google Play: the same app name; short description (80): Wine scanner matched to your taste. Scan a label, see if you'll love it.
 - Category: Food & Drink. Secondary: Education.
 - Content rights: Yes, it contains, shows or accesses third-party content, and Yes, we have the rights:
   the Shop tab shows a partner shop's bottle photo and prices from its product feed (Awin's terms) and
@@ -59,51 +60,55 @@ Apple's and Google's own crash reports are theirs).
 
 ## The version page
 
-Promotional text (170):
+Promotional text (170). The theme is the website's, "the wine app built just for you":
 
-> Scan any label and know if you'll love it, from your own ratings, not a critic's. Ask Vinny anything,
-> learn as you sip, and keep every bottle you've had in one place.
+> Most wine apps show you what everyone else thinks. Vinterest learns your taste from the bottles you
+> rate, then matches, teaches and answers from yours alone.
 
 Description:
 
-> Vinterest learns what you like in wine and tells you, before you open the bottle, whether you'll
-> enjoy it.
+> The wine app built just for you.
 >
-> SCAN ANY LABEL
-> Point your camera at a bottle. Vinterest reads the wine, the vintage and where it is in its life, then
-> tells its story: the grape, the place, how it'll taste and something worth saying about it at the table.
+> Most wine apps show you what everyone else thinks: star averages, critic scores, the crowd's favourites.
+> Vinterest learns what you like from the bottles you scan and rate, then matches, teaches and answers from
+> your taste alone. Nobody else's.
 >
-> SCAN A WHOLE SHELF
-> In a shop, take one photo of the shelf. Vinterest reads every label it can and tells you which bottle
-> suits you best. Free twice a month, and as often as you like with Pro.
+> EVERY BOTTLE, MATCHED TO YOU
+> Point your camera at any label. Vinterest reads the wine and the vintage and gives you a match: the
+> chance you'll enjoy this bottle, worked out from the wines you've rated, with one reason for and one
+> against. Then the bottle's story plays: who made it, where it is in its life, how it'll taste, the grape
+> sketched in pen and the map closing in on its region. It ends on the rating dial.
 >
-> A MATCH FROM YOUR OWN RATINGS
-> Rate what you drink and every scan comes with a match: how likely you are to enjoy this wine, worked out
-> from the wines you've rated, not from a critic's score. It says why, in plain words: the grapes, regions
-> and producers that lift your ratings, and the ones that hold them back.
+> A WHOLE SHELF, OR A WINE LIST
+> In a shop, take one photo of the shelf and see which bottle suits you best. Free twice a month. With Pro,
+> scan a restaurant's wine list too.
 >
-> WINEDNA
-> Your taste, described: the body, tannins and acidity you reach for, what you love, what to buy again,
-> what to try next and a few words to say to a sommelier.
+> YOUR WINEDNA, MADE JUST FOR YOU
+> Your ratings add up to a profile nobody else has: the grapes, regions, styles and prices you love, three
+> rules for next time you're buying, the wines you'd buy again, new styles to try and a few lines to say to
+> a sommelier. It checks itself too, re-predicting your past ratings and showing how close it got.
 >
-> ASK VINNY
-> Ask anything, from what to drink with steak tonight to whether a bottle is worth the price. Vinny
-> answers from the wines you've actually had.
+> A WINE EXPERT WHO KNOWS YOU
+> Ask Vinny anything, in the shop, at the restaurant or at home: what goes with steak tonight, whether a
+> bottle is worth the price. His answers come from your WineDNA, not a list of bestsellers.
 >
-> LEARN AS YOU SIP
-> Short reads and quizzes written from your own bottles, a map of every region you've tasted, and Mastery
-> to show how your knowledge grows. No wine vocabulary assumed: every term comes with what it means and how
-> to notice it.
+> LEARN WHY YOU LIKE WHAT YOU LIKE
+> Quizzes on the wines you drink and short reads written for you, about the grapes and regions behind your
+> favourites and the ones worth trying next. No wine vocabulary assumed: every term comes with what it means
+> and how to notice it in the glass. Mastery maps what you know, from wine types to your own palate.
 >
-> EVERY BOTTLE, REMEMBERED
-> My Wines keeps what you drank, what you paid, where you had it and what you thought.
+> REMEMBER EVERYTHING YOU'VE TRIED
+> My Wines keeps every bottle with your rating, what you paid, where you had it and what you thought.
+>
+> HERE TO TEACH, NOT TO SELL
+> Vinterest doesn't sell wine. Shop links never change a match or the order of a list.
 >
 > VINTEREST PRO
 > Free includes 10 label scans and 2 shelf scans a month and five grapes and regions to study. Pro adds
-> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region you meet, and the full Mastery map.
-> Pro is £4.99 a month or £34.99 a year (prices vary by country), charged to your Apple ID and renewing
-> automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in your
-> Apple ID settings.
+> wine list scanning in restaurants, shelf scanning whenever you like, more scans, every grape and region
+> you meet, and the full Mastery map. Pro is £4.99 a month or £34.99 a year (prices vary by country),
+> charged to your Apple ID and renewing automatically unless cancelled at least 24 hours before the end of
+> the period. Manage or cancel in your Apple ID settings.
 >
 > Terms: https://vinterest.app/terms/
 > Privacy: https://vinterest.app/privacy/
@@ -112,13 +117,14 @@ Description:
 
 Keywords (100, no spaces, none already in the name):
 
-> sommelier,label,scan,rioja,tasting,vintage,cellar,pairing,grape,quiz,red,white,list,restaurant,learn
+> sommelier,scan,rioja,tasting,vintage,cellar,pairing,grape,quiz,red,white,list,restaurant,learn,taste
 
 - Support URL: https://vinterest.app/
 - Marketing URL: https://vinterest.app/
 - Screenshots: `npm run store:shots` writes the iPhone with Dynamic Island, medium display (1206 x 2622,
   the slot App Store Connect asks for first), the large iPhone (1320 x 2868) and the 13" iPad
-  (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 7.
+  (2064 x 2752) sets to `store-shots/` from the real app; upload them in order, 1 to 9 (Shelf is 2, Quiz is 7).
+- Header and search pictures (App Information → Product Page Header and Search Results): `STORE_ONLY=creative npm run store:shots` writes `header-3840x1646.png` and `search-3840x2560.jpg` to Apple's spec, the words inside each safe area (`STORE_SAFE=1` outlines it).
 - App previews (videos): `npm run store:preview` (`scripts/app-preview.mjs`) records thirty seconds of the
   app alone at 886 x 1920, the size every iPhone slot takes. Apple wants H.264 with a sound track, which
   needs a full ffmpeg: run Actions → App preview → Run workflow, download the `app-preview` artifact and
@@ -152,6 +158,28 @@ From 1.11.3 the app asks for a store rating with Apple's and Google's own sheet 
 `pwa-userdata.js`): straight after someone rates a wine 90 or more, once they've rated five wines, at most
 three times and never within 120 days. The store decides whether the sheet shows (Apple: three times a
 year), so it can't be tested in TestFlight, where the sheet appears but can't submit.
+
+### Apple Ads on our own name
+
+Searching "vinterest" in the App Store shows Pinterest: a rare word next to a famous one is read as a typo,
+and a new app has too few installs to win its own name back. Apple Ads (App Store Connect → Apple Ads, or
+ads.apple.com; the Advanced plan, since Basic has no keywords) puts Vinterest first for that search now,
+and every install from it teaches search that the word means us.
+
+Three campaigns, App Store search results, countries UK, US and Canada, audience 18+:
+
+- **Brand** (£3 a day): exact match `vinterest`, `vinterest app`, `vinterest wine`; start the bid at
+  £0.50 a tap and raise it only if impression share is under 90%; negative keyword `pinterest`. The one
+  that matters: nobody else bids on our name, so taps are cheap.
+- **Category** (£10 a day): exact match `wine scanner`, `wine app`, `wine label scanner`, `scan wine`,
+  `wine rating app`, `wine list scanner`, `wine pairing app`; start at Apple's suggested bid and pause any
+  keyword that has spent £15 without an install.
+- **Discovery** (£5 a day): broad match on the category keywords plus search match on, every category and
+  brand keyword added as a negative (so it only finds new searches); each week, move searches that
+  installed into Category as exact match and add junk ones as negatives.
+
+No competitor names as keywords. Judge it on cost per install and, after two weeks, on how many of those
+installs rated a wine (the app's own numbers); turn Category down before Brand.
 
 ### Featuring nomination
 
@@ -207,8 +235,8 @@ variables) once the new version is live in the store, then redeploy or wait for 
 - `APP_LATEST`: the newest version, e.g. `1.12.0`. Use `APP_LATEST_IOS` and `APP_LATEST_ANDROID`
   instead when Apple and Google approve on different days, so nobody is sent to a store that
   doesn't have it yet.
-- `APP_STORE_ID`: the app's numeric Apple ID (App Store Connect → App Information). Without it
-  iPhones aren't told.
+- `APP_STORE_ID` (optional): the app's Apple ID is already in the code (6819741453); set this only
+  if it ever changes.
 - `APP_UPDATE_NOTE` (optional): one line on what's new, shown on the card (140 characters at most).
 - `APP_MIN` (optional): the oldest version still supported. Below it the card can't be dismissed
   and says the version is too old. Use it only when an old version really breaks.
@@ -223,3 +251,12 @@ with a "Show me" button on each item. The text ships in the build, in `data/what
 an entry for every release worth naming (newest first, two to four items, each a title, one
 sentence and where Show me goes). The same words work as the stores' "What's new". Someone who
 installs fresh never sees it; someone who skipped versions sees everything since the last one.
+
+## Store links
+
+- App Store: https://apps.apple.com/app/id6819741453 (no country in it, so it opens each visitor's
+  own store). The Apple ID is in App Store Connect → App Information.
+- Google Play: https://play.google.com/store/apps/details?id=app.vinterest
+- One link for both, for social bios and print: https://vinterest.app/get sends an iPhone or iPad
+  to the App Store, an Android phone to Google Play, and anything else to the store buttons on the
+  home page (`site/_worker.js`).
