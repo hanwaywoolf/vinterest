@@ -36,7 +36,7 @@ const REVEAL_CSS=`
 @keyframes rvDraw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @keyframes rvZoom{from{transform:var(--rv-from)}to{transform:var(--rv-to)}}
 @keyframes rvOut{from{opacity:1}to{opacity:0}}
-@keyframes rvMark{from{left:0}to{left:var(--rv-at)}}
+@keyframes rvMark{from{transform:translateX(0)}to{transform:translateX(var(--rv-at))}}
 .rv-stage{position:relative;overflow:hidden;background:#0F0F0F;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
 .rv-stage .rv-in{animation:rvIn .55s cubic-bezier(.2,.8,.3,1) both}
 .rv-stage .rv-bar{transform-origin:left center;animation:rvGrow .9s cubic-bezier(.3,.9,.4,1) both}
@@ -54,13 +54,13 @@ const REVEAL_CSS=`
 .rv-stage .rv-draw{stroke-dasharray:1;stroke-dashoffset:1;animation:rvDraw .8s ease-out both}
 .rv-stage .rv-zoom{transform-origin:0 0;animation:rvZoom 2.6s cubic-bezier(.45,0,.15,1) both}
 .rv-stage .rv-out{animation:rvOut .5s ease both}
-.rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both}
+.rv-stage .rv-mark{animation:rvMark 1.2s cubic-bezier(.3,.8,.3,1) both;will-change:transform}
 .rv-stage .rv-still *{animation:none!important}
 .rv-stage .rv-still .rv-draw{stroke-dashoffset:0}
-.rv-stage .rv-still .rv-mark{left:var(--rv-at)}
+.rv-stage .rv-still .rv-mark{transform:translateX(var(--rv-at))}
 .rv-stage .rv-still .rv-out{opacity:0}
 .rv-stage .rv-still .rv-zoom{transform:var(--rv-to)}
-@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{left:var(--rv-at)}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom{transform:var(--rv-to)}}
+@media (prefers-reduced-motion: reduce){.rv-stage *{animation:none!important;transition:none!important}.rv-stage .rv-seg{transform:none}.rv-stage .rv-draw{stroke-dashoffset:0}.rv-stage .rv-mark{transform:translateX(var(--rv-at))}.rv-stage .rv-out{opacity:0}.rv-stage .rv-zoom{transform:var(--rv-to)}}
 `;
 /* The words each scene asks someone to read, for its length (ScanFlow.revealLength). */
 function _revealWords(key,d,existingRating){
@@ -238,7 +238,9 @@ function _RvWindow({w,col}){
     </div>
     <div style={{position:'relative',height:10,marginTop:10,borderRadius:5,background:'rgba(255,255,255,0.14)'}}>
       <div style={{position:'absolute',top:0,bottom:0,left:pct(w.fromAt),width:pct(w.toAt-w.fromAt),borderRadius:5,background:col,boxShadow:`0 0 12px ${col}99`}}/>
-      <div className="rv-mark" style={{'--rv-at':pct(w.at),..._rvDelay(1.3),position:'absolute',top:-4,width:18,height:18,marginLeft:-9,borderRadius:9,background:'#fff',border:`3px solid ${col}`,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}/>
+      <div className="rv-mark" style={{'--rv-at':pct(w.at),..._rvDelay(1.3),position:'absolute',left:0,right:0,top:-4,height:18,pointerEvents:'none'}}>
+        <div style={{position:'absolute',left:0,width:18,height:18,marginLeft:-9,borderRadius:9,background:'#fff',border:`3px solid ${col}`,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}/>
+      </div>
     </div>
     <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:700,color:'rgba(255,255,255,0.45)',fontFamily:C.P,marginTop:8,letterSpacing:'0.08em',textTransform:'uppercase'}}><span>Young</span><span>At its best</span><span>Old</span></div>
     <div style={{fontSize:14,color:'rgba(255,255,255,0.7)',fontFamily:C.P,marginTop:6,lineHeight:1.4}}>{w.line}{w.source==='estimate'?' · a rough estimate from its style':''}</div>

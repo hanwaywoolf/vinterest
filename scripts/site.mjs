@@ -148,7 +148,8 @@ async function build() {
     fs.writeFileSync(path.join(OUT, dest), fill(read(`site/${page}`), vars));
   }
 
-  for (const rel of ['logo.png', 'icons', 'site/_headers', 'site/_worker.js', 'site/video/ardanza.png']) { // the bottle in the hero's camera
+  for (const rel of ['logo.png', 'icons', 'site/_headers', 'site/_worker.js', 'site/video/ardanza.png', // the bottle in the hero's camera
+    'site/video/film-wide.mp4', 'site/video/film-wide.jpg', 'site/video/film-mobile.mp4', 'site/video/film-mobile.jpg']) { // the film, both cuts
     const dest = rel.startsWith('site/') ? rel.slice(5) : rel;
     fs.cpSync(path.join(ROOT, rel), path.join(OUT, dest), { recursive: true });
   }
