@@ -220,6 +220,10 @@ taste. It has "Match for You" (a percentage from your own ratings, once you've r
 https://www.vivino.com/wine-news/introducing-match-for-you) and a Taste Profile
 (https://www.vivino.com/wine-news/your-unique-taste-visualized).
 
+The tabs headed "More in Vinterest" (quizzes, Mastery, Blind Call, the palate) say what Vinterest does and stop there. They don't
+say Vivino lacks these: nobody has checked its app for them, and it changes. If someone has checked and wants "Only in Vinterest",
+write down here what was checked, in which version and on what date, before the page says it.
+
 Rules for the block: no Vivino logo, screenshot or lookalike of its screens (its side is drawn, and the
 footnote says so); "Vivino is a trademark of Vivino ApS"; a date in the footnote, moved on when the claims
 are rechecked; claims about intent ("only wants to sell") stay out, since only what it does can be shown.

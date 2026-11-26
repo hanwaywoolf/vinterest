@@ -59,6 +59,35 @@
     sec._nav = { segs: segs, prev: prev, next: next, slot: slot, cap: cap };
   });
 
+  /* ── The comparison's tabs: one panel at a time; arrow keys move between them ── */
+  (function () {
+    var vs = document.getElementById('vs');
+    if (!vs) return;
+    var tabs = Array.prototype.slice.call(vs.querySelectorAll('[role="tab"]'));
+    var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
+    function pick(n, focus) {
+      tabs.forEach(function (t, i) {
+        t.setAttribute('aria-selected', i === n ? 'true' : 'false');
+        if (i === n) t.removeAttribute('tabindex'); else t.setAttribute('tabindex', '-1');
+        panels[i].hidden = i !== n;
+      });
+      if (focus) tabs[n].focus();
+      var bar = tabs[n].parentNode;
+      if (bar.scrollWidth > bar.clientWidth) bar.scrollLeft = Math.max(0, tabs[n].offsetLeft - 20);
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { pick(i); });
+      t.addEventListener('keydown', function (e) {
+        var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+        if (to == null) return;
+        e.preventDefault();
+        pick((to + tabs.length) % tabs.length, true);
+      });
+    });
+    vs.classList.add('tabbed');
+    pick(0);
+  })();
+
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
   var slots = Array.prototype.slice.call(document.querySelectorAll('.phone-slot'));
   function sizePhones() {

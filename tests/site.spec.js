@@ -96,19 +96,31 @@ test.describe('desktop', () => {
     }
   });
 
-  test('the comparison with Vivino shows our own screens, draws theirs, and never claims what Vivino lacks', async ({ page }) => {
+  test('the comparison with Vivino is tabbed, shows our own screens whole, draws theirs, and never claims what Vivino lacks', async ({ page }) => {
     await page.goto(BASE + '/');
     const vs = page.locator('#vs');
-    await expect(vs.locator('.vs-row')).toHaveCount(4);
-    // Ours are the app's real screens, and every one loads; theirs are drawings, with no image of their app.
-    const shots = await vs.locator('img.vs-shot').evaluateAll((xs) => Promise.all(xs.map(async (i) => { i.loading = 'eager'; await i.decode().catch(() => {}); return { w: i.naturalWidth, alt: i.alt.length }; })));
-    expect(shots.length).toBe(4);
-    for (const s of shots) { expect(s.w).toBeGreaterThan(300); expect(s.alt).toBeGreaterThan(30); }
-    await expect(vs.locator('.vs-cell.them img')).toHaveCount(0);
+    const tabs = vs.getByRole('tab');
+    await expect(tabs).toHaveCount(5);
+    // One panel at a time; a click or an arrow key changes it.
+    await expect(vs.locator('.vs-panel:visible')).toHaveCount(1);
+    await expect(vs.locator('#vs-p-match')).toBeVisible();
+    await tabs.nth(3).click();
+    await expect(vs.locator('#vs-p-learn')).toBeVisible();
+    await expect(vs.locator('#vs-p-match')).toBeHidden();
+    await page.keyboard.press('ArrowRight');
+    await expect(vs.locator('#vs-p-palate')).toBeVisible();
+    await expect(tabs.nth(4)).toHaveAttribute('aria-selected', 'true');
+    // Ours are the app's real screens, uncropped (the phone screen's own shape), under our logo; every one loads.
+    const shots = await vs.locator('.vs-ph img').evaluateAll((xs) => Promise.all(xs.map(async (i) => { i.loading = 'eager'; await i.decode().catch(() => {}); return { w: i.naturalWidth, h: i.naturalHeight, alt: i.alt.length, fit: getComputedStyle(i).objectFit }; })));
+    expect(shots.length).toBe(14);
+    for (const s of shots) { expect(s.w).toBeGreaterThan(600); expect(s.h / s.w).toBeGreaterThan(2); expect(s.alt).toBeGreaterThan(30); expect(s.fit).not.toBe('cover'); }
+    await expect(vs.locator('.vs-side.us .vs-brand img[alt="Vinterest"]')).toHaveCount(5);
+    // Theirs are drawings: no image of their app, no logo, and the footnote says so.
+    await expect(vs.locator('.vs-side.them img')).toHaveCount(0);
     await expect(vs.locator('.vs-note')).toContainText('not screenshots of its app');
-    // Vivino has a personal match and a taste profile: the page never says otherwise.
-    const said = (await vs.innerText()).toLowerCase();
-    for (const no of ["doesn't learn", "doesn't evolve", 'no match', 'no personal', 'only wants', 'just wants']) expect(said, no).not.toContain(no);
+    // Vivino has a personal match and a taste profile, and what else it has isn't ours to say: the page never claims what it lacks.
+    const said = (await vs.evaluate((el) => el.textContent)).toLowerCase();
+    for (const no of ["doesn't learn", "doesn't evolve", 'no match', 'no personal', 'only wants', 'just wants', 'only in vinterest', "vivino doesn't", 'vivino has no', "vivino can't"]) expect(said, no).not.toContain(no);
   });
 
   test('the progress bar is centred over the phone', async ({ page }) => {

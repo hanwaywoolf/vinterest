@@ -322,6 +322,10 @@ const _DEMO_SCREENS = {
     { at: 0.5, layer: 'map', to: '[data-section="map"]', drift: 0.05, ms: 4000 },
     { at: 0.75, layer: 'map', to: '[data-section="palate"]', drift: 0.05, ms: 4000 },
   ] },
+  // A region quiz's first question, for the comparison block's picture of it (scripts/site-shots.mjs): no section plays it.
+  quiz: { nav: 'learn', layers: [
+    { id: 'q', nav: 'learn', Screen: QuizScreen, setup() { _seedMastery(); Handoff.quiz.set({ mode: 'region', region: 'Rhône Valley' }); } },
+  ], steps: [{ at: 0, layer: 'q', to: 'top' }] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [
     // The scan story, as a fresh scan plays it. The app saves a scanned wine, which would add a bottle to the WineDNA beside it: take it back out.
