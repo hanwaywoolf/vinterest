@@ -2835,8 +2835,9 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(con).toHaveAttribute('data-look', 'preview');
   // A device that opened The Larkspur before its file asked for the new look still gets it.
   expect(await page.evaluate(() => { const d = TeamData.get(); delete d.venue.console; TeamData.save(d); const o = window.VINTEREST_CONSOLE; window.VINTEREST_CONSOLE = null; const look = TeamData.consoleLook(); window.VINTEREST_CONSOLE = o; return look; })).toBe('preview');
-  // One standout fact with quick ones beneath, about what knowing the list sells.
-  await expect(page.getByTestId('c2-fact')).toContainText('with a server trained on it');
+  // One standout fact with quick ones beneath: what the floor sold, never the trained-lift pitch.
+  await expect(page.getByTestId('c2-fact')).toContainText(/Your team sold .+ of wine this week/);
+  await expect(page.getByTestId('c2-fact')).not.toContainText('better');
   expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
   await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
   await expect(page.getByTestId('c2-person')).toHaveCount(7);

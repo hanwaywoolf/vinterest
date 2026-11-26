@@ -425,10 +425,9 @@ const TeamReport = {
   headline(section){ const m=(n,dp=0)=>TeamData.money(n,{dp}), out={pre:'',strong:'',post:'',bullets:[]}, add=(tone,text)=>{ if(text&&out.bullets.length<3) out.bullets.push({tone,text}); };
     const D=TeamWindow.days(), W=TeamWindow.words(), s=TeamSales.has()?this.salesSummary(D):null, byWine=s?this.salesByWine(D):[], delta=s?this.wineDelta(D):{};
     const gap=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2))[0], sold=x=>x.glasses>=x.bottles?`${x.glasses} glasses`:`${x.bottles} bottles`;
-    if(section==='dash'){ const t=s?this.perCoverTrend(8).filter(x=>x.perCover!=null):[];
-      const lift=s?this.trainedLift(28):null;
-      if(lift&&lift.x>=1.2){ out.pre='A wine sells '; out.strong=`${lift.x>=2?Math.round(lift.x):lift.x}× better`; out.post=' with a server trained on it.'; }
-      else if(t.length>1){ const d=t[t.length-1].perCover-t[0].perCover; out.pre='Wine per guest is '+(d>=0?'up ':'down '); out.strong=m(Math.abs(d),2); out.post=` in ${t.length===8?'eight':t.length} weeks.`; }
+    if(section==='dash'){ /* What the floor sold, in money: the manager's first question. The trained-lift line led here once and read as a
+         sales pitch on every restaurant's own dashboard; it stays in What you need to know and What training is worth. */
+      if(s&&s.revenue>0){ out.pre='Your team sold '; out.strong=m(s.revenue); out.post=` of wine ${D===7?'this week':W.in}.`; }
       else { const o=this.overview(); out.pre='Your team is '; out.strong=`${o.avg}% ready`; out.post=' for tonight.'; }
       if(byWine[0]) add('good',`${TeamData.nick(byWine[0].wine)} leads ${D===7?'the week':W.span}${delta[byWine[0].wine.id]>0?`, up ${delta[byWine[0].wine.id]}%`:''}`);
       if(gap) add('note',`${TeamData.nick(gap.wine)} sold ${sold(gap)}; ${gap.knows} of ${gap.of} servers trained on it`);
