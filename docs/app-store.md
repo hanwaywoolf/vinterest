@@ -260,3 +260,13 @@ installs fresh never sees it; someone who skipped versions sees everything since
 - One link for both, for social bios and print: https://vinterest.app/get sends an iPhone or iPad
   to the App Store, an Android phone to Google Play, and anything else to the store buttons on the
   home page (`site/_worker.js`).
+
+## The announcement film
+
+`node social/announce.mjs` renders the film of the app to `video/` (git-ignored) in three cuts, chosen with
+`ANNOUNCE_FORMAT`: `social` (the default, 1080 x 1920 for TikTok and Reels, the phone inside Instagram's safe
+area), `mobile` (720 x 1280, the website on a phone) and `wide` (2560 x 1440, the website on a computer, the
+phone to one side and a stage drawn by `social/announce-art.js` beside it). The website's film section plays
+`site/video/film-wide.mp4` and `film-mobile.mp4`: copy the new renders there after a change. Its music is
+"Limit Break" (Adobe Stock 2213153167, on Carey's Adobe Stock plan), saved as `assets/announce-music.wav`
+(git-ignored) or pointed at with `ANNOUNCE_MUSIC`. The track is never committed.
