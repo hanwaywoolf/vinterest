@@ -220,6 +220,8 @@ const CREATIVE = [
   // The Facebook page's cover: shown 820 x 312 on a computer and 640 x 360 on a phone, so at twice that size
   // only the centre 1280 x 624 shows on both; the whole banner is scaled to fit inside it.
   { id: 'facebook-cover', w: 1640, h: 720, safe: { w: 1280, h: 624 }, type: 'png', scale: 0.37, origin: '50% 50%' },
+  // Google Play's feature graphic: 1024 x 500, no transparency, shown whole above the listing.
+  { id: 'play-feature', w: 1024, h: 500, safe: { w: 960, h: 460 }, type: 'png', scale: 0.28, origin: '50% 50%' },
 ];
 async function creative(shots) {
   const logo = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'logo.png')).toString('base64');

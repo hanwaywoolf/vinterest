@@ -6,9 +6,11 @@ both together.
 
 ## App Information (General)
 
-- Name (30 characters, the store page's header and search result): Vinterest: Wine Built for You
-- Subtitle (30 characters, under the name in search): Label scanner matched to you
-- Google Play: the same app name; short description (80): Wine scanner matched to your taste. Scan a label, see if you'll love it.
+- Name (30 characters, the store page's header and search result): Vinterest: Wine Scanner (kept, since
+  the name counts most in search and "wine scanner" is what people type)
+- Subtitle (30 characters, under the name in search): The wine app built for you.
+- Google Play: the same app name; short description (80): The wine app built just for you. Scan any wine, see if you'll love it.
+- Google Play feature graphic: `play-feature-1024x500.png`, made with the header and search pictures.
 - Category: Food & Drink. Secondary: Education.
 - Content rights: Yes, it contains, shows or accesses third-party content, and Yes, we have the rights:
   the Shop tab shows a partner shop's bottle photo and prices from its product feed (Awin's terms) and
