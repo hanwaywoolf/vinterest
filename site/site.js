@@ -82,12 +82,13 @@
         if (to == null) return;
         e.preventDefault();
         pick((to + tabs.length) % tabs.length, true);
+        vs._picked();
       });
     });
     vs.classList.add('tabbed');
     pick(0);
     vs._picked = function () { if (window.__vsSync) window.__vsSync(); };
-    tabs.forEach(function (t) { t.addEventListener('click', vs._picked); t.addEventListener('keyup', vs._picked); });
+    tabs.forEach(function (t) { t.addEventListener('click', vs._picked); });
   })();
 
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
@@ -152,10 +153,9 @@
 
   /* ── The comparison's phones ──
      Each picture of the app in the comparison (figure[data-vs]) becomes the app itself once its tab is showing and it's on
-     screen: the same demo.js, in a phone built here over the picture, playing one thing on a loop (data-loop seconds from
-     start to finish, a pause, then again). Out of sight it stops; on another tab it's taken away. With reduced motion, or
+     screen: the same demo.js, in a phone built here over the picture, playing one thing once (data-loop seconds from
+     start to finish), and again whenever its tab is chosen. Out of sight it stops; on another tab it's taken away. With reduced motion, or
      if demo.js never arrives, the picture stays. */
-  var vsTail = 2600;
   var vsDemos = reduced ? [] : Array.prototype.slice.call(document.querySelectorAll('figure[data-vs]')).map(function (fig) {
     return { fig: fig, frame: fig.querySelector('.vs-frame'), kind: fig.getAttribute('data-vs'), loop: (parseFloat(fig.getAttribute('data-loop')) || 12) * 1000,
       panel: fig.closest('.vs-panel'), seen: false, api: null, app: null, t: 0, busy: false };
@@ -180,7 +180,7 @@
       v.busy = false;
       if (!vsWanted(v) || v.api) return;
       try { v.api = window.VinterestDemo.mount(v.app, v.kind); } catch (e) { if (window.console) console.warn(e); return; }
-      v.t = 0;
+      v.t = 0; v.done = false;
       v.api.update(0);
       // The picture gives way once the screen under it has drawn.
       setTimeout(function () { if (v.api) v.fig.classList.add('live'); }, 700);
@@ -193,7 +193,14 @@
     v.api = null;
   }
   function vsWanted(v) { return !v.panel.hidden; }
-  window.__vsSync = function () { vsDemos.forEach(function (v) { if (!vsWanted(v)) vsStop(v); else if (v.seen) vsStart(v); }); };
+  // A tab chosen: the other tabs' phones go, and this one's play from the start (again, if they had finished).
+  window.__vsSync = function () {
+    vsDemos.forEach(function (v) {
+      if (!vsWanted(v)) vsStop(v);
+      else if (v.api) { v.t = 0; v.done = false; if (v.api.replay) v.api.replay(); v.api.update(0); }
+      else if (v.seen) vsStart(v);
+    });
+  };
   if (vsDemos.length) {
     if ('IntersectionObserver' in window) {
       var vio = new IntersectionObserver(function (entries) {
@@ -208,8 +215,9 @@
       vsLast = now;
       vsDemos.forEach(function (v) {
         if (!v.api || !v.seen) return;
+        if (v.done) return;
         v.t += dt * vsSpeed;
-        if (v.t > v.loop + vsTail) { v.t = 0; if (v.api.replay) v.api.replay(); }
+        if (v.t >= v.loop) v.done = true;   // played once: it stays on its last frame until its tab is chosen again
         v.api.update(Math.min(1, v.t / v.loop));
       });
       raf(vsTick);

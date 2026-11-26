@@ -24,7 +24,7 @@ button, input, select { font: inherit; color: inherit; }
 /* ── Header ── */
 .top { position: fixed; top: 0; left: 0; right: 0; z-index: 50; transition: background .25s, box-shadow .25s; }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
-.top .logo { height: 24px; width: auto; filter: invert(1) brightness(2); transition: filter .25s; }
+.top .logo { height: 30px; width: auto; filter: invert(1) brightness(2); transition: filter .25s; }
 .top nav { display: flex; align-items: center; gap: 24px; }
 .top nav a.link { font-size: 15px; font-weight: 500; color: var(--dim); text-decoration: none; }
 .top nav a.link:hover { color: #fff; }
@@ -298,6 +298,9 @@ footer a:hover { color: #fff; }
 
 /* The scan story is paused between captions; its "Paused" pill isn't part of what the demo shows. */
 .phone [data-testid="reveal-paused"] { display: none; }
+/* Learn's chips stick to the top of its scrolling area. A phone here is drawn scaled, so that edge falls between pixels and a hairline of the
+   content scrolling underneath showed above the row: the row starts a pixel higher and paints over the seam. */
+.phone [data-testid="learn-chips"] { top: -1px !important; box-shadow: 0 -3px 0 #0F0F0F; }
 
 
 /* ── Motion and interaction ──

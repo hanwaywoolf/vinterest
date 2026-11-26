@@ -358,8 +358,8 @@ const _DEMO_SCREENS = {
   quiz: { nav: 'learn', layers: [
     { id: 'q', nav: 'learn', Screen: QuizScreen, setup() { _seedMastery(); Handoff.quiz.set({ mode: 'region', region: 'Rhône Valley' }); } },
   ], steps: [{ at: 0, layer: 'q', to: 'top' }] },
-  /* The comparison block's phones (#vs in index.html): each plays one thing on a loop, driven by site.js (p from 0 to 1 over the
-     figure's data-loop seconds, then again). A part marked `fresh` opens its screen anew each time round. */
+  /* The comparison block's phones (#vs in index.html): each plays one thing once, driven by site.js (p from 0 to 1 over the
+     figure's data-loop seconds), and again when its tab is chosen. A part marked `fresh` opens its screen anew each time. */
   // The story's match scene: the ring winding up to the match, then a reason for and a reason against.
   vsmatch: { nav: 'scan', layers: [
     { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() {
@@ -380,7 +380,7 @@ const _DEMO_SCREENS = {
   ] },
   vshub: { nav: 'learn', layers: [{ id: 'hub', nav: 'learn', Screen: LearnScreen, setup: _tidyScans }], steps: [{ at: 0, layer: 'hub', to: 'top', drift: 'end', ms: 34000 }] },
   vsarticle: { nav: 'learn', layers: [{ id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } }],
-    steps: [{ at: 0, layer: 'article', to: 'top', drift: 'end', ms: 52000 }] },
+    steps: [{ at: 0, layer: 'article', to: 'top', drift: 'end', ms: 28000 }] },
   // A region quiz played through: five questions, each answered and its fact read, then the result.
   vsquiz: { nav: 'learn', layers: [
     { id: 'q', nav: 'learn', Screen: QuizScreen, setup() { _seedMastery(); Handoff.quiz.set({ mode: 'region', region: 'Rhône Valley' }); } },

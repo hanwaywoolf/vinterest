@@ -128,7 +128,7 @@ test.describe('desktop', () => {
     await page.goto(BASE + '/');
     const vs = page.locator('#vs');
     await vs.scrollIntoViewIfNeeded();
-    await vs.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await vs.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
     // Thirteen of the fourteen pictures have a demo behind them (how close past matches were stays a picture).
     await expect(vs.locator('figure[data-vs]')).toHaveCount(13);
     await expect(vs.locator('figure.vs-ph:not([data-vs]) img')).toHaveAttribute('src', '/shots/knows.jpg');
@@ -149,6 +149,23 @@ test.describe('desktop', () => {
     await expect(vs.locator('figure[data-vs="vsblind"] [role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^7[2-5]$/, { timeout: 30000 });
     // The palate phone opens a trait's own page.
     await expect.poll(() => vs.locator('figure[data-vs="vspalate"] [data-layer]').evaluateAll((ls) => ls.filter((l) => l.dataset.layer !== 'map' && getComputedStyle(l).visibility === 'visible').map((l) => l.dataset.layer).join()), { timeout: 30000 }).toMatch(/^(body|acidity|tannins|texture)$/);
+  });
+
+  test("a comparison phone plays once and stays there, and plays again when its tab is clicked", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    await vs.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await vs.getByRole('tab').nth(1).click();
+    // The script phone: Short, then Long, and it stays on Long (14 seconds from start to finish; it used to go round again).
+    const on = () => vs.locator('figure[data-vs="vsscript"] .phone-app').evaluate((sec) => (sec.textContent.includes('I tend to gravitate') ? 'Long' : 'Short'));   // how only the long script opens
+    await expect.poll(on, { timeout: 30000 }).toBe('Long');
+    await page.waitForTimeout(12000);   // past where a loop would have started over on Short
+    expect(await on()).toBe('Long');
+    // Its tab clicked again: it plays from the start.
+    await vs.getByRole('tab').nth(1).click();
+    await expect.poll(on, { timeout: 15000 }).toBe('Short');
+    await expect.poll(on, { timeout: 30000 }).toBe('Long');
   });
 
   test('with reduced motion the comparison keeps its pictures', async ({ browser }) => {
