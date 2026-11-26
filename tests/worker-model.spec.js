@@ -126,7 +126,10 @@ test('a prompt marked [[cache-above]] is sent with its unchanging part cached an
 test('every Teams prompt that is cached keeps the per-call parts below its marker', async () => {
   const fs = require('node:fs'), dir = path.join(__dirname, '..', 'prompts');
   const perCall = { 'team-cards.txt': ['facts', 'wines', 'example'], 'team-pitch-cards.txt': ['facts', 'wines'], 'team-fix.txt': ['facts', 'items'], 'team-review.txt': ['items'],
-    'team-pairings.txt': ['dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'] };
+    'team-pairings.txt': ['dishes'], 'team-pairing-new.txt': ['wines', 'dishes'], 'team-cocktail-cards.txt': ['cocktails'], 'team-dish-cards.txt': ['batch'],
+    // Ask Vinny and the guest at the table send the whole list every turn: what's above the marker is the same for every
+    // turn of a table and every question of a shift, so only the first pays for it in full.
+    'team-vinny.txt': ['cards', 'history', 'question'], 'team-guest.txt': ['scenario', 'key', 'cards', 'transcript', 'last', 'help', 'helpfields'] };
   for (const [f, keys] of Object.entries(perCall)) {
     const t = fs.readFileSync(path.join(dir, f), 'utf8'), at = t.indexOf('[[cache-above]]');
     expect(at, f).toBeGreaterThan(0);
@@ -226,4 +229,16 @@ test('/stt: a recording written down by ElevenLabs, off without its key, other o
     expect((await post({ ELEVENLABS_API_KEY: 'k' }, 'https://evil.example')).status).toBe(403);
     expect((await post({ ELEVENLABS_API_KEY: 'k' }, undefined, 'text/plain')).status).toBe(400);
   } finally { global.fetch = realFetch; }
+});
+
+// /team-super: the staff app's ?super=<key>, which lets a device of Vinterest's own team see running costs. Nobody can
+// be one until the secret is set, and a restaurant never is.
+test('/team-super: a 404 without the secret, the right key only, other origins refused', async () => {
+  const worker = await loadWorker();
+  const ask = (env, key, origin = 'https://eloise.vinterest.team') => worker.fetch(new Request('https://vinterest.pages.dev/team-super', { method: 'POST', headers: { 'content-type': 'application/json', origin }, body: JSON.stringify({ key }) }), env, { waitUntil() {} });
+  expect((await ask({}, 'anything')).status).toBe(404);
+  const env = { TEAM_SUPER_KEY: 'larkspur-7-keys' };
+  const ok = await ask(env, 'larkspur-7-keys'); expect(ok.status).toBe(200); expect((await ok.json()).ok).toBe(true);
+  for (const bad of ['', 'larkspur-7-key', 'larkspur-7-keys-and-more', 'LARKSPUR-7-KEYS']) expect((await ask(env, bad)).status).toBe(403);
+  expect((await ask(env, 'larkspur-7-keys', 'https://evil.example')).status).toBe(403);
 });

@@ -838,7 +838,7 @@ page opens on that, never on specials or allergens.
 - Black, with the restaurant's accent as the only colour that isn't a status. Navigation runs along the top under the
   restaurant's own logo; the person signed in sits on the right.
 - Each page opens on one standout fact in light Poppins (300, bundled for this) with at most three quick facts
-  beneath (`TeamReport.headline`): "A wine sells 3× better with a server who knows it." Never a paragraph.
+  beneath (`TeamReport.headline`): "Your team sold $8,774 of wine this week." (the Dashboard leads with what was sold, never the trained-lift line) Never a paragraph.
 - Who can sell a wine is the faces of the people who hold it with "5 of 7" (`TeamReport.knownBy`), never a grid of
   dots. "The floor can sell" a wine or offer a pairing when at least half the people who serve it know it.
 - Dashboard: best sellers and who can sell them, wine per guest, sales, readiness and what's still on the table

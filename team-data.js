@@ -12,6 +12,7 @@ const TeamData = {
   CARD_BATCH:4,       // wines per staff-card call: six questions each fit well inside team_cards' tokens
   PITCH_BATCH:8,      // wines per short-card call (a pitch demo's cards carry no questions)
   PAIR_BATCH:12,      // dishes per pairing call
+  PAIR_FULL_AT:8,     // from this many new or changed wines in one publish, every dish is paired afresh
   PDF_PAGES:2,        // PDF pages read per call, so no single answer runs long
   _empty(){ return {venue:{name:'',created:Date.now()},wines:{},dishes:{},cards:{},pairings:{},cocktails:{},cocktailCards:{},dishCards:{},versions:[],draft:null,settings:{dueDays:7}}; },
   DISH_BATCH:8,       // dishes per dish-notes call
@@ -372,9 +373,17 @@ const TeamData = {
     const ax=TeamLearn.aside(d,right.map(i=>opts[i]).join(' ')||d.ans);
     const groups=c&&c.groups&&c.groups.length>1?' (in '+c.groups.map(g=>`"${g.label}": choose ${g.n}`).join(', ')+')':c&&c.n>1?` (choose ${c.n})`:'';
     return `ID ${q.id}\n${about}\nQUESTION ${d.q}${groups}\nOPTIONS\n${opts.map((o,i)=>`${right.includes(i)?'[marked right]':'[wrong]'} ${o}`).join('\n')}${opts.length?'':`\nANSWER ${d.ans||''}`}\nAFTER ${ax?(ax.text||ax.list.map(x=>`${x.name}: ${x.text}`).join(' / ')):'(nothing)'}`; },
-  async sommelierReview({onStep,only}={}){
-    const all=[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))]
-      .filter(q=>!only||only.includes(q.id));
+  /* What a question looks like to the reviewer, as a short mark: the same mark means the same question, options and line
+     after, so the verdict it was given still stands. */
+  _mark(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); },
+  _itemMark(q){ return this._mark(this._reviewItem(q)); },
+  /* A publish reads only what changed: a question whose mark is the one it was last read with keeps its verdict (fit, or
+     held with its note), so swapping one wine sends that wine's questions and any whose options it moved, not the whole
+     restaurant (`reviewed.seen`, id -> mark; `reviewed.read` is how many were sent this time). `fresh` reads everything
+     again (the pre-handover review, npm run team:review); `only` reads just those ids, as before. */
+  async sommelierReview({onStep,only,fresh}={}){
+    const every=()=>[...this.wines().flatMap(w=>[...TeamLearn.wineQs(w.id,{all:true}),...TeamLearn.lightQs(w.id,{all:true})]),...this.cocktails().flatMap(c=>TeamLearn.cocktailQs(c.id,{all:true})),...this.dishes().flatMap(x=>TeamLearn.dishQs(x.id,{all:true}))];
+    const all=every().filter(q=>!only||only.includes(q.id));
     if(this.isDemo()) return null;
     const tpl=_loadTextSync('prompts/team-review.txt'), venue=this.get().venue.name||'the restaurant';
     const cock=this.cocktails().length?`The cocktail list:\n${this._drinkLines()}`:'';
@@ -387,22 +396,58 @@ const TeamData = {
         done+=part.length; onStep&&onStep(done,qs.length); } };
       await Promise.all(Array.from({length:Math.max(1,Math.min(this.REVIEW_AT_ONCE||1,starts.length))},lane));
       return out; };
-    const first=await ask(all), doubted=all.filter(q=>first[q.id]&&first[q.id].fit===false);
+    const prev=this.reviewed()||{}, was=fresh?{}:(prev.seen||{}), mark=Object.fromEntries(all.map(q=>[q.id,this._itemMark(q)]));
+    const stands=q=>!only&&!!was[q.id]&&was[q.id]===mark[q.id], todo=all.filter(q=>!stands(q));
+    const first=await ask(todo), doubted=todo.filter(q=>first[q.id]&&first[q.id].fit===false);
     // A wine card's own question is rewritten and read again; the rest are built from the list and can only be held.
     const card=doubted.filter(q=>q.wine&&!q.light&&!q.dish), fixTpl=_loadTextSync('prompts/team-fix.txt');
     for(let i=0;i<card.length;i+=this.FIX_BATCH) await this._rewrite(card.slice(i,i+this.FIX_BATCH).map(q=>({q,wine:q.wine,why:'sommelier',note:`${first[q.id].problem}: ${first[q.id].note}`})),fixTpl,venue);
     const again=card.length?await ask(card.map(q=>TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id)).filter(Boolean)):{};
     // A rewrite that disputes the list ("Check the list:") isn't a fix: it stays held, with the note, for the manager.
     const disputes=q=>{ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); return !!(n&&/^check the list:/i.test(String(n.why||''))); };
-    const held=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
-    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,doubted:doubted.length,fixed:doubted.length-held.length,held,
-      notes:Object.fromEntries(held.map(id=>[id,{problem:(again[id]||first[id]).problem,note:(again[id]||first[id]).note}]))};
-    this.save(d); return d.venue.reviewed; },
+    const heldNow=doubted.filter(q=>!(card.includes(q)&&again[q.id]&&again[q.id].fit!==false&&!disputes(q))).map(q=>q.id);
+    // What wasn't read keeps its verdict: a held question that still looks the same stays held, with its note.
+    const kept=(prev.held||[]).filter(id=>all.some(q=>q.id===id&&stands(q))), held=[...kept,...heldNow.filter(id=>!kept.includes(id))];
+    // The mark each question now stands on: unchanged ones keep theirs, one that was read takes the mark of what was read
+    // (a rewritten card question, the mark of its rewrite, once that was read too). One with no verdict back is read next time.
+    const seen=only?{...(prev.seen||{})}:{};
+    all.forEach(q=>{ if(stands(q)){ seen[q.id]=mark[q.id]; return; } if(!first[q.id]){ delete seen[q.id]; return; }
+      if(card.includes(q)){ const n=TeamLearn.wineQs(q.wine,{all:true}).find(x=>x.id===q.id); if(n&&again[q.id]) seen[q.id]=this._itemMark(n); else delete seen[q.id]; }
+      else seen[q.id]=mark[q.id]; });
+    const d=this.get(); d.venue.reviewed={at:Date.now(),asked:all.length,read:todo.length,settled:0,doubted:kept.length+doubted.length,fixed:doubted.length-heldNow.length,held,seen,
+      notes:Object.fromEntries(held.map(id=>{ const v=again[id]||first[id]; return [id,v?{problem:v.problem,note:v.note}:(prev.notes||{})[id]||{problem:'',note:''}]; }))};
+    this.save(d);
+    /* Settling. A rewrite, or a question newly held out of the drill, changes what other questions show (their wrong
+       answers are drawn from the rest of the list) after they were marked as read: at Eloise the publish after an
+       install read 78 questions again, and rewrote some, for a change that moved about a dozen. So what this review
+       itself moved is read once more here, as it now stands (SETTLE_ROUNDS at most, since holding one can move a few
+       more); one that's doubted is held, with no second round of rewrites, and every mark kept is of the final wording. */
+    if(!only&&(card.length||heldNow.length)) for(let round=0;round<this.SETTLE_ROUNDS;round++){
+      const v=this.get().venue.reviewed, moved=every().filter(q=>v.seen[q.id]&&this._itemMark(q)!==v.seen[q.id]); if(!moved.length) break;
+      const got=await ask(moved), d2=this.get(), r2=d2.venue.reviewed;
+      moved.forEach(q=>{ const g=got[q.id]; if(!g){ delete r2.seen[q.id]; return; } r2.seen[q.id]=this._itemMark(q);
+        if(g.fit===false&&!r2.held.includes(q.id)){ r2.held.push(q.id); r2.notes[q.id]={problem:g.problem,note:g.note}; r2.doubted++; } });
+      r2.read+=moved.length; r2.settled+=moved.length; this.save(d2);
+      // Holding one just now moved the marks again: those just read keep the mark of what was read, the rest go round.
+    }
+    return this.get().venue.reviewed; },
+  SETTLE_ROUNDS:3,
   reviewed(){ return (this.get().venue||{}).reviewed||null; },
+  /* After the sommelier's read: a question the check had given up on, and that the sommelier's rewrite then changed, is
+     remembered as it now stands. It has had its rewrites; without this every such question was sent for another paid
+     round at the next publish, whatever that publish changed. A failure the check never saw is still sent next time. */
+  settleGave(){ const d=this.get(), ck=d.venue&&d.venue.checked; if(!ck||!ck.gave||typeof TeamLearn==='undefined') return;
+    let n=0; try{ TeamLearn.audit(this.wines().map(w=>w.id)).forEach(f=>{ const m=this._mark(JSON.stringify(f.q)+'|'+(f.why||'')); if(ck.gave[f.q.id]&&ck.gave[f.q.id]!==m){ ck.gave[f.q.id]=m; n++; } }); }catch(e){ return; }
+    if(n) this.save(d); },
   FIX_BATCH:8, FIX_ROUNDS:2,
-  async checkQuestions(ids,onStep){
+  /* A question that still fails after its rewrites is remembered with why (`checked.gave`, id -> a mark of the question
+     and its reason), and isn't sent again while both are the same: at Eloise every publish was paying to rewrite the same
+     questions that had already failed twice, and each new wording was then read again by the sommelier review. It goes
+     back when the question or its reason changes, or when asked afresh (`fresh`, as npm run team:review does). */
+  async checkQuestions(ids,onStep,{fresh}={}){
     const all=ids||this.wines().map(w=>w.id), asked=all.reduce((n,id)=>n+((this.card(id)||{}).qs||[]).length,0);
-    const failed=TeamLearn.audit(all);
+    const was=fresh?{}:(((this.get().venue||{}).checked||{}).gave||{}), fmark=f=>this._mark(JSON.stringify(f.q)+'|'+(f.why||''));
+    const failedAll=TeamLearn.audit(all), failed=failedAll.filter(f=>was[f.q.id]!==fmark(f));
     let fixed=0;
     if(failed.length&&!this.isDemo()){
       const tpl=_loadTextSync('prompts/team-fix.txt'), venue=this.get().venue.name||'the restaurant';
@@ -422,7 +467,10 @@ const TeamData = {
     }
     // Then the review of every question as the drill shows it (TeamLearn.review), listed on the console's Wines section.
     let flagged=0; try{ flagged=TeamLearn.review().length; }catch(e){}
-    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failed.length,fixed,left:failed.length-fixed,flagged}; this.save(d);
+    // What fails now, of these wines, is what's left: each remembered as it stands, so it waits for a change.
+    const gave=ids?{...was}:{}; failedAll.forEach(f=>{ delete gave[f.q.id]; });
+    const after=failed.length?TeamLearn.audit([...new Set(failedAll.map(f=>f.wine))]):failedAll; after.forEach(f=>{ gave[f.q.id]=fmark(f); });
+    const d=this.get(); d.venue.checked={at:Date.now(),asked,failed:failedAll.length,sent:failed.length,fixed,left:after.length,flagged,gave}; this.save(d);
     return d.venue.checked;
   },
 
@@ -433,6 +481,34 @@ const TeamData = {
     const qs=(c.qs||[]).filter(q=>q&&q.q&&(q.k==='recognise'?Array.isArray(q.opts)&&q.opts.length===4&&q.opts[q.a]:q.k==='apply'?Array.isArray(q.key)&&q.key.length:!!q.ans))
       .map((q,i)=>({...q,id:c.id+'#'+i}));
     return {...c,dishes:(c.dishes||[]).filter(x=>onMenu.has(x.dish)),alts:(c.alts||[]).filter(a=>d.wines[a.id]&&d.wines[a.id].onList&&a.id!==c.id),qs};
+  },
+  /* Which dishes a publish pairs again. A pairing is kept wherever the change leaves it standing, since every dish and
+     table question is built from it: pairing all 17 dishes again for one new wine at Eloise reworded them all, and 212
+     of 709 questions were checked, rewritten and read again ($6 a change). So: a dish with no pairing, or one that
+     leans on a wine no longer on the list, is paired again; for new or changed wines one call asks which dishes they
+     should move (prompts/team-pairing-new.txt), and only those are paired again; a menu change pairs its new and
+     changed dishes. A big list change (PAIR_FULL_AT wines) or an answer that can't be read pairs every dish, as before. */
+  async pairingsFor(res,dishes){
+    const d=this.get(), on=id=>id&&d.wines[id]&&d.wines[id].onList;
+    const fresh=[...new Set([...(res.added||[]),...(res.changed||[])])].filter(id=>on(id)&&!this.isDrink(d.wines[id]));
+    if(!dishes.some(id=>this.pairing(id))) return dishes;
+    // A menu change pairs the dishes that are new or changed, and any left without a pairing.
+    if(res.kind==='menu'){ const moved=new Set([...(res.added||[]),...(res.changed||[])]); return dishes.filter(id=>moved.has(id)||!this.pairing(id)||!(this.pairing(id).best||[]).length); }
+    if(res.kind!=='list'||fresh.length>=this.PAIR_FULL_AT) return dishes;
+    const uses=p=>[...(p.best||[]),p.glass,p.avoid].filter(Boolean).map(b=>b.id);
+    const need=new Set(dishes.filter(id=>{ const p=this.pairing(id); return !p||!(p.best||[]).length||uses(p).some(w=>!on(w)); }));
+    const rest=dishes.filter(id=>!need.has(id));
+    if(!fresh.length||!rest.length) return [...need];
+    const line=w=>{ const c=this.card(w.id), s=c&&c.style; return `${w.id} | ${this.label(w)} | ${w.type} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')}${s?` | body ${s.body}/5, acidity ${s.acid}/5, tannin ${s.tannin}/5, sweetness ${s.sweet}/5`:''}`; };
+    const nm=id=>d.wines[id]?this.label(d.wines[id]):'';
+    const prompt=_loadTextSync('prompts/team-pairing-new.txt').replace(/\{\{venue\}\}/g,d.venue.name||'the restaurant').replace('{{about}}',this.about())
+      .replace('{{list}}',this.wines().filter(w=>!this.isDrink(w)).map(line).join('\n')).replace('{{wines}}',fresh.map(id=>line(d.wines[id])).join('\n'))
+      .replace('{{dishes}}',rest.map(id=>{ const x=this.dish(id), p=this.pairing(id); return `${x.name} | ${x.desc} | main: ${x.main} | ${x.cook} | ${(x.flav||[]).join(', ')} | picks: ${(p.best||[]).map(b=>nm(b.id)).join('; ')} | glass: ${p.glass?nm(p.glass.id):'none'} | avoid: ${p.avoid?nm(p.avoid.id):'none'}`; }).join('\n'));
+    let j; try{ j=this._json(await this._callRetry('team_pairings',prompt)); }catch(e){}
+    if(!j||!Array.isArray(j.dishes)) return dishes;
+    const key=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,''), named=new Set(j.dishes.map(key));
+    rest.forEach(id=>{ if(named.has(key(this.dish(id).name))) need.add(id); });
+    return [...need];
   },
   /* The list's best matches for each dish (prompts/team-pairings.txt). */
   async writePairings(dishIds,onStep){
@@ -448,7 +524,11 @@ const TeamData = {
       // As with the cards: a batch that fails is tried again, then one dish at a time.
       let j;
       try{ j=this._json(await this._callRetry('team_pairings',ask(xs)))||{}; }
-      catch(e){ if(xs.length<2) throw e; j={pairings:[]}; for(const one of xs){ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); } }
+      catch(e){ if(xs.length<2) throw e; j={pairings:[]};
+        // One dish at a time, each asked twice at most. A dish whose answer still can't be read keeps the pairing it had
+        // (or none, and is asked again at the next publish) rather than stopping the whole publish: one dish at Eloise
+        // came back as broken JSON every time and nothing after the pairings ran.
+        for(const one of xs){ for(let go=0;go<2;go++){ try{ const j1=this._json(await this._callRetry('team_pairings',ask([one])))||{}; (j1.pairings||[]).forEach(p=>j.pairings.push(p)); break; }catch(e1){ if(go) console.warn('No pairing could be read for '+one.name); } } } }
       const d=this.get();
       (j.pairings||[]).forEach(p=>{
         // The answer's dish is found by its name as sent, else by the same letters (a curly apostrophe typed straight,
@@ -485,7 +565,8 @@ const TeamData = {
   /* After a publish: cards for wines without one, then pairings for every dish (a new wine can be the
      best match for a dish that hasn't changed), then the new wines and dishes assigned to staff.
      onStep(label, done, total). */
-  async refresh(res,onStep){
+  async refresh(res,onStep){ TeamCosts.begin(res); try{ return await this._refresh(res,onStep); } finally{ TeamCosts.end(); } },
+  async _refresh(res,onStep){
     // The demo's prepared arrivals (TeamSample.ARRIVALS) carry their card, pairings and window already,
     // so a bottle from that set publishes with no call at all; anything else is written here.
     const prepared=[...(res.added||[]),...(res.changed||[])].filter(id=>TeamSample.applyPrepared(id));
@@ -498,9 +579,10 @@ const TeamData = {
     const needPairs=dishes.length&&this.wines().length&&!onlyPrepared&&(res.kind==='list'||res.added.length||res.changed.length||res.removed.length||dishes.some(id=>!this.pairing(id)));
     const dated=this.wines().filter(w=>w.vintage&&!w.peak).map(w=>w.id);
     // Pairings and windows don't depend on each other, so they're written at the same time, reported as one step.
-    const prog={p:0,w:0}, total=(needPairs?dishes.length:0)+dated.length, tell=()=>onStep&&onStep(needPairs&&dated.length?'Matching the menu and checking drinking windows':needPairs?'Matching wines to the menu':'Checking drinking windows',prog.p+prog.w,total);
+    const prog={p:0,w:0}; let total=(needPairs?dishes.length:0)+dated.length; const tell=()=>onStep&&onStep(needPairs&&dated.length?'Matching the menu and checking drinking windows':needPairs?'Matching wines to the menu':'Checking drinking windows',prog.p+prog.w,total);
     const jobs=[];
-    if(needPairs) jobs.push(this.writePairings(dishes,(a)=>{ prog.p=a; tell(); }));
+    // A list change keeps every pairing it can (pairingsFor): only the dishes the change moves are paired again.
+    if(needPairs) jobs.push(this.pairingsFor(res,dishes).then(ids=>{ total+=ids.length-dishes.length; return ids.length?this.writePairings(ids,(a)=>{ prog.p=a; tell(); }):tell(); }));
     if(dated.length) jobs.push(this.writeWindows(dated,(a)=>{ prog.w=a; tell(); }));
     if(jobs.length){ tell(); await Promise.all(jobs); }
     // Dish notes are written when the menu is published (or asked for from Upload), never on a list publish, so a new
@@ -512,6 +594,7 @@ const TeamData = {
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.checkQuestions(null,(a,b)=>onStep&&onStep('Checking every question',a,b));
     // Then the sommelier's read of every question as the drill shows it; anything still doubted is held out of the drill.
     if(typeof TeamLearn!=='undefined'&&this.wines().length) await this.sommelierReview({onStep:(a,b)=>onStep&&onStep('A sommelier is reading every question',a,b)});
+    this.settleGave();
     if(typeof TeamLearn!=='undefined') TeamLearn.assign(res);
   },
   /* The drinking window for each dated wine (the consumer app's vintage_info, open to every account),
@@ -737,7 +820,7 @@ const TeamDemo = {
   /* The demo story's own version, part of every demo seed's stamp (TeamSample.stamp). Raise it whenever the code
      that seeds a demo changes what it shows (who has learnt what, the sales, the logo files), since only a
      changed stamp reloads a device that already has the restaurant. */
-  STORY:3,
+  STORY:4,
   /* A list in the order a restaurant teaches it and pushes it: dry before sweet, cheapest first. The demo's
      sales favour the first half (TeamSales.seedDemo), so the house pours sell most and are the ones a
      working team already knows. */
@@ -897,6 +980,45 @@ Object.assign(window,{TeamTour});
 /* What a console page's "Needs you" has had cleared (docs/business.md "Needs you"): each item is known by its tag and
    what it says, so one that's been dealt with or dismissed stays away until the facts behind it change and it says
    something new. Kept on the device, per page. */
+/* What Claude cost, for Vinterest's own team only (TeamSuper). Every team call's tokens are added up as the Worker
+   reports them (the bridge's vinterest:claude-usage event): per publish (begin/end around TeamData.refresh) and per
+   month by purpose. It is kept on the device and never drawn for a restaurant: no running cost is ever shown to a
+   customer, so nothing reads this but the console's Running costs card, which only a superuser's device has. */
+const TeamCosts = {
+  KEY:'vbiz_costs_v1', KEEP:40,
+  // Dollars per million tokens in and out, by the start of the model's name; a cache read is a tenth, a cache write 1.25×.
+  PRICES:[['claude-opus',4,20],['claude-fable',4,20],['claude-sonnet-5',2,10],['claude-sonnet',3,15],['claude-haiku',1,5]],
+  get(){ const d=Store.getJSON(this.KEY,null)||{}; return {publishes:d.publishes||[],months:d.months||{}}; },
+  _add(by,u,model){ const b=by[u.purpose]=by[u.purpose]||{n:0,in:0,out:0,cr:0,cw:0}; const x=u.usage||{};
+    b.n++; b.in+=x.input_tokens||0; b.out+=x.output_tokens||0; b.cr+=x.cache_read_input_tokens||0; b.cw+=x.cache_creation_input_tokens||0; if(model) b.model=model; },
+  note(u){ if(!u||!/^team_/.test(u.purpose||'')||!u.usage) return;
+    const d=this.get(), m=new Date().toISOString().slice(0,7); d.months[m]=d.months[m]||{}; this._add(d.months[m],u,u.model);
+    Object.keys(d.months).sort().slice(0,-12).forEach(k=>delete d.months[k]);
+    if(this._open) this._add(this._open.by,u,u.model);
+    Store.setJSON(this.KEY,d); },
+  begin(res){ this._open={at:Date.now(),kind:(res&&res.kind)||'',added:((res&&res.added)||[]).length,changed:((res&&res.changed)||[]).length,removed:((res&&res.removed)||[]).length,by:{}}; },
+  end(){ const o=this._open; this._open=null; if(!o||!Object.keys(o.by).length) return; o.ms=Date.now()-o.at;
+    const d=this.get(); d.publishes=[...d.publishes,o].slice(-this.KEEP); Store.setJSON(this.KEY,d); },
+  price(model){ const r=this.PRICES.find(p=>String(model||'').startsWith(p[0]))||this.PRICES[0]; return {in:r[1],out:r[2]}; },
+  dollars(by){ return Object.values(by||{}).reduce((t,b)=>{ const p=this.price(b.model); return t+(b.in*p.in+b.cr*p.in*0.1+b.cw*p.in*1.25+b.out*p.out)/1e6; },0); },
+  calls(by){ return Object.values(by||{}).reduce((t,b)=>t+b.n,0); },
+  usd(n){ return '$'+(n<1?n.toFixed(3):n.toFixed(2)); },
+};
+try{ window.addEventListener('vinterest:claude-usage',e=>{ try{ TeamCosts.note(e.detail); }catch(x){} }); }catch(e){}
+
+/* Vinterest's own team on this device (a superuser): the only people who see running costs. Switched on by opening the
+   app with ?super=<key>, which the Worker checks against its TEAM_SUPER_KEY secret (POST /team-super; 404 with no
+   secret set, so nobody can be one); ?super=off switches it off. Kept on the device, never in a restaurant's document. */
+const TeamSuper = {
+  KEY:'vbiz_super_v1',
+  on(){ if(typeof window!=='undefined'&&window.VINTEREST_SUPER!=null) return !!window.VINTEREST_SUPER; return Store.get(this.KEY)==='1'; },
+  off(){ Store.remove(this.KEY); },
+  async unlock(key){ if(!key) return false; if(key==='off'){ this.off(); return false; }
+    try{ const r=await fetch(Platform.api('/team-super'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({key:String(key)})}); const j=r.ok?await r.json():null;
+      if(j&&j.ok){ Store.set(this.KEY,'1'); return true; } }catch(e){}
+    return false; },
+};
+
 const TeamNeeds = {
   KEY:'vbiz_needs_v1',
   _all(){ return Store.getJSON(this.KEY,{})||{}; },

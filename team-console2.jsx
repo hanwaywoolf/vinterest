@@ -53,14 +53,14 @@ function _C2Card({title,right,children,feat,style,testid,onClick,sub,fold,summar
       {shut&&(summary||typeof right==='string')&&<div data-testid="c2-card-summary" role="button" onClick={flip} style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.45,marginTop:6,marginLeft:18,cursor:'pointer',overflow:'hidden',textOverflow:'ellipsis',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{summary||right}</div>}</div>}
     {!shut&&children}</div>; }
 /* One standout fact, three quick ones beneath it, and the page's actions on the right. */
-function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h=TeamReport.headline(section);
+function _C2Head({hi,sub,section,actions}){ const T=useTheme(), acc=_c2Acc(T), h=TeamReport.headline(section), win=TeamSales.has()&&(section==='dash'||section==='sales');
   return <div data-testid="c2-head" style={{display:'flex',flexDirection:'column',alignItems:'flex-start',gap:16,marginBottom:22}}>
     <div style={{minWidth:0}}>
       <div style={{fontSize:15,fontFamily:C.P}}><span style={{color:acc,fontWeight:500}}>{hi}</span>{sub&&<span style={{color:T.mid}}> · {sub}</span>}</div>
       <div data-testid="c2-fact" style={{fontSize:38,lineHeight:1.15,fontWeight:300,letterSpacing:'-0.015em',color:T.ink,fontFamily:C.P,marginTop:6}}>{h.pre}<span style={{fontWeight:500}}>{h.strong}</span>{h.post}</div>
       {h.bullets.length>0&&<div data-testid="c2-bullets" style={{display:'flex',gap:'6px 26px',flexWrap:'wrap',marginTop:10}}>{h.bullets.map((b,i)=><div key={i} style={{display:'flex',alignItems:'center',gap:8}}><span style={{width:6,height:6,borderRadius:3,background:_C2_TONE[b.tone]||_C2_TONE.note,flexShrink:0}}/><span style={{fontSize:15,fontWeight:300,color:T.ink2,fontFamily:C.P}}>{b.text}</span></div>)}</div>}
     </div>
-    {actions&&<div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>{actions}</div>}
+    {(actions||win)&&<div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>{win&&<_C2Window/>}{actions}</div>}
   </div>; }
 function _C2Btn({children,primary,onClick,testid,disabled}){ return <TeamBtn primary={primary} onClick={onClick} testid={testid} disabled={disabled}>{children}</TeamBtn>; }
 function _C2Kpi({label,value,unit,delta,good=true,note,onClick,testid}){ const T=useTheme();
@@ -91,6 +91,63 @@ function _C2Line({series,labels,height=200,marks}){ const T=useTheme(), [ref,w]=
         {marks&&si===0&&pts.map((p,i)=>p&&<text key={i} x={p[0]-(i===pts.length-1?10:0)} y={p[1]-10} fill={T.ink} fontFamily="Poppins" fontSize="12" textAnchor={i===0?'start':i===pts.length-1?'end':'middle'}>{s.fmt?s.fmt(s.vals[i]):s.vals[i]}</text>)}</g>; })}
     {labels.map((l,i)=><text key={i} x={labels.length>1?i*W/(labels.length-1):W/2} y={H+20} fill="rgba(255,255,255,0.45)" fontFamily="Poppins" fontSize="12" textAnchor={i===0?'start':i===labels.length-1?'end':'middle'}>{l}</text>)}
   </svg>}</div>; }
+/* Sales Insights' chart: one series over the reporting window, drawn at the width it's shown. The figures sit on a
+   scale down the left (round steps, whole amounts) and in a note that follows the pointer or a finger, never on the
+   line itself, where they ran into it; the line is a smooth curve in the accent over a wash of it, with the nights
+   before the window drawn fainter when a short window is shown with its context. */
+function _C2Trend({points,unit,fmt,height=260}){ const T=useTheme(), acc=_c2Acc(T), [ref,w]=_c2Width(), [at,setAt]=React.useState(null), gid=React.useId().replace(/:/g,'');
+  const vals=points.map(p=>p.v), mx=Math.max(1,...vals), mn=Math.min(...vals);
+  // Round steps: 1, 2, 2.5 or 5 times a power of ten, three or four of them, starting at or under the lowest point.
+  const raw=(mx-Math.min(mn,mx*0.6))/3||1, pow=Math.pow(10,Math.floor(Math.log10(raw))), step=[1,2,2.5,5,10].map(k=>k*pow).find(k=>k>=raw)||raw, lo=Math.max(0,Math.floor(mn/step)*step-(mn%step===0?step:0)), hi=Math.ceil(mx/step)*step||step;
+  const ticks=[]; for(let v=lo;v<=hi+step/2;v+=step) ticks.push(v);
+  const gut=Math.max(...ticks.map(v=>fmt(v).length))*7.4+14, W=Math.max(240,w), H=height, top=14, bot=H-30, x0=gut, x1=W-12;
+  const X=i=>points.length>1?x0+i*(x1-x0)/(points.length-1):(x0+x1)/2, Y=v=>bot-(v-lo)/(hi-lo||1)*(bot-top), P=points.map((p,i)=>[X(i),Y(p.v)]);
+  // A smooth curve through every point that never overshoots one (monotone cubic).
+  const curve=pts=>{ if(pts.length<3) return pts.map((p,i)=>`${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+    const n=pts.length, dx=[], m=[], t=[]; for(let i=0;i<n-1;i++){ dx.push(pts[i+1][0]-pts[i][0]); m.push((pts[i+1][1]-pts[i][1])/dx[i]); }
+    t[0]=m[0]; t[n-1]=m[n-2]; for(let i=1;i<n-1;i++) t[i]=m[i-1]*m[i]<=0?0:3*(dx[i-1]+dx[i])/((2*dx[i]+dx[i-1])/m[i-1]+(dx[i]+2*dx[i-1])/m[i]);
+    let d=`M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`; for(let i=0;i<n-1;i++) d+=` C${(pts[i][0]+dx[i]/3).toFixed(1)},${(pts[i][1]+t[i]*dx[i]/3).toFixed(1)} ${(pts[i+1][0]-dx[i]/3).toFixed(1)},${(pts[i+1][1]-t[i+1]*dx[i]/3).toFixed(1)} ${pts[i+1][0].toFixed(1)},${pts[i+1][1].toFixed(1)}`; return d; };
+  const first=points.findIndex(p=>p.on!==false), d=P.length?curve(P):'', dOn=first>0?curve(P.slice(first)):d;
+  const every=Math.max(1,Math.ceil(points.length/Math.max(2,Math.floor((x1-x0)/78)))), cur=at==null?points.length-1:at, c=P[cur], tip=at!=null;
+  const move=e=>{ const r=e.currentTarget.getBoundingClientRect(), px=e.clientX-r.left; let b=0; P.forEach((p,i)=>{ if(Math.abs(p[0]-px)<Math.abs(P[b][0]-px)) b=i; }); setAt(b); };
+  const tipW=Math.max(fmt(points[cur]?points[cur].v:0).length,(points[cur]?points[cur].tip:'').length)*7.2+26, tipX=c?Math.max(x0,Math.min(x1-tipW,c[0]-tipW/2)):0, tipUp=c&&c[1]-top>62;
+  return <div ref={ref} style={{width:'100%'}}>{w>0&&points.length>0&&<svg data-testid="c2-trend" data-unit={unit} width={W} height={H} style={{display:'block',overflow:'visible',touchAction:'pan-y'}} onPointerMove={move} onPointerDown={move} onPointerLeave={()=>setAt(null)}>
+    <defs><linearGradient id={'tr'+gid} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={acc} stopOpacity="0.30"/><stop offset="0.7" stopColor={acc} stopOpacity="0.05"/><stop offset="1" stopColor={acc} stopOpacity="0"/></linearGradient></defs>
+    {ticks.map((v,i)=><g key={i}><line x1={x0} x2={x1} y1={Y(v)} y2={Y(v)} stroke="rgba(255,255,255,0.07)" strokeDasharray={i?'2 5':undefined}/><text x={x0-12} y={Y(v)+4} fill="rgba(255,255,255,0.45)" fontFamily="Poppins" fontSize="12" textAnchor="end">{fmt(v)}</text></g>)}
+    {first>0&&<rect x={P[first][0]} y={top} width={x1-P[first][0]} height={bot-top} fill="rgba(255,255,255,0.025)"/>}
+    {dOn&&<path d={`${dOn} L${P[P.length-1][0]},${bot} L${P[Math.max(0,first)][0]},${bot} Z`} fill={`url(#tr${gid})`}/>}
+    {first>0&&<path d={curve(P.slice(0,first+1))} fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth="1.6" strokeLinecap="round"/>}
+    <path d={dOn} fill="none" stroke={acc} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+    {points.length<=16&&P.map((p,i)=>i!==cur&&<circle key={i} cx={p[0]} cy={p[1]} r="2.6" fill="#0b0b0c" stroke={i>=first?acc:'rgba(255,255,255,0.4)'} strokeWidth="1.4"/>)}
+    {points.map((p,i)=>(i%every===0||i===points.length-1)&&(i===points.length-1||points.length-1-i>=every*0.6)&&<text key={i} x={X(i)} y={H-8} fill={i===cur?T.ink:'rgba(255,255,255,0.45)'} fontFamily="Poppins" fontSize="12" textAnchor={i===points.length-1?'end':i===0?'start':'middle'}>{p.label}</text>)}
+    {c&&<g data-testid="c2-trend-tip" pointerEvents="none">{tip&&<line x1={c[0]} x2={c[0]} y1={top} y2={bot} stroke="rgba(255,255,255,0.22)"/>}
+      <circle cx={c[0]} cy={c[1]} r="9" fill={acc} opacity="0.18"/><circle cx={c[0]} cy={c[1]} r="4.5" fill={acc} stroke="#0b0b0c" strokeWidth="2"/>
+      {tip&&<g transform={`translate(${tipX.toFixed(1)},${(tipUp?c[1]-58:c[1]+16).toFixed(1)})`}><rect width={tipW} height="44" fill="#111112" stroke="rgba(255,255,255,0.2)"/>
+        <text x="13" y="18" fill={T.ink} fontFamily="Poppins" fontSize="14" fontWeight="500">{fmt(points[cur].v)}</text><text x="13" y="35" fill="rgba(255,255,255,0.55)" fontFamily="Poppins" fontSize="12">{points[cur].tip}</text></g>}</g>}
+  </svg>}</div>; }
+/* The reporting window's picker, at the head of Dashboard and Sales Insights (TeamWindow): the stretch in words on a
+   button, opening the usual stretches, "the last N days, weeks or months" and a from-and-to range. */
+function _C2Window(){ const T=useTheme(), acc=_c2Acc(T), cur=TeamWindow.stored(), [open,setOpen]=React.useState(false), today=TeamSales.night(Date.now());
+  const [n,setN]=React.useState(cur.kind==='last'?String(cur.n):'7'), [unit,setUnit]=React.useState(cur.kind==='last'?cur.unit:'days');
+  const [from,setFrom]=React.useState(cur.kind==='custom'?cur.from:TeamSales.night(Date.now()-27*TeamWindow.DAY)), [to,setTo]=React.useState(cur.kind==='custom'?cur.to:today);
+  const pick=w=>{ TeamWindow.set(w); setOpen(false); }, lab={fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,margin:'16px 0 8px'};
+  const field={background:'#000',color:T.ink,border:'1px solid rgba(255,255,255,0.22)',borderRadius:0,padding:'9px 10px',fontFamily:C.P,fontSize:14,colorScheme:'dark',minWidth:0};
+  const nOk=+n>=1&&+n*TeamWindow.UNIT[unit]<=TeamWindow.MAX, rOk=!!from&&!!to&&from<=to&&from<=today;
+  return <div style={{position:'relative'}}>
+    <TeamBtn testid="c2-window" onClick={()=>setOpen(!open)}><span style={{color:T.mid}}>Showing</span>{TeamWindow.words(cur).label}<span aria-hidden="true" style={{fontSize:'9px'}}>{open?'▲':'▼'}</span></TeamBtn>
+    {open&&<><div onClick={()=>setOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>
+      <div data-testid="c2-window-panel" style={{position:'absolute',top:'calc(100% + 8px)',left:0,zIndex:41,width:'min(360px, calc(100vw - 40px))',background:'#0b0b0c',border:'1px solid rgba(255,255,255,0.2)',padding:'4px 18px 18px',boxShadow:'0 18px 50px rgba(0,0,0,0.6)'}}>
+        <div style={{...lab}}>Reporting window</div>
+        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{TeamWindow.PRESETS.map(p=>{ const w={kind:'last',...p}; return _c2Chip(T,TeamWindow.words(w).label,TeamWindow.is(w),()=>pick(w),`c2-window-${p.n}${p.unit}`); })}</div>
+        <div style={lab}>The last</div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}><input data-testid="c2-window-n" type="number" min="1" inputMode="numeric" value={n} onChange={e=>setN(e.target.value)} style={{...field,width:70}}/>
+          <select data-testid="c2-window-unit" value={unit} onChange={e=>setUnit(e.target.value)} style={{...field,flex:1}}><option value="days">days</option><option value="weeks">weeks</option><option value="months">months</option></select>
+          <TeamBtn small primary disabled={!nOk} testid="c2-window-last" onClick={()=>pick({kind:'last',n:Math.round(+n),unit})}>Show</TeamBtn></div>
+        <div style={lab}>Or a range of dates</div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}><input data-testid="c2-window-from" type="date" value={from} max={today} onChange={e=>setFrom(e.target.value)} style={{...field,flex:1}}/><span style={{color:T.mid,fontFamily:C.P,fontSize:14}}>to</span><input data-testid="c2-window-to" type="date" value={to} max={today} onChange={e=>setTo(e.target.value)} style={{...field,flex:1}}/></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,marginTop:10}}><span style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>Sales are kept for {TeamWindow.MAX} days.</span><TeamBtn small primary disabled={!rOk} testid="c2-window-range" onClick={()=>pick({kind:'custom',from,to})}>Show</TeamBtn></div>
+      </div></>}
+  </div>; }
 const _c2Weeks=ws=>ws.map((x,i)=>i===ws.length-1?'This week':new Date(x.from).toLocaleDateString(undefined,{day:'numeric',month:'short'}));
 /* A face inside a ring of that person's readiness against their role's minimum. */
 function _C2Person({x,open}){ const T=useTheme(), st=_tState[x.r.state], size=64, sw=5, r=(size-sw)/2, L=2*Math.PI*r;
@@ -104,8 +161,15 @@ function _C2Person({x,open}){ const T=useTheme(), st=_tState[x.r.state], size=64
 function _C2Needs({items,open,tagW=72,even}){ const T=useTheme(), acc=_c2Acc(T);
   return <div>{items.map((b,i)=><_C2Row key={i} first={i===0} align="flex-start" onClick={b.open?()=>open(b.open):undefined} testid="c2-need"><div style={{width:tagW,flexShrink:0,height:20,display:'flex',alignItems:'center'}}>{_c2Pill(b.tag,_C2_TONE[b.tone]||_C2_TONE.note,even?tagW:undefined)}</div><div style={{minWidth:0,flex:1}}><div style={{fontSize:14,fontWeight:b.act?400:500,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
     {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>→ {b.act}</div>}</div></_C2Row>)}</div>; }
+/* Lands on a card of the page by its test id (an item's `open.at`): waits for it to be drawn (the section may have
+   just changed), opens it if it's folded away, and brings it to the top of the page. */
+function _c2Land(id,tries=20){ const el=document.querySelector(`[data-testid="${id}"]`);
+  if(!el){ if(tries>0) setTimeout(()=>_c2Land(id,tries-1),60); return; }
+  const shut=el.matches('[aria-expanded="false"]')?el:el.querySelector('[data-testid="c2-card-fold"][aria-expanded="false"]'); if(shut) shut.click();
+  setTimeout(()=>el.scrollIntoView({block:'start'}),shut?60:0); }
 /* A page's "Needs you" as a button with how many are left, opening a dialog: the page's lists keep their width. Each
-   item opens what it's about or is cleared with Done; a cleared one stays away until it has something new to say. */
+   item with somewhere to go is a link: a tap closes the dialog, marks it done and lands on what it's about (a card of
+   a page, opened if folded, or a plan, wine or person); one with nowhere to go is advice, cleared with Done; a cleared one stays away until it has something new to say. */
 function _C2NeedsBtn({page,items,open,title,label='Needs you',things,testid='c2-needs'}){ const T=useTheme(), acc=_c2Acc(T), [on,setOn]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0);
   const left=TeamNeeds.left(page,items), gone=TeamNeeds.gone(page,items), n=left.length;
   return <><TeamBtn testid="c2-needs-btn" primary={n>0} onClick={()=>setOn(true)}>{label}<span data-testid="c2-needs-count" style={{minWidth:18,height:18,padding:'0 5px',boxSizing:'border-box',display:'inline-flex',alignItems:'center',justifyContent:'center',background:n?acc:'rgba(255,255,255,0.16)',color:n?_c2Ink():'#fff',fontSize:'11px',fontWeight:600,letterSpacing:0}}>{n}</span></TeamBtn>
@@ -115,8 +179,8 @@ function _C2NeedsBtn({page,items,open,title,label='Needs you',things,testid='c2-
           <div role="button" aria-label="Close" data-testid="c2-needs-close" onClick={()=>setOn(false)} style={{width:32,height:32,border:'1px solid rgba(255,255,255,0.16)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,color:T.ink,flexShrink:0}}>×</div></div>
         {left.map((b,i)=><div key={TeamNeeds.id(b)} data-testid="c2-need" style={{display:'flex',gap:14,alignItems:'flex-start',padding:'14px 0',borderTop:'1px solid rgba(255,255,255,0.08)'}}>
           <div style={{width:84,flexShrink:0,marginTop:1}}>{_c2Pill(b.tag,_C2_TONE[b.tone]||_C2_TONE.note)}</div>
-          <div role={b.open?'button':undefined} onClick={b.open?()=>{ setOn(false); open(b.open); }:undefined} style={{minWidth:0,flex:1,cursor:b.open?'pointer':'default'}}><div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
-            {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:acc,fontFamily:C.P,lineHeight:1.45,marginTop:3}}>→ {b.act}</div>}</div>
+          <div role={b.open?'button':undefined} data-testid={b.open?'c2-need-go':undefined} onClick={b.open?()=>{ TeamNeeds.clear(page,b); setOn(false); open(b.open); }:undefined} style={{minWidth:0,flex:1,cursor:b.open?'pointer':'default'}}><div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.45}}>{b.fact||b.title}</div>{b.text&&<div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.4}}>{b.text}</div>}
+            {b.act&&<div data-testid="c2-act" style={{fontSize:14,fontWeight:500,color:b.open?acc:T.mid,fontFamily:C.P,lineHeight:1.45,marginTop:3,...(b.open?{textDecoration:'underline',textUnderlineOffset:3,textDecorationColor:_alpha(acc,0.45)}:{})}}>{b.open?'→ ':''}{b.act}</div>}</div>
           <TeamBtn small testid="c2-need-done" onClick={()=>{ TeamNeeds.clear(page,b); bump(); }}>Done</TeamBtn></div>)}
         {gone>0&&<div style={{borderTop:'1px solid rgba(255,255,255,0.08)',paddingTop:12,marginTop:n?0:10,fontSize:13,color:T.mid,fontFamily:C.P}}>{gone} cleared · <span role="button" data-testid="c2-needs-restore" onClick={()=>{ TeamNeeds.restore(page); bump(); }} style={{color:acc,cursor:'pointer'}}>bring {gone===1?'it':'them'} back</span></div>}
       </div></div>}</>; }
@@ -166,7 +230,7 @@ function _C2Board({page,stacks,children,across}){ const T=useTheme(), acc=_c2Acc
       :<div role="button" data-testid="c2-board-reset" onClick={reset} title="Put every card on this page back where it started" style={{pointerEvents:'auto',padding:'7px 14px',borderRadius:999,background:'#1b1b1d',border:'1px solid rgba(255,255,255,0.16)',boxShadow:'0 6px 24px rgba(0,0,0,0.5)',fontSize:13,color:T.ink2,fontFamily:C.P,cursor:'pointer'}}>Reset to default layout</div>}</div>}</>; }
 function _C2Split({left,children,two}){ return <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,2fr)':'minmax(0,1fr)',gap:16,alignItems:'stretch'}}><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{left}</div><div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{children}</div></div>; }
 const _c2Grid=(n,two)=>({display:'grid',gridTemplateColumns:`repeat(${two?n:Math.min(n,2)},minmax(0,1fr))`,gap:16,alignItems:'stretch'});
-const _c2Up=(v,unit='%')=>v==null?null:`${v>=0?'▲':'▼'} ${Math.abs(v)}${unit} on last week`;
+const _c2Up=(v,unit='%')=>v==null?null:`${v>=0?'▲':'▼'} ${Math.abs(v)}${unit} ${TeamWindow.words().on}`;
 
 /* ── Dashboard ── */
 /* What training is worth, in weeks: the multiple, what it means in money for one server, then each top seller with
@@ -223,8 +287,8 @@ function _C2Plan({panel,open,close}){ const T=useTheme(), acc=_c2Acc(T), plan=Te
         <div style={{minWidth:0,flex:1}}><div style={{fontSize:14,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>{st.text}</div>
           {st.button&&<div role="button" data-testid="c2-plan-do" onClick={()=>!done[i]&&run(st.button,i)} style={{display:'inline-block',marginTop:8,padding:'7px 14px',borderRadius:0,fontSize:'12px',fontWeight:500,letterSpacing:'0.14em',textTransform:'uppercase',fontFamily:C.P,cursor:done[i]?'default':'pointer',whiteSpace:'nowrap',background:'transparent',color:done[i]?_C2_TONE.good:acc,border:`1px solid ${done[i]?_alpha(_C2_TONE.good,0.4):acc}`}}>{done[i]?'✓ Done':st.button.label}</div>}</div></div>)}</div>
     </div></>; }
-function _C2Dash({open,setSection,me,two,jump}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.has()?TeamReport.salesSummary(7):null, o=TeamReport.overview(), ppl=TeamReport.people();
-  const top=s?TeamReport.salesByWine(7).slice(0,6):TeamReport.coverage().rows.filter(x=>x.of>0).slice(0,6), delta=s?TeamReport.wineDelta(7):{}, cov=o.coverage, up=TeamReport.upside();
+function _C2Dash({open,setSection,me,two,jump}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.has()?TeamReport.salesSummary(TeamWindow.days()):null, o=TeamReport.overview(), ppl=TeamReport.people();
+  const top=s?TeamReport.salesByWine(TeamWindow.days()).slice(0,6):TeamReport.coverage().rows.filter(x=>x.of>0).slice(0,6), delta=s?TeamReport.wineDelta(TeamWindow.days()):{}, cov=o.coverage, up=TeamReport.upside();
   const pairs=TeamReport.pairings().filter(x=>x.first), pairAll=pairs.filter(x=>x.of&&x.people.length>=Math.ceil(x.of/2)).length, sold=pairs.filter(x=>x.sold!=null), soldPct=sold.length?Math.round(100*sold.reduce((a,x)=>a+x.sold,0)/sold.length):null;
   const tn=TeamData.tonight(), sps=TeamShift.specials(), reg=TeamShift.register(), st=TeamShift.status(), feat=tn.feature.map(id=>TeamData.wine(id)||TeamData.cocktail(id)).filter(Boolean), off=tn.off.map(id=>TeamData.dish(id)).filter(Boolean);
   const hour=new Date().getHours(), hi=`Good ${hour<12?'morning':hour<18?'afternoon':'evening'}, ${me.name.split(' ')[0]}`, needs=TeamReport.dashActions().slice(0,6); // behind the Needs you button in the page's head, as on Wines, Cocktails and Menu
@@ -233,14 +297,14 @@ function _C2Dash({open,setSection,me,two,jump}){ const T=useTheme(), acc=_c2Acc(
     <_C2Head hi="Dashboard" sub={`${hi} · ${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})}`} section="dash" actions={<><_C2NeedsBtn page="dash" items={needs} open={open} title="Needs you today"/><_C2Btn onClick={()=>setSection('sales')} testid="c2-to-sales">Open Sales Insights</_C2Btn></>}/>
     <div style={{..._c2Grid(5,two),marginBottom:16}}>
       <_C2Kpi label="Wine sales this week" value={s?_cMoney(s.revenue):'—'} delta={s?_c2Up(s.delta.revenue):null} good={!s||s.delta.revenue>=0} note={s?`${s.glasses} glasses · ${s.bottles} bottles`:'Import your sales to see it'} onClick={()=>jump('sales','sales-revenue')}/>
-      <_C2Kpi testid="c2-kpi-guest" label="Wine per guest" value={s&&s.perCover!=null?_cMoney(s.perCover,{dp:2}):'—'} delta={s?_c2Up(s.delta.perCover):null} good={!s||s.delta.perCover>=0} note={s?`${s.covers} guests over 7 nights`:''} onClick={()=>jump('sales','c2-kpi-perguest')}/>
+      <_C2Kpi testid="c2-kpi-guest" label="Wine per guest" value={s&&s.perCover!=null?_cMoney(s.perCover,{dp:2}):'—'} delta={s?_c2Up(s.delta.perCover):null} good={!s||s.delta.perCover>=0} note={s?`${s.covers} guests ${TeamWindow.words().over}`:''} onClick={()=>jump('sales','c2-kpi-perguest')}/>
       <_C2Kpi testid="c2-kpi-pairing" label={soldPct!=null?'Sold with the pairing':'Pairings the team can offer'} value={soldPct!=null?`${soldPct}%`:pairAll} unit={soldPct!=null?'':`of ${pairs.length}`} note={soldPct!=null?`of dishes go out with the wine we suggest`:'at least half the servers trained on the wine'} onClick={()=>jump('menu','c2-pairing-panel')}/>
       <_C2Kpi testid="dash-readiness" label="Training finished" value={`${o.avg}%`} note={`${o.ready} ready for service · ${o.slipping} slipping · ${o.behind} behind`} onClick={()=>jump('team','c2-team-list')}/>
       <_C2Kpi label="Still on the table" value={up?_cMoney(up.total):'—'} unit={up?'a week':''} note={up&&up.rows.length?'if every server were trained on your top sellers':'Every server is trained on your top sellers'} onClick={()=>jump('sales','c2-upside')}/>
     </div>
     <_C2Board page="dash" stacks={{top:<>
-    <_C2Card feat title={s?'Your best sellers · who is trained on them':'Your list · who is trained on it'} right={s?'the last 7 nights from your POS':null} fit={700} testid="c2-sellers" summary={s?top.slice(0,3).map(x=>`${TeamData.nick(x.wine)} ${_cMoney(x.revenue)}`).join(' · '):`${top.length} wines · ${top.filter(x=>x.knows>=x.of).length} with every seller trained`}>
-      <div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th>{s&&<><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th><th style={{...th,textAlign:'right'}}>Sales</th><th style={{...th,textAlign:'right'}}>On last week</th></>}<th style={{...th,paddingLeft:24}}>Trained on it</th></tr></thead>
+    <_C2Card feat title={s?'Your best sellers · who is trained on them':'Your list · who is trained on it'} right={s?`${TeamWindow.words().span} from your POS`:null} fit={700} testid="c2-sellers" summary={s?top.slice(0,3).map(x=>`${TeamData.nick(x.wine)} ${_cMoney(x.revenue)}`).join(' · '):`${top.length} wines · ${top.filter(x=>x.knows>=x.of).length} with every seller trained`}>
+      <div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th>{s&&<><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th><th style={{...th,textAlign:'right'}}>Sales</th><th style={{...th,textAlign:'right'}}>{TeamWindow.words().on.replace(/^on /,'On ')}</th></>}<th style={{...th,paddingLeft:24}}>Trained on it</th></tr></thead>
         <tbody>{top.map(x=>{ const kb=TeamReport.knownBy(x.wine), d=delta[x.wine.id]; return <tr key={x.wine.id} data-testid="c2-seller" onClick={()=>open({view:'wine',id:x.wine.id})} style={{cursor:'pointer'}}>
           <td style={td}><div style={{fontWeight:500}}>{TeamData.short(x.wine)}</div><div style={{fontSize:12,color:T.mid}}>{[x.wine.section,x.wine.glass&&`${x.wine.glass} glass`,x.wine.bottle&&`${x.wine.bottle} bottle`].filter(Boolean).join(' · ')}</div></td>
           {s&&<><td style={num}>{x.glasses||dash}</td><td style={num}>{x.bottles||dash}</td><td style={{...num,fontWeight:500}}>{_cMoney(x.revenue)}</td><td style={{...num,fontWeight:500,color:d==null?T.mid:d>=0?_C2_TONE.good:_C2_TONE.bad}}>{d==null?'—':`${d>=0?'+':'−'}${Math.abs(d)}%`}</td></>}
@@ -265,23 +329,23 @@ function _C2Dash({open,setSection,me,two,jump}){ const T=useTheme(), acc=_c2Acc(
   </div>; }
 
 /* ── Sales Insights ── */
-function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=TeamReport.salesSummary(7), [chart,setChart]=React.useState('all');
+function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), D=TeamWindow.days(), DL=TeamWindow.long(), W=TeamWindow.words(), s=TeamReport.salesSummary(D), [chart,setChart]=React.useState('all');
   if(!s) return <div data-testid="console-sales"><_C2Head hi="Sales Insights" sub="no sales yet" section="sales"/><_C2Card title="Bring in your sales"><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:12}}>Import a sales file from your POS and this page shows what sells, who sells it and what knowing the list is worth.</div><_C2Btn primary onClick={()=>setSection('pos')}>Open Integrations</_C2Btn></_C2Card></div>;
-  const wk=TeamReport.weeklyTrend(8), byWine=TeamReport.salesByWine(7).slice(0,8), delta=TeamReport.wineDelta(7), up=TeamReport.upside()||{total:0,rows:[]}, upBy=Object.fromEntries(up.rows.map(x=>[x.wine.id,x.extra])), know=TeamReport.soldKnowing(7);
-  const wd=TeamReport.byWeekday(28);
-  const srv=TeamReport.salesByServer(28).filter(x=>x.shifts>0), best=srv.length?Math.max(...srv.map(x=>x.revenuePerShift||0)):1, glassRev=s.revenue-s.bottleRevenue, share=s.revenue?s.bottleRevenue/s.revenue:0;
+  const ser=TeamReport.salesSeries(D), byWine=TeamReport.salesByWine(D).slice(0,8), delta=TeamReport.wineDelta(D), up=TeamReport.upside()||{total:0,rows:[]}, upBy=Object.fromEntries(up.rows.map(x=>[x.wine.id,x.extra])), know=TeamReport.soldKnowing(D);
+  const wd=TeamReport.byWeekday(DL);
+  const srv=TeamReport.salesByServer(DL).filter(x=>x.shifts>0), best=srv.length?Math.max(...srv.map(x=>x.revenuePerShift||0)):1, glassRev=s.revenue-s.bottleRevenue, share=s.revenue?s.bottleRevenue/s.revenue:0;
   const th={fontSize:12,letterSpacing:'0.08em',textTransform:'uppercase',color:T.mid,fontWeight:500,fontFamily:C.P,textAlign:'left',padding:'4px 10px 8px 0',whiteSpace:'nowrap'}, td={padding:'10px 10px 10px 0',borderTop:'1px solid rgba(255,255,255,0.065)',fontSize:14,fontFamily:C.P,color:T.ink,verticalAlign:'middle'}, num={...td,textAlign:'right'};
   return <div data-testid="console-sales">
-    <_C2Head hi="Sales Insights" sub={`the last 7 nights · ${s.covers} guests · from your POS`} section="sales" actions={<><_C2NeedsBtn page="sales" items={TeamReport.salesActions().slice(0,6)} open={open} title="What you need to know" label="What you need to know" things={['thing to know','things to know']} testid="sales-brief"/><_C2Btn onClick={()=>setSection('pos')}>Import sales</_C2Btn></>}/>
+    <_C2Head hi="Sales Insights" sub={`${W.span} · ${s.covers} guests · from your POS`} section="sales" actions={<><_C2NeedsBtn page="sales" items={TeamReport.salesActions().slice(0,6)} open={open} title="What you need to know" label="What you need to know" things={['thing to know','things to know']} testid="sales-brief"/><_C2Btn onClick={()=>setSection('pos')}>Import sales</_C2Btn></>}/>
     <div style={{..._c2Grid(5,two),marginBottom:16}}>
-      <_C2Kpi testid="sales-revenue" label="Wine sales" value={_cMoney(s.revenue)} delta={_c2Up(s.delta.revenue)} good={s.delta.revenue>=0} note={`${_cMoney(s.prev.revenue||0)} the week before`}/>
+      <_C2Kpi testid="sales-revenue" label="Wine sales" value={_cMoney(s.revenue)} delta={_c2Up(s.delta.revenue)} good={s.delta.revenue>=0} note={`${_cMoney(s.prev.revenue||0)} ${W.before}`}/>
       <_C2Kpi testid="c2-kpi-perguest" label="Wine per guest" value={s.perCover!=null?_cMoney(s.perCover,{dp:2}):'—'} delta={_c2Up(s.delta.perCover)} good={s.delta.perCover>=0} note={`${s.covers} guests`}/>
       <_C2Kpi testid="c2-kpi-glasses" label="Glasses sold" value={s.glasses} delta={_c2Up(s.delta.glasses)} good={s.delta.glasses>=0} note={`${_cMoney(glassRev)} · ${Math.round(100*(1-share))}% of wine sales`}/>
       <_C2Kpi testid="c2-kpi-bottles" label="Bottles sold" value={s.bottles} delta={_c2Up(s.delta.bottles)} good={s.delta.bottles>=0} note={`${_cMoney(s.bottleRevenue)} · ${Math.round(100*share)}% of wine sales`}/>
-      <_C2Kpi testid="c2-kpi-knowing" label="Sold by trained staff" value={know.share!=null?`${Math.round(100*know.share)}%`:'—'} delta={know.delta!=null?`${know.delta>=0?'▲':'▼'} ${Math.abs(know.delta)} points on last week`:null} good={know.delta==null||know.delta>=0} note="of wine sales, by a server trained on that wine"/>
+      <_C2Kpi testid="c2-kpi-knowing" label="Sold by trained staff" value={know.share!=null?`${Math.round(100*know.share)}%`:'—'} delta={know.delta!=null?`${know.delta>=0?'▲':'▼'} ${Math.abs(know.delta)} points ${W.on}`:null} good={know.delta==null||know.delta>=0} note="of wine sales, by a server trained on that wine"/>
     </div>
     <_C2Board page="sales" stacks={{top:<>
-    <_C2Card title="Best sellers" right="the last 7 nights · trained means they've passed that wine's questions in the drill" fit={860} testid="sales-wines" summary={byWine.slice(0,3).map(x=>`${TeamData.nick(x.wine)} ${_cMoney(x.revenue)}`).join(' · ')}><div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th><th style={{...th,textAlign:'right'}}>Sales</th><th style={{...th,textAlign:'right'}}>On last week</th><th style={th}>Trained on it</th><th style={{...th,textAlign:'right'}}>If all were trained</th></tr></thead>
+    <_C2Card title="Best sellers" right={`${W.span} · trained means they've passed that wine's questions in the drill`} fit={860} testid="sales-wines" summary={byWine.slice(0,3).map(x=>`${TeamData.nick(x.wine)} ${_cMoney(x.revenue)}`).join(' · ')}><div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Wine</th><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th><th style={{...th,textAlign:'right'}}>Sales</th><th style={{...th,textAlign:'right'}}>{TeamWindow.words().on.replace(/^on /,'On ')}</th><th style={th}>Trained on it</th><th style={{...th,textAlign:'right'}}>If all were trained</th></tr></thead>
       <tbody>{byWine.map(x=>{ const d=delta[x.wine.id], kb=TeamReport.knownBy(x.wine); return <tr key={x.wine.id} data-testid="c2-wine-row" onClick={()=>open({view:'wine',id:x.wine.id})} style={{cursor:'pointer'}}>
         <td style={td}><div style={{fontWeight:500}}>{TeamData.short(x.wine)}</div><div style={{fontSize:12,color:T.mid}}>{[x.wine.section,x.wine.glass&&`${x.wine.glass} glass`,x.wine.bottle&&`${x.wine.bottle} bottle`].filter(Boolean).join(' · ')}</div></td>
         <td style={num}>{x.glasses||<span style={{color:T.mid}}>—</span>}</td><td style={num}>{x.bottles||<span style={{color:T.mid}}>—</span>}</td><td style={{...num,fontWeight:500}}>{_cMoney(x.revenue)}</td>
@@ -294,9 +358,12 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
         {up.rows.length?<_C2Needs open={open} items={up.rows.slice(0,3).map(x=>({tag:_cMoney(x.extra),tone:'good',title:`Teach the ${TeamData.nick(x.wine)} to ${x.missing.length} more`,text:`${x.knows} of the ${x.of} who serve it are trained on it now`,open:{view:'wine',id:x.wine.id}}))}/>:<div style={{fontSize:13,color:T.mid,fontFamily:C.P}}>Everyone who serves your top sellers is trained on them.</div>}
         <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:10,lineHeight:1.4}}>A pointer from 28 nights of your own sales, never a promise: sections and nights vary.</div></_C2Card>
     </>,right:<>
-      <_C2Card title="Wine sales by week" right={<span data-testid="c2-chart-toggle" style={{display:'flex',gap:6}}>{[['all','All wine'],['bottles','Bottles'],['glasses','Glasses']].map(([k,l])=>_c2Chip(T,l,chart===k,()=>setChart(k),'c2-chart-'+k))}</span>} fit={420} testid="sales-trend" summary={wk.length>1?`${_cMoney(wk[wk.length-1].revenue)} this week · ${_cMoney(wk[0].revenue)} ${wk.length===8?'eight':wk.length} weeks ago`:`${_cMoney(s.revenue)} this week`}>
-        <_C2Line key={chart} height={250} marks labels={_c2Weeks(wk)} series={[{vals:wk.map(x=>chart==='bottles'?x.bottleRevenue:chart==='glasses'?x.revenue-x.bottleRevenue:x.revenue),col:T.ink,fill:true,fmt:v=>_cMoney(v)}]}/></_C2Card>
-      <_C2Card title="Who sells it" right="wine sold a shift beside training finished · 28 nights" fit={520} testid="sales-servers" summary={(()=>{ const a=[...srv].sort((x,y)=>(y.revenuePerShift||0)-(x.revenuePerShift||0)), f=x=>x.person.name.split(' ')[0]; return a.length?`${f(a[0])} sells most, ${_cMoney(a[0].revenuePerShift||0)} a shift${a.length>1?` · ${f(a[a.length-1])} least, ${_cMoney(a[a.length-1].revenuePerShift||0)}`:''}`:'No shifts with sales yet'; })()}><div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Server</th><th style={{...th,textAlign:'right'}}>Wine a shift</th><th style={th}>Readiness</th><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th></tr></thead>
+      <_C2Card title={ser.unit==='night'?'Wine sales by night':'Wine sales by week'} right={<span data-testid="c2-chart-toggle" style={{display:'flex',gap:6}}>{[['all','All wine'],['bottles','Bottles'],['glasses','Glasses']].map(([k,l])=>_c2Chip(T,l,chart===k,()=>setChart(k),'c2-chart-'+k))}</span>} fit={420} testid="sales-trend" summary={(()=>{ const ps=ser.points.filter(x=>x.inWindow), l=ps[ps.length-1], f=ps[0]; return !l?'No sales yet':ps.length>1?`${_cMoney(l.revenue)} the latest ${ser.unit} · ${_cMoney(f.revenue)} the first of ${ps.length}`:`${_cMoney(l.revenue)} this ${ser.unit}`; })()}>
+        <_C2Trend key={chart+D} unit={ser.unit} fmt={v=>_cMoney(v)} points={ser.points.map((x,i)=>{ const d=new Date(x.from), last=i===ser.points.length-1, day=d.toLocaleDateString(undefined,{day:'numeric',month:'short'});
+          return {v:chart==='bottles'?x.bottleRevenue:chart==='glasses'?x.revenue-x.bottleRevenue:x.revenue,on:x.inWindow,label:ser.unit==='week'&&last&&TeamWindow.stored().kind!=='custom'?'This week':day,tip:ser.unit==='night'?d.toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'}):`Week from ${day}`}; })}/>
+        {ser.points.some(x=>!x.inWindow)&&<div data-testid="c2-trend-note" style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:6}}>The shaded nights are {W.span}; the fainter line is the three weeks before, for the shape.</div>}</_C2Card>
+    </>,wide:<>
+      <_C2Card title="Who sells it" right={`wine sold a shift beside training finished · ${DL} nights`} fit={520} testid="sales-servers" summary={(()=>{ const a=[...srv].sort((x,y)=>(y.revenuePerShift||0)-(x.revenuePerShift||0)), f=x=>x.person.name.split(' ')[0]; return a.length?`${f(a[0])} sells most, ${_cMoney(a[0].revenuePerShift||0)} a shift${a.length>1?` · ${f(a[a.length-1])} least, ${_cMoney(a[a.length-1].revenuePerShift||0)}`:''}`:'No shifts with sales yet'; })()}><div style={{overflowX:'clip',margin:'0 -20px',padding:'0 20px'}}><table className="c2t c2sticky" style={{width:'100%',borderCollapse:'collapse'}}><thead><tr><th style={th}>Server</th><th style={{...th,textAlign:'right'}}>Wine a shift</th><th style={th}>Readiness</th><th style={{...th,textAlign:'right'}}>Glasses</th><th style={{...th,textAlign:'right'}}>Bottles</th></tr></thead>
         <tbody>{srv.map(x=>{ const r=x.readiness, col=r?_tState[r.state].col:T.mid; return <tr key={x.person.id} data-testid="c2-server" onClick={()=>open({view:'person',id:x.person.id})} style={{cursor:'pointer'}}>
           <td style={td}><div style={{display:'flex',alignItems:'center',gap:10}}><TeamFace person={x.person} size={26}/><span style={{fontWeight:500}}>{x.person.name.split(' ')[0]}</span><span style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[x.person.role].label}</span></div></td>
           <td style={{...num,fontWeight:500}}>{_cMoney(x.revenuePerShift||0)}</td>
@@ -320,7 +387,7 @@ function _C2Sales({open,setSection,two}){ const T=useTheme(), acc=_c2Acc(T), s=T
     <_C2Card title="Glass or bottle" right={`share of wine sales · ${s.glassesPerCover.toFixed(2)} glasses and ${s.bottlesPerCover.toFixed(2)} bottles a guest`} testid="c2-mix" summary={`${Math.round(100*(1-share))}% glasses (${_cMoney(glassRev)}) · ${Math.round(100*share)}% bottles (${_cMoney(s.bottleRevenue)})`}>
         <div style={{display:'flex',height:10,borderRadius:5,overflow:'hidden',marginTop:4}}><div style={{width:`${Math.round(100*(1-share))}%`,background:'rgba(255,255,255,0.82)'}}/><div style={{flex:1,background:acc}}/></div>
         <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:8,fontFamily:C.P}}><div><div style={{fontSize:14,fontWeight:500,color:T.ink}}>{Math.round(100*(1-share))}% by the glass</div><div style={{fontSize:12,color:T.mid}}>{s.glasses} glasses · {_cMoney(glassRev)}</div></div><div style={{textAlign:'right'}}><div style={{fontSize:14,fontWeight:500,color:T.ink}}>{Math.round(100*share)}% bottles</div><div style={{fontSize:12,color:T.mid}}>{s.bottles} bottles · {_cMoney(s.bottleRevenue)}</div></div></div></_C2Card>
-    </>}}>{(S,E)=><div style={{display:'flex',flexDirection:'column',gap:16}}>{S.top}{E.left||E.right?<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{E.left?S.right:S.left}</div>:<_C2Split two={two} left={S.left}>{S.right}</_C2Split>}{S.bottom}</div>}</_C2Board>
+    </>}}>{(S,E)=><div style={{display:'flex',flexDirection:'column',gap:16}}>{S.top}{E.left||E.right?<div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>{E.left?S.right:S.left}</div>:<_C2Split two={two} left={S.left}>{S.right}</_C2Split>}{/* Who sells it and the nights of the week take the page's width, under the two columns. */}{S.wide}{S.bottom}</div>}</_C2Board>
   </div>; }
 
 /* The classic section's editor, kept under a fold so nothing the console could do is lost in the new look. */
@@ -380,6 +447,21 @@ function _C2Mins({changed}){ const T=useTheme(), acc=_c2Acc(T);
       <tbody>{roles.map(rk=>{ const n=TeamLearn.need(rk); return <tr key={rk} data-testid="c2-min-row"><td style={{...td,fontWeight:500,color:here.has(rk)?T.ink:T.mid}}>{TeamLearn.ROLES[rk].label}</td>
         {parts.map(k=><td key={k} style={td}>{n[k]>0?<span data-testid="c2-min" style={{display:'inline-flex',alignItems:'center',gap:8}}>{btn('Lower',()=>step(rk,k,-0.1),n[k]<=0.5)}<span style={{minWidth:40,textAlign:'center',fontWeight:500}}>{Math.round(n[k]*100)}%</span>{btn('Raise',()=>step(rk,k,0.1),n[k]>=1)}</span>:<span style={{color:T.mid}}>—</span>}</td>)}</tr>; })}</tbody></table></div>
     <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:12,maxWidth:820}}>The share of each area someone must be trained on to be ready for service, from 50% to 100% in steps of ten. Everyone's readiness is worked out against the new minimum at once.</div></_C2Card>; }
+/* Running costs, for Vinterest's own team only (TeamSuper.on()): what each publish cost in Claude calls and the month by
+   purpose, from TeamCosts. Never rendered for a restaurant: no running cost is shown to a customer. */
+function _C2Costs({two}){ const T=useTheme(), c=TeamCosts.get(), pubs=[...c.publishes].reverse(), m=new Date().toISOString().slice(0,7), month=c.months[m]||{};
+  const td={padding:'8px 10px',fontSize:14,fontFamily:C.P,color:T.ink2,borderTop:`1px solid ${T.line}`,textAlign:'left',whiteSpace:'nowrap'}, th={...td,borderTop:'none',color:T.mid,fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:500};
+  const what=p=>p.kind==='menu'?'Menu':[p.added&&`${p.added} new`,p.changed&&`${p.changed} changed`,p.removed&&`${p.removed} gone`].filter(Boolean).join(', ')||'List';
+  const when=t=>new Date(t).toLocaleString(undefined,{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  const name=k=>k.replace(/^team_/,'').replace(/_/g,' ');
+  return <_C2Card title="Running costs" testid="c2-costs" right="Vinterest only · never shown to the restaurant" summary={`${pubs.length} publish${pubs.length===1?'':'es'} · ${TeamCosts.usd(TeamCosts.dollars(month))} this month`} style={two?{gridColumn:'1 / -1'}:undefined}>
+    <div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>Claude calls made from this device, at list prices. Voice isn't counted.</div>
+    {pubs.length?<div style={{overflowX:'auto'}}><table style={{borderCollapse:'collapse',width:'100%'}}><thead><tr><th style={th}>Publish</th><th style={th}>What changed</th><th style={th}>Calls</th><th style={th}>Time</th><th style={th}>Cost</th><th style={th}>Where it went</th></tr></thead>
+      <tbody>{pubs.map((p,i)=><tr key={i} data-testid="c2-cost-row"><td style={td}>{when(p.at)}</td><td style={td}>{what(p)}</td><td style={td}>{TeamCosts.calls(p.by)}</td><td style={td}>{Math.max(1,Math.round((p.ms||0)/60000))} min</td><td style={{...td,color:T.ink,fontWeight:500}}>{TeamCosts.usd(TeamCosts.dollars(p.by))}</td>
+        <td style={{...td,whiteSpace:'normal'}}>{Object.entries(p.by).sort((a,b)=>TeamCosts.dollars({x:b[1]})-TeamCosts.dollars({x:a[1]})).map(([k,b])=>`${name(k)} ${TeamCosts.usd(TeamCosts.dollars({x:b}))}`).join(' · ')}</td></tr>)}</tbody></table></div>
+      :<div style={{fontSize:14,color:T.ink2,fontFamily:C.P}}>No publish has made a call from this device yet.</div>}
+    {Object.keys(month).length>0&&<div data-testid="c2-cost-month" style={{fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.6,marginTop:14}}><span style={{color:T.ink,fontWeight:500}}>This month, every call: {TeamCosts.usd(TeamCosts.dollars(month))}.</span> {Object.entries(month).sort((a,b)=>TeamCosts.dollars({x:b[1]})-TeamCosts.dollars({x:a[1]})).map(([k,b])=>`${name(k)} ${TeamCosts.usd(TeamCosts.dollars({x:b}))} (${b.n})`).join(' · ')}</div>}
+  </_C2Card>; }
 function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.get(), vs=[...(d.versions||[])].reverse().slice(0,6);
   const [name,setName]=React.useState(d.venue.name||''), [due,setDue]=React.useState(String(d.settings.dueDays||7)), [saved,setSaved]=React.useState(false);
   const save=()=>{ TeamData.setVenue({name:name.trim()||d.venue.name}); const n=Math.max(1,Math.min(60,parseInt(due,10)||7)); TeamData.setSetting('dueDays',n); setDue(String(n)); setSaved(true); refresh&&refresh(); };
@@ -411,6 +493,7 @@ function _C2Setup({refresh,two}){ const T=useTheme(), acc=_c2Acc(T), d=TeamData.
           <div style={text}>Everything is on this device: the list, menu, cards, pairings, every person's training and any sales. Nothing is synced until restaurants have accounts.</div>
           <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}><_C2Btn testid="team-export" onClick={()=>TeamData.exportFile()}>Export as a file</_C2Btn>
             <_C2Btn onClick={()=>{ if(confirm('Start again? This clears the restaurant, everyone\'s training and sales on this device.')){ TeamData.reset(); Store.remove(TeamLearn.KEY); TeamLearn.resetProgress(); TeamSales.clear(); refresh&&refresh(); } }}>Start again</_C2Btn></div></_C2Card>
+        {TeamSuper.on()&&<_C2Costs two={two}/>}
         <_C2Card title="Accounts and billing" testid="c2-accounts" summary="An account per restaurant comes next" style={two?{gridColumn:'1 / -1'}:undefined}>
           <div style={text}>Next: an account per restaurant with sites and members, each person on their own phone, and billing per site through Stripe. The console then runs on the web with the same screens.</div></_C2Card>
       </div>
@@ -689,7 +772,8 @@ function _C2PlanDraft({plan,onPush,onDiscard,bump}){ const T=useTheme(), acc=_c2
 /* Every bespoke training track at once: who it's for, what it covers, how far along it is. A row opens that person. */
 function _C2Tracks({close,pick}){ const T=useTheme(), acc=_c2Acc(T), plans=TeamPlans.all();
   const covers=p=>{ const n={}; p.parts.forEach(x=>x.qs.forEach(q=>{ const c=_c2Counts(q)||'Extra practice'; n[c]=(n[c]||0)+1; })); return Object.entries(n).sort((a,b)=>b[1]-a[1]); };
-  return <><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)'}}/>
+  // Drawn from inside the page, which scrolls: fixed to the screen, or it would centre on the page's whole height.
+  return <div style={{position:'fixed',inset:0,zIndex:60}}><div data-testid="console-scrim" onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.62)'}}/>
     <div data-testid="c2-tracks" role="dialog" aria-label="Bespoke training" style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(760px, 94%)',maxHeight:'88%',overflowY:'auto',background:'#0E0E10',border:`1px solid ${_alpha(acc,0.34)}`,borderRadius:20,padding:'22px 26px 24px'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:14}}><div><div style={{fontSize:20,fontWeight:500,color:T.ink,fontFamily:C.P}}>Bespoke training</div><div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2}}>{plans.length?`${plans.filter(p=>p.status==='pushed'&&!TeamPlans.progress(p).finished).length} running · ${plans.filter(p=>p.status==='pushed'&&TeamPlans.progress(p).finished).length} finished · ${plans.filter(p=>p.status==='draft').length} waiting for you to push`:'Plans you have Vinny write for one person'}</div></div>
         <div role="button" aria-label="Close" data-testid="c2-tracks-close" onClick={close} style={{width:32,height:32,borderRadius:16,border:'1px solid rgba(255,255,255,0.16)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:16,color:T.ink,flexShrink:0}}>×</div></div>
@@ -705,7 +789,7 @@ function _C2Tracks({close,pick}){ const T=useTheme(), acc=_c2Acc(T), plans=TeamP
             <div style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:10}}>{draft?`Read it and push it to ${f} →`:`See ${f} →`}</div>
           </div></div>; })
       :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.55,marginTop:16}}>No bespoke training yet. Pick someone on the Team page and ask Vinny for a plan in your own words; it appears here once written, and its progress once pushed.</div>}
-    </div></>; }
+    </div></div>; }
 function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc=_c2Acc(T), [,bump]=React.useReducer(x=>x+1,0), [pushed,setPushed]=React.useState({});
   const rows=TeamReport.teamRows(), o=TeamReport.overview(), tw=TeamSales.has()?TeamReport.trainingWorth(28,1):null, f=x=>x.person.name.split(' ')[0];
   const [sel,setSel]=React.useState(()=>{ const want=_c2TeamPick; _c2TeamPick=null; return want&&rows.some(y=>y.person.id===want)?want:(rows.find(x=>x.r.state!=='ready')||rows[0]||{person:{}}).person.id; }), x=rows.find(y=>y.person.id===sel)||rows[0];
@@ -716,7 +800,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
   if(!x) return <div data-testid="c2-team"><_C2Head hi="Team" sub="nobody yet" section="team"/><_C2Manage k="c2-manage-team" title="Add your team"><_CTeam open={open} refresh={refresh}/></_C2Manage></div>;
   const pick=id=>{ setSel(id); setErr(null); setAsk(''); }, pl=pushed[x.person.id]||x.plan, done=!!pushed[x.person.id], st=_tState[x.r.state], name=f(x);
   const push=()=>{ if(TeamReport.pushPlan(x.person.id)) setPushed(d=>({...d,[x.person.id]:x.plan})); };
-  const mine=TeamPlans.forPerson(x.person.id,{drafts:true}), draft=mine.find(p=>p.status==='draft'), sent=mine.filter(p=>p.status==='pushed');
+  const mine=TeamPlans.forPerson(x.person.id,{drafts:true}), drafts1=mine.filter(p=>p.status==='draft'), draft=drafts1[0], sent=mine.filter(p=>p.status==='pushed');
   const write=async text=>{ const t=String(text||ask).trim(); if(!t||busy) return; setBusy(true); setErr(null); try{ await TeamPlans.write(x.person.id,t,me&&me.id); setAsk(''); } catch(e){ setErr({msg:(e&&e.message)||'Vinny couldn\'t be reached just now.',ask:t}); } setBusy(false); bump(); };
   // Vinny's own suggestions for this person, from their answers and sales (TeamPlans.suggest): each one starts its plan with a tap.
   const sug=TeamPlans.suggest(x.person.id,3,x);
@@ -760,7 +844,8 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginTop:10}}>{pl.items.map(y=>y.name).join(', ')}</div></>
           :<div style={{fontSize:14,color:_C2_TONE.good,fontFamily:C.P}}>{name} is trained on everything the role sells.</div>}</_C2Card>
           <_C2Card feat={!draft} title={`Ask Vinny for a plan for ${name}`} testid="c2-vinny" summary={sug.map(g=>g.title).slice(0,2).join(' · ')}>
-            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>What Vinny would work on with {name}, from {name}'s own answers and sales. Pick one and Vinny writes new questions from your list and menu; you read it, then push it.</div>
+            <div style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10}}>What Vinny would work on with {name}, from {name}'s own answers and sales. {TeamPlans.noCalls()?'Pick one and a plan is built for you to read, then push.':'Pick one and Vinny writes new questions from your list and menu; you read it, then push it.'}</div>
+            {TeamPlans.noCalls()&&<div data-testid="c2-vinny-demo" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,marginBottom:10,paddingLeft:10,borderLeft:`2px solid ${_alpha(acc,0.5)}`}}>On this demo a plan is built from the questions already written for these wines. In your restaurant Vinny writes new ones for the person.</div>}
             {busy?<div data-testid="c2-vinny-busy" style={{fontSize:14,color:acc,fontFamily:C.P,marginTop:10}}>Vinny is writing {name}'s plan… this can take up to a minute.</div>
               :err?<div data-testid="c2-vinny-error" style={{marginTop:10}}><div style={{fontSize:14,color:_C2_TONE.bad,fontFamily:C.P,lineHeight:1.45}}>{err.msg}</div><div role="button" data-testid="c2-vinny-fallback" onClick={()=>{ TeamPlans.fromCards(x.person.id,err.ask,me&&me.id); setErr(null); bump(); }} style={{fontSize:13,fontWeight:500,color:acc,fontFamily:C.P,marginTop:6,cursor:'pointer'}}>→ Build one from the questions {name} already has instead</div></div>
               :<div style={{display:'flex',flexDirection:'column'}}>{sug.map((g,i)=><div key={g.kind} data-testid="c2-vinny-sug" data-kind={g.kind} style={{display:'flex',gap:14,alignItems:'center',padding:'11px 0',borderTop:i?'1px solid rgba(255,255,255,0.08)':'none'}}>
@@ -770,7 +855,7 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             <div style={{position:'relative'}}><textarea aria-label={`What does ${name} need?`} data-testid="c2-vinny-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); write(); } }} rows={2} placeholder={`${name} is struggling with…`} style={{width:'100%',boxSizing:'border-box',resize:'vertical',padding:'12px 44px 12px 14px',borderRadius:12,border:`1px solid ${_alpha(acc,0.4)}`,background:'rgba(0,0,0,0.35)',color:T.ink,fontFamily:C.P,fontSize:14,lineHeight:1.5,outline:'none'}}/>
               <div role="button" aria-label="Ask Vinny" data-testid="c2-vinny-send" onClick={()=>write()} style={{position:'absolute',right:10,bottom:14,width:28,height:28,borderRadius:14,background:ask.trim()&&!busy?acc:'rgba(255,255,255,0.1)',color:_c2Ink(),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:14}}>➤</div></div></div>
           </_C2Card>
-          <_C2Card title={wide?`${name}'s bespoke training`:'Bespoke training'} right={wide?'tracked to completion':null} testid="c2-bespoke" summary={sent.length||draft?[sent.length&&`${sent.length} pushed`,draft&&'1 draft to read'].filter(Boolean).join(' · '):`Nothing pushed to ${name} yet`}>
+          <_C2Card title={wide?`${name}'s bespoke training`:'Bespoke training'} right={wide?'tracked to completion':null} testid="c2-bespoke" summary={sent.length||draft?[sent.length&&`${sent.length} pushed`,drafts1.length&&`${drafts1.length} draft${drafts1.length===1?'':'s'} to read`].filter(Boolean).join(' · '):`Nothing pushed to ${name} yet`}>
             {sent.length?sent.map((p,i)=>{ const pr=TeamPlans.progress(p), col=pr.finished?_C2_TONE.good:pr.done?acc:_C2_TONE.note; return <div key={p.id} data-testid="c2-bespoke-plan" style={{padding:'10px 0',borderTop:i?'1px solid rgba(255,255,255,0.07)':'none'}}>
               <div style={{display:'flex',justifyContent:'space-between',gap:10}}><div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:500,color:T.ink,fontFamily:C.P}}>{p.title}</div><div style={{fontSize:12,color:T.mid,fontFamily:C.P}}>{p.parts.length} part{p.parts.length===1?'':'s'} · {p.source==='vinny'?'written by Vinny':'from their own questions'} · pushed {_cAgo(p.pushedAt)}</div></div><span style={{fontSize:13,fontWeight:500,color:col,fontFamily:C.P,whiteSpace:'nowrap'}}>{pr.finished?'Done ✓':`${pr.done} of ${pr.total} done`}</span></div>
               <div style={{display:'flex',gap:3,marginTop:8}}>{pr.parts.map((q,k)=><div key={k} title={p.parts[k].title} style={{flex:q.total,height:6,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}><div style={{height:'100%',width:`${Math.round(100*q.done/q.total)}%`,background:col,borderRadius:3}}/></div>)}</div>
@@ -778,7 +863,8 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
             :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.5}}>Nothing pushed to {name} yet. A plan you push appears on {name}'s phone as its own training, apart from the daily drill, and its progress shows here.</div>}
           </_C2Card>
         </>}}>{S=>S.detail}</_C2Board>
-        {draft&&<_C2PlanDraft plan={draft} bump={bump} onPush={()=>{ TeamPlans.push(draft.id); bump(); refresh&&refresh(); }} onDiscard={()=>{ TeamPlans.discard(draft.id); bump(); }}/>}
+        {/* Every draft waiting for this person, newest first: the figure at the top counts them all, so they all show. */}
+        {drafts1.map(d=><_C2PlanDraft key={d.id} plan={d} bump={bump} onPush={()=>{ TeamPlans.push(d.id); bump(); refresh&&refresh(); }} onDiscard={()=>{ TeamPlans.discard(d.id); bump(); }}/>)}
       </div>
     </div>
     <_C2Manage k="c2-manage-team" title="Manage: add or remove people and set training depth"><_CTeam open={open} refresh={refresh} noMins/></_C2Manage>
@@ -788,14 +874,14 @@ function _C2Team({open,setSection,me,two,refresh,wide}){ const T=useTheme(), acc
 /* ── The shell ── */
 /* ── The console on a phone: one page of the figures that matter from every section. Writing a plan, editing the
    list or the menu, uploads and settings stay on a larger screen, and the page says so. ── */
-function _C2Mobile({open,me}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.has()?TeamReport.salesSummary(7):null, o=TeamReport.overview(), ppl=TeamReport.teamRows(), know=s?TeamReport.soldKnowing(7):null;
-  const top=s?TeamReport.salesByWine(7).slice(0,5):[], needs=TeamReport.dashActions().slice(0,4), st=TeamShift.status(), reg=TeamShift.register(), tn=TeamData.tonight(), sps=TeamShift.specials(), wd=s?TeamReport.byWeekday(28):null;
+function _C2Mobile({open,me}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.has()?TeamReport.salesSummary(TeamWindow.days()):null, o=TeamReport.overview(), ppl=TeamReport.teamRows(), know=s?TeamReport.soldKnowing(TeamWindow.days()):null;
+  const top=s?TeamReport.salesByWine(TeamWindow.days()).slice(0,5):[], needs=TeamReport.dashActions().slice(0,4), st=TeamShift.status(), reg=TeamShift.register(), tn=TeamData.tonight(), sps=TeamShift.specials(), wd=s?TeamReport.byWeekday(28):null;
   const B=TeamBuyer, c=B.concentration(), win=B.windows(), mk=B.markups(), pairs=TeamReport.pairings().filter(x=>x.first), sold=pairs.filter(x=>x.sold!=null), soldPct=sold.length?Math.round(100*sold.reduce((a,x)=>a+x.sold,0)/sold.length):null, half=pairs.filter(x=>x.of&&x.people.length>=Math.ceil(x.of/2)).length;
   const hour=new Date().getHours(), row={display:'flex',alignItems:'center',gap:12,padding:'10px 0'}, sep=i=>i?'1px solid rgba(255,255,255,0.065)':'none', fact=(label,value,note,i)=><div key={label} data-testid="c2m-fact" style={{...row,borderTop:sep(i),alignItems:'baseline'}}><div style={{flex:1,minWidth:0,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.4}}>{label}{note&&<div style={{fontSize:12,color:T.mid}}>{note}</div>}</div><div style={{fontSize:18,fontWeight:600,color:T.ink,fontFamily:C.P,whiteSpace:'nowrap'}}>{value}</div></div>;
   return <div data-testid="c2-mobile" style={{display:'flex',flexDirection:'column',gap:14}}>
     <_C2Head hi={`Good ${hour<12?'morning':hour<18?'afternoon':'evening'}, ${me.name.split(' ')[0]}`} sub={new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})} section="dash" />
     <div style={{..._c2Grid(2,false),gap:10,marginTop:-8}}>
-      <_C2Kpi label="Wine sales" value={s?_cMoney(s.revenue):'—'} delta={s?_c2Up(s.delta.revenue):null} good={!s||s.delta.revenue>=0} note={s?'the last 7 nights':'Import your sales to see it'}/>
+      <_C2Kpi label="Wine sales" value={s?_cMoney(s.revenue):'—'} delta={s?_c2Up(s.delta.revenue):null} good={!s||s.delta.revenue>=0} note={s?TeamWindow.words().span:'Import your sales to see it'}/>
       <_C2Kpi label="Wine per guest" value={s&&s.perCover!=null?_cMoney(s.perCover,{dp:2}):'—'} delta={s?_c2Up(s.delta.perCover):null} good={!s||s.delta.perCover>=0} note={s?`${s.covers} guests`:''}/>
       <_C2Kpi label="Glasses sold" value={s?s.glasses:'—'} delta={s?_c2Up(s.delta.glasses):null} good={!s||s.delta.glasses>=0}/>
       <_C2Kpi label="Bottles sold" value={s?s.bottles:'—'} delta={s?_c2Up(s.delta.bottles):null} good={!s||s.delta.bottles>=0}/>
@@ -809,7 +895,7 @@ function _C2Mobile({open,me}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.ha
     <_C2Card title="The team" right="furthest from ready first" testid="c2m-team">{ppl.map((x,i)=>{ const col=_tState[x.r.state].col; return <div key={x.person.id} role="button" data-testid="c2m-person" onClick={()=>open({view:'person',id:x.person.id})} style={{...row,borderTop:sep(i),cursor:'pointer'}}>
       <TeamFace person={x.person} size={36}/><div style={{flex:1,minWidth:0,fontFamily:C.P}}><div style={{fontSize:14,fontWeight:500,color:T.ink}}>{x.person.name}</div><div style={{fontSize:12,color:T.mid}}>{TeamLearn.ROLES[x.person.role].label}{x.sales?` · ${_cMoney(x.sales.perWeek)} a week`:''}</div></div>
       <div style={{textAlign:'right',fontFamily:C.P}}><div style={{fontSize:16,fontWeight:600,color:col}}>{x.r.pct}%</div><div style={{fontSize:12,color:T.mid,whiteSpace:'nowrap'}}>{x.r.state==='ready'?'Ready':x.r.behind?`${x.r.behind} days behind`:x.r.state==='slipping'?'Slipping':'Not yet'}</div></div></div>; })}</_C2Card>
-    {top.length>0&&<_C2Card title="Best sellers" right="the last 7 nights" testid="c2m-sellers">{top.map((x,i)=>{ const kb=TeamReport.knownBy(x.wine), few=kb.of&&kb.people.length<Math.ceil(kb.of/2); return <div key={x.wine.id} role="button" data-testid="c2m-wine" onClick={()=>open({view:'wine',id:x.wine.id})} style={{...row,borderTop:sep(i),cursor:'pointer',alignItems:'flex-start'}}>
+    {top.length>0&&<_C2Card title="Best sellers" right={TeamWindow.words().span} testid="c2m-sellers">{top.map((x,i)=>{ const kb=TeamReport.knownBy(x.wine), few=kb.of&&kb.people.length<Math.ceil(kb.of/2); return <div key={x.wine.id} role="button" data-testid="c2m-wine" onClick={()=>open({view:'wine',id:x.wine.id})} style={{...row,borderTop:sep(i),cursor:'pointer',alignItems:'flex-start'}}>
       <div style={{flex:1,minWidth:0,fontFamily:C.P}}><div style={{fontSize:14,fontWeight:500,color:T.ink,lineHeight:1.35}}>{TeamData.short(x.wine)}</div><div style={{fontSize:12,color:T.mid,marginTop:2}}>{x.glasses} glasses · {x.bottles} bottles · <span style={{color:few?_C2_TONE.bad:T.mid}}>{kb.people.length} of {kb.of} trained</span></div></div>
       <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{_cMoney(x.revenue)}</div></div>; })}
       {know&&know.share!=null&&<div style={{fontSize:13,color:T.ink2,fontFamily:C.P,lineHeight:1.5,paddingTop:10,borderTop:'1px solid rgba(255,255,255,0.08)'}}>{Math.round(100*know.share)}% of wine sales came from a server trained on the wine they sold.</div>}</_C2Card>}
@@ -820,9 +906,9 @@ function _C2Mobile({open,me}){ const T=useTheme(), acc=_c2Acc(T), s=TeamSales.ha
     <div data-testid="c2m-more" style={{fontSize:13,color:T.mid,fontFamily:C.P,lineHeight:1.5,padding:'2px 4px'}}>This is the console's summary for a phone. Training plans, the full list and menu, uploads and settings are on a tablet or a computer.</div>
   </div>; }
 
-function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=useTheme(), acc=_c2Acc(T), [ref,w]=_c2Width(), two=w>=1040, phone=useLayoutSize()==='phone', side=!phone&&TeamData.navStyle()==='side', [navOpen,setNavOpen]=React.useState(false), navT=React.useRef(0), [,bump]=React.useReducer(x=>x+1,0);
+function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ TeamWindow.scope=true; const T=useTheme(), acc=_c2Acc(T), [ref,w]=_c2Width(), two=w>=1040, phone=useLayoutSize()==='phone', side=!phone&&TeamData.navStyle()==='side', [navOpen,setNavOpen]=React.useState(false), navT=React.useRef(0), [,bump]=React.useReducer(x=>x+1,0);
   const [panel,setPanel]=React.useState(null), [touring,setTouring]=React.useState(()=>!!tour&&TeamTour.due(me&&me.id));
-  const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
+  const go=v=>{ if(v.tab){ setSection(v.tab==='today'?'dash':v.tab); setPanel(null); if(v.at) _c2Land(v.at); return; } if(v.at){ _c2Land(v.at); return; } if(v.view==='drill'){ onPhone(v); return; } setPanel(v); };
   React.useEffect(()=>{ const a=TeamDemo.seedTonight(), b=TeamPlans.seedDemo(); if(a||b) bump(); },[]);
   const pageRef=React.useRef(null); _c2Pid=me.id;
   // The side navigation is a layer: it opens when the mouse reaches the left edge (or from the menu button) and closes once the mouse leaves it.
@@ -843,7 +929,7 @@ function TeamConsole2({me,onPhone,refresh,section,setSection,tour}){ const T=use
   return <div data-testid="team-console" data-look="preview" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:'#000',color:T.ink}}>
     <style>{css}</style>
     {!side&&<div data-testid="c2-top" style={{display:'flex',alignItems:'center',gap:phone?12:w>=1280?22:14,padding:phone?'calc(8px + env(safe-area-inset-top)) 16px 8px':'10px 28px',borderBottom:'1px solid rgba(255,255,255,0.08)',flexShrink:0}}>
-      <div data-testid="console-venue" style={{flexShrink:0,marginRight:6,maxWidth:300}}>{TeamData.brand()?<TeamVenueLogo height={34}/>:<div style={{fontSize:18,fontWeight:600,fontFamily:C.P}}>{venue.name||'Your restaurant'}</div>}</div>
+      <div data-testid="console-venue" style={{flexShrink:0,marginRight:6,maxWidth:phone?150:300}}>{TeamData.brand()?<TeamVenueLogo height={phone?20:34}/>:<div style={{fontSize:18,fontWeight:600,fontFamily:C.P}}>{venue.name||'Your restaurant'}</div>}</div>
       {phone?<div style={{flex:1}}/>:<div style={{display:'flex',gap:w>=1280?22:16,overflowX:'auto',flex:1,minWidth:0}}>{_C2_SECTIONS().map(s=>{ const on=section===s.k; return <div key={s.k} role="button" data-testid={'console-nav-'+s.k} aria-current={on?'page':undefined} onClick={()=>{ setSection(s.k); setPanel(null); }} style={{padding:'10px 0',fontSize:14,fontFamily:C.P,fontWeight:on?500:400,color:on?T.ink:T.mid,boxShadow:on?`inset 0 -2px 0 ${acc}`:'none',cursor:'pointer',whiteSpace:'nowrap',flexShrink:0}}>{s.label}</div>; })}</div>}
       {!phone&&!side&&<div role="button" data-testid="c2-classic" onClick={()=>TeamData.setConsoleLook('classic')} style={{fontSize:13,color:T.mid,fontFamily:C.P,cursor:'pointer',whiteSpace:'nowrap',textDecoration:'underline',textUnderlineOffset:3}}>{w>=1280?'Classic view':'Classic'}</div>}
       {/* Only on a phone, where the console is one page and this is the way back to the staff app. */}

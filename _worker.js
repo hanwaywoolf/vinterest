@@ -317,6 +317,11 @@ export default {
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
       return handleTts(request, env, ctx);
     }
+    if (url.pathname === "/team-super") {
+      if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
+      if (request.method !== "POST") return json(405, { error: "Method not allowed" });
+      return handleTeamSuper(request, env);
+    }
     if (url.pathname === "/stt") {
       if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
       if (request.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -410,6 +415,19 @@ function ttsApply(text, rules) { return rules.reduce((t, r) => t.replace(r.re, (
    start and end, for the delivery coaching. The recording is passed straight through and never kept or cached.
    404 without ELEVENLABS_API_KEY, and the phone's own recognition takes over. */
 const STT_MAX_BYTES = 3 * 1024 * 1024; // a couple of minutes of speech at the 32 kbps the app records
+/* Vinterest's own team (a superuser) on a device: the staff app's ?super=<key> is checked here against the
+   TEAM_SUPER_KEY secret, and only then does that device show what a restaurant's publishes cost (TeamSuper, TeamCosts).
+   With no secret set the route is a 404, so nobody can be one. Running costs are never shown to a customer. */
+async function handleTeamSuper(request, env) {
+  if (!env.TEAM_SUPER_KEY) return json(404, { error: "Not found" });
+  if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });
+  if (rateLimited(clientIp(request))) return json(429, { error: "Too many requests. Please slow down and try again shortly.", code: "rate_limited" });
+  let key = ""; try { key = String((await request.json()).key || ""); } catch (e) {}
+  const want = String(env.TEAM_SUPER_KEY); let diff = key.length ^ want.length;
+  for (let i = 0; i < want.length; i++) diff |= (key.charCodeAt(i % (key.length || 1)) || 0) ^ want.charCodeAt(i);
+  return diff === 0 ? json(200, { ok: true }) : json(403, { ok: false, error: "Not recognised." });
+}
+
 async function handleStt(request, env) {
   if (!env.ELEVENLABS_API_KEY) return json(404, { enabled: false, error: "Speech to text isn't set up on the server.", code: "stt_off" });
   if (!originAllowed(request.headers.get("origin"))) return json(403, { error: "Origin not allowed.", code: "origin_denied" });

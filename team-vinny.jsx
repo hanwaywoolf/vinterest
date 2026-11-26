@@ -9,7 +9,7 @@ function TeamVinnyMark({size=28}){ return <div aria-hidden="true" style={{width:
 function _TVChips({wines,dishes,open}){ const T=useTheme();
   const items=[...(wines||[]).map(id=>({id,kind:'wine',x:TeamData.wine(id)})),...(dishes||[]).map(id=>({id,kind:'dish',x:TeamData.dish(id)}))].filter(i=>i.x);
   if(!items.length) return null;
-  return <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>{items.map(i=><div key={i.kind+i.id} role="button" data-testid="vinny-chip" onClick={()=>open({view:i.kind,id:i.id})} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:14,border:`1px solid ${i.kind==='wine'?_tTypeCol(T,i.x.type):T.line}`,fontSize:14,fontFamily:C.P,color:T.ink,cursor:'pointer'}}>
+  return <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>{items.map(i=><div key={i.kind+i.id} role="button" data-testid="vinny-chip" onClick={()=>open({view:i.kind,id:i.id})} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 10px',borderRadius:0,border:`1px solid ${i.kind==='wine'?_tTypeCol(T,i.x.type):T.line}`,fontSize:14,fontFamily:C.P,color:T.ink,cursor:'pointer'}}>
     <Icon n={i.kind==='wine'?'wine':'fork'} sz={13} col={i.kind==='wine'?_tTypeCol(T,i.x.type):T.mid}/>{i.kind==='wine'?TeamData.short(i.x):i.x.name}</div>)}</div>; }
 
 /* The Vinny tab is a practice hub: one card with the thing to do now (TeamVinny.next), a line on what knowing the
@@ -21,8 +21,8 @@ function TeamVinnyTab({pid,open}){ const T=useTheme(), cr=T.lift(C.cr), wide=use
   const worth=React.useMemo(()=>{ try{ return empty?null:TeamReport.worth(pid); }catch(e){ return null; } },[pid,empty]);
   const [worthOpen,setWorthOpen]=React.useState(false);
   const test=React.useMemo(()=>empty?null:TeamVinny.test(pid),[pid,empty]);
-  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={wide?{display:'flex',alignItems:'center',gap:12,padding:'16px 14px',border:`1px solid ${T.line}`,borderRadius:16,background:T.glass,cursor:'pointer'}:{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
-    <div aria-hidden="true" style={{width:40,height:40,borderRadius:12,background:_alpha(cr,0.16),color:cr,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,fontFamily:C.P,flexShrink:0}}>{icon}</div>
+  const door=(key,icon,title,sub,view)=><div key={key} role="button" data-testid={'vinny-door-'+key} onClick={()=>{ if(view.view==='guest') TeamVoice.unlock(); open(view); }} style={wide?{display:'flex',alignItems:'center',gap:12,padding:'16px 14px',border:`1px solid ${T.line}`,borderRadius:0,background:T.glass,cursor:'pointer'}:{display:'flex',alignItems:'center',gap:12,padding:'14px 2px',borderTop:`1px solid ${T.line}`,cursor:'pointer'}}>
+    <div aria-hidden="true" style={{width:40,height:40,borderRadius:0,background:_alpha(cr,0.16),color:cr,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,fontFamily:C.P,flexShrink:0}}>{icon}</div>
     <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:700,color:T.ink,fontFamily:C.P,lineHeight:1.3}}>{title}</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.4,marginTop:1}}>{sub}</div></div>
     <Icon n="chevron" sz={12} col={T.mid}/></div>;
   const faded=test&&!test.none?test.why:'';
@@ -71,7 +71,7 @@ function TeamVinnyAsk({pid,open}){ const T=useTheme();
   return <div data-testid="team-vinny-ask">
     <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:12}}><TeamVinnyMark size={36}/><div><div style={{fontSize:20,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>Ask Vinny</div><div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>Your sommelier on shift, for {TeamData.get().venue.name||'your restaurant'}</div></div></div>
     <VinnyBar field={field} hasText={!!q} canSend={!!q.trim()&&!busy} onSubmit={()=>send()} onClear={()=>setQ('')}/>
-    {!turns.length&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:12}}>{chips.map(s=><div key={s} role="button" data-testid="vinny-sugg" onClick={()=>send(s)} style={{padding:'9px 14px',borderRadius:16,border:`1px solid ${T.line}`,fontSize:15,fontFamily:C.P,color:T.ink,cursor:'pointer',lineHeight:1.3}}>{s}</div>)}</div>}
+    {!turns.length&&<div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:12}}>{chips.map(s=><div key={s} role="button" data-testid="vinny-sugg" onClick={()=>send(s)} style={{padding:'9px 14px',borderRadius:0,border:`1px solid ${T.line}`,fontSize:15,fontFamily:C.P,color:T.ink,cursor:'pointer',lineHeight:1.3}}>{s}</div>)}</div>}
     {turns.length>0&&<div data-testid="vinny-answers"><Card style={{marginTop:12,display:'flex',flexDirection:'column',gap:14}}>
       {turns.map((t,i)=><div key={i}>
         <div style={{fontSize:15,fontWeight:600,color:T.mid,fontFamily:C.P}}>{t.q}</div>
@@ -99,10 +99,10 @@ function TeamVinnyTest({pid,open}){ const T=useTheme();
     {_tLabel(T,'Or ask for one')}
     <Card>
       <div style={{display:'flex',gap:8}}>
-        <input data-testid="vinny-test-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&asked) startTest(asked); }} placeholder="Test me on…" aria-label="Test me on" style={{flex:1,minWidth:0,height:44,borderRadius:12,border:`1px solid ${T.line}`,background:'transparent',color:T.ink,padding:'0 12px',fontSize:'16px',fontFamily:C.P,outline:'none'}}/>
+        <input data-testid="vinny-test-ask" value={ask} onChange={e=>setAsk(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&asked) startTest(asked); }} placeholder="Test me on…" aria-label="Test me on" style={{flex:1,minWidth:0,height:44,borderRadius:0,border:`1px solid ${T.line}`,background:'transparent',color:T.ink,padding:'0 12px',fontSize:'16px',fontFamily:C.P,outline:'none'}}/>
         <Btn onClick={()=>asked&&startTest(asked)} style={{opacity:asked&&!asked.none?1:0.45}}>Go</Btn>
       </div>
-      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>{[`the reds under ${TeamData.money(50)}`,'the dessert wines','the menu',"what's new"].map(s=><div key={s} role="button" onClick={()=>setAsk(s)} style={{padding:'7px 12px',borderRadius:14,border:`1px solid ${T.line}`,fontSize:14,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>{_tCap(s)}</div>)}</div>
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:10}}>{[`the reds under ${TeamData.money(50)}`,'the dessert wines','the menu',"what's new"].map(s=><div key={s} role="button" onClick={()=>setAsk(s)} style={{padding:'7px 12px',borderRadius:0,border:`1px solid ${T.line}`,fontSize:14,fontFamily:C.P,color:T.ink2,cursor:'pointer'}}>{_tCap(s)}</div>)}</div>
       {asked&&<div data-testid="vinny-test-asked" style={{fontSize:14,color:asked.none?'#F28B7D':T.mid,fontFamily:C.P,marginTop:8,lineHeight:1.45}}>{asked.none?asked.why:`${asked.qs.length} questions: ${asked.why}`}</div>}
     </Card>
   </div>; }
@@ -121,7 +121,7 @@ function TeamSayCheck(){ const T=useTheme(), cr=T.lift(C.cr), rows=React.useMemo
         <div style={{width:30,fontSize:14,fontWeight:800,color:cr,fontFamily:C.P,fontVariantNumeric:'tabular-nums'}}>{r.n}</div>
         <div style={{flex:1,minWidth:0}}><div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P}}>{r.name}</div>
           {r.hint&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:2}}>Card says: {r.hint}</div>}</div>
-        <div style={{fontSize:14,fontWeight:700,color:playing===r.n?T.ink:cr,fontFamily:C.P,padding:'5px 12px',borderRadius:14,border:`1px solid ${cr}`,background:playing===r.n?_alpha(cr,0.25):'transparent'}}>{playing===r.n?'Stop':'Play'}</div>
+        <div style={{fontSize:14,fontWeight:700,color:playing===r.n?T.ink:cr,fontFamily:C.P,padding:'5px 12px',borderRadius:0,border:`1px solid ${cr}`,background:playing===r.n?_alpha(cr,0.25):'transparent'}}>{playing===r.n?'Stop':'Play'}</div>
       </div>)}</Card></div>)}
   </div>; }
 /* A guest at the table: the guest's lines, the server's typed replies, then the mark. How much help they get
@@ -129,9 +129,9 @@ function TeamSayCheck(){ const T=useTheme(), cr=T.lift(C.cr), rows=React.useMemo
 const _GUEST_HELP={choices:'Pick the wine, then the reason, and Vinny puts it into words you can change.',hints:'Ask for a hint when you need one, up to three.',own:'No help: answer as you would at the table.'};
 function _GuestHelpSwitch({level,onPick}){ const T=useTheme(), cr=T.lift(C.cr);
   return <div data-testid="guest-help" style={{marginBottom:12}}>
-    <div role="radiogroup" aria-label="Help at the table" style={{display:'flex',gap:4,padding:3,borderRadius:12,border:`1px solid ${T.line}`,background:T.soft}}>
+    <div role="radiogroup" aria-label="Help at the table" style={{display:'flex',gap:4,padding:3,borderRadius:0,border:`1px solid ${T.line}`,background:T.soft}}>
       {TeamVinny.LEVELS.map(k=><div key={k} role="radio" aria-checked={level===k} data-testid={`guest-help-${k}`} onClick={()=>onPick(k)}
-        style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:9,cursor:'pointer',fontSize:14,fontWeight:700,fontFamily:C.P,background:level===k?cr:'transparent',color:level===k?inkOn(cr):T.mid}}>{TeamVinny.LEVEL_LABEL[k]}</div>)}
+        style={{flex:1,textAlign:'center',padding:'7px 4px',borderRadius:0,cursor:'pointer',fontSize:14,fontWeight:700,fontFamily:C.P,background:level===k?cr:'transparent',color:level===k?inkOn(cr):T.mid}}>{TeamVinny.LEVEL_LABEL[k]}</div>)}
     </div>
     <div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{_GUEST_HELP[level]}</div>
   </div>; }
@@ -139,7 +139,7 @@ function _GuestHelpSwitch({level,onPick}){ const T=useTheme(), cr=T.lift(C.cr);
 function _GuestChoices({help,onSay}){ const T=useTheme(), cr=T.lift(C.cr);
   const [tried,setTried]=React.useState([]), [wine,setWine]=React.useState(null), [rTried,setRTried]=React.useState([]), [done,setDone]=React.useState(false);
   const row=(key,label,sub,state,onClick,testid)=><div key={key} role="button" data-testid={testid} data-ok={state==='ok'?'1':undefined} onClick={state?undefined:onClick}
-    style={{padding:'10px 12px',borderRadius:12,border:`1px solid ${state==='ok'?T.green:state==='no'?_alpha('#F28B7D',0.6):T.line}`,background:state==='ok'?_alpha('#5FD48F',0.1):'transparent',cursor:state?'default':'pointer',opacity:state==='no'?0.75:state==='off'?0.5:1}}>
+    style={{padding:'10px 12px',borderRadius:0,border:`1px solid ${state==='ok'?T.green:state==='no'?_alpha('#F28B7D',0.6):T.line}`,background:state==='ok'?_alpha('#5FD48F',0.1):'transparent',cursor:state?'default':'pointer',opacity:state==='no'?0.75:state==='off'?0.5:1}}>
     <div style={{fontSize:15,fontWeight:600,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>{state==='ok'?'✓ ':state==='no'?'✗ ':''}{label}</div>
     {sub&&<div style={{fontSize:14,color:state==='no'?'#F28B7D':T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{sub}</div>}</div>;
   if(!help.wines.length) return null;
@@ -160,7 +160,7 @@ function _GuestReplies({replies,onSay}){ const T=useTheme(), [tried,setTried]=Re
     <div style={{fontSize:12,fontWeight:700,color:T.mid,fontFamily:C.P,letterSpacing:'0.08em',textTransform:'uppercase'}}>What do you say?</div>
     <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:8}}>{replies.map((r,i)=>{ const st=done===i?'ok':tried.includes(i)?'no':done>=0?'off':null;
       return <div key={i} role="button" data-testid="guest-follow" data-ok={st==='ok'?'1':undefined} onClick={st?undefined:()=>{ if(r.ok){ setDone(i); onSay(r.text); } else setTried(t=>[...t,i]); }}
-        style={{padding:'10px 12px',borderRadius:12,border:`1px solid ${st==='ok'?T.green:st==='no'?_alpha('#F28B7D',0.6):T.line}`,background:st==='ok'?_alpha('#5FD48F',0.1):'transparent',cursor:st?'default':'pointer',opacity:st==='no'?0.75:st==='off'?0.5:1}}>
+        style={{padding:'10px 12px',borderRadius:0,border:`1px solid ${st==='ok'?T.green:st==='no'?_alpha('#F28B7D',0.6):T.line}`,background:st==='ok'?_alpha('#5FD48F',0.1):'transparent',cursor:st?'default':'pointer',opacity:st==='no'?0.75:st==='off'?0.5:1}}>
         <div style={{fontSize:15,color:T.ink,fontFamily:C.P,lineHeight:1.4}}>{st==='ok'?'✓ ':st==='no'?'✗ ':''}{r.text}</div>
         {(st==='no'||st==='ok')&&r.why&&<div style={{fontSize:14,color:st==='no'?'#F28B7D':T.mid,fontFamily:C.P,marginTop:3,lineHeight:1.45}}>{r.why}</div>}</div>; })}</div>
     {done>=0&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.45}}>Your reply is ready below. Put it in your own words if you like, then Say.</div>}
@@ -231,11 +231,11 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     <div style={{flex:1,minWidth:0}}>
       <div style={{fontSize:16,fontWeight:800,color:T.ink,fontFamily:C.P,lineHeight:1.2}}>A guest at your table</div>
       <div style={{fontSize:13,color:T.mid,fontFamily:C.P,marginTop:2,lineHeight:1.3,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>Having the {sc.dishName}</div></div>
-    {TeamVoice.canSpeak()&&<div role="switch" aria-checked={voice} data-testid="guest-voice" onClick={toggleVoice} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:14,border:`1px solid ${voice?cr:T.line}`,color:voice?T.ink:T.mid,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',flexShrink:0}}>{voice?'🔊 Voice on':'🔇 Voice off'}</div>}
+    {TeamVoice.canSpeak()&&<div role="switch" aria-checked={voice} data-testid="guest-voice" onClick={toggleVoice} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'5px 12px',borderRadius:0,border:`1px solid ${voice?cr:T.line}`,color:voice?T.ink:T.mid,fontSize:14,fontWeight:600,fontFamily:C.P,cursor:'pointer',flexShrink:0}}>{voice?'🔊 Voice on':'🔇 Voice off'}</div>}
   </div>;
   const foot=!mark&&turns.length>0?<div style={{borderTop:`1px solid ${T.line}`,background:T.bg,padding:'10px 16px calc(env(safe-area-inset-bottom) + 10px)',flexShrink:0}}><div style={{maxWidth:720,margin:'0 auto'}}>
       {voice&&TeamVoice.canListen()&&<div style={{marginBottom:10}}>
-        <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={writing?undefined:mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'11px 16px',borderRadius:16,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
+        <div role="button" data-testid="guest-mic" aria-pressed={!!listening} onClick={writing?undefined:mic} style={{display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'11px 16px',borderRadius:0,border:`1.5px solid ${listening?'#F28B7D':cr}`,background:listening?_alpha('#F28B7D',0.12):_alpha(C.cr,0.18),color:T.ink,fontSize:16,fontWeight:700,fontFamily:C.P,cursor:'pointer'}}>
           <span style={{width:12,height:12,borderRadius:6,background:listening?'#F28B7D':cr,animation:listening?'tmPulse 1s ease-in-out infinite':'none'}}/>{writing?'Writing down what you said…':listening?'Listening… tap when you\'ve finished':spoken?'Say it again':'Tap and speak to the guest'}</div>
         {heardErr&&<div data-testid="voice-error" style={{fontSize:14,color:'#F28B7D',fontFamily:C.P,marginTop:6,lineHeight:1.45}}>{heardErr}</div>}
         <style>{'@keyframes tmPulse{0%,100%{opacity:1}50%{opacity:.3}}'}</style>
@@ -243,7 +243,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
         {spoken&&!listening&&<div style={{fontSize:14,color:T.mid,fontFamily:C.P,marginTop:6}}>Check the words below (fix a misheard name), then Say.</div>}
       </div>}
       <div style={{display:'flex',gap:8,alignItems:'flex-end'}}>
-        <textarea data-testid="guest-reply" value={say} onChange={e=>setSay(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); reply(); } }} rows={say.length>60?3:2} placeholder="What do you say?" aria-label="Your reply" style={{flex:1,minWidth:0,borderRadius:12,border:`1px solid ${T.line}`,background:T.glass,color:T.ink,padding:'10px 12px',fontSize:'16px',fontFamily:C.P,resize:'none',outline:'none',lineHeight:1.4}}/>
+        <textarea data-testid="guest-reply" value={say} onChange={e=>setSay(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); reply(); } }} rows={say.length>60?3:2} placeholder="What do you say?" aria-label="Your reply" style={{flex:1,minWidth:0,borderRadius:0,border:`1px solid ${T.line}`,background:T.glass,color:T.ink,padding:'10px 12px',fontSize:'16px',fontFamily:C.P,resize:'none',outline:'none',lineHeight:1.4}}/>
         <Btn primary onClick={reply} style={{opacity:(say.trim()||listening)&&!busy?1:0.45}}>Say</Btn>
       </div>
     </div></div>

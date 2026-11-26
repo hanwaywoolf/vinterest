@@ -68,6 +68,8 @@
         throw err;
       }
       var data = await res.json();
+      // What the answer used (model, tokens, time), for the staff app's own cost ledger (TeamCosts): an event, never shown.
+      try { window.dispatchEvent(new CustomEvent("vinterest:claude-usage", { detail: { purpose: (arg && arg.purpose) || "", model: data && data.model, usage: data && data.usage, ms: data && data.ms } })); } catch (e) {}
       return (data && data.text) || "";
     },
     /* Current shop price for a premium wine: the Worker searches the web and shares the answer

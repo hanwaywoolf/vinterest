@@ -25,6 +25,10 @@ const TeamPlans = {
     const rank=TeamSales.has()?Object.fromEntries(TeamReport.salesByWine(28).map((y,i)=>[y.wine.id,i])):{}, by=(x,y)=>(rank[x.id]==null?999:rank[x.id])-(rank[y.id]==null?999:rank[y.id]);
     const knownW=w=>TeamLearn.knowsWine(pid,c.role,w.id,c.items), gapsFirst=(list,known)=>[...list.filter(x=>!known(x)),...list.filter(known)];
     const ok=w=>TeamData.card(w.id)&&TeamLearn.qsFor(c.role,w.id).length, picks=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]).slice(0,2),p.glass].filter(Boolean).map(y=>TeamData.wine(y.id)).filter(Boolean); };
+    // Wines the request names come first and are the whole plan, whatever else it says: "the line to say, the price and
+    // the dish for each" of three named wines is a plan about those wines, never about the menu (it once was, since
+    // "dish" alone read as a menu request and the wines were dropped).
+    const named=this.named(c,ask).filter(ok); if(named.length) return {wines:named.sort(by).slice(0,this.MAX_WINES),dishes:[],pairing:false,mixed:false,named:true};
     const pairing=!!(n&&n.pairing), mixed=!!(n&&n.mixed), pool=(n&&n.wines.length&&n.wines.length<c.wines.length?n.wines:c.wines).filter(ok).sort(by), inPool=new Set(pool.map(w=>w.id));
     // A pairing plan starts from the dishes: the ones whose pairing they don't hold yet, each with the wines poured
     // with it, so every question can be about a wine for a dish. Never the menu on its own.
@@ -35,6 +39,11 @@ const TeamPlans = {
     const onlyFood=n&&!n.wines.length&&n.dishes.length;
     if(onlyFood) return {wines:[],dishes:n.dishes.slice(0,this.MAX_WINES),pairing:false,mixed:false,menu:true};
     return {wines:gapsFirst(pool,knownW).slice(0,this.MAX_WINES),dishes:[],pairing:false,mixed:false}; },
+  /* The wines on this person's list a request names, by the name the console writes them with (nick, short, or the
+     wine's own name): what a suggestion's request always carries, and what a manager types. */
+  named(c,ask){ const t=' '+TeamLearn._norm(ask)+' ', has=x=>{ const k=TeamLearn._norm(x||''); return k.length>4&&t.includes(' '+k+' '); };
+    // A wine's bare name ("Riesling") sits inside other wines' names, so it counts only when nothing fuller matched.
+    const full=c.wines.filter(w=>has(TeamData.nick(w))||has(TeamData.short(w))); return full.length?full:c.wines.filter(w=>has(w.name)); },
   /* Whether a written question is about a pairing: it names a wine from the list and a dish from the menu between
      its words and its options. A question about a dish that names no wine is a menu question. */
   _names(text){ const t=' '+TeamLearn._norm(text)+' ', has=x=>{ const k=TeamLearn._norm(x); return k.length>3&&t.includes(' '+k+' '); };
@@ -92,11 +101,16 @@ const TeamPlans = {
     if(!text||opts.length!==4||uniq.size!==4||!(a>=0&&a<4)) return null;
     const covers=ok.has(String(raw.covers||''))?String(raw.covers):'';
     return {id:`${planId}#${n}`,k:'recognise',mc:true,q:text,opts,a,why:String(raw.why||'').trim(),covers,bespoke:planId,...(w?{wine:w.id}:{dish:dish.id})}; },
+  /* The public demo (The Larkspur at demo.vinterest.team, which the Teams website shows) makes no call for a plan:
+     anyone can press Write it there, and each press was a billed call. A plan is built from the questions already
+     written instead (`fromCards`), and the card says so. Tests switch it with `window.VINTEREST_PLAN_CALLS`. */
+  noCalls(){ try{ if(window.VINTEREST_PLAN_CALLS) return window.VINTEREST_PLAN_CALLS==='off'; return TeamData.isDemo()&&TeamSample.hostSeed()==='demo'; }catch(e){ return false; } },
   /* Vinny writes it: one call. Saved as a draft the manager reads before pushing. Throws in words when it can't. */
   async write(pid,ask,by){ const c=TeamVinny._ctx(pid); if(!c) throw new Error('Pick someone first.'); const text=String(ask||'').trim(); if(text.length<8) throw new Error('Say who it\'s for and what they need, in a sentence.');
     const s=this.subjects(pid,text); if(!s.wines.length&&!s.dishes.length) throw new Error('Nothing on the list matches that. Try a colour, the glass list, the bottles or the menu.');
+    if(this.noCalls()){ const made=this.fromCards(pid,text,by); if(!made) throw new Error('There are no questions written for that yet. Try a colour, the glass list, the bottles or the menu.'); return made; }
     const v=TeamData.get().venue||{}, tpl=_loadTextSync('prompts/team-plan.txt');
-    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':'No question asks what a dish is, how it is cooked or what is in it.')
+    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':s.named?'This plan is about the wines listed below and nothing else. Every question is about one of them: what to say, its price, what it tastes like, where it is from, or which dish it is poured with (from its "poured with" line). No question asks what a dish is, how it is cooked, what is in it or what a dish costs.':'No question asks what a dish is, how it is cooked or what is in it.')
       .replace('{{subjects}}',[...s.wines.map(w=>this._wineLines(pid,c,w)),...s.dishes.map(x=>this._dishLines(pid,c,x,s.pairing))].join('\n\n'));
     const res=await window.claude.complete({purpose:'team_plan',messages:[{role:'user',content:prompt}]}), j=TeamData._json(res)||{};
     const id=this._id(), ok=new Set([...s.wines.flatMap(w=>TeamLearn.qsFor(c.role,w.id)),...s.dishes.flatMap(x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}))].map(q=>q.id)); let n=0;

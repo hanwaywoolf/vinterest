@@ -158,9 +158,10 @@ const TeamLearn = {
   /* A question in a drill about one wine (Practise this wine, a test narrowed to it): "which wine?" is given away by
      the drill itself, so a table question keeps only its reason, asked as "You suggest the X. Why does it work?" (the
      same wording a card gets when it names its own wine); at Essentials, where the reason isn't tested, the table
-     question isn't asked there (null). The id never changes, so the answer counts as the same question. */
+     question is asked as it stands (the wine among four): left out, a wine stayed at "2 of 3" however often its own
+     Practise was run, the third question never coming. The id never changes, so the answer counts as the same question. */
   oneWine(q){ if(!q||q.k!=='apply'||!q.wine) return q; const w=TeamData.wine(q.wine); if(!w) return q;
-    if(q.mc) return null;
+    if(q.mc) return q;
     let c=null; try{ c=this.choices(q); }catch(e){ return q; } const gs=c&&c.groups||[], g2=gs.find(g=>/why/i.test(g.label||'')); if(!g2||gs.length<2) return q;
     const idx=[...Array(Math.max(0,g2.to-g2.from)).keys()].map(j=>g2.from+j), opts=idx.map(i=>c.opts[i]), right=idx.map((i,j)=>c.right.includes(i)?j:-1).filter(j=>j>=0); if(!right.length) return q;
     const scen=String(q.q).replace(/\s*What (would|do) you suggest(, and why)?\?\s*$/i,'').trim();
@@ -312,6 +313,15 @@ const TeamLearn = {
     return pick?{label:'Good to know',text:trim(pick)}:null; },
   _overlap(a,b){ const A=new Set(this._words(a).filter(x=>x.length>3)), B=new Set(this._words(b).filter(x=>x.length>3)); let n=0; A.forEach(x=>{ if(B.has(x)) n++; }); return n/Math.max(1,Math.min(A.size,B.size)); },
   // Where a wine stands at a dish: 0 its first pick, 1 its second…, 99 not one of its picks.
+  /* The dishes a wine or cocktail's card shows under Pair it, best first: [{dish, name, why}]. The pairings come first,
+     in the order the "best match" question takes its answer from (rankAt), then the card's own dishes that aren't
+     among them. One list for the card and the question: the Chablis at Eloise was asked "best match?" with Caesar
+     Salad right (the pairings' first pick) while its card listed three other dishes and no Caesar Salad. */
+  poursWith(id,max=5){ const c=TeamData.card(id)||TeamData.cocktailCard(id)||{}, menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));
+    const own=(c.dishes||[]).map(x=>({dish:byName(x.dish)||null,name:x.dish,why:x.why}));
+    const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id))
+      .map(x=>{ const p=TeamData.pairing(x.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), o=own.find(y=>y.dish===x); return {dish:x,name:x.name,why:(pick&&pick.why)||(o&&o.why)||''}; });
+    return [...ranked,...own.filter(o=>!ranked.some(r=>r.dish&&r.dish===o.dish))].slice(0,max); },
   rankAt(wineId,dishId){ const p=TeamData.pairing(dishId)||{}; const i=(p.best||[]).findIndex(b=>b.id===wineId); if(i>=0) return i; if(p.cocktail&&p.cocktail.id===wineId) return 0; if(p.glass&&p.glass.id===wineId) return 1; return 99; },
   _buildLight(id){ const w=TeamData.wine(id), c=TeamData.card(id); if(!w||!c) return []; const out=[], name=TeamData.short(w), drink=TeamData.isDrink(w), kind=this.kindOf(w);
     const st=c.style||{}, gap=o=>{ const s=(TeamData.card(o.id)||{}).style||{}; return Object.keys(st).reduce((a,k)=>a+Math.abs((st[k]||0)-(s[k]||0)),0); };
@@ -330,8 +340,8 @@ const TeamLearn = {
     // three the pairings say it doesn't suit.
     const menu=TeamData.dishes(), byName=n=>menu.find(x=>this._norm(x.name)===this._norm(n));
     const own=new Set((c.dishes||[]).map(x=>byName(x.dish)).filter(Boolean).map(x=>x.id));
-    const ranked=menu.filter(x=>this.rankAt(id,x.id)<99).sort((a,b)=>this.rankAt(id,a.id)-this.rankAt(id,b.id)||((TeamData.pairing(a.id)||{}).best||[]).length-((TeamData.pairing(b.id)||{}).best||[]).length||this._hash(id+a.id)-this._hash(id+b.id));
-    const top=ranked[0]||menu.find(x=>own.has(x.id));
+    // The same list, in the same order, as the card's Pair it (poursWith): the answer is the card's first dish.
+    const top=(this.poursWith(id).find(x=>x.dish)||{}).dish;
     if(top){ const p=TeamData.pairing(top.id)||{}, pick=[...(p.best||[]),p.cocktail,p.glass].filter(Boolean).find(b=>b.id===id), cw=(c.dishes||[]).find(x=>byName(x.dish)===top);
       const wrongFor=x=>x.id!==top.id&&!own.has(x.id)&&this.rankAt(id,x.id)===99&&(drink||this.tableFit(id,x.id)!=='good');
       // Dishes it doesn't suit but a server might try (the nearest the pairings still rule out, so never desserts for a
