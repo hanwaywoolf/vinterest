@@ -117,7 +117,8 @@ sup.pro { font-size: .58em; font-weight: 700; color: #C4870A; margin-left: 1px; 
 .feature { height: max(100svh, 640px); display: grid; }
 .pin { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 88px var(--gutter) 40px; min-height: 0; height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 56px; }
 .pin .copy { grid-column: 1; grid-row: 1; align-self: safe center; min-width: 0; max-width: 560px; }
-.pin .stage { grid-column: 2; grid-row: 1; height: 100%; justify-content: center; }
+/* No taller than the hero's stage: on a large monitor the phone would otherwise grow with the screen. */
+.pin .stage { grid-column: 2; grid-row: 1; height: min(100%, 76svh, 726px); align-self: center; justify-content: center; }
 .feature.flip .copy { grid-column: 2; }
 .feature.flip .stage { grid-column: 1; }
 /* A short window (a laptop with toolbars) gets tighter padding, so the text and phone still fit. */
@@ -508,7 +509,12 @@ footer nav a[href^="mailto"] { text-transform: none; letter-spacing: 0; font-siz
 /* Our screens: the whole phone screen, never a crop, in a thin frame with what it shows under it. */
 .vs-phones { display: flex; gap: 22px; margin-top: 26px; align-items: flex-start; }
 .vs-ph { flex: 0 1 236px; min-width: 0; }
-.vs-ph img { width: 100%; height: auto; display: block; border-radius: 30px; border: 5px solid #161618; outline: 1px solid rgba(255, 255, 255, .2); background: #101010; box-shadow: 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px rgba(139, 26, 47, .18); }
+.vs-frame { position: relative; aspect-ratio: 410 / 864; }
+.vs-live { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; }
+.vs-live .phone { box-shadow: inset 0 0 0 1.5px #3a3a3a, 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px rgba(139, 26, 47, .18); }
+.vs-ph.live .vs-live { opacity: 1; }
+.vs-ph.live img { opacity: 0; }
+.vs-ph img { transition: opacity .5s ease; width: 100%; height: 100%; display: block; border-radius: 30px; border: 5px solid #161618; outline: 1px solid rgba(255, 255, 255, .2); background: #101010; box-shadow: 0 30px 70px rgba(0, 0, 0, .6), 0 0 60px rgba(139, 26, 47, .18); }
 .vs-ph figcaption { margin-top: 14px; font-size: 14px; color: var(--ink-2); text-align: center; text-wrap: balance; }
 .vs-note { border-top: 1px solid var(--line); padding-top: 16px; font-size: 12px; color: var(--mid); max-width: 64em; }
 @media (max-width: 1040px) { .vs-panel { grid-template-columns: 240px minmax(0, 1fr); gap: 0 32px; } .vs-phones { gap: 14px; } }

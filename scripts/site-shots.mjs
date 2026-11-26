@@ -1,6 +1,8 @@
 // The comparison block's pictures of Vinterest (site/shots/*.jpg): the app's real screens, taken from
 // the website's own demo phones on the built site, so they are what a visitor sees further down the page.
 // Run after a change to those screens: `npm run site:build && npm run site:shots`.
+// Most of them are only what shows until the comparison's own phone starts playing over the picture (and all that shows with
+// reduced motion): those in VS are taken from that phone itself, a moment into its loop, so the picture is where it begins.
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -16,17 +18,21 @@ const SHOTS = [
   ['match', 'scan', 1, 9000],
   ['why', 'learn-wine', 0, 5000],
   ['knows', 'winedna', 6, 3500],
-  ['rules', 'winedna', 1, 3500],
   ['portrait', 'winedna', 2, 4500],
   ['script', 'winedna', 3, 7000],
   ['hub', 'learn', 0, 2500],
-  ['article', 'learn', 2, 4000],
   ['vinny', 'vinny', 1, 13000],
   ['quiz', 'learn', 0, 5000, 'quiz'],
-  ['mastery', 'mastery', 0, 4500],
-  ['grapes', 'mastery', 1, 3500],
   ['palate', 'mastery', 2, 5500],
   ['blind', 'learn-wine', 4, 19000],
+];
+
+// name, the comparison's tab, which of its phones, and how far into its loop.
+const VS = [
+  ['rules', 1, 0, 2500],
+  ['article', 2, 1, 2500],
+  ['mastery', 3, 1, 2500],
+  ['map', 3, 2, 3200],
 ];
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -52,6 +58,20 @@ try {
     await page.waitForTimeout(wait);
     await show();
     await page.locator(`#${id} .phone-screen`).screenshot({ path: path.join(OUT, `${name}.jpg`), type: 'jpeg', quality: 82 });
+    console.log(`site/shots/${name}.jpg`);
+    await page.close();
+  }
+  for (const [name, tab, n, wait] of VS.filter((s) => !only.length || only.includes(s[0]))) {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 3 });
+    await page.goto(`http://localhost:${PORT}/`);
+    const show = () => page.evaluate(() => document.getElementById('vs').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await show();
+    await page.locator('#vs [role=tab]').nth(tab).click();
+    const fig = page.locator('#vs .vs-panel:not([hidden]) .vs-ph').nth(n);
+    await fig.locator('.phone-app > *').first().waitFor({ timeout: 30000 });
+    await page.waitForTimeout(wait);
+    await show();
+    await fig.locator('.phone-screen').screenshot({ path: path.join(OUT, `${name}.jpg`), type: 'jpeg', quality: 82 });
     console.log(`site/shots/${name}.jpg`);
     await page.close();
   }

@@ -119,8 +119,46 @@ test.describe('desktop', () => {
     await expect(vs.locator('.vs-side.them img')).toHaveCount(0);
     await expect(vs.locator('.vs-note')).toContainText('not screenshots of its app');
     // Vivino has a personal match and a taste profile, and what else it has isn't ours to say: the page never claims what it lacks.
-    const said = (await vs.evaluate((el) => el.textContent)).toLowerCase();
+    const said = (await vs.evaluate((el) => { const c = el.cloneNode(true); c.querySelectorAll('.vs-live').forEach((n) => n.remove()); return c.textContent; })).toLowerCase();   // the page's own words, not the app playing in its phones
     for (const no of ["doesn't learn", "doesn't evolve", 'no match', 'no personal', 'only wants', 'just wants', 'only in vinterest', "vivino doesn't", 'vivino has no', "vivino can't"]) expect(said, no).not.toContain(no);
+  });
+
+  test("the comparison's phones play the app itself: the showing tab's are live, another tab's are taken away", async ({ page }) => {
+    test.setTimeout(90000);
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    await vs.scrollIntoViewIfNeeded();
+    await vs.evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    // Thirteen of the fourteen pictures have a demo behind them (how close past matches were stays a picture).
+    await expect(vs.locator('figure[data-vs]')).toHaveCount(13);
+    await expect(vs.locator('figure.vs-ph:not([data-vs]) img')).toHaveAttribute('src', '/shots/knows.jpg');
+    // The match tab: the story's match scene and the deck, drawn by the app over their pictures.
+    const live = vs.locator('.vs-panel:visible figure.live');
+    await expect(live).toHaveCount(2, { timeout: 30000 });
+    await expect(vs.locator('#vs-p-match figure[data-vs="vsmatch"] [data-testid="reveal-scene"][data-scene="match"]')).toBeVisible({ timeout: 30000 });
+    // Each phone fills its frame, the size of its picture.
+    const fit = await vs.locator('#vs-p-match figure[data-vs="vsmatch"]').evaluate((f) => { const a = f.querySelector('.vs-frame').getBoundingClientRect(), b = f.querySelector('.phone').getBoundingClientRect(); return [a.width, b.width, a.height, b.height]; });
+    expect(Math.abs(fit[0] - fit[1])).toBeLessThan(2);
+    expect(Math.abs(fit[2] - fit[3])).toBeLessThan(2);
+    // Another tab: the first tab's phones are unmounted, and this one's play. The quiz is answered by itself, and Blind Call's palate has a texture figure.
+    await vs.getByRole('tab').nth(3).click();
+    await expect(vs.locator('#vs-p-match .phone-app > *')).toHaveCount(0);
+    await expect(vs.locator('figure[data-vs="vsquiz"] [data-testid="quiz-feedback"]')).toBeVisible({ timeout: 30000 });
+    await expect(vs.locator('figure[data-vs="vsmap"] [data-trait="texture"]')).toHaveAttribute('aria-label', /Texture: \d+% on target/, { timeout: 30000 });
+    await vs.getByRole('tab').nth(4).click();
+    await expect(vs.locator('figure[data-vs="vsblind"] [role="slider"][aria-label="Tannins"]')).toHaveAttribute('aria-valuenow', /^7[2-5]$/, { timeout: 30000 });
+    // The palate phone opens a trait's own page.
+    await expect.poll(() => vs.locator('figure[data-vs="vspalate"] [data-layer]').evaluateAll((ls) => ls.filter((l) => l.dataset.layer !== 'map' && getComputedStyle(l).visibility === 'visible').map((l) => l.dataset.layer).join()), { timeout: 30000 }).toMatch(/^(body|acidity|tannins|texture)$/);
+  });
+
+  test('with reduced motion the comparison keeps its pictures', async ({ browser }) => {
+    const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/');
+    await page.locator('#vs').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#vs .vs-live')).toHaveCount(0);
+    await ctx.close();
   });
 
   test('the progress bar is centred over the phone', async ({ page }) => {

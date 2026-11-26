@@ -150,8 +150,8 @@ const _HERO_WINE = { name: 'Viña Ardanza Reserva', alternative: '', producer: '
   country: 'Spain', type: 'red', grapes: ['Tempranillo', 'Garnacha'], blend: true, grapes_basis: 'known', grape_shares: null, body: 0.62, tannins: 0.5, acidity: 0.62, sweetness: 0.03,
   texture: null, effervescence: null, abv: 13.5, tasting_notes: ['Dried cherry', 'Vanilla', 'Tobacco'], food_pairings: ['Roast lamb', 'Manchego', 'Chorizo'], price_usd: 38,
   description: 'A classic Reserva from La Rioja Alta.' };
-function _openScan(view, unlock, fresh, scanned) {
-  DemoPersona.reset();
+function _openScan(view, unlock, fresh, scanned, keep) {
+  if (!keep) DemoPersona.reset();   // `keep`: the comparison's phones, which loop beside one another and must not empty each other's stores
   const wine = { ...(scanned || DemoPersona.user.scanned), confidence: 'high' };
   // A confirmed scan opens its grape's and region's quizzes (ScanFlow.unlockLearning): what the
   // "Keep learning" options after a score are built from. `tracked` skips it, so do it here.
@@ -159,6 +159,47 @@ function _openScan(view, unlock, fresh, scanned) {
   // `fresh`: a scan as it just happened (the reveal plays, and the app saves the wine); otherwise a screen asking for a view.
   Handoff.openWine({ wine, source: 'camera', tracked: !fresh, view: fresh ? undefined : view });
 }
+
+/* Seven Blind Calls on their reds, close to each label's profile but calling the tannins a little grippier, so the palate
+   has a score, a ring per trait and a habit to show. The accuracy is worked out as the app does. */
+function _blindCall(w, axes, o) {
+  const c = (v) => Math.max(0, Math.min(1, v)), guess = {};
+  axes.forEach((k, i) => { guess[k] = c(w[k] + o[i]); });
+  const miss = axes.map((k) => Math.abs(guess[k] - w[k]));
+  const accuracy = Math.max(0, 1 - miss.reduce((a, b) => a + b, 0) / miss.length * 1.6);
+  ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
+}
+function _seedBlind() {
+  const off = [[0.04, -0.06, 0.15], [-0.05, 0.05, 0.2], [0.08, 0.03, 0.12], [-0.03, -0.04, 0.17], [0.06, 0.07, 0.1], [0.02, -0.02, 0.18], [-0.06, 0.04, 0.14]];
+  WineHistory.getAll().filter((w) => typeof w.body === 'number' && typeof w.tannins === 'number').slice(0, 7).forEach((w, i) => _blindCall(w, ['body', 'acidity', 'tannins'], off[i]));
+}
+/* The comparison's palate phone opens each trait's page, texture among them, and texture is a white wine's trait: there this
+   drinker has also had five whites and made a Blind Call on each (body, acidity and texture, as the app asks of a white).
+   Safe to run again: the phones beside it loop, and each run leaves the same wines and calls. */
+const _PALATE_WHITES = [
+  { name: 'Chablis', producer: 'William Fèvre', vintage: 2021, region: 'Chablis', country: 'France', grapes: ['Chardonnay'], body: 0.4, acidity: 0.8, texture: 0.3, rating: 90, off: [0.05, -0.04, 0.06] },
+  { name: 'Albariño', producer: 'Pazo de Señoráns', vintage: 2022, region: 'Rías Baixas', country: 'Spain', grapes: ['Albariño'], body: 0.42, acidity: 0.76, texture: 0.28, rating: 88, off: [-0.04, 0.05, 0.09] },
+  { name: 'Pouilly-Fuissé', producer: 'Louis Jadot', vintage: 2020, region: 'Burgundy', country: 'France', grapes: ['Chardonnay'], body: 0.6, acidity: 0.6, texture: 0.62, rating: 89, off: [0.06, 0.03, -0.05] },
+  { name: 'Condrieu', producer: 'E. Guigal', vintage: 2020, region: 'Rhône Valley', country: 'France', grapes: ['Viognier'], body: 0.74, acidity: 0.4, texture: 0.8, rating: 91, off: [-0.05, 0.06, -0.08] },
+  { name: 'Sauvignon Blanc', producer: 'Cloudy Bay', vintage: 2023, region: 'Marlborough', country: 'New Zealand', grapes: ['Sauvignon Blanc'], body: 0.36, acidity: 0.82, texture: 0.22, rating: 87, off: [0.03, -0.05, 0.07] },
+];
+function _seedPalate() {
+  try {
+    const have = WineHistory.getAll();
+    _PALATE_WHITES.forEach(({ off, rating, ...w }) => {
+      const wine = { ...w, type: 'white', sweetness: 0.05, tasting_notes: [], confidence: 'high' };
+      if (!have.some((x) => x.name === w.name && x.producer === w.producer)) WineHistory.add(wine, rating);
+      _blindCall(wine, ['body', 'acidity', 'texture'], off);
+    });
+    _seedBlind();
+  } catch (e) { /* the palate still draws, with fewer calls */ }
+}
+
+/* Mastery in the comparison's phones: the studied drinker, their whites and every Blind Call, whatever the phones beside it have done to the store. */
+function _vsMastery() { [DemoPersona.user.scanned, _HERO_WINE].forEach((w) => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* not there */ } }); _seedPalate(); _seedMastery(); }
+/* A scan story playing elsewhere on the page (the hero, the comparison's match) saves its bottle for a moment, and the comparison's
+   palate phones add five whites. A screen that counts the drinker's bottles opens without them. */
+function _tidyScans() { [DemoPersona.user.scanned, _HERO_WINE, ..._PALATE_WHITES].forEach((w) => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* not there */ } }); }
 
 /* The Mastery demo's sample user: a drinker twelve bottles in who has studied a fair bit. Their wines have
    opened their grapes and regions, the question banks Claude wrote for those (captured once, like the rest)
@@ -176,16 +217,7 @@ function _seedMastery() {
     [['Rioja', 14], ['Rhône Valley', 9], ['Mendoza', 7], ['Piedmont', 3]].forEach(([r, n]) => answer(RegionQuizBank.setId(r), RegionQuizBank.get(r), n));
     [['red_grapes', 14], ['white_grapes', 6], ['rose', 3], ['sparkling', 5]].forEach(([t, n]) => answer('topic:' + t, QuizMastery.topicPool(t), n));
     _loadJSON('data/onramp.json').slice(0, 4).forEach((a) => Store.set('vinterest_' + a.id + '_done', '1'));
-    // Seven Blind Calls, close to each label's profile but calling the tannins a little grippier, so the palate
-    // has a score, a bar per axis and a habit to show. The accuracy is worked out as the app does.
-    const off = [[0.04, -0.06, 0.15], [-0.05, 0.05, 0.2], [0.08, 0.03, 0.12], [-0.03, -0.04, 0.17], [0.06, 0.07, 0.1], [0.02, -0.02, 0.18], [-0.06, 0.04, 0.14]];
-    WineHistory.getAll().filter((w) => typeof w.body === 'number').slice(0, 7).forEach((w, i) => {
-      const o = off[i], c = (v) => Math.max(0, Math.min(1, v));
-      const guess = { body: c(w.body + o[0]), acidity: c(w.acidity + o[1]), tannins: c(w.tannins + o[2]) };
-      const miss = ['body', 'acidity', 'tannins'].map((k) => Math.abs(guess[k] - w[k]));
-      const accuracy = Math.max(0, 1 - (miss[0] + miss[1] + miss[2]) / 3 * 1.6);
-      ScanFlow.saveBlindResult(w, { accuracy, amount: Math.round(accuracy * 40), guess });
-    });
+    _seedBlind();
     const m = KnowledgeMap.compute(WineHistory.getAll()), then = Date.now() - 35 * 864e5, a = {};
     m.areas.forEach((x) => { a[x.id] = Math.round(x.score * 0.55); });
     Store.setJSON(KnowledgeMap.HISTORY_KEY, { [KnowledgeMap._week(then)]: { t: then, o: Math.round(m.overall * 0.55), a } });
@@ -326,6 +358,52 @@ const _DEMO_SCREENS = {
   quiz: { nav: 'learn', layers: [
     { id: 'q', nav: 'learn', Screen: QuizScreen, setup() { _seedMastery(); Handoff.quiz.set({ mode: 'region', region: 'Rhône Valley' }); } },
   ], steps: [{ at: 0, layer: 'q', to: 'top' }] },
+  /* The comparison block's phones (#vs in index.html): each plays one thing on a loop, driven by site.js (p from 0 to 1 over the
+     figure's data-loop seconds, then again). A part marked `fresh` opens its screen anew each time round. */
+  // The story's match scene: the ring winding up to the match, then a reason for and a reason against.
+  vsmatch: { nav: 'scan', layers: [
+    { id: 'scan', nav: 'scan', Screen: ScanCardsScreen, setup() {
+      const w = DemoPersona.user.scanned;
+      Handoff.openWine({ wine: { ...w, confidence: 'high' }, source: 'camera', tracked: false });
+      setTimeout(() => { try { WineHistory.remove(w.name, w.vintage); } catch (e) { /* the bottle stays */ } }, 700);   // a fresh scan saves its bottle
+    } },
+  ], steps: [{ at: 0, layer: 'scan', fresh: true, do: [{ story: 9000, from: 'match', until: 'match' }] }] },
+  // The deck's nine cards, a card at a time, each read down.
+  vsdeck: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck', keep: true },
+  // A Blind Call on the deck's taste card: the three sliders, locked in, the result.
+  vsblind: { nav: 'scan', Screen: ScanCardsScreen, view: 'deck', keep: true },
+  vsrules: { nav: 'profile', layers: [{ id: 'dna', nav: 'profile', Screen: WineDNAScreen, setup: _tidyScans }], steps: [{ at: 0, layer: 'dna', to: 'top', drift: 0.24, ms: 6000 }] },
+  vsportrait: { nav: 'profile', layers: [{ id: 'dna', nav: 'profile', Screen: WineDNAScreen, setup: _tidyScans }], steps: [{ at: 0, layer: 'dna', to: '[data-testid="dna-taste-tiles"]', pad: 60, drift: 'end', ms: 44000 }] },
+  vsscript: { nav: 'profile', layers: [{ id: 'dna', nav: 'profile', Screen: WineDNAScreen, setup: _tidyScans }], steps: [
+    { at: 0, layer: 'dna', to: '[data-section="scripts"]', do: [{ tap: /^Short$/ }] },
+    { at: 0.5, layer: 'dna', to: '[data-section="scripts"]', drift: 0.12, ms: 4000, do: [{ tap: /^Long$/ }] },
+  ] },
+  vshub: { nav: 'learn', layers: [{ id: 'hub', nav: 'learn', Screen: LearnScreen, setup: _tidyScans }], steps: [{ at: 0, layer: 'hub', to: 'top', drift: 'end', ms: 34000 }] },
+  vsarticle: { nav: 'learn', layers: [{ id: 'article', nav: 'learn', Screen: GenArticleScreen, setup() { Handoff.genArticle.set(_articleStub()); } }],
+    steps: [{ at: 0, layer: 'article', to: 'top', drift: 'end', ms: 52000 }] },
+  // A region quiz played through: five questions, each answered and its fact read, then the result.
+  vsquiz: { nav: 'learn', layers: [
+    { id: 'q', nav: 'learn', Screen: QuizScreen, setup() { _seedMastery(); Handoff.quiz.set({ mode: 'region', region: 'Rhône Valley' }); } },
+  ], steps: [{ at: 0, layer: 'q', fresh: true, do: [{ quiz: 'Rhône Valley' }] }] },
+  vsshape: { nav: 'learn', layers: [{ id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup: _vsMastery }], steps: [
+    { at: 0, layer: 'map', to: 'top', drift: 0.55, ms: 6500 },
+    { at: 0.5, layer: 'map', to: '[data-section="grapes"]', drift: 0.5, ms: 6500 },
+  ] },
+  vsmap: { nav: 'learn', layers: [{ id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup: _vsMastery }], steps: [
+    { at: 0, layer: 'map', to: '[data-section="map"]', drift: 0.35, ms: 6500 },
+    { at: 0.5, layer: 'map', to: '[data-section="palate"]', drift: 0.3, ms: 6500 },
+  ] },
+  // The palate, then each trait's own page in turn, as a tap on its ring opens it.
+  vspalate: { nav: 'learn', layers: [
+    { id: 'map', nav: 'learn', Screen: MasteryMapScreen, setup: _vsMastery },
+    ...['body', 'acidity', 'tannins', 'texture'].map((id) => ({ id, nav: 'learn', Screen: PalateTraitScreen, setup() { _seedPalate(); Handoff.palateTrait.set(id); } })),
+  ], steps: [
+    { at: 0, layer: 'map', to: '[data-section="palate"]' },
+    ...['body', 'acidity', 'tannins', 'texture'].flatMap((id, i) => [
+      { at: (3.4 + i * 7.2) / 34, layer: 'map', to: '[data-section="palate"]', do: [{ press: '[data-trait="' + id + '"]' }] },
+      { at: (4.6 + i * 7.2) / 34, layer: id, to: 'top', fresh: true, drift: 'end', ms: 3800 },
+    ]),
+  ] },
   // The front page's carousel: one screen for each thing the app does.
   hero: { nav: 'scan', layers: [
     // The scan story, as a fresh scan plays it. The app saves a scanned wine, which would add a bottle to the WineDNA beside it: take it back out.
@@ -453,7 +531,8 @@ const VinterestDemo = {
     const draw = () => {
       gen++;
       cancel();
-      if (isScan) _openScan(d.view, kind === 'keep', d.fresh); else if (!d.keepStore) DemoPersona.reset();
+      if (kind === 'vsblind') { const bw = DemoPersona.user.scanned; Store.remove(ScanFlow.blindKey(bw)); Store.remove(ScanFlow._blindDoneKey(bw)); }   // played again: the call it saved last time round goes
+      if (isScan) _openScan(d.view, kind === 'keep', d.fresh, undefined, d.keep); else if (!d.keepStore && !kind.startsWith('vs')) DemoPersona.reset();
       // Rendered right now, not on React's schedule: the scan screen reads the handoff as it opens, and
       // another demo mounting in the meantime would have changed it.
       ReactDOM.flushSync(() => root.render(<_DemoFrame key={gen} kind={kind} ctl={ctl} />));
@@ -508,13 +587,13 @@ const VinterestDemo = {
       if (c && c.isConnected && c.clientHeight > 0) return c;
       return (scrollers[id || ''] = _demoScroller(layerEl(id)));
     };
-    const topOf = (root, sc, to) => {
+    const topOf = (root, sc, to, pad) => {
       if (!to || to === 'top') return 0;
       const target = typeof to === 'string' ? root.querySelector(to) : _findText(root, to);
       if (!target) return null;
       // The phone is drawn scaled (the website's phones, the films), so a distance on screen is `k` times the scroller's own pixels.
       const sr = sc.getBoundingClientRect(), k = sr.height && sc.clientHeight ? sr.height / sc.clientHeight : 1;
-      return Math.max(0, (target.getBoundingClientRect().top - sr.top) / k + sc.scrollTop - 10);
+      return Math.max(0, (target.getBoundingClientRect().top - sr.top) / k + sc.scrollTop - (pad == null ? 10 : pad));
     };
     let stepAt = -1, live = [], driftRaf = 0;
     const stopAll = () => { live.splice(0).forEach((f) => f()); cancelAnimationFrame(driftRaf); driftRaf = 0; glide.stop(); };
@@ -576,7 +655,33 @@ const VinterestDemo = {
             }, 60));
             return true;
           }, 60));
-        } else if (a.type) typeInto(root, a.type[0], a.type[1]);
+        } else if (a.quiz) {
+          // A quiz played as a person would: read the question, answer it (one of the five wrong), read the fact, on to the next.
+          const bank = () => { try { return RegionQuizBank.get(a.quiz) || []; } catch (e) { return []; } };
+          let n = 0;
+          const read = () => {
+            if (!R().querySelector('[data-testid="quiz-feedback"]')) return later(read, 200);
+            later(() => { if (_tapText(R(), /^(Next Question|See Results) →$/) && n < 5) later(ask, 700); }, 3200);
+          };
+          const ask = () => {
+            const root = R(), opts = Array.from(root.querySelectorAll('.qz-opt')), qEl = root.querySelector('.qz-in');
+            if (!opts.length || !qEl) return later(ask, 200);
+            const q = bank().find((x) => x.q === qEl.textContent.trim()), right = q ? q.opts[q.a] : null;
+            let pick = Math.max(0, opts.findIndex((o) => right && o.textContent.trim().endsWith(right)));
+            if (n === 2) pick = (pick + 1) % opts.length;
+            n++;
+            later(() => { const o = R().querySelectorAll('.qz-opt')[pick]; if (o) o.click(); read(); }, 2400);
+          };
+          later(ask, 900);
+        } else if (a.press) later(() => live.push(_until(() => {
+          // A finger on a control: it gives for a moment, and the part after this one opens what it opens.
+          const t = root.querySelector(a.press);
+          if (!t) return false;
+          t.style.transition = 'transform .16s, background .16s'; t.style.borderRadius = '14px'; t.style.transform = 'scale(.9)'; t.style.background = 'rgba(255,255,255,.14)';
+          later(() => { t.style.transform = ''; t.style.background = ''; }, 420);
+          return true;
+        }, 20)), 450);
+        else if (a.type) typeInto(root, a.type[0], a.type[1]);
         else if (a.open) [].concat(a.open).forEach((sel) => live.push(_until(() => { const t = root.querySelector(sel + ' [role="button"]'); if (!t) return false; t.click(); return true; }, 40)));
         else if (a.vinny) {
           const t0 = performance.now(), MS = 9000;
@@ -591,14 +696,14 @@ const VinterestDemo = {
           return true;
         }, 40));
       });
-      const top = () => { const sc = scrollerFor(st.layer); return sc ? { sc, y: Math.min(Math.max(0, sc.scrollHeight - sc.clientHeight), topOf(layerEl(st.layer), sc, st.to) ?? 0) } : null; };
+      const top = () => { const sc = scrollerFor(st.layer); return sc ? { sc, y: Math.min(Math.max(0, sc.scrollHeight - sc.clientHeight), topOf(layerEl(st.layer), sc, st.to, st.pad) ?? 0) } : null; };
       // Screens fill in and sections open a moment after they appear: go to the part, and again once settled.
       [350, 1100].forEach((ms) => later(() => { const t = top(); if (t) { scroller = t.sc; glide.to(t.y); } }, ms));
       if (st.drift) later(() => {
         const t = top();
         if (!t) return;
         glide.stop();
-        const from = t.y, max = Math.max(0, t.sc.scrollHeight - t.sc.clientHeight), to = Math.min(max, from + st.drift * t.sc.clientHeight), ms = st.ms || 8000, t0 = performance.now();
+        const from = t.y, max = Math.max(0, t.sc.scrollHeight - t.sc.clientHeight), to = st.drift === 'end' ? max : Math.min(max, from + st.drift * t.sc.clientHeight), ms = st.ms || 8000, t0 = performance.now();
         t.sc.scrollTop = from;
         const go = (now) => { const q = Math.min(1, (now - t0) / ms); t.sc.scrollTop = from + (to - from) * (0.5 - 0.5 * Math.cos(Math.PI * q)); if (q < 1) driftRaf = requestAnimationFrame(go); };
         driftRaf = requestAnimationFrame(go);
@@ -609,7 +714,7 @@ const VinterestDemo = {
       if (k !== stepAt) enterStep(k);
     };
 
-    let deckAt = -1, cancelGo = () => {};
+    let deckAt = -1, vsB = 0, cancelGo = () => {};
     /* The Blind Call, played on the taste card: open it, slide Body, Acidity and Tannins to a guess, lock it
        in, see how the call compares with the wine, then the score and the XP it earns (the app's own
        maths). Driven by b, 0 to 1 across the part; going back to the start plays it again. */
@@ -733,10 +838,18 @@ const VinterestDemo = {
           if (p >= RV_STORY) driveRate((p - RV_STORY) / (1 - RV_STORY));
           return;
         }
-        if (kind === 'deck') {
+        if (kind === 'vsblind') {
+          // The comparison's Blind Call: the taste card, then the call from its start to its result over the whole of p.
+          if (blindOpened && p < vsB - 0.01) { resetBlind(); draw(); deckAt = -1; }
+          vsB = p;
+          if (deckAt !== 6) { deckAt = 6; cancelGo(); cancelGo = _until(() => { const dots = _deckDots(el); if (!dots || !dots[6]) return false; dots[6].click(); return true; }, 40); }
+          driveBlind(p);
+          return;
+        }
+        if (kind === 'deck' || kind === 'vsdeck') {
           // Turn the deck to the card p is up to, and read down a long one while it's there. The Blind Call
           // part (p from 0.75) plays on the taste card, whose own number it isn't.
-          const blind = p >= BLIND_AT && p < BLIND_END;
+          const blind = kind === 'deck' && p >= BLIND_AT && p < BLIND_END;
           const i = blind ? 6 : Math.min(_DECK_CARDS - 1, Math.floor(p * _DECK_CARDS + 1e-6)), within = p * _DECK_CARDS - i;
           if (blind && blindOpened && p < lastBlindP - 0.002) { resetBlind(); draw(); deckAt = -1; }  // chosen again: play it from the start
           if (i !== deckAt) {

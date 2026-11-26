@@ -86,6 +86,8 @@
     });
     vs.classList.add('tabbed');
     pick(0);
+    vs._picked = function () { if (window.__vsSync) window.__vsSync(); };
+    tabs.forEach(function (t) { t.addEventListener('click', vs._picked); t.addEventListener('keyup', vs._picked); });
   })();
 
   /* ── Phones: scale a 410 x 864 frame to the room its stage gives it ── */
@@ -146,6 +148,73 @@
     demos.forEach(function (d) { io.observe(d.el); });
   } else {
     demos.forEach(mountDemo);
+  }
+
+  /* ── The comparison's phones ──
+     Each picture of the app in the comparison (figure[data-vs]) becomes the app itself once its tab is showing and it's on
+     screen: the same demo.js, in a phone built here over the picture, playing one thing on a loop (data-loop seconds from
+     start to finish, a pause, then again). Out of sight it stops; on another tab it's taken away. With reduced motion, or
+     if demo.js never arrives, the picture stays. */
+  var vsTail = 2600;
+  var vsDemos = reduced ? [] : Array.prototype.slice.call(document.querySelectorAll('figure[data-vs]')).map(function (fig) {
+    return { fig: fig, frame: fig.querySelector('.vs-frame'), kind: fig.getAttribute('data-vs'), loop: (parseFloat(fig.getAttribute('data-loop')) || 12) * 1000,
+      panel: fig.closest('.vs-panel'), seen: false, api: null, app: null, t: 0, busy: false };
+  });
+  function vsSize(v) { var w = v.frame.clientWidth; if (w > 0 && v.phone) v.phone.style.setProperty('--s', (w / 410).toFixed(4)); }
+  function vsStart(v) {
+    if (v.api || v.busy) return;
+    v.busy = true;
+    if (!v.phone) {
+      var live = document.createElement('div');
+      live.className = 'vs-live';
+      live.setAttribute('aria-hidden', 'true');
+      live.inert = true;
+      live.innerHTML = '<div class="phone"><div class="phone-screen"><div class="statusbar"><span>9:41</span><span class="sig"><i style="width:18px"></i><i style="width:24px"></i></span></div><div class="phone-app"></div></div></div>';
+      v.frame.appendChild(live);
+      v.phone = live.firstChild;
+      v.app = live.querySelector('.phone-app');
+      if (window.ResizeObserver) new ResizeObserver(function () { vsSize(v); }).observe(v.frame);
+    }
+    vsSize(v);
+    loadDemoScript().then(function () {
+      v.busy = false;
+      if (!vsWanted(v) || v.api) return;
+      try { v.api = window.VinterestDemo.mount(v.app, v.kind); } catch (e) { if (window.console) console.warn(e); return; }
+      v.t = 0;
+      v.api.update(0);
+      // The picture gives way once the screen under it has drawn.
+      setTimeout(function () { if (v.api) v.fig.classList.add('live'); }, 700);
+    }, function () { v.busy = false; });
+  }
+  function vsStop(v) {
+    if (!v.api) return;
+    v.fig.classList.remove('live');
+    try { v.api.unmount(); } catch (e) { /* already gone */ }
+    v.api = null;
+  }
+  function vsWanted(v) { return !v.panel.hidden; }
+  window.__vsSync = function () { vsDemos.forEach(function (v) { if (!vsWanted(v)) vsStop(v); else if (v.seen) vsStart(v); }); };
+  if (vsDemos.length) {
+    if ('IntersectionObserver' in window) {
+      var vio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { vsDemos.forEach(function (v) { if (v.fig === e.target) { v.seen = e.isIntersecting; if (v.seen && vsWanted(v)) vsStart(v); } }); });
+      }, { rootMargin: '10% 0px', threshold: 0.2 });
+      vsDemos.forEach(function (v) { vio.observe(v.fig); });
+    } else vsDemos.forEach(function (v) { v.seen = true; vsStart(v); });
+    var vsLast = 0;
+    var vsSpeed = parseFloat(new URLSearchParams(location.search).get('speed')) || 1;
+    var vsTick = function (now) {
+      var dt = Math.min(250, now - (vsLast || now));
+      vsLast = now;
+      vsDemos.forEach(function (v) {
+        if (!v.api || !v.seen) return;
+        v.t += dt * vsSpeed;
+        if (v.t > v.loop + vsTail) { v.t = 0; if (v.api.replay) v.api.replay(); }
+        v.api.update(Math.min(1, v.t / v.loop));
+      });
+      raf(vsTick);
+    };
+    raf(vsTick);
   }
 
   /* ── Playing the demos ──
