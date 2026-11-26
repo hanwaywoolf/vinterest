@@ -96,6 +96,21 @@ test.describe('desktop', () => {
     }
   });
 
+  test('the comparison with Vivino shows our own screens, draws theirs, and never claims what Vivino lacks', async ({ page }) => {
+    await page.goto(BASE + '/');
+    const vs = page.locator('#vs');
+    await expect(vs.locator('.vs-row')).toHaveCount(4);
+    // Ours are the app's real screens, and every one loads; theirs are drawings, with no image of their app.
+    const shots = await vs.locator('img.vs-shot').evaluateAll((xs) => Promise.all(xs.map(async (i) => { i.loading = 'eager'; await i.decode().catch(() => {}); return { w: i.naturalWidth, alt: i.alt.length }; })));
+    expect(shots.length).toBe(4);
+    for (const s of shots) { expect(s.w).toBeGreaterThan(300); expect(s.alt).toBeGreaterThan(30); }
+    await expect(vs.locator('.vs-cell.them img')).toHaveCount(0);
+    await expect(vs.locator('.vs-note')).toContainText('not screenshots of its app');
+    // Vivino has a personal match and a taste profile: the page never says otherwise.
+    const said = (await vs.innerText()).toLowerCase();
+    for (const no of ["doesn't learn", "doesn't evolve", 'no match', 'no personal', 'only wants', 'just wants']) expect(said, no).not.toContain(no);
+  });
+
   test('the progress bar is centred over the phone', async ({ page }) => {
     await page.goto(BASE + '/');
     for (const id of ['scan', 'winedna', 'vinny']) {

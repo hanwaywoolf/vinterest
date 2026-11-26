@@ -203,3 +203,24 @@ print change with it. With one set, only that store's button shows. Remove both 
 The two store buttons are plain buttons. Apple and Google each require their own badge artwork on a
 marketing page: download them from Apple's Marketing Resources and Google Play's badge generator and
 replace the buttons in `site/index.html` (`#store-ios`, `#store-android`) before launch.
+
+## Comparing by name
+
+The front page's "Vinterest and Vivino, side by side" block names a competitor, so every line about it has
+to be a fact someone can check, and it must stay true. What the page says about Vivino, and where it comes from:
+
+| The page says | Source |
+| --- | --- |
+| A star rating, averaged from everyone who has rated the bottle | Vivino's wine pages and store listing: a 1 to 5 star community average with its count of ratings |
+| A marketplace that sells wine through its app and website | vivino.com sells wine directly and through merchants |
+| Reviews and tasting notes from its community | Vivino's wine pages |
+
+What the page must never say, because it isn't true: that Vivino has no personal match or doesn't learn your
+taste. It has "Match for You" (a percentage from your own ratings, once you've rated five wines:
+https://www.vivino.com/wine-news/introducing-match-for-you) and a Taste Profile
+(https://www.vivino.com/wine-news/your-unique-taste-visualized).
+
+Rules for the block: no Vivino logo, screenshot or lookalike of its screens (its side is drawn, and the
+footnote says so); "Vivino is a trademark of Vivino ApS"; a date in the footnote, moved on when the claims
+are rechecked; claims about intent ("only wants to sell") stay out, since only what it does can be shown.
+Have the block read by whoever reviews the legal pages before an ad campaign points at it.
