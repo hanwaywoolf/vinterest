@@ -20,7 +20,7 @@ function SellerApp(){ const T=_S_FLAT, acc=TeamBrand.GOLD, [tab,setTab]=React.us
           {/* Seller's own logo top left, then whose visit this is, large enough to read at a glance. On a phone the two
               logos share the top row and the visit sits on its own line under them. */}
           <div style={{display:'flex',alignItems:'center',gap:22,minWidth:0}}>
-            <SellerLogo size={phone?18:22}/>
+            <SellerLogo size={phone?14:16}/>
             {!phone&&<div style={{paddingLeft:22,borderLeft:'1px solid rgba(255,255,255,0.18)',minWidth:0}}>{venue}</div>}
           </div>
           {/* The agency's own logo, in white on the dark page. */}
