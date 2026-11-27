@@ -49,7 +49,7 @@ if (args.image) {
     process.exit(1);
   }
   const data = buf.toString('base64');
-  CASES.unshift({ purpose: 'label_scan', label: 'Label scan', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type, data } }, { type: 'text', text: tpl('label-scan.txt') }] }] });
+  CASES.unshift({ purpose: 'label_scan', label: 'Label scan', messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type, data } }, { type: 'text', text: tpl('label-scan.txt').replace('{{year}}', String(new Date().getFullYear())) }] }] });
 }
 
 async function call(base, c) {

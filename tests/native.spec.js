@@ -282,3 +282,91 @@ test('the strip behind the status bar is crimson, dark or light', async ({ conte
   await page.goto('http://localhost:4173/#camera');
   await expect.poll(() => strip.evaluate((s) => s.offsetHeight)).toBe(0);
 });
+
+test('the store rating sheet is asked for after a wine they loved, once they have rated five, and not again for months', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await asApp(page);
+  const wines = [1, 2, 3, 4, 5].map((i) => ({ name: 'Wine ' + i, vintage: 2018, type: 'red', rating: 88, scanned: Date.now() - i * 864e5 }));
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_wines: JSON.stringify(wines.slice(0, 4)) });
+  await stubNetwork(context);
+  await page.goto(BASE + '/#home');
+  await page.waitForFunction(() => typeof ReviewAsk !== 'undefined');
+  const out = await page.evaluate(async (fifth) => {
+    let asked = 0; Platform.requestReview = async () => { asked++; };
+    ReviewAsk.DELAY_MS = 0;
+    const wait = () => new Promise((r) => setTimeout(r, 30));
+    const r = {};
+    r.tooFew = ReviewAsk.afterRating(95);
+    WineHistory.add(fifth, 88);
+    r.notLoved = ReviewAsk.afterRating(88);
+    r.loved = ReviewAsk.afterRating(92); await wait();
+    r.again = ReviewAsk.afterRating(96); await wait();
+    r.later = ReviewAsk.due(96, Date.now() + 121 * 864e5);
+    r.asked = asked;
+    r.synced = Backup.SETTINGS_KEYS.includes(ReviewAsk.KEY) || Backup.PROGRESS_KEYS.includes(ReviewAsk.KEY);
+    return r;
+  }, wines[4]);
+  expect(out).toEqual({ tooFew: false, notLoved: false, loved: true, again: false, later: true, asked: 1, synced: false });
+});
+
+test('on the web nobody is asked for a store rating', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1' });
+  await stubNetwork(context);
+  await page.goto(BASE + '/#home');
+  await page.waitForFunction(() => typeof ReviewAsk !== 'undefined');
+  expect(await page.evaluate(() => [ReviewAsk.due(99), !!window.VinterestNative.AppReview])).toEqual([false, true]);
+});
+
+test('the Worker\'s /config announces a new version from Cloudflare variables, per store, only with a latest version', async () => {
+  const copy = path.join(require('node:os').tmpdir(), `worker-update-${process.pid}.mjs`);
+  require('node:fs').copyFileSync(path.join(__dirname, '..', '_worker.js'), copy);
+  const worker = (await import(pathToFileURL(copy).href)).default;
+  const get = (env) => worker.fetch(new Request('https://vinterest.pages.dev/config'), env).then((r) => r.json()).then((j) => j.update);
+  expect(await get({})).toBeNull();
+  expect(await get({ APP_LATEST: 'soon' })).toBeNull();
+  // The App Store id defaults to the app's own; APP_STORE_ID overrides it.
+  expect(await get({ APP_LATEST: '1.12.0' })).toEqual({ ios: { latest: '1.12.0', min: null, note: null, url: 'https://apps.apple.com/app/id6819741453' }, android: { latest: '1.12.0', min: null, note: null, url: 'https://play.google.com/store/apps/details?id=app.vinterest' } });
+  expect(await get({ APP_LATEST: '1.12.0', APP_LATEST_IOS: '1.12.1', APP_MIN: '1.11.0', APP_STORE_ID: '6740000000', APP_UPDATE_NOTE: 'Shelf scanning is here.' }))
+    .toEqual({ ios: { latest: '1.12.1', min: '1.11.0', note: 'Shelf scanning is here.', url: 'https://apps.apple.com/app/id6740000000' },
+      android: { latest: '1.12.0', min: '1.11.0', note: 'Shelf scanning is here.', url: 'https://play.google.com/store/apps/details?id=app.vinterest' } });
+});
+
+test('Home says a new version is out when /config names one: "Not now" hides it until the next, below the minimum it stays', async ({ context, page }) => {
+  await asApp(page);
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1' });
+  await stubNetwork(context);
+  let update = { ios: { latest: '99.0.0', min: null, note: 'Shelf scanning is here.', url: 'https://apps.apple.com/app/id6740000000' } };
+  await context.route(`${LIVE}/config`, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ supabase: null, update }) }));
+  await page.goto(BASE + '/#home');
+  const card = page.getByTestId('update-offer');
+  await expect(card).toContainText('Vinterest 99.0.0 is out');
+  await expect(card).toContainText('Shelf scanning is here.');
+  await page.getByTestId('update-dismiss').click();
+  await expect(card).toHaveCount(0);
+  // The same version stays dismissed; a later one comes back.
+  await page.reload();
+  await page.waitForFunction(() => Billing.config() && Billing.config().update);
+  await expect(card).toHaveCount(0);
+  update = { ios: { ...update.ios, latest: '99.1.0' } };
+  await page.reload();
+  await expect(card).toContainText('Vinterest 99.1.0 is out');
+  // Below the oldest supported version it can't be dismissed.
+  update = { ios: { ...update.ios, min: '99.0.0' } };
+  await page.reload();
+  await expect(card).toContainText('Time to update Vinterest');
+  await expect(page.getByTestId('update-dismiss')).toHaveCount(0);
+  // The installed version itself, or Android's entry, shows nothing on this iPhone.
+  expect(await page.evaluate(() => [AppUpdate.older('1.11.4 (214 · abc)', '1.11.4'), AppUpdate.older('1.11.4', '1.12.0'), AppUpdate.older('1.12.0', '1.11.9')])).toEqual([false, true, false]);
+});
+
+test('the web app never shows the update card', async ({ context, page }) => {
+  await makeDeterministic(page);
+  await seedLocalStorage(page, { vinterest_onboarded: '1', vinterest_billing_config: JSON.stringify({ update: { web: { latest: '99.0.0', url: 'x' }, ios: { latest: '99.0.0', url: 'x' } } }) });
+  await stubNetwork(context);
+  await page.goto(BASE + '/#home');
+  await page.waitForFunction(() => typeof AppUpdate !== 'undefined');
+  expect(await page.evaluate(() => AppUpdate.offer())).toBeNull();
+  await expect(page.getByTestId('update-offer')).toHaveCount(0);
+});

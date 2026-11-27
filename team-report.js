@@ -52,7 +52,7 @@ const TeamReport = {
   /* What needs the manager on the cocktail list: a fact, then an action. */
   cocktailActions(){ const rows=this.cocktailRows(), out=[], few=rows.filter(x=>x.kb.of&&x.kb.people.length<Math.ceil(x.kb.of/2)).sort((a,b)=>a.kb.people.length-b.kb.people.length);
     few.slice(0,3).forEach(x=>out.push({tag:'Train',tone:'bad',fact:`${x.cocktail.name}: ${x.kb.people.length} of ${x.kb.of} trained on it.`,act:'Open its card and give the team the line to say.',open:{view:'cocktail',id:x.cocktail.id}}));
-    const nocard=rows.filter(x=>!x.card); if(nocard.length) out.push({tag:'Cards',tone:'note',fact:`${nocard.length} cocktail${nocard.length===1?' has':'s have'} no card yet: ${nocard.slice(0,3).map(x=>x.cocktail.name).join(', ')}${nocard.length>3?' and more':''}.`,act:'Publish the list again to write them.'});
+    const nocard=rows.filter(x=>!x.card); if(nocard.length) out.push({tag:'Cards',tone:'note',fact:`${nocard.length} cocktail${nocard.length===1?' has':'s have'} no card yet: ${nocard.slice(0,3).map(x=>x.cocktail.name).join(', ')}${nocard.length>3?' and more':''}.`,act:'Publish the list again from Admin to write them.',open:{tab:'upload'}});
     const lone=rows.filter(x=>x.card&&!x.dishes.length); if(lone.length) out.push({tag:'Menu',tone:'note',fact:`${lone.length} cocktail${lone.length===1?' is':'s are'} poured with no dish: ${lone.slice(0,3).map(x=>x.cocktail.name).join(', ')}${lone.length>3?' and more':''}.`,act:'Nobody has a dish to offer it with. Open its card to see what it suits.',open:{view:'cocktail',id:lone[0].cocktail.id}});
     return out; },
   /* A person's ladder: every wine their role sells with the rungs done, and every dish. */
@@ -221,10 +221,10 @@ const TeamReport = {
     const gaps=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2));
     gaps.slice(0,2).forEach(x=>out.push({tag:'Train',tone:'bad',fact:`${TeamData.short(x.wine)} is one of your top sellers, but only ${x.knows} of the ${n(x.of)} who serve it ${x.knows===1?'is':'are'} trained on it.`,act:`Put it first for the other ${x.of-x.knows}: see who and how.`,open:{view:'plan',kind:'train',id:x.wine.id}}));
     out.push({tag:'Sales',tone:d==null?'note':d>=0?'good':'bad',fact:d==null?`You sold ${m(s.revenue)} of wine ${W.in}.`:`You sold ${m(s.revenue)} of wine ${W.in}, ${d>=0?'up':'down'} ${Math.abs(d)}% on ${W.before}.`,
-      act:d!=null&&d<0?'See Best sellers below for the wines that fell.':'See Best sellers below for the wines behind it.'});
+      act:d!=null&&d<0?'Open Best sellers to see which wines fell.':'Open Best sellers to see the wines behind it.',open:{tab:'sales',at:'sales-wines'}});
     if(s.perCover!=null){ const dp=s.delta.perCover; out.push({tag:'Guests',tone:dp==null?'note':dp>=0?'good':'bad',fact:`Each guest spent ${TeamData.money(s.perCover,{dp:2})} on wine${dp==null?'':`, ${dp>=0?'up':'down'} ${Math.abs(dp)}% on the week before`}.`,
       act:dp!=null&&dp<0?'Have servers offer the bottle when a table orders a second glass of the same wine.':'Keep offering the bottle when a table orders a second glass.'}); }
-    if(lift.pct>0&&lift.wines) out.push({tag:'Training',tone:'good',fact:`A server trained on a wine sells about ${lift.x>=1.95?Math.round(lift.x):lift.x} times as much of it as one who isn't.`,act:gaps.length?`Start with the ${TeamData.nick(gaps[0].wine)}: it sells and few are trained on it.`:'Keep new arrivals assigned as they come in.'});
+    if(lift.pct>0&&lift.wines) out.push({tag:'Training',tone:'good',fact:`A server trained on a wine sells about ${lift.x>=1.95?Math.round(lift.x):lift.x} times as much of it as one who isn't.`,act:gaps.length?`Start with the ${TeamData.nick(gaps[0].wine)}: it sells and few are trained on it.`:'Keep new arrivals assigned as they come in.',...(gaps.length?{open:{view:'plan',kind:'train',id:gaps[0].wine.id}}:{})});
     const seller=this.salesByServer(28).filter(x=>x.shifts>0&&['server','bartender'].includes(x.person.role));
     if(seller.length>2){ const low=[...seller].sort((a,b)=>(a.revenuePerShift||0)-(b.revenuePerShift||0))[0];
       if(low&&low.readiness&&low.readiness.state!=='ready'){ const f=low.person.name.split(' ')[0]; out.push({tag:'Team',tone:'bad',fact:`${f} sells the least wine a shift (${m(low.revenuePerShift||0)}) and has finished ${low.readiness.pct}% of the training for the role.`,act:`See what would lift ${f}'s sales: the best sellers ${f} isn't trained on.`,open:{view:'plan',kind:'person',id:low.person.id}}); } }
@@ -417,18 +417,17 @@ const TeamReport = {
       out.push({tag:'Glass',tone:'bad',fact:`${d(x)}: only ${x.glassBy.people.length} of the ${n(x.glassBy.of)} who serve it ${x.glassBy.people.length===1?'is':'are'} trained on the ${TeamData.nick(x.glass)}, its wine by the glass.`,act:`Put it first for the other ${x.glassBy.of-x.glassBy.people.length}: see who.`,open:{view:'plan',kind:'train',id:x.glass.id}}); });
     const sold=ps.filter(x=>x.sold!=null&&x.perWeek>=15).sort((a,b)=>a.sold-b.sold)[0];
     if(sold&&sold.glass) out.push({tag:'Pairing',tone:'note',fact:`${d(sold)} is ordered ${sold.perWeek} times a week and goes out with its wine ${Math.round(100*sold.sold)}% of the time, the lowest of your popular dishes.`,act:`Feature the ${TeamData.nick(sold.glass)} tonight so every server offers it with the dish.`,open:{view:'plan',kind:'slow',id:sold.glass.id}});
-    const bare=TeamData.dishes().filter(x=>!TeamData.dishCard(x.id)).length; if(bare) out.push({tag:'Menu',tone:'note',fact:`${bare} dish${bare===1?' has':'es have'} no line for the team to describe ${bare===1?'it':'them'} with.`,act:'Write them under Manage, at the foot of this page.'});
-    if(TeamData.trainsAllergens()){ const wait=TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)==null).length; if(wait) out.push({tag:'Allergens',tone:'note',fact:`${wait} dish${wait===1?' is':'es are'} waiting for the kitchen to confirm ${wait===1?'its':'their'} allergens, so nobody is trained on ${wait===1?'it':'them'} yet.`,act:'Confirm them under Manage, at the foot of this page.'}); }
+    const bare=TeamData.dishes().filter(x=>!TeamData.dishCard(x.id)).length; if(bare) out.push({tag:'Menu',tone:'note',fact:`${bare} dish${bare===1?' has':'es have'} no line for the team to describe ${bare===1?'it':'them'} with.`,act:'Open Manage to write them.',open:{tab:'menu',at:'c2-manage-c2-manage-menu'}});
+    if(TeamData.trainsAllergens()){ const wait=TeamData.dishes().filter(x=>TeamData.allergensOf(x.id)==null).length; if(wait) out.push({tag:'Allergens',tone:'note',fact:`${wait} dish${wait===1?' is':'es are'} waiting for the kitchen to confirm ${wait===1?'its':'their'} allergens, so nobody is trained on ${wait===1?'it':'them'} yet.`,act:'Open Manage to confirm them.',open:{tab:'menu',at:'c2-manage-c2-manage-menu'}}); }
     return out; },
   /* One standout fact and up to three quick ones for the top of a console page: {pre, strong, post, bullets:[{tone,
      text}]} with tone good|note|bad. Every figure is from the restaurant's own sales and training. */
   headline(section){ const m=(n,dp=0)=>TeamData.money(n,{dp}), out={pre:'',strong:'',post:'',bullets:[]}, add=(tone,text)=>{ if(text&&out.bullets.length<3) out.bullets.push({tone,text}); };
     const D=TeamWindow.days(), W=TeamWindow.words(), s=TeamSales.has()?this.salesSummary(D):null, byWine=s?this.salesByWine(D):[], delta=s?this.wineDelta(D):{};
     const gap=byWine.slice(0,8).filter(x=>x.of&&x.knows<Math.ceil(x.of/2))[0], sold=x=>x.glasses>=x.bottles?`${x.glasses} glasses`:`${x.bottles} bottles`;
-    if(section==='dash'){ const t=s?this.perCoverTrend(8).filter(x=>x.perCover!=null):[];
-      const lift=s?this.trainedLift(28):null;
-      if(lift&&lift.x>=1.2){ out.pre='A wine sells '; out.strong=`${lift.x>=2?Math.round(lift.x):lift.x}× better`; out.post=' with a server trained on it.'; }
-      else if(t.length>1){ const d=t[t.length-1].perCover-t[0].perCover; out.pre='Wine per guest is '+(d>=0?'up ':'down '); out.strong=m(Math.abs(d),2); out.post=` in ${t.length===8?'eight':t.length} weeks.`; }
+    if(section==='dash'){ /* What the floor sold, in money: the manager's first question. The trained-lift line led here once and read as a
+         sales pitch on every restaurant's own dashboard; it stays in What you need to know and What training is worth. */
+      if(s&&s.revenue>0){ out.pre='Your team sold '; out.strong=m(s.revenue); out.post=` of wine ${D===7?'this week':W.in}.`; }
       else { const o=this.overview(); out.pre='Your team is '; out.strong=`${o.avg}% ready`; out.post=' for tonight.'; }
       if(byWine[0]) add('good',`${TeamData.nick(byWine[0].wine)} leads ${D===7?'the week':W.span}${delta[byWine[0].wine.id]>0?`, up ${delta[byWine[0].wine.id]}%`:''}`);
       if(gap) add('note',`${TeamData.nick(gap.wine)} sold ${sold(gap)}; ${gap.knows} of ${gap.of} servers trained on it`);

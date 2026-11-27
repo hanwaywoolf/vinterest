@@ -119,8 +119,9 @@ try {
   await ctx2.addInitScript(() => { window.VINTEREST_TOUR = 'off'; }); for (const p of ['**/claude', '**/tts', '**/stt']) await ctx2.route(p, (r) => r.fulfill({ status: 503, body: '{}' }));
   await ctx2.route('**/config', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
   page = await ctx2.newPage(); page.on('pageerror', (e) => errors.push(e.message)); await start();
-  await crop('dash', 'crop-attention', 'c2-needs');
-  await crop('sales', 'crop-slow', 'sales-brief');
+  // Needs you is a dialog behind its button in the page's head: opened for its picture, then closed.
+  await size(SW, SH); await nav('dash'); await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs').screenshot({ path: path.join(CROPS, 'crop-attention.jpg'), type: 'jpeg', quality: 88 }); await page.getByTestId('c2-needs-close').click();
+  await size(SW, SH); await nav('sales'); await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('sales-brief').screenshot({ path: path.join(CROPS, 'crop-slow.jpg'), type: 'jpeg', quality: 88 }); await page.getByTestId('c2-needs-close').click();
   await crop('team', 'crop-readiness2', 'c2-team-list');
   await crop('training', 'crop-team', 'c2-training-people');
   await size(SW, SH); await nav('team'); const manage = page.getByText('Manage: add or remove people', { exact: false }).first();

@@ -1812,12 +1812,20 @@ function _QuizConfetti({col,T}){
 const _QZ_TRAITS={body:'body',tannin:'tannins',tannins:'tannins',acidity:'acidity',acid:'acidity',texture:'texture'};
 function _QuizFact({text,T,cr}){
   const [open,setOpen]=React.useState(null);
+  // Each trait is marked once, and "acid" only on its own: malic or lactic acid is the name of an
+  // acid, not the acidity you taste.
   const parts=String(text).split(/(\b(?:body|tannins?|acidity|acid|texture)\b)/i);
+  const seen={};
+  const isTerm=(w,i)=>{ const k=_QZ_TRAITS[w.toLowerCase()]; if(!k||seen[k]) return null;
+    if(/^acid$/i.test(w)&&/(malic|lactic|tartaric|citric|succinic|acetic|volatile|amino)\s*$/i.test(parts[i-1]||'')) return null;
+    seen[k]=1; return k; };
   const tr=open&&typeof Palate!=='undefined'&&Palate.TRAITS[open];
   return <div style={{paddingTop:10,borderTop:`1px solid ${T.line}`}}>
     <div style={{fontSize:17,color:T.ink,fontFamily:C.P,lineHeight:1.5}}>
-      {parts.map((w,i)=>{ const k=_QZ_TRAITS[w.toLowerCase()]; return k
-        ?<span key={i} role="button" onClick={e=>{ e.stopPropagation(); setOpen(o=>o===k?null:k); }} style={{textDecoration:'underline dotted',textUnderlineOffset:3,textDecorationColor:cr,cursor:'pointer'}}>{w}</span>
+      {/* A tappable term reads as one: in the accent, semi-bold, with a small "?" after it. A dotted
+          underline looked like the iPhone's own spelling marks. */}
+      {parts.map((w,i)=>{ const k=isTerm(w,i); return k
+        ?<span key={i} role="button" data-testid="quiz-term" aria-label={`${w}: what it means`} onClick={e=>{ e.stopPropagation(); setOpen(o=>o===k?null:k); }} style={{color:cr,fontWeight:600,cursor:'pointer',whiteSpace:'nowrap'}}>{w}<span aria-hidden="true" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:'1.05em',height:'1.05em',marginLeft:3,borderRadius:'50%',border:`1.5px solid ${cr}`,fontSize:'0.62em',fontWeight:700,lineHeight:1,verticalAlign:'0.35em'}}>?</span></span>
         :<React.Fragment key={i}>{w}</React.Fragment>; })}
     </div>
     {tr&&<div className="qz-rise" onClick={e=>e.stopPropagation()} style={{marginTop:8,padding:'10px 12px',borderRadius:10,background:T.glass,border:`1px solid ${T.line}`,fontSize:14,color:T.ink2,fontFamily:C.P,lineHeight:1.45}}>

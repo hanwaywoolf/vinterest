@@ -3,6 +3,84 @@
    How a scanned wine maps onto one already saved, price context in their currency, and turning a Blind Call
    guess into the "compared with the label" taps the rating step offers. */
 const ScanFlow = {
+  /* A shelf scan's answer (prompts/shelf-scan.txt) as list entries: {wines, unread}. One entry per
+     wine (the same bottle read twice is one), each named producer first;
+     `unread` is how many other bottles Claude says it couldn't read. Throws on an answer that isn't JSON
+     or says there were no bottles. */
+  shelfWines(text){
+    let t=String(text||'').replace(/```json|```/g,'').trim();
+    const a=t.indexOf('{'), b=t.lastIndexOf('}');
+    if(a>=0&&b>a) t=t.slice(a,b+1);
+    const data=JSON.parse(t);
+    if(data.error) throw new Error(data.error);
+    const seen=[], wines=[];
+    (data.wines||data.results||[]).forEach(w=>{
+      const year=Number(w.vintage||w.v), producer=String(w.producer||w.pr||'').trim();
+      // The name as a label reads it, producer first ("Viña Ardanza Reserva"), which is also how a
+      // scanned bottle of it is saved, so a shelf bottle finds the one already in My Wines.
+      const bare=String(w.name||w.n||'').trim();
+      const full=!bare?producer:producer&&bare.toLowerCase().indexOf(producer.toLowerCase())<0?producer+' '+bare:bare;
+      const e={name:full,producer,type:w.type||w.t||'red',region:w.region||w.r||'',country:w.country||w.c||'',
+        vintage:year>=1900&&year<=2100?year:null,price:String(w.price||w.p||'').trim(),grape:w.grape||w.g||'',style:w.style||w.s||''};
+      if(!e.name) return;
+      if(seen.some(x=>WineHistory.same(x,e))) return;
+      seen.push(e); wines.push(e);
+    });
+    return {wines,unread:Math.max(0,Math.round(Number(data.unread!=null?data.unread:data.u)||0))};
+  },
+
+  /* The camera's starting zoom: the main (1x) lens, as on Android. A WebKit camera on an iPhone with
+     an ultra-wide lens ("Back Triple Camera", "Back Dual Wide Camera") reports the ultra-wide as its
+     widest zoom, so taking the minimum opened on 0.5x and the label sat small in the frame. Zoom 1
+     where the camera counts the main lens as 1 (min under 1), the main lens's 2 where it counts the
+     ultra-wide as 1, else the widest (some Android phones open on a 2x telephoto). */
+  cameraZoom(caps,label){
+    const z=caps&&caps.zoom;
+    if(!z||typeof z.min!=='number') return null;
+    const max=typeof z.max==='number'?z.max:z.min;
+    const clamp=(v)=>Math.min(max,Math.max(z.min,v));
+    if(z.min<1) return clamp(1);
+    if(/triple|dual wide/i.test(String(label||''))) return clamp(2);
+    return z.min;
+  },
+  /* The part of the camera's picture inside the red frame, in the picture's own pixels. The preview
+     fills the screen with object-fit: cover, so it's scaled up and cut at two edges; the frame is a
+     box on the screen. Only what's inside it is sent and shown, so the scan reads what was framed. */
+  frameCrop(vw,vh,view,frame){
+    if(!vw||!vh||!view||!frame||!view.width||!view.height) return {sx:0,sy:0,sw:vw,sh:vh};
+    const s=Math.max(view.width/vw,view.height/vh);
+    const ox=view.left+(view.width-vw*s)/2, oy=view.top+(view.height-vh*s)/2;
+    const x0=Math.max(0,(frame.left-ox)/s), y0=Math.max(0,(frame.top-oy)/s);
+    const x1=Math.min(vw,(frame.left+frame.width-ox)/s), y1=Math.min(vh,(frame.top+frame.height-oy)/s);
+    if(x1-x0<16||y1-y0<16) return {sx:0,sy:0,sw:vw,sh:vh};
+    return {sx:Math.round(x0),sy:Math.round(y0),sw:Math.round(x1-x0),sh:Math.round(y1-y0)};
+  },
+  /* A tap on the preview as a point of the camera's picture, 0 to 1 each way: what a camera that
+     takes pointsOfInterest focuses on. */
+  focusPoint(vw,vh,view,x,y){
+    if(!vw||!vh||!view||!view.width) return null;
+    const s=Math.max(view.width/vw,view.height/vh);
+    const ox=view.left+(view.width-vw*s)/2, oy=view.top+(view.height-vh*s)/2;
+    const c=(v)=>Math.min(1,Math.max(0,v));
+    return {x:c((x-ox)/s/vw),y:c((y-oy)/s/vh)};
+  },
+  /* What a tap asks the camera for, from what it says it can do: focus on that point (Android
+     Chrome), else a fresh single focus, else continuous focus started again. Null when the camera
+     offers no focus control (an iPhone's web camera focuses by itself and takes none). */
+  focusConstraints(caps,pt){
+    if(!caps) return null;
+    const modes=Array.isArray(caps.focusMode)?caps.focusMode:[];
+    const c={};
+    if(caps.pointsOfInterest!==undefined&&pt) c.pointsOfInterest=[pt];
+    if(modes.includes('single-shot')) c.focusMode='single-shot';
+    else if(modes.includes('continuous')) c.focusMode='continuous';
+    return Object.keys(c).length?c:null;
+  },
+
+  /* The label-reading prompt with this year filled in: a vintage on the neck or a seal is read even
+     when it's last year's or this year's, which the model otherwise took for too new and dropped. */
+  labelPrompt(){ return ContentEngine.fillTpl(_loadTextSync('prompts/label-scan.txt'),{year:new Date().getFullYear()}); },
+
   /* A wine saved from a wine list has no tasting notes or food pairings (the list prompt only reads
      name, type, region, grape and style), and often no grapes. Its screen fills them in once
      (purpose wine_details, prompts/wine-details.txt) and they're saved onto the wine, so it never
@@ -162,7 +240,7 @@ const ScanFlow = {
     let m=null;
     if(match){
       const pro=match.reasons.find(r=>r.tone==='good'), con=match.reasons.find(r=>r.tone==='bad')||match.reasons.find(r=>r.tone==='neutral');
-      m={pct:match.pct,tone:match.tone,label:match.label,expected:match.expected!=null?match.expected:null,expectedLabel:match.expectedLabel||null,bar:match.bar!=null?match.bar:null,
+      m={pct:match.pct,tone:match.tone,label:match.label,expected:match.expected!=null?match.expected:null,expectedLabel:match.expectedLabel||null,bar:match.bar!=null?match.bar:null,breakdownLabel:match.breakdownLabel||null,
         early:match.verdict==='early'?FirstScan.progress(wine,wines):null,vintage:!!match.vintage,
         pro:pro?pro.text:null,con:con?con.text:null};
     }

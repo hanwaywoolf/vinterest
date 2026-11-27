@@ -25,6 +25,10 @@ const TeamPlans = {
     const rank=TeamSales.has()?Object.fromEntries(TeamReport.salesByWine(28).map((y,i)=>[y.wine.id,i])):{}, by=(x,y)=>(rank[x.id]==null?999:rank[x.id])-(rank[y.id]==null?999:rank[y.id]);
     const knownW=w=>TeamLearn.knowsWine(pid,c.role,w.id,c.items), gapsFirst=(list,known)=>[...list.filter(x=>!known(x)),...list.filter(known)];
     const ok=w=>TeamData.card(w.id)&&TeamLearn.qsFor(c.role,w.id).length, picks=x=>{ const p=TeamData.pairing(x.id)||{}; return [...(p.best||[]).slice(0,2),p.glass].filter(Boolean).map(y=>TeamData.wine(y.id)).filter(Boolean); };
+    // Wines the request names come first and are the whole plan, whatever else it says: "the line to say, the price and
+    // the dish for each" of three named wines is a plan about those wines, never about the menu (it once was, since
+    // "dish" alone read as a menu request and the wines were dropped).
+    const named=this.named(c,ask).filter(ok); if(named.length) return {wines:named.sort(by).slice(0,this.MAX_WINES),dishes:[],pairing:false,mixed:false,named:true};
     const pairing=!!(n&&n.pairing), mixed=!!(n&&n.mixed), pool=(n&&n.wines.length&&n.wines.length<c.wines.length?n.wines:c.wines).filter(ok).sort(by), inPool=new Set(pool.map(w=>w.id));
     // A pairing plan starts from the dishes: the ones whose pairing they don't hold yet, each with the wines poured
     // with it, so every question can be about a wine for a dish. Never the menu on its own.
@@ -35,6 +39,11 @@ const TeamPlans = {
     const onlyFood=n&&!n.wines.length&&n.dishes.length;
     if(onlyFood) return {wines:[],dishes:n.dishes.slice(0,this.MAX_WINES),pairing:false,mixed:false,menu:true};
     return {wines:gapsFirst(pool,knownW).slice(0,this.MAX_WINES),dishes:[],pairing:false,mixed:false}; },
+  /* The wines on this person's list a request names, by the name the console writes them with (nick, short, or the
+     wine's own name): what a suggestion's request always carries, and what a manager types. */
+  named(c,ask){ const t=' '+TeamLearn._norm(ask)+' ', has=x=>{ const k=TeamLearn._norm(x||''); return k.length>4&&t.includes(' '+k+' '); };
+    // A wine's bare name ("Riesling") sits inside other wines' names, so it counts only when nothing fuller matched.
+    const full=c.wines.filter(w=>has(TeamData.nick(w))||has(TeamData.short(w))); return full.length?full:c.wines.filter(w=>has(w.name)); },
   /* Whether a written question is about a pairing: it names a wine from the list and a dish from the menu between
      its words and its options. A question about a dish that names no wine is a menu question. */
   _names(text){ const t=' '+TeamLearn._norm(text)+' ', has=x=>{ const k=TeamLearn._norm(x); return k.length>3&&t.includes(' '+k+' '); };
@@ -52,6 +61,39 @@ const TeamPlans = {
   _answer(q){ try{ const s=TeamLearn.shown(q); return (s.right||[]).map(i=>typeof i==='number'?(s.opts||[])[i]:i).filter(Boolean).join('; ')||q.ans||''; }catch(e){ return q.ans||''; } },
   _who(pid){ const x=TeamReport.people().find(y=>y.person.id===pid); if(!x) return ''; const r=x.r;
     return `${x.person.name}, ${TeamLearn.ROLES[x.person.role].label.toLowerCase()}. ${r.pct}% of the training the role needs. ${Object.entries(r.parts).map(([k,p])=>`${TeamLearn.PART_LABEL[k]}: trained on ${p.known} of ${p.total} (needs ${Math.ceil(p.need*p.total-1e-9)})`).join('; ')}.`; },
+  /* What Vinny would write for this one person, from their own answers and sales: up to `n` plans a manager can
+     start with one tap, each {kind, title, why, ask}: `why` is the evidence in words and `ask` the request the plan is
+     written from, naming the wines and dishes so the plan is about them. In order: what they miss, what they sell
+     without training, the team's best sellers they aren't trained on, answers that have faded, the area furthest
+     from its minimum, and selling under the role's average. Nobody gets a suggestion their own data doesn't make. */
+  suggest(pid,n=3,row){ const c=TeamVinny._ctx(pid); if(!c) return []; const x=row||TeamReport.teamRows().find(y=>y.person.id===pid); if(!x) return [];
+    const f=c.person.name.split(' ')[0], out=[], used=new Set(), nick=w=>TeamData.nick(w), and=a=>a.length>1?a.slice(0,-1).join(', ')+' and '+a[a.length-1]:a[0]||'';
+    const add=(kind,title,why,ask,ids)=>{ if(out.length<n&&!out.some(o=>o.kind===kind)){ out.push({kind,title,why,ask}); (ids||[]).forEach(i=>used.add(i)); } };
+    const qsW=w=>TeamLearn.qsFor(c.role,w.id), qsD=d=>TeamLearn.dishQsFor(c.role,d.id,{allergen:false}), it=q=>c.items[q.id], trained=w=>TeamLearn.knowsWine(pid,c.role,w.id,c.items);
+    // 1. Missed last time they were asked.
+    const missW=c.wines.map(w=>({w,n:qsW(w).filter(q=>it(q)&&it(q).wrong).length})).filter(y=>y.n).sort((a,b)=>b.n-a.n), missD=c.dishes.map(d=>({d,n:qsD(d).filter(q=>it(q)&&it(q).wrong).length})).filter(y=>y.n).sort((a,b)=>b.n-a.n);
+    const missN=missW.reduce((a,y)=>a+y.n,0)+missD.reduce((a,y)=>a+y.n,0);
+    if(missN>=2){ const names=[...missW.slice(0,3).map(y=>nick(y.w)),...missD.slice(0,missW.length?1:3).map(y=>y.d.name)].slice(0,3);
+      add('missed',`Fix what ${f} keeps missing`,`${missN} answers missed last time, most on ${and(names)}.`,`${f} keeps getting questions wrong on ${and(names)}. Write a short course that teaches those again from another angle, then checks them.`,missW.slice(0,3).map(y=>y.w.id)); }
+    // 2. What they sell without being trained on it; else the team's best sellers they aren't trained on.
+    if(TeamSales.has()){ const by={}; TeamSales.rows(28).filter(y=>y.v===pid&&y.w).forEach(y=>{ by[y.w]=(by[y.w]||0)+y.q*y.p; });
+      const blind=Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([id,rev])=>({w:TeamData.wine(id),rev})).filter(y=>y.w&&qsW(y.w).length&&!trained(y.w)&&!used.has(y.w.id)).slice(0,3);
+      if(blind.length) add('blind',`Train ${f} on what ${f} already sells`,`${f} sold ${and(blind.map(y=>`${nick(y.w)} (${TeamData.money(Math.round(y.rev/4))} a week)`))} without being trained on ${blind.length===1?'it':'them'}.`,`${f} already sells ${and(blind.map(y=>nick(y.w)))} but isn't trained on ${blind.length===1?'it':'them'}. Write a course on ${blind.length===1?'that wine':'those wines'}: what to say, the price and what to pour ${blind.length===1?'it':'them'} with.`,blind.map(y=>y.w.id));
+      const top=TeamReport.salesByWine(28).slice(0,10).filter(y=>c.wines.some(w=>w.id===y.wine.id)&&qsW(y.wine).length&&!trained(y.wine)&&!used.has(y.wine.id)).slice(0,3);
+      if(top.length) add('sellers',`The best sellers ${f} can't sell yet`,`${and(top.map(y=>nick(y.wine)))} ${top.length===1?'is':'are'} among the team's best sellers and ${f} isn't trained on ${top.length===1?'it':'them'}.`,`Get ${f} ready to sell ${and(top.map(y=>nick(y.wine)))}, the team's best sellers ${f} isn't trained on yet: the line to say, the price and the dish for each.`,top.map(y=>y.wine.id)); }
+    // 3. Answers held once and now faded.
+    const fade=c.wines.map(w=>({w,n:qsW(w).filter(q=>it(q)&&it(q).reps&&!it(q).wrong&&c.now>=it(q).due).length})).filter(y=>y.n&&!used.has(y.w.id)).sort((a,b)=>b.n-a.n), fadeN=fade.reduce((a,y)=>a+y.n,0);
+    if(fadeN>=3) add('faded',`Refresh what ${f} has let slip`,`${fadeN} answers ${f} once held have faded, most on ${and(fade.slice(0,3).map(y=>nick(y.w)))}.`,`${f} used to know ${and(fade.slice(0,3).map(y=>nick(y.w)))} and the answers have faded. Write a quick refresher on them.`,fade.slice(0,3).map(y=>y.w.id));
+    // 4. The area furthest from the role's minimum, with what it would start on.
+    const weak=[...x.areas].filter(a=>!a.met).sort((a,b)=>(b.needs-b.known)-(a.needs-a.known))[0];
+    if(weak){ const names=((TeamReport.whatsLeft(pid,3).find(y=>y.k===weak.k)||{}).names||[]).slice(0,3), lab=weak.k==='menu'?'the menu':weak.label.toLowerCase();
+      add('area',`Close the gap on ${lab}`,`${weak.label}: trained on ${weak.known} of ${weak.total}, and a ${TeamLearn.ROLES[c.role].label.toLowerCase()} needs ${weak.needs}.`,`${f} is furthest behind on ${lab}: trained on ${weak.known} of ${weak.total} and needs ${weak.needs}.${names.length?` Start with ${and(names)}.`:''} Build a three-part course that gets there.`); }
+    // 5. Selling under the role's average: the step up to a bottle.
+    const sl=x.sales; if(sl&&sl.roleAvg&&sl.peers>1&&sl.perShift<sl.roleAvg*0.85) add('sales',`Lift what ${f} sells a shift`,`${f} sells ${TeamData.money(Math.round(sl.perShift))} of wine a shift against ${TeamData.money(Math.round(sl.roleAvg))} for the role.`,`${f} sells ${TeamData.money(Math.round(sl.perShift))} of wine a shift against ${TeamData.money(Math.round(sl.roleAvg))} for the role. Write a course on offering the bottle when a table orders two glasses, and the next wine up in price for the best sellers.`);
+    // Nothing to fix: keep the best sellers fresh.
+    if(!out.length){ const top=TeamSales.has()?TeamReport.salesByWine(28).slice(0,3).filter(y=>c.wines.some(w=>w.id===y.wine.id)).map(y=>nick(y.wine)):[];
+      add('sharp',`Keep ${f} sharp`,`${f} is trained on everything the role needs.`,`${f} is trained on everything the role needs. Write a two-part refresher${top.length?` on ${and(top)}, the wines that sell most`:' on the wines that sell most'}, from angles ${f} hasn't been asked.`); }
+    return out; },
   _id(){ return 'pl'+Date.now().toString(36)+Math.floor(Math.random()*1296).toString(36); },
   /* One question as the drill takes it: four options, the index of the right one, and what it's about. */
   _q(planId,n,raw,ok){ const on=String(raw.on||''), w=TeamData.wine(on), dish=!w&&TeamData.dish(on); if(!w&&!dish) return null;
@@ -59,11 +101,16 @@ const TeamPlans = {
     if(!text||opts.length!==4||uniq.size!==4||!(a>=0&&a<4)) return null;
     const covers=ok.has(String(raw.covers||''))?String(raw.covers):'';
     return {id:`${planId}#${n}`,k:'recognise',mc:true,q:text,opts,a,why:String(raw.why||'').trim(),covers,bespoke:planId,...(w?{wine:w.id}:{dish:dish.id})}; },
+  /* The public demo (The Larkspur at demo.vinterest.team, which the Teams website shows) makes no call for a plan:
+     anyone can press Write it there, and each press was a billed call. A plan is built from the questions already
+     written instead (`fromCards`), and the card says so. Tests switch it with `window.VINTEREST_PLAN_CALLS`. */
+  noCalls(){ try{ if(window.VINTEREST_PLAN_CALLS) return window.VINTEREST_PLAN_CALLS==='off'; return TeamData.isDemo()&&TeamSample.hostSeed()==='demo'; }catch(e){ return false; } },
   /* Vinny writes it: one call. Saved as a draft the manager reads before pushing. Throws in words when it can't. */
   async write(pid,ask,by){ const c=TeamVinny._ctx(pid); if(!c) throw new Error('Pick someone first.'); const text=String(ask||'').trim(); if(text.length<8) throw new Error('Say who it\'s for and what they need, in a sentence.');
     const s=this.subjects(pid,text); if(!s.wines.length&&!s.dishes.length) throw new Error('Nothing on the list matches that. Try a colour, the glass list, the bottles or the menu.');
+    if(this.noCalls()){ const made=this.fromCards(pid,text,by); if(!made) throw new Error('There are no questions written for that yet. Try a colour, the glass list, the bottles or the menu.'); return made; }
     const v=TeamData.get().venue||{}, tpl=_loadTextSync('prompts/team-plan.txt');
-    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':'No question asks what a dish is, how it is cooked or what is in it.')
+    const prompt=tpl.replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{about}}',TeamData.about()).replace('{{person}}',this._who(pid)).replace('{{ask}}',text).replace('{{kind}}',s.pairing&&!s.mixed?'This is a PAIRING plan. Every question in every part is a pairing question, as defined above. Give the parts different angles on it: the wine for the dish, the dish for the wine, by the glass, why it works, steering a guest from a poor match.':s.pairing?'The manager asked for pairings among other things. At least one whole part is pairing questions, as defined above, and no question anywhere asks what a dish is, how it is cooked or what is in it.':s.menu?'This plan is about the menu itself.':s.named?'This plan is about the wines listed below and nothing else. Every question is about one of them: what to say, its price, what it tastes like, where it is from, or which dish it is poured with (from its "poured with" line). No question asks what a dish is, how it is cooked, what is in it or what a dish costs.':'No question asks what a dish is, how it is cooked or what is in it.')
       .replace('{{subjects}}',[...s.wines.map(w=>this._wineLines(pid,c,w)),...s.dishes.map(x=>this._dishLines(pid,c,x,s.pairing))].join('\n\n'));
     const res=await window.claude.complete({purpose:'team_plan',messages:[{role:'user',content:prompt}]}), j=TeamData._json(res)||{};
     const id=this._id(), ok=new Set([...s.wines.flatMap(w=>TeamLearn.qsFor(c.role,w.id)),...s.dishes.flatMap(x=>TeamLearn.dishQsFor(c.role,x.id,{allergen:false}))].map(q=>q.id)); let n=0;

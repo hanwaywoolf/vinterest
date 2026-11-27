@@ -385,7 +385,8 @@ function _CAddPerson({close,done}){ const T=useTheme(), cr=T.lift(C.cr), [first,
       <div style={{fontSize:12,color:T.mid,fontFamily:C.P,marginTop:12,lineHeight:1.5}}>Their whole list and menu becomes their first assignment, due in {TeamData.get().settings.dueDays||7} days. In the pilot everyone trains on this device; their own phone comes with accounts.</div>
       <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:16}}><Btn small onClick={close}>Cancel</Btn><span data-testid="console-add-save" style={{opacity:first.trim()?1:0.5}}><Btn small primary onClick={add}>Add to the team</Btn></span></div>
     </div></div>; }
-function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useLayoutSize()==='phone';
+// noMins: the new console sets the minimums on Admin (_C2Mins), so its Manage drawer leaves them out.
+function _CTeam({open,refresh,noMins}){ const T=useTheme(), cr=T.lift(C.cr), phone=useLayoutSize()==='phone';
   const ps=TeamReport.people().sort((a,b)=>a.r.pct-b.r.pct), [adding,setAdding]=React.useState(false), [,bump]=React.useReducer(x=>x+1,0);
   const changed=()=>{ bump(); refresh&&refresh(); };
   const remove=p=>{ if(confirm(`Remove ${p.name} and their training on this device?`)){ TeamLearn.removePerson(p.id); refresh&&refresh(); } };
@@ -405,7 +406,7 @@ function _CTeam({open,refresh}){ const T=useTheme(), cr=T.lift(C.cr), phone=useL
           :<div style={{fontSize:14,color:T.mid,fontFamily:C.P,padding:'8px 0'}}>No dish has its allergens confirmed by the kitchen yet. Confirm them on the Menu tab; the register fills as people hold them.</div>}
         {_cNote(T,'Only the kitchen\'s confirmed allergens count. A person has passed when they hold every confirmed dish; an answer falls due on its own review date, and a miss comes back within the shift.')}</Card></div>; })()}
     <TeamLevelCard changed={changed}/>
-    <TeamMinimumsCard changed={changed}/>
+    {!noMins&&<TeamMinimumsCard changed={changed}/>}
     {adding&&<_CAddPerson close={()=>setAdding(false)} done={()=>{ setAdding(false); refresh&&refresh(); }}/>}
   </div>; }
 /* The restaurant's training level with a level per role, and the minimum each role needs to work the floor: the same

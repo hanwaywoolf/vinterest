@@ -2835,8 +2835,9 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(con).toHaveAttribute('data-look', 'preview');
   // A device that opened The Larkspur before its file asked for the new look still gets it.
   expect(await page.evaluate(() => { const d = TeamData.get(); delete d.venue.console; TeamData.save(d); const o = window.VINTEREST_CONSOLE; window.VINTEREST_CONSOLE = null; const look = TeamData.consoleLook(); window.VINTEREST_CONSOLE = o; return look; })).toBe('preview');
-  // One standout fact with quick ones beneath, about what knowing the list sells.
-  await expect(page.getByTestId('c2-fact')).toContainText('with a server trained on it');
+  // One standout fact with quick ones beneath: what the floor sold, never the trained-lift pitch.
+  await expect(page.getByTestId('c2-fact')).toContainText(/Your team sold .+ of wine this week/);
+  await expect(page.getByTestId('c2-fact')).not.toContainText('better');
   expect(await page.getByTestId('c2-bullets').locator('> div').count()).toBeLessThanOrEqual(3);
   await expect(page.getByTestId('c2-seller').first().getByTestId('c2-knowers')).toContainText(/\d of \d/);
   await expect(page.getByTestId('c2-person')).toHaveCount(7);
@@ -2844,7 +2845,11 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // needs the manager as what's so and what to do.
   await expect(page.getByTestId('c2-kpi-pairing')).toContainText('pairing');
   await expect(page.getByTestId('c2-lift')).toContainText('×'); expect(await page.getByTestId('c2-lift-row').count()).toBeGreaterThan(1);
-  expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  // Needs you is a button in the page's head with how many are left, as on Wines, Cocktails and Menu: no card on the page.
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); expect(Number(await page.getByTestId('c2-needs-count').innerText())).toBeGreaterThan(1);
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); expect(await page.getByTestId('c2-needs').getByTestId('c2-act').count()).toBeGreaterThan(1);
+  await expect(page.getByTestId('c2-needs')).not.toContainText(/know(s|n)? it|known by|the floor/i); await page.getByTestId('c2-needs-close').click();
   await expect(page.getByTestId('console-dash')).not.toContainText(/know(s|n)? it|known by/);
   await expect(page.getByTestId('console-dash')).not.toContainText(/the floor/i);
   // Training's worth is said in weeks, and a wine can be put first for the people not trained on it.
@@ -2853,8 +2858,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   // How far training has spread leaves room to grow: whole team, at least half, fewer.
   await expect(page.getByTestId('c2-spread').first()).toContainText('whole team trained');
   // A line of Needs you opens a plan: where things stand, then steps, with a button where the console can do one.
-  await page.getByTestId('c2-needs').getByTestId('c2-need').first().click();
-  await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
+  await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs').getByTestId('c2-need').first().locator('[role="button"]').first().click();
+  await expect(page.getByTestId('c2-needs')).toHaveCount(0); await expect(page.getByTestId('c2-plan')).toContainText('What to do'); expect(await page.getByTestId('c2-plan-step').count()).toBeGreaterThan(2);
   await page.getByTestId('c2-plan-do').first().click(); await expect(page.getByTestId('c2-plan-do').first()).toContainText('Done');
   await page.getByTestId('c2-plan-close').click();
   // A figure opens the card it summarises.
@@ -2872,8 +2877,25 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await page.getByTestId('console-nav-sales').click();
   await expect(page.getByTestId('c2-fact')).toContainText('Wine sales are');
   // Every line of the briefing is what the sales say, then what to do; nothing in the console's own shorthand.
+  // It sits behind a button in the page's head with its count, as Needs you does on the other pages.
+  await expect(page.getByTestId('sales-brief')).toHaveCount(0); await expect(page.getByTestId('c2-needs-btn')).toContainText('What you need to know');
+  expect(await page.getByTestId('c2-needs-btn').evaluate(el => !!el.closest('[data-testid="c2-head"]'))).toBe(true);
+  await page.getByTestId('c2-needs-btn').click(); await expect(page.getByTestId('sales-brief')).toContainText(/things? to know/);
   expect(await page.getByTestId('sales-brief').getByTestId('c2-act').count()).toBeGreaterThan(2);
   await expect(page.getByTestId('sales-brief')).not.toContainText(/\(\d of \d\)/);
+  // The dialog lies over the page, so nothing in it points "below" or "above"; a line with somewhere to go is a link
+  // that closes the dialog, marks itself done and lands on its card, opened if it was folded away.
+  await expect(page.getByTestId('sales-brief')).not.toContainText(/\b(below|above)\b|this page|at the foot/i);
+  await page.getByTestId('c2-needs-close').click();
+  { const fold = page.getByTestId('sales-wines').getByTestId('c2-card-fold'); await fold.click(); await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    const n = Number(await page.getByTestId('c2-needs-count').innerText()); await page.getByTestId('c2-needs-btn').click();
+    await page.getByTestId('sales-brief').getByTestId('c2-need-go').filter({ hasText: 'Open Best sellers' }).click();
+    await expect(page.getByTestId('sales-brief')).toHaveCount(0); await expect(fold).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByTestId('c2-needs-count')).toHaveText(String(n - 1));
+    await expect.poll(() => page.getByTestId('sales-wines').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= -2 && r.top < innerHeight / 2; })).toBe(true);
+    await page.getByTestId('c2-needs-btn').click(); await page.getByTestId('c2-needs-restore').click(); await page.getByTestId('c2-needs-close').click(); }
+  // Best sellers is the first card on the page, above Wine sales by week.
+  expect(await page.evaluate(() => { const y = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect().top; return y('sales-wines') < y('sales-trend') && y('sales-wines') < y('c2-upside') && y('c2-mix') > y('sales-trend'); })).toBe(true);
   await expect(page.getByTestId('c2-kpi-glasses')).toContainText('Glasses sold'); await expect(page.getByTestId('c2-kpi-bottles')).toContainText('Bottles sold');
   // The chart: its figures are a scale down the side and a note under the pointer, never written on the line.
   const scale = () => page.getByTestId('c2-trend').locator('text').allTextContents().then((t) => t.join('|'));
@@ -2884,6 +2906,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-trend-tip').locator('text').first()).toHaveText(/^[£$][\d,]+$/);
   await expect(page.getByTestId('c2-wine-row').first()).toBeVisible(); await expect(page.getByTestId('c2-upside')).toBeVisible();
   // Which nights sell wine: a bar per night of the week from the POS, the strongest and weakest named, with something to do about it.
+  // Who sells it and the nights of the week run the page's width, under the two columns.
+  expect(await page.evaluate(() => { const r = t => document.querySelector(`[data-testid="${t}"]`).getBoundingClientRect(), w = r('sales-wines').width; return Math.abs(r('sales-servers').width - w) < 2 && Math.abs(r('c2-weekday').width - w) < 2 && r('sales-servers').top >= r('sales-trend').bottom && r('sales-servers').top >= r('c2-upside').bottom && r('c2-weekday').top >= r('sales-servers').bottom; })).toBe(true);
   await expect(page.getByTestId('c2-weekday-bar')).toHaveCount(7); await expect(page.getByTestId('c2-weekday')).toContainText('Closed');
   await expect(page.getByTestId('c2-weekday-act')).toContainText('→');
   expect(await page.evaluate(() => { const w = TeamReport.byWeekday(28), open = w.days.filter(d => d.nights); return [open.length, open.every(d => d.revenue > 0 && d.nights <= 4), w.best[w.key] >= w.worst[w.key]]; })).toEqual([6, true, true]);
@@ -2919,6 +2943,9 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   await expect(page.getByTestId('c2-ladder-sum')).toContainText('bottle sales');
   // The summary under the ladder is three lines at most, however long the list.
   expect(await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').count()).toBeLessThanOrEqual(3);
+  // The ladder's tags are one width with their word centred, each level with the first line of its sentence.
+  const tags = await page.getByTestId('c2-ladder-sum').getByTestId('c2-need').evaluateAll(els => els.map(el => { const t = el.querySelector('[data-pill]').getBoundingClientRect(), r = document.createRange(); r.selectNodeContents(el.children[1].firstElementChild); const l = r.getClientRects()[0]; return { w: Math.round(t.width), x: Math.round(t.left), off: Math.abs((t.top + t.bottom) / 2 - (l.top + l.bottom) / 2) }; }));
+  expect(new Set(tags.map(t => t.w)).size).toBe(1); expect(new Set(tags.map(t => t.x)).size).toBe(1); for (const t of tags) expect(t.off).toBeLessThan(2.5);
   await page.getByTestId('c2-ladder-chip').first().click(); await expect(page.getByTestId('console-panel')).toBeVisible(); await page.getByTestId('console-scrim').click();
   // Any card folds to its title and opens again, and the device remembers which are folded.
   const bal = page.getByTestId('c2-balance'), foldBtn = bal.getByTestId('c2-card-fold');
@@ -2949,7 +2976,10 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   for (const t of ['Glasses', 'Bottles', 'Pairings', 'Menu', 'Next step']) await expect(page.getByTestId('c2-training-people')).toContainText(t);
   await expect(page.getByTestId('c2-training-spread').getByTestId('c2-spread')).toHaveCount(4);
   await page.getByTestId('c2-training-push').first().click(); await expect(page.getByTestId('c2-training-push').first()).toContainText('Pushed');
-  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible(); await page.getByTestId('c2-tracks-close').click();
+  // The tracks dialog is drawn from inside a page that scrolls: it's centred on the screen, not on the page's height.
+  await page.getByTestId('c2-training-tracks').click(); await expect(page.getByTestId('c2-tracks')).toBeVisible();
+  expect(await page.getByTestId('c2-tracks').evaluate(el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && Math.abs((r.top + r.bottom) / 2 - innerHeight / 2) < 4; })).toBe(true);
+  await page.getByTestId('c2-tracks-close').click();
   await expect(page.getByTestId('c2-training')).not.toContainText(/know(s|n)? it|known by|the floor|overdue/i);
   // Menu: allergens are a switch. Off, nothing on the page or in training mentions them.
   await page.getByTestId('console-nav-menu').click();
@@ -3001,7 +3031,8 @@ test('the console\'s new look: four pages, the same drawer, and the way back to 
   expect(await page.getByTestId('c2-left-row').count()).toBeGreaterThan(0);
   await expect(page.getByTestId('c2-next')).toContainText(/→ \d+ of \d+/);
   await page.getByTestId('c2-push').click(); await expect(page.getByTestId('c2-push')).toContainText('First in');
-  await expect(page.getByTestId('c2-mins')).toContainText('Server');
+  await expect(page.getByTestId('c2-mins')).toHaveCount(0); // the minimums are set on Admin, not here
+  await expect(page.getByTestId('c2-stands')).toContainText('set on Admin');
   // The demo opens with bespoke training in flight, tracked.
   await expect(page.getByTestId('c2-kpi-bespoke')).toContainText('running');
   // The figure counts every track the window lists, drafts included.
@@ -3041,14 +3072,36 @@ test('bespoke training: Vinny writes a plan, the manager pushes it, and it count
   await page.goto(`${BASE}/team/?seed=demo&view=console`);
   await page.getByTestId('console-nav-team').click();
   await page.getByTestId('c2-team-row').filter({ hasText: 'Amara' }).click();
-  await page.getByTestId('c2-vinny-sug').nth(1).click(); // a suggestion fills the box; only the arrow sends
+  // Vinny's suggestions are this person's own: built from their answers and sales, each with its evidence, and no two
+  // people are offered the same three.
+  const sugs = await page.evaluate(() => TeamLearn.people().map(p => ({ name: p.name.split(' ')[0], s: TeamPlans.suggest(p.id) })));
+  // A suggestion about wines writes a plan about those wines: its request names them, and "the dish for each" in it
+  // never turns the plan into one about the menu. Two drafts for one person both show on their page.
+  const subj = await page.evaluate(() => TeamLearn.people().flatMap(p => TeamPlans.suggest(p.id).filter(g => ['blind', 'sellers', 'faded'].includes(g.kind)).map(g => { const s = TeamPlans.subjects(p.id, g.ask); return { kind: g.kind, wines: s.wines.length, dishes: s.dishes.length, menu: !!s.menu, named: s.wines.every(w => g.ask.includes(TeamData.nick(w))) }; })));
+  expect(subj.length).toBeGreaterThan(0);
+  for (const x of subj) { expect(x.wines, x.kind).toBeGreaterThan(0); expect(x.dishes, x.kind).toBe(0); expect(x.menu, x.kind).toBe(false); expect(x.named, x.kind).toBe(true); }
+  for (const p of sugs) { expect(p.s.length, p.name).toBeGreaterThan(0); expect(p.s.length).toBeLessThanOrEqual(3); expect(new Set(p.s.map(x => x.kind)).size).toBe(p.s.length);
+    for (const g of p.s) { expect(g.title + g.why + g.ask).not.toMatch(/undefined|NaN|\{\{/); expect(g.ask).toContain(p.name); expect(g.why).toMatch(/\d|everything|best sellers/); } }
+  expect(new Set(sugs.map(p => p.s.map(g => g.why.replaceAll(p.name, '')).join('|'))).size).toBeGreaterThan(sugs.length / 2);
+  const mine = sugs.find(p => p.name === 'Amara').s;
+  await expect(page.getByTestId('c2-vinny-sug')).toHaveCount(mine.length);
+  await expect(page.getByTestId('c2-vinny-why').first()).toHaveText(mine[0].why);
   expect(reqs.filter(r => r.purpose === 'team_plan')).toHaveLength(0);
-  await page.getByTestId('c2-vinny-send').click();
+  await page.getByTestId('c2-vinny-sug').first().getByTestId('c2-vinny-go').click(); // Write it starts the plan from that suggestion
   const draft = page.getByTestId('c2-plan-draft');
   await expect(draft).toContainText('Reds: prices and pairings'); await expect(draft).toContainText('2 parts · 4 questions · 1 count');
   const sent = reqs.find(r => r.purpose === 'team_plan').messages[0].content;
   expect(sent).toContain('Amara'); expect(sent).toContain('WINE:'); expect(sent).not.toContain('{{');
+  expect(sent).toContain(mine[0].ask);
   await expect(draft.getByTestId('c2-draft-q').first()).toContainText('counts towards');
+  // The public demo makes no call for a plan: it's built from the questions already written, and the card says so.
+  { const before = reqs.filter(r => r.purpose === 'team_plan').length;
+    const made = await page.evaluate(async () => { window.VINTEREST_PLAN_CALLS = 'off'; const a = TeamLearn.people().find(p => p.name.startsWith('Amara')), g = TeamPlans.suggest(a.id)[0]; const d = await TeamPlans.write(a.id, g.ask, null); const out = { source: d.source, qs: d.parts.reduce((n, p) => n + p.qs.length, 0), off: TeamPlans.noCalls() }; TeamPlans.discard(d.id); window.VINTEREST_PLAN_CALLS = ''; return out; });
+    expect(made.off).toBe(true); expect(made.source).toBe('cards'); expect(made.qs).toBeGreaterThan(1); expect(reqs.filter(r => r.purpose === 'team_plan').length).toBe(before);
+    expect(await page.evaluate(() => TeamPlans.noCalls())).toBe(false); await expect(page.getByTestId('c2-vinny-demo')).toHaveCount(0); }
+  { const n = await page.evaluate(() => { const a = TeamLearn.people().find(p => p.name.startsWith('Amara')); const d = TeamPlans.fromCards(a.id, 'the bottles', null); return d ? d.id : null; });
+    expect(n).toBeTruthy(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(2);
+    await page.evaluate(id => TeamPlans.discard(id), n); await page.getByTestId('console-nav-dash').click(); await page.getByTestId('console-nav-team').click(); await expect(page.getByTestId('c2-plan-draft')).toHaveCount(1); }
   // Pushed: tracked on the console, and on Amara's phone as its own training.
   await draft.getByTestId('c2-draft-push').click();
   await expect(page.getByTestId('c2-bespoke-plan').first()).toContainText('0 of 4 done');
@@ -3134,43 +3187,44 @@ test('the new console: navigation hidden at the left edge, and cards dragged to 
   await page.mouse.move(100, 400); await page.mouse.move(900, 500); await expect(drawer).toHaveAttribute('data-open', '0');
   // Drag "Where the next £ is" from the left column to the top of the right one.
   const order = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('[data-testid^="c2-stack-"]')].map(s => [s.getAttribute('data-testid').slice(9), [...s.querySelectorAll(':scope>[data-testid="c2-drag"]')].map(d => d.getAttribute('data-k'))])));
-  expect(await order()).toEqual({ top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend'], wide: ['sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
   const g = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g.scrollIntoViewIfNeeded();
-  const gb = await g.boundingBox(), tb = await page.locator('[data-k="sales-servers"]').boundingBox();
+  const gb = await g.boundingBox(), tb = await page.locator('[data-k="sales-trend"]').boundingBox();
   await page.mouse.move(gb.x + 24, gb.y + 8); await page.mouse.down(); await page.mouse.move(gb.x + 60, gb.y + 30, { steps: 5 }); await page.waitForTimeout(80);
   await page.mouse.move(tb.x + 200, Math.min(880, Math.max(90, tb.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up();
-  await expect.poll(order).toEqual({ top: ['c2-mix'], left: ['sales-brief'], right: ['sales-trend', 'c2-upside', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  await expect.poll(order).toEqual({ top: ['sales-wines'], right: ['c2-upside', 'sales-trend'], wide: ['sales-servers', 'c2-weekday'], bottom: ['c2-mix'] }); // the emptied left column folds away
   // A mistake is one step back: Undo (or Ctrl+Z) puts the card where it was, and the move can be made again.
   await expect(page.getByTestId('c2-board-note')).toContainText('Card moved');
-  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['sales-brief', 'c2-upside']);
+  await page.getByTestId('c2-note-undo').click(); expect((await order()).left).toEqual(['c2-upside']);
   // Undone back to the page's own layout, the pill says so and fades by itself.
   await expect(page.getByTestId('c2-board-note')).toContainText('Move undone'); await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 });
   // A move asks: Undo, Default layout or Save. Save keeps it and the pill fades away; the way back to the default stays at the foot.
   await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id; window.__pid = pid; });
-  { const g5 = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g5.scrollIntoViewIfNeeded(); const a = await g5.boundingBox(), t = await page.locator('[data-k="sales-servers"]').boundingBox();
+  { const g5 = page.locator('[data-k="c2-upside"] [data-testid="c2-grip"]'); await g5.scrollIntoViewIfNeeded(); const a = await g5.boundingBox(), t = await page.locator('[data-k="sales-trend"]').boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
     await page.mouse.move(t.x + 200, Math.min(880, Math.max(90, t.y + 20)), { steps: 10 }); await page.waitForTimeout(120); await page.mouse.up(); }
   await expect(page.getByTestId('c2-note-save')).toBeVisible(); await expect(page.getByTestId('c2-note-reset')).toBeVisible();
   await page.waitForTimeout(3500); await expect(page.getByTestId('c2-board-note')).toContainText('Card moved'); // it waits for an answer
   await page.getByTestId('c2-note-save').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Layout saved');
   await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toBeVisible();
-  expect((await order()).right[1]).toBe('c2-upside');
+  expect((await order()).right[0]).toBe('c2-upside');
   await page.getByTestId('c2-board-reset').click(); await expect(page.getByTestId('c2-board-note')).toContainText('Back to the default layout');
   await expect(page.getByTestId('c2-board-note')).toHaveCount(0, { timeout: 5000 }); await expect(page.getByTestId('c2-board-reset')).toHaveCount(0);
-  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] };
-    TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-servers', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
+  expect(await page.evaluate(() => { const pid = TeamReport.people().find(x => x.person.role === 'manager').person.id, def = { top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend'], wide: ['sales-servers', 'c2-weekday'], bottom: ['c2-mix'] };
+    TeamBoard.move(pid, 'sales', def, 'c2-upside', 'right', 'sales-trend', false); const a = TeamBoard.canUndo(pid, 'sales'); TeamBoard.reset(pid, 'sales'); const b = TeamBoard.changed(pid, 'sales', def); TeamBoard.undo(pid, 'sales'); return [a, b, TeamBoard.changed(pid, 'sales', def)]; })).toEqual([true, false, true]);
   await page.reload(); await page.mouse.move(500, 400); await page.mouse.move(3, 400); await page.getByTestId('console-nav-sales').click();
-  expect((await order()).right[1]).toBe('c2-upside');
+  expect((await order()).right[0]).toBe('c2-upside');
   // A card only goes where it fits: Best sellers needs the full width, so the narrow left column won't take it.
   expect(await page.evaluate(() => [TeamBoard.fits(860, 430), TeamBoard.fits(860, 1300), TeamBoard.fits(420, 900, 2), TeamBoard.fits(520, 900, 2), TeamBoard.fits(520, 900, 2, 2)])).toEqual([false, true, true, false, true]);
-  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="sales-brief"]').boundingBox();
+  await page.getByTestId('c2-board-reset').click(); // back to two columns, so there is a narrow one to refuse it
+  { const g3 = page.locator('[data-k="sales-wines"] [data-testid="c2-grip"]'); await g3.scrollIntoViewIfNeeded(); const a = await g3.boundingBox(), t = await page.locator('[data-k="c2-upside"]').boundingBox();
     await page.mouse.move(a.x + 24, a.y + 8); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y + 30, { steps: 5 }); await page.waitForTimeout(80);
     await page.mouse.move(t.x + 100, Math.min(880, Math.max(40, t.y + 40)), { steps: 10 }); await page.waitForTimeout(150);
     await expect(page.getByTestId('c2-stack-left')).toHaveAttribute('data-fits', 'no'); await expect(page.getByTestId('c2-stack-top')).toHaveAttribute('data-fits', 'yes');
     await page.mouse.up(); await page.waitForTimeout(200); }
-  expect((await order()).bottom).toEqual(['sales-wines']);
+  expect((await order()).top).toEqual(['sales-wines']);
   // It's kept: another section and back, and after a reload.
-  await page.getByTestId('c2-board-reset').click(); expect(await order()).toEqual({ top: ['c2-mix'], left: ['sales-brief', 'c2-upside'], right: ['sales-trend', 'sales-servers', 'c2-weekday'], bottom: ['sales-wines'] });
+  expect(await order()).toEqual({ top: ['sales-wines'], left: ['c2-upside'], right: ['sales-trend'], wide: ['sales-servers', 'c2-weekday'], bottom: ['c2-mix'] });
   // Team's cards for a person sit two across and move the same way: About swapped in front of Where they stand.
   await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-team').click();
   expect((await order()).detail).toEqual(['c2-stands', 'c2-sells', 'c2-next', 'c2-vinny', 'c2-bespoke']);
@@ -3271,6 +3325,27 @@ test('the new console: Upload and Admin are one page in its own look', async ({ 
   await expect(page.getByTestId('c2-fact')).toContainText('waiting for you');
   expect(await page.getByTestId('team-review').locator('[data-team-btn]').evaluateAll(els => els.every(el => el.offsetWidth < 260))).toBe(true);
   await page.getByText('Discard').click();
+  // Every restaurant's logo takes one standard box in the drawer and at the page's corner, whatever its shape.
+  const boxes = {};
+  for (const seed of ['demo', 'eloise', 'social']) { await page.goto(`${BASE}/team/?seed=${seed}&view=console`); await expect(page.getByTestId('team-console')).toBeVisible({ timeout: 30000 }); await page.getByTestId('c2-nav-tab').click();
+    boxes[seed] = await page.evaluate(() => ['c2-nav-venue', 'c2-page-venue'].map(t => { const el = document.querySelector(`[data-testid="${t}"] [data-testid="team-venue-logo"]`), r = el.getBoundingClientRect(), nav = el.closest('[data-testid="c2-nav-venue"]'); return [Math.round(r.width), Math.round(r.height), nav ? r.right <= nav.getBoundingClientRect().right : true]; })); }
+  expect(boxes.eloise).toEqual(boxes.demo); expect(boxes.social).toEqual(boxes.demo); expect(boxes.demo[0][2]).toBe(true); expect(boxes.demo[0][1]).toBeLessThanOrEqual(36);
+  await page.goto(`${BASE}/team/?seed=demo&view=console`); await expect(page.getByTestId('team-console')).toBeVisible(); await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
+  // The minimum for each role is set here: a step down changes what the role needs, and readiness with it.
+  await expect(page.getByTestId('c2-mins')).toContainText('Server'); await expect(page.getByTestId('c2-mins')).toContainText('Pairings');
+  const before = await page.evaluate(() => TeamLearn.need('server').glass);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Lower').click();
+  expect(await page.evaluate(() => TeamLearn.need('server').glass)).toBeCloseTo(before - 0.1, 5);
+  await expect(page.getByTestId('c2-min-row').first().getByTestId('c2-min').first()).toContainText(`${Math.round((before - 0.1) * 100)}%`);
+  await page.getByTestId('c2-min-row').first().getByTestId('c2-min').first().getByLabel('Raise').click();
+  // Folded, every card on every page says what's in it (figures and names), never what kind of card it is.
+  for (const k of ['dash', 'sales', 'team', 'training', 'wines', 'menu', 'pos', 'upload']) { await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-' + k).click(); await page.mouse.move(700, 400);
+    const n = await page.getByTestId('c2-card-fold').count(); for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click();
+    const lines = await page.getByTestId('c2-card-summary').allInnerTexts(); expect(lines.length, k).toBe(n);
+    for (const t of lines) { expect(t, k).not.toMatch(/undefined|NaN|\[object/); expect(t.length, k + ': ' + t).toBeGreaterThan(8); }
+    expect(lines.filter(t => /\d/.test(t)).length, k + ': ' + lines.join(' | ')).toBeGreaterThanOrEqual(lines.length - 3); // a few name what's in them (the wines to train on next) with no figure
+    for (let i = 0; i < n; i++) await page.getByTestId('c2-card-fold').nth(i).click(); }
+  await page.getByTestId('c2-nav-tab').click(); await page.getByTestId('console-nav-upload').click(); await page.mouse.move(700, 400);
   // The settings save, and the card folds to a line saying what it holds.
   await page.getByLabel('Days to learn').fill('9');
   await page.getByTestId('c2-admin-save').click();

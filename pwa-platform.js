@@ -62,6 +62,15 @@ const Platform = {
     }catch(e){ return /cancel/i.test(String(e&&e.message||e))?'cancelled':'failed'; }
   },
 
+  /* The store's own "Enjoying Vinterest?" rating sheet (Apple's SKStoreReviewController, Google's In-App
+     Review), in the apps only. The store decides whether it actually shows (Apple: three times a year at
+     most), so nothing can be told from the answer; ReviewAsk (pwa-userdata.js) decides when to ask. */
+  async requestReview(){
+    const R=(window.VinterestNative||{}).AppReview;
+    if(!this.native()||!R) return false;
+    try{ await R.requestReview(); return true; }catch(e){ return false; }
+  },
+
   /* Shares a line of text and a link: the share sheet in the app (Share plugin) and on phones
      that have one (navigator.share), else copied to the clipboard. Resolves 'shared', 'copied',
      'cancelled' or 'failed'. */

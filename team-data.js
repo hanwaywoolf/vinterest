@@ -635,7 +635,7 @@ const TeamData = {
   },
   /* A single bottle from its label (the consumer app's label_scan), as a list item ready for a draft. */
   async readLabel(b64){
-    const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:_loadTextSync('prompts/label-scan.txt')}]}]});
+    const text=await window.claude.complete({purpose:'label_scan',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:ScanFlow.labelPrompt()}]}]});
     const w=WineDNA.cleanWine(JSON.parse(String(text).replace(/```json|```/g,'').trim()));
     if(!w||w.error==='no_wine_label'||!w.name) return null;
     // The year belongs in `vintage`, never in the name, or "Viña Ardanza Reserva 2016" is a different wine from the list's "Viña Ardanza Reserva".
