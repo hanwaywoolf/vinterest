@@ -35,7 +35,8 @@
     "team:review": "node scripts/team-review.mjs",
     "team:buyer": "node scripts/team-buyer.mjs",
     "team:cost": "node scripts/team-cost.mjs",
-    "team:intake": "node scripts/team-intake.mjs"
+    "team:intake": "node scripts/team-intake.mjs",
+    "seller:catalogue": "node scripts/seller-catalogue.mjs"
   },
   "keywords": [
     "wine",

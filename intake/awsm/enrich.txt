@@ -1,0 +1,106 @@
+# Style estimates for Authentic Wines & Spirits' Ontario catalogue, where the product sheet gives none.
+# cspc | body | acidity | tannin | sweetness (each 1 to 5, the scale Teams' wine cards use) | grapes, only where the sheet
+# has none | region, only where the sheet has none | type, only where the sheet gives no colour
+# These are estimates written for the prototype, never AWSM's data; the app says so beside anything built on them.
+620880|4|3|3|1
+162610|4|3|3|1|Malbec|Mendoza
+35170|3|3|3|1|Malbec|Mendoza
+11933|4|3|3|1|Shiraz
+296848|2|4|0|1
+38828|3|3|0|1
+81653|3|3|0|1
+224766|2|5|0|1|Chardonnay, Pinot Noir
+370320|3|4|3|1|Cabernet Sauvignon
+38810|3|3|3|1
+556951|3|3|3|1
+53225|2|4|0|1||Ontario
+51939|2|4|0|2||Ontario
+57349|2|4|2|1
+454967|2|4|2|1|Pinot Noir
+391300|2|4|0|1
+565861|4|4|0|5|Vidal
+413732|4|4|0|5|Vidal
+524371|3|3|3|1
+321448|3|3|0|1||Valle Central
+341602|2|3|2|1||Valle Central
+318014|2|3|0|2||Valle Central
+566836|3|2|0|2||Valle Central
+64287|3|2|0|2||Valle Central
+365205|2|4|0|2
+553792|4|3|3|1
+230565|3|3|0|1||Valle Central
+16363|2|3|2|1
+25005|3|3|3|1|Cabernet Sauvignon|Valle Central
+257170|3|3|3|1||Valle Central
+306472|2|4|0|2||Valle Central
+10481|2|3|0|1
+490896|2|3|0|1
+74617|2|3|0|1||Provence|rosé
+490888|2|3|0|1||Provence|rosé
+561290|3|3|3|1||Rhône Valley
+589432|3|3|0|1
+21445|3|3|3|1|Grenache, Syrah
+931360|2|5|0|1|Chardonnay
+35705|2|5|0|1
+35706|2|5|0|1|Pinot Noir, Chardonnay
+981027|3|5|0|1
+93054|3|5|0|1
+268771|3|5|0|1
+440883|3|5|0|1
+268755|3|5|0|1
+93062|3|5|0|1
+352716|3|5|0|1
+368415|3|5|0|1
+20766|3|5|0|1
+46892|3|5|0|1
+48528|3|3|3|1||Peloponnese
+47650|2|5|0|1||Peloponnese
+295618|4|3|4|1|Agiorgitiko
+647230|3|3|2|2
+39679|3|3|3|1|Nero d'Avola|Sicily
+31003|2|4|0|1|Grillo
+297655|4|3|3|1
+155051|4|3|3|1
+616276|4|3|3|1
+297663|5|3|4|1
+317057|5|3|4|1
+324137|5|3|4|1
+620773|3|3|0|1
+27001|2|3|0|2
+342444|4|3|3|1
+285585|2|4|2|1
+349562|2|3|0|2|Glera|Veneto
+11096|2|4|0|1
+349596|2|4|0|1||Veneto
+261999|3|4|2|1
+143379|5|3|4|1
+533026|3|3|2|1
+27854|3|3|2|1
+564674|2|3|0|1||Veneto
+276625|3|5|2|1|Barbera
+31810|4|5|5|1
+355361|4|5|5|1
+209360|2|4|0|1
+260984|5|3|4|1|Merlot, Cabernet Sauvignon, Cabernet Franc
+113778|3|4|3|1|Sangiovese, Cabernet Sauvignon|Tuscany
+388645|3|3|0|1
+296202|2|4|2|1|Pinot Noir|Marlborough
+465989|2|5|0|1
+699322|2|4|2|1
+470070|2|5|0|1
+47477|2|4|2|1
+47476|2|5|0|1||Marlborough
+277707|2|5|0|1|Sauvignon Blanc
+344621|4|3|4|1
+11157|3|3|3|1
+43697|2|4|0|1|Viosinho, Malvasia Fina, Gouveio|Douro
+300086|5|3|4|1
+157586|4|3|2|5||Douro
+464214|3|3|3|1||Valdepeñas
+526772|3|3|2|1|Garnacha|Rioja
+353184|3|4|3|1|Tempranillo|Rioja
+677046|4|3|3|1|Cabernet Sauvignon
+722289|3|3|0|1|Chardonnay
+419770|4|3|4|1|Cabernet Sauvignon
+175430|3|3|0|1||California
+301507|4|3|3|1||California
