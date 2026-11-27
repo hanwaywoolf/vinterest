@@ -38,7 +38,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // previews the page's Preview buttons open: the one Teams is being worked on.
 const PREVIEW_BRANCH = 'claude/teams-site';
 const INTERNAL_VENUES = [
-  { seed: 'demo', main: true, host: 'demo.vinterest.team', where: 'The example restaurant on vinterest.team', note: 'invented' },
+  { seed: 'demo', main: true, host: 'demo.vinterest.team', where: 'The example restaurant on vinterest.team', note: 'invented', logo: 'larkspur.png', tall: true }, // its logo is the lark over the name, twice the height of a wordmark
   { seed: 'social', slug: 'social-corner', host: 'socialcorner.vinterest.team', where: 'Vancouver', logo: 'social-corner.png' },
   { seed: 'eloise', slug: 'eloise', host: 'eloise.vinterest.team', where: 'Toronto', logo: 'eloise.svg' },
   { seed: 'princess-royal', slug: 'princess-royal', host: 'princessroyal.vinterest.team', where: 'Notting Hill, London', logo: 'princess-royal.svg' },
@@ -202,7 +202,7 @@ export async function build() {
       const live2 = (view) => demo(view) ? btn(demo(view), 'Live', true) : '<span class="none">No address yet</span>';
       const stat = (b, label, small) => `<div><b>${b}</b><span>${label}</span>${small ? `<small>${small}</small>` : ''}</div>`;
       return `<section class="in-v" id="${esc(v.seed)}" data-venue="${esc(v.seed)}">
-    <div class="in-head"><div><h2>${esc(s.name)}</h2><p>${esc(v.where)} · ${esc(s.currency)}${v.note ? ' · ' + esc(v.note) : ''}</p></div>${v.logo ? `<img src="/img/for/${esc(v.logo)}?v=${vars.IMG_V}" alt="">` : ''}</div>
+    <div class="in-head"><div><h2>${esc(s.name)}</h2><p>${esc(v.where)} · ${esc(s.currency)}${v.note ? ' · ' + esc(v.note) : ''}</p></div>${v.logo ? `<img${v.tall ? ' class="tall"' : ''} src="/img/for/${esc(v.logo)}?v=${vars.IMG_V}" alt="">` : ''}</div>
     <div class="in-stats">${stat(n(s.wines), 'Wines', `${n(s.glass)} by the glass`)}${stat(n(s.dishes), 'Menu items', `${n(s.paired)} paired`)}${stat(n(s.cocktails), 'Cocktails', s.cocktails ? 'with cards' : 'none on the list')}${stat(n(s.questions), 'Quiz questions', s.held ? `${n(s.held)} held back by review` : 'none held back')}${stat(n(s.wineQuestions), 'On wines', `${n(s.dishQuestions)} on dishes${s.cocktailQuestions ? `, ${n(s.cocktailQuestions)} on cocktails` : ''}`)}${stat(n(s.team), 'Demo team', Object.entries(s.roles).map(([k, c]) => `${c} ${k.toLowerCase()}${c > 1 ? 's' : ''}`).slice(0, 2).join(', ') + '…')}</div>
     <div class="in-links">
       <div><h3>Marketing page</h3><p>${v.main ? 'The Teams site itself: The Larkspur is its example restaurant.' : 'The page written for them. Their address lands here.'}</p><div class="row">${btn(page, 'Live', true)}${btn(pagePv, 'Preview')}</div></div>
