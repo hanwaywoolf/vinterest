@@ -33,6 +33,19 @@ import { TEAM_ALL } from './app-sources.mjs';
 import { appVersion, buildFonts, collectAssetPaths, inlineAssets, transformSource } from './build.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// The internal page's restaurants (site/teams/_internal.html), in its order: the app's seed, the private page's name,
+// the restaurant's own address when it has one, and its logo in img/for/. PREVIEW_BRANCH is the branch whose Cloudflare
+// previews the page's Preview buttons open: the one Teams is being worked on.
+const PREVIEW_BRANCH = 'claude/teams-site';
+const INTERNAL_VENUES = [
+  { seed: 'demo', main: true, host: 'demo.vinterest.team', where: 'The example restaurant on vinterest.team', note: 'invented' },
+  { seed: 'social', slug: 'social-corner', host: 'socialcorner.vinterest.team', where: 'Vancouver', logo: 'social-corner.png' },
+  { seed: 'eloise', slug: 'eloise', host: 'eloise.vinterest.team', where: 'Toronto', logo: 'eloise.svg' },
+  { seed: 'princess-royal', slug: 'princess-royal', host: 'princessroyal.vinterest.team', where: 'Notting Hill, London', logo: 'princess-royal.svg' },
+  // The Barbary has no address of its own yet: once barbary.vinterest.team is a custom domain on the vinterest Pages
+  // project (the Worker already routes it), give it `host` here and its Live buttons appear.
+  { seed: 'barbary', slug: 'barbary', host: null, where: 'London', logo: 'barbary.svg' },
+];
 const SRC = path.join(ROOT, 'site/teams');
 const OUT = path.join(ROOT, 'site-teams-dist');
 
@@ -173,6 +186,36 @@ export async function build() {
     if (!/<meta name="robots" content="noindex/.test(html)) throw new Error(`site-teams: for/${f} must carry <meta name="robots" content="noindex, nofollow">`);
     fs.writeFileSync(path.join(OUT, 'for', f), html);
   }
+  // The internal page (/internal): every restaurant with its marketing page, demo and latest preview, and what its demo
+  // holds (site/teams/internal.json, counted in the app by scripts/site-teams-stats.mjs). For Vinterest's own team:
+  // kept out of search like the private pages, and linked from nowhere.
+  const inFile = path.join(SRC, '_internal.html'), statFile = path.join(SRC, 'internal.json');
+  if (fs.existsSync(inFile) && fs.existsSync(statFile)) {
+    const stats = JSON.parse(fs.readFileSync(statFile, 'utf8')), esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    const pv = PREVIEW_BRANCH.replace(/\//g, '-'), n = (x) => Number(x || 0).toLocaleString('en-GB');
+    const rows = INTERNAL_VENUES.filter((v) => stats.venues[v.seed]).map((v) => ({ ...v, s: stats.venues[v.seed] }));
+    const btn = (href, label, primary) => `<a class="btn small${primary ? ' primary' : ''}" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>`;
+    const venue = (v) => { const s = v.s, live = v.host ? `https://${v.host}` : null, app = (view) => `https://${pv}.vinterest.pages.dev/team/?seed=${v.seed}&view=${view}`;
+      // Live: the restaurant's own address (its page at the root, its demo at /demo/); The Larkspur is the site's own demo.
+      const page = v.main ? 'https://vinterest.team' : live ? live + '/' : `https://vinterest.team/for/${v.slug}`, pagePv = v.main ? `https://${pv}.vinterest-teams.pages.dev/` : `https://${pv}.vinterest-teams.pages.dev/for/${v.slug}`;
+      const demo = (view) => v.main ? `https://${v.host}/?view=${view}` : live ? `${live}/demo/?view=${view}` : null;
+      const live2 = (view) => demo(view) ? btn(demo(view), 'Live', true) : '<span class="none">No address yet</span>';
+      const stat = (b, label, small) => `<div><b>${b}</b><span>${label}</span>${small ? `<small>${small}</small>` : ''}</div>`;
+      return `<section class="in-v" id="${esc(v.seed)}" data-venue="${esc(v.seed)}">
+    <div class="in-head"><div><h2>${esc(s.name)}</h2><p>${esc(v.where)} · ${esc(s.currency)}${v.note ? ' · ' + esc(v.note) : ''}</p></div>${v.logo ? `<img src="/img/for/${esc(v.logo)}?v=${vars.IMG_V}" alt="">` : ''}</div>
+    <div class="in-stats">${stat(n(s.wines), 'Wines', `${n(s.glass)} by the glass`)}${stat(n(s.dishes), 'Menu items', `${n(s.paired)} paired`)}${stat(n(s.cocktails), 'Cocktails', s.cocktails ? 'with cards' : 'none on the list')}${stat(n(s.questions), 'Quiz questions', s.held ? `${n(s.held)} held back by review` : 'none held back')}${stat(n(s.wineQuestions), 'On wines', `${n(s.dishQuestions)} on dishes${s.cocktailQuestions ? `, ${n(s.cocktailQuestions)} on cocktails` : ''}`)}${stat(n(s.team), 'Demo team', Object.entries(s.roles).map(([k, c]) => `${c} ${k.toLowerCase()}${c > 1 ? 's' : ''}`).slice(0, 2).join(', ') + '…')}</div>
+    <div class="in-links">
+      <div><h3>Marketing page</h3><p>${v.main ? 'The Teams site itself: The Larkspur is its example restaurant.' : 'The page written for them. Their address lands here.'}</p><div class="row">${btn(page, 'Live', true)}${btn(pagePv, 'Preview')}</div></div>
+      <div><h3>Demo console</h3><p>What their managers would run it from, on their own list and menu.</p><div class="row">${live2('console')}${btn(app('console'), 'Preview')}</div></div>
+      <div><h3>Staff app</h3><p>What their team would train on: the drill, the cards and Vinny.</p><div class="row">${live2('phone')}${btn(app('phone'), 'Preview')}</div></div>
+    </div>
+  </section>`; };
+    const sum = (k) => rows.reduce((a, v) => a + (v.s[k] || 0), 0), tot = (b, l) => `<div><b>${b}</b><span>${l}</span></div>`;
+    const html = fill(fs.readFileSync(inFile, 'utf8'), { ...vars, PREVIEW_BRANCH, STATS_AT: new Date(stats.at + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+      TOTALS: tot(rows.length, 'Restaurants') + tot(n(sum('wines')), 'Wines') + tot(n(sum('dishes')), 'Menu items') + tot(n(sum('cocktails')), 'Cocktails') + tot(n(sum('questions')), 'Quiz questions'),
+      JUMP: rows.map((v) => `<a class="btn small" href="#${esc(v.seed)}">${esc(v.s.name)}</a>`).join(''), VENUES: rows.map(venue).join('\n  ') });
+    fs.writeFileSync(path.join(OUT, 'internal.html'), html);
+  }
   // A private page's data (the cards its list opens), served beside it.
   if (fs.existsSync(path.join(SRC, 'for'))) for (const f of fs.readdirSync(path.join(SRC, 'for')).filter((x) => x.endsWith('.json'))) fs.copyFileSync(path.join(SRC, 'for', f), path.join(OUT, 'for', f));
   fs.cpSync(path.join(SRC, 'img'), path.join(OUT, 'img'), { recursive: true });
@@ -181,7 +224,7 @@ export async function build() {
   fs.copyFileSync(path.join(ROOT, 'site/_headers'), path.join(OUT, '_headers'));
   fs.copyFileSync(path.join(SRC, '_redirects'), path.join(OUT, '_redirects')); // www to the apex
   fs.copyFileSync(path.join(SRC, '_worker.js'), path.join(OUT, '_worker.js')); // POST /api/pilot, then the static pages
-  fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /for/\nSitemap: ${origin}/sitemap.xml\n`);
+  fs.writeFileSync(path.join(OUT, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /for/\nDisallow: /internal\nSitemap: ${origin}/sitemap.xml\n`);
   fs.writeFileSync(path.join(OUT, 'sitemap.xml'),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((f) => `  <url><loc>${origin}/${f === 'index.html' ? '' : f.replace(/\.html$/, '')}</loc></url>`).join('\n')}\n</urlset>\n`);
   console.log(`Built site-teams-dist/ (live.js ${(live.length / 1024).toFixed(0)} KB, ${pages.length} pages${priv.length ? `, ${priv.length} private` : ''}) — demo at ${demo}${token ? ', analytics on' : ', no analytics token'}`);

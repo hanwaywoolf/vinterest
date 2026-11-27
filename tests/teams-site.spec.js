@@ -594,3 +594,27 @@ test('the pricing page shows each plan in the currency picked', async ({ browser
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   await page.close();
 });
+
+// The internal page: every restaurant with its marketing page, demo and latest preview, and what its demo holds.
+test('the internal page lists every restaurant with its links and counts, and stays out of search', async ({ page }) => {
+  await page.goto(`${BASE}/internal`);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  const venues = page.locator('[data-venue]');
+  await expect(venues).toHaveCount(5);
+  const social = page.locator('[data-venue="social"]');
+  await expect(social).toContainText('The Social Corner'); await expect(social).toContainText('Quiz questions'); await expect(social).toContainText('by the glass');
+  const hrefs = await social.locator('a.btn').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+  // Their address lands on the page written for them; the demo is at /demo/; each has its preview beside it.
+  expect(hrefs).toEqual(['https://socialcorner.vinterest.team/', 'https://claude-teams-site.vinterest-teams.pages.dev/for/social-corner',
+    'https://socialcorner.vinterest.team/demo/?view=console', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=console',
+    'https://socialcorner.vinterest.team/demo/?view=phone', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=phone']);
+  // The counts are the app's own (site/teams/internal.json), and the totals add up.
+  const stats = require('../site/teams/internal.json').venues, total = Object.values(stats).reduce((a, v) => a + v.wines, 0);
+  await expect(page.locator('.in-sum')).toContainText(total.toLocaleString('en-GB'));
+  await expect(page.locator('[data-venue="eloise"]')).toContainText(String(stats.eloise.questions));
+  // Nothing on the public pages links to it, and the sitemap leaves it out.
+  const fs = require('node:fs'), path = require('node:path'), dist = path.join(__dirname, '..', 'site-teams-dist');
+  expect(fs.readFileSync(path.join(dist, 'sitemap.xml'), 'utf8')).not.toContain('internal');
+  expect(fs.readFileSync(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /internal');
+  expect(fs.readFileSync(path.join(dist, 'index.html'), 'utf8')).not.toContain('/internal');
+});

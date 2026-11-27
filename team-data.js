@@ -763,7 +763,7 @@ const TeamSample = {
   /* The restaurant a demo address opens (socialcorner.vinterest.team → The Social Corner), as ?seed would; the
      Worker's VENUE_HOSTS sends that address's root to /team/; eloise.vinterest.team is in its VENUE_PAGES instead: the page
      written for Eloise at the root, this app at /demo/. Null anywhere else. */
-  HOSTS:{'socialcorner.vinterest.team':'social','princessroyal.vinterest.team':'princess-royal','eloise.vinterest.team':'eloise','demo.vinterest.team':'demo'},
+  HOSTS:{'socialcorner.vinterest.team':'social','barbary.vinterest.team':'barbary','princessroyal.vinterest.team':'princess-royal','eloise.vinterest.team':'eloise','demo.vinterest.team':'demo'},
   hostSeed(host){ try{ return this.HOSTS[String(host==null?location.hostname:host).toLowerCase()]||null; }catch(e){ return null; } },
   /* Whether the restaurant on the device is this seed as the build now carries it. */
   current(which){ which=this.ALIAS[which]||which; const v=TeamData.get().venue||{}; if(v.sample!==which) return false;

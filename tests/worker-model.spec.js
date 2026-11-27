@@ -201,11 +201,22 @@ test('eloise.vinterest.team is the page written for them, with the staff app at 
   } finally { globalThis.fetch = realFetch; }
 });
 
-test('socialcorner.vinterest.team opens the staff app and is an allowed origin', async () => {
-  const worker = await loadWorker();
-  const r = await worker.fetch(new Request('https://socialcorner.vinterest.team/'), {}, { waitUntil() {} });
-  expect(r.status).toBe(302);
-  expect(r.headers.get('location')).toBe('https://socialcorner.vinterest.team/team/');
+// Every restaurant's address lands on the page written for it, never straight in the demo: the demo opens from the
+// page or at /demo/ (an old /team/ link is sent there).
+test('socialcorner.vinterest.team lands on its page, with the staff app at /demo/, and is an allowed origin', async () => {
+  const worker = await loadWorker(), asked = [], assets = [], realFetch = globalThis.fetch;
+  globalThis.fetch = async (u) => { asked.push(String(u)); return new Response('<h1>The Social Corner</h1>', { headers: { 'content-type': 'text/html' } }); };
+  const env = { ASSETS: { fetch: async (r) => { assets.push(new URL(r.url).pathname + new URL(r.url).search); return new Response('app'); } } };
+  try {
+    for (const [host, page] of [['socialcorner.vinterest.team', 'social-corner'], ['barbary.vinterest.team', 'barbary']]) {
+      asked.length = 0; assets.length = 0;
+      const get = (path) => worker.fetch(new Request(`https://${host}${path}`), env, { waitUntil() {} });
+      const home = await get('/'); expect(home.status).toBe(200); expect(await home.text()).toContain('The Social Corner');
+      expect(asked).toEqual([`https://vinterest.team/for/${page}`]);
+      expect((await get('/team/?view=phone')).headers.get('location')).toBe(`https://${host}/demo/?view=phone`);
+      expect(await (await get('/demo/?view=console')).text()).toBe('app'); expect(assets).toEqual(['/team/?view=console']);
+    }
+  } finally { globalThis.fetch = realFetch; }
   const ok = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team');
   expect(ok.status).toBe(200);
   const no = await tts({ ELEVENLABS_API_KEY: 'k' }, { text: 'Hi' }, 'https://socialcorner.vinterest.team.evil.example');
