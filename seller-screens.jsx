@@ -56,11 +56,10 @@ function _SPitch({f,open}){ const T=useTheme(), acc=_sAcc(), P=f.pitch, M=n=>Tea
   return <div>
     {sec('The pitch',<div>{P.story.map((s,k)=><div key={k} data-testid="seller-story" style={{display:'grid',gridTemplateColumns:'minmax(0,118px) minmax(0,1fr)',gap:'4px 14px',padding:'9px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <div><div style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink}}>{s.h}</div><div style={{marginTop:3}}><_SBasis b={s.basis}/></div></div><div style={line}>{s.t}</div></div>)}</div>)}
-    {P.pairings.length>0&&sec(`On their menu · ${P.pairings.length} dish${P.pairings.length===1?'':'es'}`,<div>{P.pairings.map((x,k)=><div key={x.dish.id} data-testid="seller-pairing" style={{padding:'10px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
+    {P.pairings.length>0&&sec(`Dish by dish · ${P.pairings.length} on their menu`,<div>{P.pairings.map((x,k)=><div key={x.dish.id} data-testid="seller-pairing" style={{padding:'10px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline',flexWrap:'wrap'}}><span style={{fontSize:15,fontWeight:500,fontFamily:C.P}}>{x.dish.name}{x.dish.price&&<span style={{color:T.mid,fontWeight:400}}> · {x.dish.price}</span>}</span>{x.like&&<span style={{fontSize:13,fontFamily:C.P,color:T.mid}}>beside {TeamData.nick(x.like)}{x.likePrice?` (${M(x.likePrice)})`:''}</span>}</div>
       {x.dish.desc&&<div style={{fontSize:13,fontFamily:C.P,color:T.mid,marginTop:2}}>{x.dish.desc}</div>}
       <div style={{...line,color:T.ink,marginTop:5}}>{x.why}</div>
-      {x.theirWhy&&<div style={{fontSize:13,fontFamily:C.P,color:T.mid,lineHeight:1.5,marginTop:5}}>What they tell their own team about {TeamData.nick(x.like)} here: {x.theirWhy}</div>}
     </div>)}</div>,<_SBasis b="estimate"/>)}
     {sec('Why it scores',<div>{f.reasons.map((r,k)=><div key={k} data-testid="seller-reason" style={{display:'flex',gap:'2px 10px',flexWrap:'wrap',alignItems:'baseline',padding:'6px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <span style={{width:34,flexShrink:0,textAlign:'right',fontSize:14,fontFamily:C.P,fontWeight:500,color:r.pts>0?'#6FD79C':'#F58B7C'}}>{r.pts>0?'+':'−'}{Math.abs(r.pts)}</span>
@@ -71,7 +70,7 @@ function _SPitch({f,open}){ const T=useTheme(), acc=_sAcc(), P=f.pitch, M=n=>Tea
 /* ---- the brief ---- */
 function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2Width(), two=w>=900, [kind,setKind]=React.useState('all');
   const can=B.openings.filter(o=>o.wines.length), shut=B.openings.filter(o=>!o.wines.length), lead=B.shortlist.filter(f=>f.score>=SellerMatch.LEAD);
-  const kinds=Object.keys(_S_KIND).filter(k=>can.some(o=>o.kind===k)), shown=can.filter(o=>kind==='all'||o.kind===kind);
+  const kinds=Object.keys(_S_KIND).filter(k=>can.some(o=>o.kind===k)), shown=can.filter(o=>kind==='all'||o.kind===kind), cap={..._sCaps,fontSize:'10px',color:T.mid};
   return <div ref={ref} data-testid="seller-brief">
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:20,marginBottom:22}}>
       <div style={{minWidth:0}}>
@@ -87,8 +86,8 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
       <_STile label="Their multiple" value={`${B.multiple.low.toFixed(1)}× to ${B.multiple.high.toFixed(1)}×`} note={`on a ${SellerCatalogue.money(20)} bottle down to a ${SellerCatalogue.money(100)} one, from ${B.multiple.points} of their wines we can price`}/>
       <_STile label="Their glass" value={`Bottle ÷ ${B.glassRatio.toFixed(1)}`} note="what they charge for a glass of a bottle they also sell whole"/>
     </div>
-    <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1.55fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
-      <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
+    <div style={{display:'flex',flexDirection:'column',gap:16}}>
+      <div style={{display:'grid',gridTemplateColumns:two?'minmax(0,1.55fr) minmax(0,1fr)':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
         <_SCard feat fold title="Lead with" summary={B.shortlist.slice(0,3).map(f=>SellerCatalogue.short(f.item)).join(' · ')} right={<span role="button" data-testid="seller-all-short" onClick={()=>go('shortlist')} style={{cursor:'pointer',color:acc}}>All {B.shortlist.length} →</span>} testid="seller-lead">
           {B.shortlist.slice(0,3).map((f,i)=><div key={f.item.id} role="button" onClick={()=>go('shortlist',f.item.id)} style={{display:'flex',gap:14,alignItems:'flex-start',padding:'12px 0',borderTop:i?`1px solid ${_sLine}`:'none',cursor:'pointer'}}>
             <_SScore f={f} small/>
@@ -96,43 +95,51 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
               <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,marginTop:3,lineHeight:1.5}}>{f.pitch.say}</div></div>
           </div>)}
         </_SCard>
-        <_SCard fold title="What their list leaves open" summary={`${can.length} openings: ${kinds.map(k=>`${can.filter(o=>o.kind===k).length} ${_S_KIND[k].toLowerCase()}`).join(', ')}`} right={`${shown.length} of ${can.length}`} testid="seller-openings">
-          <div data-testid="seller-open-filters" style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:14}}>
-            <_SPill on={kind==='all'} onClick={()=>setKind('all')} testid="seller-open-all">All {can.length}</_SPill>
-            {kinds.map(k=><_SPill key={k} on={kind===k} onClick={()=>setKind(k)} testid={'seller-open-'+k}>{_S_KIND[k]} {can.filter(o=>o.kind===k).length}</_SPill>)}
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:two?'repeat(2,minmax(0,1fr))':'minmax(0,1fr)',gap:12}}>
-            {shown.map(o=><div key={o.k} data-testid="seller-opening" data-kind={o.kind} style={{border:`1px solid ${_sLine}`,boxShadow:`inset 3px 0 0 ${_S_TONE[o.kind]}`,padding:'14px 16px 14px 18px',display:'flex',flexDirection:'column',gap:8,minWidth:0}}>
-              <div style={{..._sCaps,fontSize:'11px',color:_S_TONE[o.kind]}}>{o.tag}</div>
-              <div style={{fontSize:17,fontWeight:500,fontFamily:C.P,lineHeight:1.25}}>{o.title}</div>
-              <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5}}>{o.fact}</div>
-              {(o.facts||[]).length>0&&<div style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr)',gap:'5px 12px',marginTop:2}}>{o.facts.map((x,j)=><React.Fragment key={j}><span data-cap style={{..._sCaps,fontSize:'10px',color:T.mid,paddingTop:3,whiteSpace:'nowrap'}}>{x.label}</span><span style={{fontSize:13,fontFamily:C.P,color:T.ink,lineHeight:1.45}}>{x.text}</span></React.Fragment>)}</div>}
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:'auto',paddingTop:6}}>{o.wines.slice(0,3).map(f=><_SWineChip key={f.item.id} f={f} onClick={()=>open(f.item.id)}/>)}{o.wines.length>3&&<span style={{fontSize:13,fontFamily:C.P,color:T.mid,alignSelf:'center'}}>+{o.wines.length-3} more</span>}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
+          {B.ours.length>0&&<_SCard fold title="Already on their list" summary={B.ours.map(o=>TeamData.short(o.wine)).join(', ')} testid="seller-ours">
+            {B.ours.map(o=><div key={o.item.id}>
+              <div role="button" onClick={()=>open(o.item.id)} style={{fontSize:16,fontWeight:500,fontFamily:C.P,cursor:'pointer'}}>{TeamData.label(o.wine)}</div>
+              <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,marginTop:4}}>On their list at {TeamData.money(o.bottle)}. It's {SellerCatalogue.money(o.item.price,2)} from us, so they put {o.x.toFixed(1)}× on it: the one multiple here that isn't an estimate.</div>
+              {o.next.length>0&&<div style={{marginTop:10}}><div style={{..._sCaps,color:T.mid,marginBottom:7}}>Next from the same house</div><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{o.next.map(f=><_SWineChip key={f.item.id} f={f} onClick={()=>open(f.item.id)}/>)}</div></div>}
             </div>)}
-          </div>
-        </_SCard>
+          </_SCard>}
+          <_SCard fold startShut={two} title="How to read the fit" summary="The reasons for a bottle added up, from red at 0 to green at 100; not a forecast of a sale" testid="seller-how">
+            <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.55}}>Fit is the reasons for a bottle added up, less what counts against it. It is not a forecast of a sale: there is no sales history behind it yet.</div>
+            <div style={{height:10,margin:'12px 0 4px',background:`linear-gradient(90deg, ${[0,25,50,75,100].map(s=>_sFit(s)).join(', ')})`}}/>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontFamily:C.P,color:T.mid}}><span>0</span><span>{SellerMatch.SHOW} worth showing</span><span>{SellerMatch.LEAD} lead with it</span><span>100</span></div>
+            <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.55,margin:'12px 0 10px'}}>Every line is marked with what it rests on. Where a bottle lands on their list, and its body and tannin, are our estimates.</div>
+            <_SLegend/>
+          </_SCard>
+        </div>
       </div>
-      <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
-        {B.ours.length>0&&<_SCard fold title="Already on their list" summary={B.ours.map(o=>TeamData.short(o.wine)).join(', ')} testid="seller-ours">
-          {B.ours.map(o=><div key={o.item.id}>
-            <div role="button" onClick={()=>open(o.item.id)} style={{fontSize:16,fontWeight:500,fontFamily:C.P,cursor:'pointer'}}>{TeamData.label(o.wine)}</div>
-            <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,marginTop:4}}>On their list at {TeamData.money(o.bottle)}. It's {SellerCatalogue.money(o.item.price,2)} from us, so they put {o.x.toFixed(1)}× on it: the one multiple here that isn't an estimate.</div>
-            {o.next.length>0&&<div style={{marginTop:10}}><div style={{..._sCaps,color:T.mid,marginBottom:7}}>Next from the same house</div><div style={{display:'flex',gap:8,flexWrap:'wrap'}}>{o.next.map(f=><_SWineChip key={f.item.id} f={f} onClick={()=>open(f.item.id)}/>)}</div></div>}
-          </div>)}
-        </_SCard>}
-        <_SCard fold title="How to read the fit" summary="The reasons for a bottle added up; not a forecast of a sale" testid="seller-how">
-          <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.55}}>Fit is the reasons for a bottle added up, less what counts against it. It is not a forecast of a sale: there is no sales history behind it yet.</div>
-          <div style={{height:10,margin:'12px 0 4px',background:`linear-gradient(90deg, ${[0,25,50,75,100].map(s=>_sFit(s)).join(', ')})`}}/>
-          <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontFamily:C.P,color:T.mid}}><span>0</span><span>{SellerMatch.SHOW} worth showing</span><span>{SellerMatch.LEAD} lead with it</span><span>100</span></div>
-          <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.55,margin:'12px 0 10px'}}>Every line is marked with what it rests on. Where a bottle lands on their list, and its body and tannin, are our estimates.</div>
-          <_SLegend/>
-        </_SCard>
+
+      {/* The openings take the page's whole width: one row each, read left to right: what's open, what their list has there today, what we'd bring. */}
+      <_SCard fold title="What their list leaves open" summary={`${can.length} openings: ${kinds.map(k=>`${can.filter(o=>o.kind===k).length} ${_S_KIND[k].toLowerCase()}`).join(', ')}`} right={`${shown.length} of ${can.length}`} testid="seller-openings" style={{padding:'18px 22px 8px'}}>
+        <div data-testid="seller-open-filters" style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:6}}>
+          <_SPill on={kind==='all'} onClick={()=>setKind('all')} testid="seller-open-all">All {can.length}</_SPill>
+          {kinds.map(k=><_SPill key={k} on={kind===k} onClick={()=>setKind(k)} testid={'seller-open-'+k}>{_S_KIND[k]} {can.filter(o=>o.kind===k).length}</_SPill>)}
+        </div>
+        {two&&<div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1.7fr) minmax(0,1.1fr)',gap:28,padding:'14px 0 8px 16px'}}><span data-cap style={cap}>The opening</span><span data-cap style={cap}>On their list today</span><span data-cap style={cap}>What we'd bring</span></div>}
+        {shown.map((o,k)=><div key={o.k} data-testid="seller-opening" data-kind={o.kind} style={{display:'grid',gridTemplateColumns:two?'minmax(0,1fr) minmax(0,1.7fr) minmax(0,1.1fr)':'minmax(0,1fr)',gap:two?28:12,padding:'18px 0 18px 16px',borderTop:`1px solid ${_sLine}`,boxShadow:`inset 3px 0 0 ${_S_TONE[o.kind]}`}}>
+          <div style={{minWidth:0}}><div data-cap style={{..._sCaps,fontSize:'11px',color:_S_TONE[o.kind],marginBottom:6}}>{o.tag}</div><div style={{fontSize:18,fontWeight:500,fontFamily:C.P,lineHeight:1.25}}>{o.title}</div></div>
+          <div style={{minWidth:0}}>
+            <div data-testid="seller-opening-fact" style={{fontSize:15,fontFamily:C.P,color:T.ink,lineHeight:1.55}}>{o.fact}</div>
+            {(o.facts||[]).filter(x=>x.label!=='We have').length>0&&<div style={{display:'grid',gridTemplateColumns:'auto minmax(0,1fr)',gap:'6px 14px',marginTop:10}}>{o.facts.filter(x=>x.label!=='We have').map((x,j)=><React.Fragment key={j}><span data-cap style={{...cap,paddingTop:3,whiteSpace:'nowrap'}}>{x.label}</span><span style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5}}>{x.text}</span></React.Fragment>)}</div>}
+          </div>
+          <div style={{minWidth:0}}>
+            {(o.facts||[]).filter(x=>x.label==='We have').map((x,j)=><div key={j} style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,marginBottom:10}}>{x.text.replace(/^./,c=>c.toUpperCase())}.</div>)}
+            <div style={{display:'flex',flexDirection:'column',gap:7,alignItems:'flex-start'}}>{o.wines.slice(0,3).map(f=><_SWineChip key={f.item.id} f={f} onClick={()=>open(f.item.id)}/>)}{o.wines.length>3&&<span style={{fontSize:13,fontFamily:C.P,color:T.mid}}>and {o.wines.length-3} more in the catalogue</span>}</div>
+          </div>
+        </div>)}
+      </_SCard>
+
+      <div style={{display:'grid',gridTemplateColumns:two?'repeat(2,minmax(0,1fr))':'minmax(0,1fr)',gap:16,alignItems:'start'}}>
         {(B.cocktailWines.length>0||B.backBar.some(x=>x.uses.length))&&<_SCard fold title="Their cocktails" summary="Where our prosecco and rum could be the pour" testid="seller-bar">
           {B.cocktailWines.map((x,i)=><div key={'w'+i} style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,marginBottom:8}}><span style={{color:T.ink,fontWeight:500}}>{x.cocktail.name}</span> is made with {String(x.ingredient).toLowerCase()}: {x.wines.map((i,k)=><React.Fragment key={i.id}>{k?' or ':''}<span role="button" onClick={()=>open(i.id)} style={{color:T.ink,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.3)',cursor:'pointer'}}>{SellerCatalogue.short(i)}</span></React.Fragment>)} could be the pour.</div>)}
           {B.backBar.filter(x=>x.uses.length).map(x=><div key={x.item.id} style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,marginBottom:8}}><span style={{color:T.ink,fontWeight:500}}>{x.uses.map(u=>u.cocktail.name).join(' and ')}</span> use{x.uses.length===1?'s':''} {x.category}, and the menu names {[...new Set(x.uses.map(u=>u.ingredient))].join(' and ')}. Ours is <span role="button" onClick={()=>open(x.item.id)} style={{color:T.ink,textDecoration:'underline',textDecorationColor:'rgba(255,255,255,0.3)',cursor:'pointer'}}>{SellerCatalogue.short(x.item)}</span> at {SellerCatalogue.money(x.item.price,2)}.</div>)}
           <div style={{fontSize:13,fontFamily:C.P,color:T.mid,lineHeight:1.5}}>The brands a menu names say who supplies the back bar today.</div>
         </_SCard>}
-        {shut.length>0&&<_SCard fold startShut title="Openings we can't answer" summary={`${shut.length} the catalogue has nothing for at their prices`} right={shut.length} testid="seller-shut">
+        {shut.length>0&&<_SCard fold title="Openings we can't answer" summary={`${shut.length} the catalogue has nothing for at their prices`} right={shut.length} testid="seller-shut">
           {shut.map((o,i)=><div key={o.k} style={{fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.5,padding:'7px 0',borderTop:i?`1px solid ${_sLine}`:'none'}}>{o.title}</div>)}
           <div style={{fontSize:13,fontFamily:C.P,color:T.mid,lineHeight:1.5,marginTop:8}}>Nothing in the catalogue fits these at their prices. Worth knowing before they ask.</div>
         </_SCard>}
@@ -141,29 +148,39 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
   </div>; }
 
 /* ---- the shortlist ---- */
+/* One bottle. Summary is the one thing to say and what it sells for; Full pitch adds the story, every dish, the
+   reasons and the objections. The switch says which it is showing and what the other holds. */
 function SellerBottle({f,focus,shut,toggle,open}){ const T=useTheme(), acc=_sAcc(), i=f.item, P=f.pitch, ref=React.useRef(null), [r2,w]=_c2Width(), cols=w>=820?4:w>=480?2:1;
   React.useEffect(()=>{ if(focus&&ref.current&&ref.current.scrollIntoView) ref.current.scrollIntoView({block:'start'}); },[focus]);
-  return <div ref={ref} data-testid="seller-bottle" data-id={i.id} data-shut={shut?'1':undefined} style={{border:`1px solid ${focus?_alpha(acc,0.5):_sLine}`,background:'rgba(255,255,255,0.025)',padding:'20px 22px',..._sRule(T,i.type)}}><div ref={r2}>
-    <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+  const holds=[`the pitch`,P.pairings.length?`${P.pairings.length} dish${P.pairings.length===1?'':'es'}`:null,`${f.reasons.length} reasons`,P.objections.length?`${P.objections.length} objection${P.objections.length===1?'':'s'}`:null].filter(Boolean).join(' · ');
+  const seg=(on,label,tid)=><span role="button" data-pill data-testid={tid} aria-pressed={on} onClick={()=>{ if(!on) toggle(); }} style={{..._sCaps,fontSize:'11px',padding:'6px 10px',background:on?acc:'transparent',color:on?inkOn(acc):T.ink2,cursor:on?'default':'pointer',whiteSpace:'nowrap'}}>{label}</span>;
+  return <div ref={ref} data-testid="seller-bottle" data-id={i.id} data-view={shut?'summary':'full'} style={{border:`1px solid ${focus?_alpha(acc,0.5):_sLine}`,background:'rgba(255,255,255,0.025)',padding:'20px 22px',..._sRule(T,i.type)}}><div ref={r2}>
+    <div style={{display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
       <_SScore f={f}/>
-      <div style={{flex:1,minWidth:0}}>
+      <div style={{flex:'1 1 240px',minWidth:0}}>
         <div style={{display:'flex',gap:10,alignItems:'baseline',flexWrap:'wrap'}}><span style={{..._sCaps,color:_sFit(f.score)}}>{f.word}</span>{P.primary&&<_STag text={P.primary.tag} tone={_S_TONE[P.primary.kind]}/>}</div>
         <div role="button" data-testid="seller-bottle-name" onClick={()=>open(i.id)} style={{fontSize:22,fontWeight:300,fontFamily:C.P,lineHeight:1.2,marginTop:5,cursor:'pointer'}}>{_sName(i)}</div>
         <div style={{fontSize:14,fontFamily:C.P,color:T.mid,marginTop:4,lineHeight:1.45}}>{SellerMatch.placeLine(i)}{f.shape.grapes.length?` · ${f.shape.grapes.slice(0,3).join(', ')}`:''}{i.basis.grapes==='estimate'?' (typical, not on the sheet)':''} · {i.listingLabel}</div>
       </div>
-      <div role="button" tabIndex={0} data-testid="seller-bottle-fold" aria-expanded={!shut} aria-label={shut?'Open the pitch':'Fold the pitch away'} onClick={toggle} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } }} style={{width:34,height:34,flexShrink:0,border:'1px solid rgba(255,255,255,0.22)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>{_sChev(shut,T.ink)}</div>
+      <div data-testid="seller-bottle-view" role="group" aria-label="How much to show" style={{display:'inline-flex',border:`1px solid ${_alpha(acc,0.6)}`,flexShrink:0}}>{seg(shut,'Summary','seller-view-summary')}{seg(!shut,'Full pitch','seller-view-full')}</div>
     </div>
     <div data-testid="seller-say" style={{margin:'16px 0',padding:'13px 16px',borderLeft:`3px solid ${acc}`,background:_alpha(acc,0.07)}}><div style={{..._sCaps,fontSize:'10px',color:acc,marginBottom:5}}>One thing to say</div><div style={{fontSize:16,fontFamily:C.P,color:T.ink,lineHeight:1.5}}>{P.say}</div></div>
     <_SPrices f={f} cols={cols}/>
     {!shut&&<_SPitch f={f} open={open}/>}
+    <div role="button" tabIndex={0} data-testid="seller-bottle-fold" aria-expanded={!shut} onClick={toggle} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } }} style={{display:'flex',alignItems:'center',gap:10,marginTop:16,paddingTop:13,borderTop:`1px solid ${_sLine}`,cursor:'pointer'}}>
+      <span style={{display:'inline-flex',transform:shut?'none':'rotate(180deg)'}}>{_sChev(false,acc)}</span>
+      <span style={{..._sCaps,color:acc}}>{shut?'Show the full pitch':'Back to the summary'}</span>
+      {shut&&<span style={{fontSize:13,fontFamily:C.P,color:T.mid}}>{holds}</span>}
+    </div>
   </div></div>; }
-function SellerShortlist({B,focus,open}){ const T=useTheme(), [shut,setShut]=React.useState(()=>Object.fromEntries(B.shortlist.map((f,k)=>[f.item.id,k>=2&&f.item.id!==focus]))), all=B.shortlist.every(f=>shut[f.item.id]);
+function SellerShortlist({B,focus,open}){ const T=useTheme(), acc=_sAcc(), [shut,setShut]=React.useState(()=>Object.fromEntries(B.shortlist.map((f,k)=>[f.item.id,k>=1&&f.item.id!==focus]))), all=B.shortlist.every(f=>shut[f.item.id]), none=B.shortlist.every(f=>!shut[f.item.id]);
+  const setAll=v=>setShut(Object.fromEntries(B.shortlist.map(f=>[f.item.id,v]))), seg=(on,label,tid,v)=><span role="button" data-pill data-testid={tid} aria-pressed={on} onClick={()=>setAll(v)} style={{..._sCaps,padding:'8px 13px',background:on?acc:'transparent',color:on?inkOn(acc):T.ink,cursor:'pointer',whiteSpace:'nowrap'}}>{label}</span>;
   return <div data-testid="seller-shortlist">
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:16,flexWrap:'wrap',marginBottom:20}}>
-      <div style={{minWidth:0}}><div style={{fontSize:30,lineHeight:1.15,fontWeight:300,fontFamily:C.P}}>{B.shortlist.length} bottles to take to <span style={{fontWeight:500,color:_sAcc()}}>{B.venue.name}</span>.</div>
+      <div style={{minWidth:0}}><div style={{fontSize:30,lineHeight:1.15,fontWeight:300,fontFamily:C.P}}>{B.shortlist.length} bottles to take to <span style={{fontWeight:500,color:acc}}>{B.venue.name}</span>.</div>
         <div style={{fontSize:15,fontWeight:300,fontFamily:C.P,color:T.ink2,marginTop:8,lineHeight:1.5}}>Best fit first, with no more than {SellerMatch.PER_HOUSE} from one house and one bottle for each opening, so the visit covers the list. A bottle's name opens its wine card.</div>
         <div style={{marginTop:12}}><_SLegend/></div></div>
-      <TeamBtn testid="seller-fold-all" onClick={()=>setShut(Object.fromEntries(B.shortlist.map(f=>[f.item.id,!all])))}>{all?'Open every pitch':'Fold every pitch'}</TeamBtn></div>
+      <div><div data-cap style={{..._sCaps,fontSize:'10px',color:T.mid,marginBottom:6}}>Show every bottle as</div><div data-testid="seller-view-all" role="group" style={{display:'inline-flex',border:`1px solid ${_alpha(acc,0.6)}`}}>{seg(all,'Summaries','seller-all-summary',true)}{seg(none,'Full pitches','seller-all-full',false)}</div></div></div>
     <div style={{display:'flex',flexDirection:'column',gap:16}}>{B.shortlist.map(f=><SellerBottle key={f.item.id} f={f} focus={focus===f.item.id} shut={!!shut[f.item.id]} toggle={()=>setShut(s=>({...s,[f.item.id]:!s[f.item.id]}))} open={open}/>)}</div>
   </div>; }
 
@@ -200,14 +217,16 @@ function SellerWineCard({id,close,open}){ const T=useTheme(), acc=_sAcc(), f=Sel
     <div ref={ref} role="dialog" aria-modal="true" aria-label={_sName(i)} data-testid="seller-card" data-id={i.id} style={{position:'relative',width:'min(100%, 680px)',height:'100%',overflowY:'auto',background:'#060606',borderLeft:`1px solid ${_sLine}`,padding:'calc(env(safe-area-inset-top) + 22px) 24px calc(env(safe-area-inset-bottom) + 40px)',..._sRule(T,i.type)}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,marginBottom:16}}><div style={{..._sCaps,color:acc}}>{wine?i.type==='rosé'?'Rosé':i.type.charAt(0).toUpperCase()+i.type.slice(1):i.family||'Spirit'} · {i.country}</div>
         <div role="button" tabIndex={0} data-testid="seller-card-close" aria-label="Close" onClick={close} style={{width:34,height:34,border:'1px solid rgba(255,255,255,0.22)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:18,fontFamily:C.P}}>×</div></div>
-      <div style={{display:'flex',gap:20,alignItems:'flex-start'}}>
-        {i.img&&!bad&&<div style={{width:104,flexShrink:0,background:'#fff',padding:8}}><img data-testid="seller-card-img" src={i.img} alt={`${_sName(i)} bottle`} onError={()=>setBad(true)} style={{width:'100%',height:210,objectFit:'contain',display:'block'}}/></div>}
+      {/* The head is a sheet of warm paper. The catalogue's bottle shots are on white: multiplied onto the paper the white
+          drops out, so the bottle stands on the page instead of in a white box on black. */}
+      <div data-testid="seller-card-head" style={{display:'flex',gap:22,alignItems:'center',background:'linear-gradient(135deg,#F6F2EA,#E9E2D4)',color:'#15110A',padding:'22px 24px',margin:'0 -24px',borderTop:`3px solid ${_TYPE_COLORS[{rosé:'rose',sweet:'dessert'}[i.type]||i.type]||_TYPE_COLORS.red}`}}>
+        {i.img&&!bad&&<img data-testid="seller-card-img" src={i.img} alt={`${_sName(i)} bottle`} onError={()=>setBad(true)} style={{width:112,height:250,flexShrink:0,objectFit:'contain',display:'block',mixBlendMode:'multiply',filter:'drop-shadow(0 10px 12px rgba(21,17,10,0.22))'}}/>}
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:14,fontFamily:C.P,color:T.mid}}>{i.producer}</div>
-          <div data-testid="seller-card-name" style={{fontSize:28,fontWeight:300,fontFamily:C.P,lineHeight:1.15,marginTop:3}}>{i.name}{i.vintage?` ${i.vintage}`:''}{SellerCatalogue.format(i)?` · ${SellerCatalogue.format(i)}`:''}</div>
-          <div style={{...line,marginTop:8}}>{SellerMatch.placeLine(i)}</div>
-          {wine&&i.grapes.length>0&&<div style={{...line,color:T.ink,marginTop:4}}>{SellerMatch.grapeLine(i)} <span style={{marginLeft:6}}><_SBasis b={i.basis.grapes==='sheet'?'sheet':'estimate'}/></span></div>}
-          {wine&&i.flavours.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',marginTop:12}}>{i.flavours.map(x=><span key={x} data-pill style={{..._sCaps,fontSize:'11px',padding:'3px 8px',border:`1px solid ${_alpha(_sTypeCol(T,i.type),0.6)}`,color:T.ink}}>{x}</span>)}<_SBasis b={i.basis.flavours==='sheet'?'sheet':'estimate'}/></div>}
+          <div style={{fontSize:14,fontFamily:C.P,color:'#5c5448',fontWeight:500}}>{i.producer}</div>
+          <div data-testid="seller-card-name" style={{fontSize:28,fontWeight:300,fontFamily:C.P,lineHeight:1.15,marginTop:3,color:'#15110A'}}>{i.name}{i.vintage?` ${i.vintage}`:''}{SellerCatalogue.format(i)?` · ${SellerCatalogue.format(i)}`:''}</div>
+          <div style={{fontSize:14,fontFamily:C.P,color:'#3d372e',lineHeight:1.6,marginTop:8}}>{SellerMatch.placeLine(i)}</div>
+          {wine&&i.grapes.length>0&&<div style={{fontSize:14,fontFamily:C.P,color:'#15110A',lineHeight:1.6,marginTop:4,fontWeight:500}}>{SellerMatch.grapeLine(i)}{i.basis.grapes!=='sheet'&&<span style={{fontWeight:400,color:'#5c5448'}}> (typical, not on the sheet)</span>}</div>}
+          {wine&&i.flavours.length>0&&<div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center',marginTop:12}}>{i.flavours.map(x=><span key={x} data-pill style={{..._sCaps,fontSize:'11px',padding:'3px 8px',border:'1px solid rgba(21,17,10,0.45)',color:'#15110A'}}>{x}</span>)}{i.basis.flavours!=='sheet'&&<span data-cap style={{..._sCaps,fontSize:'10px',color:'#5c5448'}}>Our estimate</span>}</div>}
         </div>
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:0,marginTop:20}}>

@@ -69,7 +69,7 @@ test('every tab draws, and a phone has no sideways scroll', async ({ page }) => 
   }
   await page.getByTestId('seller-tab-shortlist').click();
   expect(await page.getByTestId('seller-bottle').count()).toBeGreaterThanOrEqual(5);
-  expect(await page.getByTestId('seller-reason').count()).toBeGreaterThan(5);
+  expect(await page.getByTestId('seller-reason').count()).toBeGreaterThan(2); // the first bottle opens on its full pitch
   expect(await page.getByTestId('seller-sheet-fit').count()).toBe(0);
   await page.getByTestId('seller-tab-catalogue').click();
   await page.getByTestId('seller-filter-out').click();
@@ -90,7 +90,7 @@ test('the openings filter by kind and fold away, and each says what the list has
   await expect(glass.first()).toContainText('Poured today');
   await page.getByTestId('seller-open-call').click();
   // A missing wine is described from their own list, not with one line repeated on every card.
-  const facts = await page.getByTestId('seller-opening').evaluateAll((els) => els.map((e) => e.children[2].textContent));
+  const facts = await page.getByTestId('seller-opening-fact').evaluateAll((els) => els.map((e) => e.textContent));
   expect(new Set(facts).size).toBeGreaterThan(facts.length / 2);
   await expect(page.getByTestId('seller-opening').first()).toContainText('Closest today');
   await page.getByTestId('seller-openings').getByTestId('seller-fold').click();
@@ -128,7 +128,9 @@ test('the shortlist says one thing per bottle, prices the bottle and the glass, 
     green: _sFit(100), red: _sFit(0), mid: _sFit(50) }; });
   expect(new Set(r.says).size).toBe(r.says.length);
   expect(new Set(r.opens).size).toBe(r.opens.length); // one bottle for each opening
-  for (const ws of r.pairs) { expect(ws.every((w) => w.length > 30)).toBe(true); expect(new Set(ws).size).toBe(ws.length); }
+  for (const ws of r.pairs) { expect(ws.every((w) => w.length > 15)).toBe(true); expect(new Set(ws).size).toBe(ws.length); }
+  // Dish lines are short and each its own: no opening run of words is shared by most of a bottle's dishes.
+  for (const ws of r.pairs.filter((x) => x.length >= 3)) { const starts = ws.map((w) => w.split(' ').slice(0, 6).join(' ')); expect(new Set(starts).size, starts.join(' | ')).toBeGreaterThan(ws.length / 2); expect(Math.max(...ws.map((w) => w.length))).toBeLessThan(170); }
   expect(r.story).toBe(true);
   // Fit runs from bright red at 0 through yellow to brilliant green at 100.
   expect(r.red).toContain('hsl(0,'); expect(r.mid).toContain('hsl(63,'); expect(r.green).toContain('hsl(125,');
@@ -136,9 +138,17 @@ test('the shortlist says one thing per bottle, prices the bottle and the glass, 
   const first = page.getByTestId('seller-bottle').first();
   await expect(first.getByTestId('seller-say')).toBeVisible(); await expect(first.getByTestId('seller-prices')).toBeVisible();
   expect(await first.getByTestId('seller-story').count()).toBeGreaterThan(0);
+  // The first bottle opens on its full pitch, the rest as summaries; the switch says which, and what the other holds.
+  await expect(first).toHaveAttribute('data-view', 'full');
+  const second = page.getByTestId('seller-bottle').nth(1);
+  await expect(second).toHaveAttribute('data-view', 'summary'); await expect(second.getByTestId('seller-story')).toHaveCount(0);
+  await expect(second.getByTestId('seller-bottle-fold')).toContainText('Show the full pitch'); await expect(second.getByTestId('seller-bottle-fold')).toContainText('dish');
+  await second.getByTestId('seller-view-full').click(); expect(await second.getByTestId('seller-story').count()).toBeGreaterThan(0);
   await first.getByTestId('seller-bottle-fold').click();
-  await expect(first.getByTestId('seller-story')).toHaveCount(0); await expect(first.getByTestId('seller-say')).toBeVisible();
-  await page.getByTestId('seller-fold-all').click(); await page.getByTestId('seller-fold-all').click();
-  expect(await page.getByTestId('seller-story').count()).toBeGreaterThan(8);
+  await expect(first.getByTestId('seller-story')).toHaveCount(0); await expect(first.getByTestId('seller-say')).toBeVisible(); await expect(first.getByTestId('seller-prices')).toBeVisible();
+  await page.getByTestId('seller-all-summary').click(); await expect(page.getByTestId('seller-story')).toHaveCount(0);
+  await page.getByTestId('seller-all-full').click(); expect(await page.getByTestId('seller-story').count()).toBeGreaterThan(8);
+  // The tab says how many bottles are on it.
+  await expect(page.getByTestId('seller-tab-shortlist')).toContainText(`(${r.says.length})`);
   await first.getByTestId('seller-bottle-name').click(); await expect(page.getByTestId('seller-card')).toBeVisible();
 });
