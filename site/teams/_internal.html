@@ -48,16 +48,17 @@ body.in { background: var(--dark); color: #fff; }
   <p class="in-foot">Counted from each demo on %%STATS_AT%% (<code>npm run site:teams:stats</code>). Quiz questions are everything a team can be asked: about each wine, dish and cocktail. Teams and sales figures in the demos are invented. This page is kept out of search and isn't linked from the site.</p>
 </main>
 <script>
-// A greeting for whoever is likely reading: from Canada it's Martin, by Toronto's clock; from the UK it's Carey, by
-// London's. The country is Cloudflare's reading of the visitor's address (/api/country); anywhere else, or if it can't
-// be read, the heading stays as it is.
+// A greeting for whoever signed in (the Worker writes data-user on the body): Martin by Toronto's clock, Carey by
+// London's. Where nobody signed in (a local copy of the page), it goes by the visitor's country instead, Canada for
+// Martin and the UK for Carey; anyone else, and the heading stays as it is.
 (function () {
-  var WHO = { CA: ['Martin', 'America/Toronto'], GB: ['Carey', 'Europe/London'] }, el = document.getElementById('in-hi');
-  fetch('/api/country').then(function (r) { return r.json(); }).then(function (j) {
-    var w = WHO[j && j.country]; if (!w || !el) return;
+  var BY_USER = { martin: ['Martin', 'America/Toronto'], carey: ['Carey', 'Europe/London'] }, BY_COUNTRY = { CA: BY_USER.martin, GB: BY_USER.carey }, el = document.getElementById('in-hi');
+  function greet(w) { if (!w || !el) return;
     var h = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: w[1] }).format(new Date());
-    el.textContent = 'Good ' + (h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening') + ', ' + w[0]; el.setAttribute('data-who', w[0]);
-  }).catch(function () {});
+    el.textContent = 'Good ' + (h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening') + ', ' + w[0]; el.setAttribute('data-who', w[0]); }
+  var user = document.body.getAttribute('data-user');
+  if (user) return greet(BY_USER[user]);
+  fetch('/api/country').then(function (r) { return r.json(); }).then(function (j) { greet(BY_COUNTRY[j && j.country]); }).catch(function () {});
 })();
 </script>
 </body>

@@ -5,6 +5,7 @@
 //   GET  /api/country  the visitor's country as Cloudflare sees it, to pre-select the country box
 //
 // Set in Cloudflare Pages -> vinterest-teams -> Settings -> Variables and secrets (Production and Preview):
+//   INTERNAL_USERS        (secret) who may open the internal page: {"username": "password", ...}. Unset, the page is a 404.
 //   SUPABASE_URL          https://<project-ref>.supabase.co   (the same project as the app)
 //   SUPABASE_SECRET_KEY   (secret) the server key. It never reaches the browser.
 // Optional, for the emails (sent after a request is saved; a failure never fails the request):
@@ -153,9 +154,48 @@ export async function handlePilot(request, env, ctx) {
   return json({ ok: true });
 }
 
+/* The internal page (site/teams/_internal.html: every restaurant, its pages and what its demo holds) is for Vinterest's
+   own team, behind a username and password: HTTP Basic sign-in against the INTERNAL_USERS secret, a JSON object of
+   {"username": "password"} set in Cloudflare (Production and Preview), never in this repository. With no secret set the
+   page is a 404, so it is never open by accident. It lives at internal.vinterest.team (a custom domain on this
+   project, whose root is the page); vinterest.team/internal sends people there, and a preview serves it at /internal.
+   The page is told who signed in (data-user on its body) so it can greet them by name. */
+const INTERNAL_HOST = "internal.vinterest.team";
+const INTERNAL_FILES = /^\/(site\.css$|site\.js$|logo\.png$|favicon|fonts\/|img\/|api\/)/;
+function internalUsers(env) { try { const j = JSON.parse(env.INTERNAL_USERS || ""); return j && typeof j === "object" && !Array.isArray(j) && Object.keys(j).length ? j : null; } catch (e) { return null; } }
+function sameText(a, b) { a = String(a); b = String(b); let d = a.length ^ b.length; for (let i = 0; i < b.length; i++) d |= (a.charCodeAt(i % (a.length || 1)) || 0) ^ b.charCodeAt(i); return d === 0; }
+export function internalUser(request, users) {
+  const m = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(request.headers.get("authorization") || ""); if (!m) return null;
+  let text = ""; try { text = new TextDecoder().decode(Uint8Array.from(atob(m[1]), (c) => c.charCodeAt(0))); } catch (e) { return null; }
+  const at = text.indexOf(":"); if (at < 1) return null;
+  const name = text.slice(0, at).trim().toLowerCase(), pass = text.slice(at + 1);
+  // Every stored password is compared, so a wrong name takes as long as a wrong password.
+  let who = null; for (const [u, p] of Object.entries(users)) if (sameText(pass, p) && u.toLowerCase() === name) who = u.toLowerCase();
+  return who;
+}
+async function serveInternal(request, env, url) {
+  const users = internalUsers(env);
+  if (!users) return new Response("Not found", { status: 404 });
+  const who = internalUser(request, users);
+  if (!who) return new Response("Sign in to see this page.", { status: 401, headers: { "www-authenticate": 'Basic realm="Vinterest Teams internal", charset="UTF-8"', "cache-control": "no-store", "x-robots-tag": "noindex, nofollow" } });
+  const res = await env.ASSETS.fetch(new Request(new URL("/internal", url.origin), { headers: { accept: "text/html" } }));
+  const html = (await res.text()).replace('<body class="in dark">', `<body class="in dark" data-user="${who.replace(/[^a-z0-9_-]/g, "")}">`);
+  return new Response(html, { status: res.status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow", "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    {
+      const inPath = /^\/internal(\.html|\/)?$/.test(url.pathname), home = url.pathname === "/" || url.pathname === "/index.html";
+      if (url.hostname === INTERNAL_HOST) {
+        if (home || inPath) return home ? serveInternal(request, env, url) : Response.redirect(`https://${INTERNAL_HOST}/`, 302);
+        // Only the page's own files are served here; any other page of the site is on vinterest.team.
+        if (!INTERNAL_FILES.test(url.pathname)) return Response.redirect(`https://vinterest.team${url.pathname}${url.search}`, 302);
+      } else if (inPath) {
+        return url.hostname === "vinterest.team" ? Response.redirect(`https://${INTERNAL_HOST}/`, 302) : serveInternal(request, env, url);
+      }
+    }
     if (url.hostname === "www.vinterest.team") return Response.redirect(`https://vinterest.team${url.pathname}${url.search}`, 301);
     if (url.pathname === "/api/pilot") return handlePilot(request, env, ctx);
     if (url.pathname === "/api/country") {

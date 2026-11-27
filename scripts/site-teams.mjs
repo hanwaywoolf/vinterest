@@ -186,7 +186,8 @@ export async function build() {
   }
   // The internal page (/internal): every restaurant with its marketing page, demo and latest preview, and what its demo
   // holds (site/teams/internal.json, counted in the app by scripts/site-teams-stats.mjs). For Vinterest's own team:
-  // kept out of search like the private pages, and linked from nowhere.
+  // behind a username and password (the site Worker's INTERNAL_USERS secret) at internal.vinterest.team, kept out of
+  // search like the private pages, and linked from nowhere.
   const inFile = path.join(SRC, '_internal.html'), statFile = path.join(SRC, 'internal.json');
   if (fs.existsSync(inFile) && fs.existsSync(statFile)) {
     const stats = JSON.parse(fs.readFileSync(statFile, 'utf8')), esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');

@@ -629,3 +629,35 @@ test('the internal page lists every restaurant with its links and counts, and st
   expect(fs.readFileSync(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /internal');
   expect(fs.readFileSync(path.join(dist, 'index.html'), 'utf8')).not.toContain('/internal');
 });
+
+// The internal page sits behind a username and password (the INTERNAL_USERS secret), at internal.vinterest.team.
+test('the internal page asks for a username and password, and is closed until they are set', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const copy = path.join(os.tmpdir(), `worker-teams-internal-${process.pid}.mjs`);
+  fs.copyFileSync(path.join(__dirname, '..', 'site', 'teams', '_worker.js'), copy);
+  const worker = (await import(require('node:url').pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
+  const asked = [], ASSETS = { fetch: async (r) => { asked.push(new URL(r.url).pathname); return new Response('<html><body class="in dark"><h1>Every restaurant</h1></body></html>', { headers: { 'content-type': 'text/html' } }); } };
+  const users = JSON.stringify({ ada: 'correct horse', Grace: 'p:w,d"1' }), env = { ASSETS, INTERNAL_USERS: users };
+  const basic = (u, p) => ({ authorization: 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') });
+  const get = (url, headers = {}, e = env) => worker.fetch(new Request(url, { headers }), e, { waitUntil() {} });
+  // No secret: there is no page at all.
+  expect((await get('https://internal.vinterest.team/', basic('ada', 'correct horse'), { ASSETS })).status).toBe(404);
+  // No sign-in, a wrong password, a wrong name: asked to sign in, and the page is never fetched.
+  for (const h of [{}, basic('ada', 'wrong'), basic('nobody', 'correct horse'), basic('ada', ''), { authorization: 'Bearer x' }]) {
+    const r = await get('https://internal.vinterest.team/', h); expect(r.status).toBe(401); expect(r.headers.get('www-authenticate')).toContain('Basic'); expect(await r.text()).not.toContain('Every restaurant'); }
+  expect(asked).toEqual([]);
+  // The right ones: the page, told who it is (names don't mind capitals; a password may hold a colon).
+  const ok = await get('https://internal.vinterest.team/', basic('Ada', 'correct horse')); expect(ok.status).toBe(200);
+  expect(await ok.text()).toContain('data-user="ada"'); expect(ok.headers.get('cache-control')).toContain('no-store'); expect(ok.headers.get('x-robots-tag')).toContain('noindex');
+  expect(await (await get('https://internal.vinterest.team/', basic('grace', 'p:w,d"1'))).text()).toContain('data-user="grace"');
+  expect(asked).toEqual(['/internal', '/internal']);
+  // vinterest.team/internal sends people to its own address; a preview serves it in place, behind the same sign-in.
+  const moved = await get('https://vinterest.team/internal'); expect(moved.status).toBe(302); expect(moved.headers.get('location')).toBe('https://internal.vinterest.team/');
+  expect((await get('https://x.vinterest-teams.pages.dev/internal')).status).toBe(401);
+  expect((await get('https://x.vinterest-teams.pages.dev/internal', basic('ada', 'correct horse'))).status).toBe(200);
+  // Its address serves only the page and its files; the rest of the site stays on vinterest.team.
+  const other = await get('https://internal.vinterest.team/pricing'); expect(other.status).toBe(302); expect(other.headers.get('location')).toBe('https://vinterest.team/pricing');
+  expect((await get('https://internal.vinterest.team/site.css?v=1')).status).toBe(200);
+  // No password is written anywhere in the repository's site files.
+  expect(fs.readFileSync(path.join(__dirname, '..', 'site', 'teams', '_worker.js'), 'utf8')).not.toMatch(/INTERNAL_USERS\s*=\s*["'{]/);
+});
