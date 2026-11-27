@@ -38,6 +38,14 @@ function _SWineChip({f,onClick}){ const T=useTheme(); return <span role="button"
 function _SPill({on,onClick,children,testid}){ const T=useTheme(), acc=_sAcc(); return <span role="button" data-pill data-testid={testid} aria-pressed={on} onClick={onClick} style={{..._sCaps,padding:'6px 11px',border:`1px solid ${on?acc:'rgba(255,255,255,0.22)'}`,background:on?acc:'transparent',color:on?inkOn(acc):T.ink,cursor:'pointer',whiteSpace:'nowrap'}}>{children}</span>; }
 function _SLogo({height=30}){ const b=(TeamData.get().venue||{}).brand, [bad,setBad]=React.useState(false); const name=(TeamData.get().venue||{}).name||'';
   return b&&b.logo&&!bad?<img src={'/team/'+b.logo} alt={name} onError={()=>setBad(true)} style={{height,maxWidth:180,objectFit:'contain',display:'block'}}/>:<span style={{fontSize:20,fontWeight:500,fontFamily:C.P}}>{name}</span>; }
+/* Vinterest Seller's logo, made the way Teams' is (TeamLogo in team-console.jsx, whose measurements of logo.png it
+   shares): the Vinterest mark cropped to its drawing, with SELLER spread under it from the V's point to the foot of
+   the final T, in Seller's gold. `size` is the mark's height. */
+function SellerLogo({size=20}){ const T=useTheme(), imgH=size/(_LOGO.b-_LOGO.t), imgW=imgH*_LOGO.ar, w=imgW*(_LOGO.r-_LOGO.l);
+  return <div data-testid="seller-logo" role="img" aria-label="Vinterest Seller" style={{display:'inline-block',width:w,flexShrink:0}}>
+    <div style={{width:w,height:size,overflow:'hidden',position:'relative'}}><img src="/logo.png" alt="" style={{position:'absolute',left:-imgW*_LOGO.l,top:-imgH*_LOGO.t,width:imgW,height:imgH,maxWidth:'none',display:'block',filter:T.dark?'invert(1)':'none'}} onError={e=>{ e.target.style.display='none'; }}/></div>
+    <div aria-hidden="true" style={{marginLeft:w*_LOGO.wordL,width:w*(_LOGO.wordR-_LOGO.wordL),display:'flex',justifyContent:'space-between',fontSize:Math.round(size*0.55)+'px',fontWeight:700,color:_sAcc(),fontFamily:C.P,lineHeight:1,marginTop:4}}>{'SELLER'.split('').map((ch,i)=><span key={i}>{ch}</span>)}</div>
+  </div>; }
 const _sSweet=f=>['sweet','fortified'].includes(f.shape.kind);
 
 /* What it costs them and what it sells for: the bottle and the glass on their list, each with the multiple. */
@@ -75,8 +83,7 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
   return <div ref={ref} data-testid="seller-brief">
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:20,marginBottom:22}}>
       <div style={{minWidth:0}}>
-        <div style={{fontSize:15,fontFamily:C.P}}><span style={{color:acc,fontWeight:500}}>Visit brief</span><span style={{color:T.mid}}> · {B.venue.name}, {B.venue.city}</span></div>
-        <div data-testid="seller-fact" style={{fontSize:two?38:28,lineHeight:1.15,fontWeight:300,letterSpacing:'-0.015em',fontFamily:C.P,marginTop:6}}>{B.venue.name}'s list leaves <span style={{fontWeight:500,color:acc}}>{can.length} openings</span> this catalogue can answer.</div>
+        <div data-testid="seller-fact" style={{fontSize:two?38:28,lineHeight:1.15,fontWeight:300,letterSpacing:'-0.015em',fontFamily:C.P}}>{B.venue.name}'s list leaves <span style={{fontWeight:500,color:acc}}>{can.length} openings</span> this catalogue can answer.</div>
         <div style={{display:'flex',gap:'6px 26px',flexWrap:'wrap',marginTop:10}}>{[`${lead.length} bottle${lead.length===1?'':'s'} to lead with`,`${B.ours.length} of ours already on their list`,`${B.ruled} of ${B.catalogue} listings ruled out before the meeting`].map((t,i)=><div key={i} style={{display:'flex',alignItems:'center',gap:8}}><span style={{width:6,height:6,background:acc}}/><span style={{fontSize:15,fontWeight:300,color:T.ink2,fontFamily:C.P}}>{t}</span></div>)}</div>
       </div>
       {two&&<div data-testid="seller-prospect" style={{flexShrink:0,paddingTop:6}}><_SLogo height={30}/></div>}
@@ -291,4 +298,4 @@ function SellerSheet({B}){ const T=useTheme(), acc=_sAcc(), ref=React.useRef(nul
       <div style={{fontSize:'9px',color:mid,marginTop:12,lineHeight:1.5}}>Fit is the reasons added up, not a forecast: green is the strongest fit, red the weakest. List prices and style are estimates; costs, pack sizes and stock are from the {B.agency.short} catalogue of {B.agency.fetched}.</div>
     </div></div>
   </div>; }
-Object.assign(window,{SellerBrief,SellerShortlist,SellerCatalogueTab,SellerSheet,SellerWineCard,_S_FLAT,_sFit});
+Object.assign(window,{SellerLogo,SellerBrief,SellerShortlist,SellerCatalogueTab,SellerSheet,SellerWineCard,_S_FLAT,_sFit});

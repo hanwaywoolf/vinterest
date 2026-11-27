@@ -13,6 +13,11 @@ async function open(page, vp) {
 
 test('the brief opens on Eloise with openings, a shortlist and no errors', async ({ page }) => {
   const errors = await open(page, { width: 1440, height: 900 });
+  // Seller's own logo top left (the Vinterest mark with SELLER under it), then whose visit this is.
+  await expect(page.getByTestId('seller-logo')).toHaveAttribute('aria-label', 'Vinterest Seller'); await expect(page.getByTestId('seller-logo')).toContainText('SELLER');
+  const box = (id) => page.getByTestId(id).boundingBox(), logo = await box('seller-logo'), agency = await box('seller-agency');
+  expect(logo.x).toBeLessThan(60); expect(agency.x).toBeGreaterThan(1000);
+  await expect(page.getByTestId('seller-venue')).toContainText('Visit brief'); await expect(page.getByTestId('seller-venue')).toContainText('Eloise');
   // The agency's own logo sits top right.
   await expect(page.getByTestId('seller-agency')).toHaveAttribute('aria-label', /Authentic Wines & Spirits/);
   expect(await page.getByTestId('seller-agency').locator('img').evaluate((el) => el.complete && el.naturalWidth > 0)).toBe(true);
