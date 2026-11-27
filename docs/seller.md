@@ -16,8 +16,12 @@ Toronto, the Teams install) and one agency (Authentic Wines & Spirits, Ontario).
   where each bottle would land at the restaurant's own multiple, the dishes it suits by the restaurant's own
   pairings, a fit score made of counted reasons, a shortlist spread over houses and openings, and a pitch for
   each bottle (where it goes, better together, lines from the sheet, objections, the case's sums).
-- **The screens** (`seller-screens.jsx`): Brief, Shortlist, Catalogue (every listing with why it fits or
-  can't go on this list) and a printable Cheat sheet.
+- **The words** (also `SellerMatch`, still no call): one thing to say to the buyer, a pitch in the order a rep
+  would give it (the wine, why its kind sells, the dish to lead with, the price with their multiple), every
+  dish it suits with a reason a rep can say out loud, and what a buyer says back, per kind of wine.
+- **The screens** (`seller-screens.jsx`): Brief (openings filtered by kind), Shortlist, Catalogue and a
+  printable Cheat sheet. Any bottle opens its wine card: picture, product sheet, taste profile, how to talk
+  about it, and its fit and pitch at this restaurant.
 
 ## How the catalogue was read
 
@@ -36,6 +40,16 @@ every reason with what it rests on (their list, the product sheet, our estimate)
 The listing-type labels in `scripts/seller-catalogue.mjs` (`LISTING`: Core, Vint, CONS and so on) are read
 from the abbreviations and need checking with the agency. Prices look like LCBO shelf prices
 (`price_type: price_retail`); what a licensee pays, and consignment terms, are the agency's to supply.
+
+## Where the words come from
+
+Nothing is written by Claude at run time yet. A pitch is assembled from four sources, and each line on screen
+is marked with which: the restaurant's own list and menu; the agency's product sheet; Vinterest's checked
+grape and region notes (`data/knowledge.json`); and estimates (style figures, flavour words where the sheet
+has no tasting note, and where a bottle lands on the list). The selling lines and objections per kind of wine
+(`SellerMatch.ANGLES`) are fixed text written once: they are trade knowledge and want the agency's review.
+
+Pictures are loaded from the agency platform's own image host; 84 of 110 listings have one.
 
 ## The fit score
 

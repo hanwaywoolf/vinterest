@@ -213,6 +213,8 @@ async function buildSeller(version, vendor) {
   const html = read('seller/index.html');
   if (!html.includes('seller.js')) throw new Error('seller/index.html: no seller.js script tag');
   fs.writeFileSync(path.join(dir, 'index.html'), html.replace(/seller\.js(\?v=[^"]*)?/, `seller.js?v=${hash}`));
+  // The agency's logo (seller/brand/), beside the page.
+  if (fs.existsSync(path.join(ROOT, 'seller/brand'))) fs.cpSync(path.join(ROOT, 'seller/brand'), path.join(dir, 'brand'), { recursive: true });
   return js;
 }
 
