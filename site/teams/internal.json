@@ -1,0 +1,126 @@
+{
+ "at": "2026-11-27",
+ "venues": {
+  "demo": {
+   "name": "The Larkspur",
+   "currency": "GBP",
+   "wines": 30,
+   "glass": 15,
+   "cards": 30,
+   "otherDrinks": 0,
+   "dishes": 27,
+   "paired": 27,
+   "cocktails": 0,
+   "questions": 334,
+   "wineQuestions": 224,
+   "dishQuestions": 110,
+   "cocktailQuestions": 0,
+   "held": 0,
+   "team": 7,
+   "roles": {
+    "Manager": 1,
+    "Sommelier": 1,
+    "Buyer": 1,
+    "Bartender": 1,
+    "Server": 3
+   },
+   "console": "preview"
+  },
+  "social": {
+   "name": "The Social Corner",
+   "currency": "CAD",
+   "wines": 41,
+   "glass": 23,
+   "cards": 41,
+   "otherDrinks": 0,
+   "dishes": 62,
+   "paired": 62,
+   "cocktails": 20,
+   "questions": 645,
+   "wineQuestions": 306,
+   "dishQuestions": 248,
+   "cocktailQuestions": 91,
+   "held": 140,
+   "team": 7,
+   "roles": {
+    "Manager": 1,
+    "Sommelier": 1,
+    "Bartender": 1,
+    "Server": 4
+   },
+   "console": "preview"
+  },
+  "eloise": {
+   "name": "Eloise",
+   "currency": "CAD",
+   "wines": 76,
+   "glass": 12,
+   "cards": 76,
+   "otherDrinks": 0,
+   "dishes": 17,
+   "paired": 17,
+   "cocktails": 10,
+   "questions": 709,
+   "wineQuestions": 581,
+   "dishQuestions": 84,
+   "cocktailQuestions": 44,
+   "held": 140,
+   "team": 7,
+   "roles": {
+    "Manager": 1,
+    "Sommelier": 1,
+    "Bartender": 1,
+    "Server": 4
+   },
+   "console": "preview"
+  },
+  "princess-royal": {
+   "name": "The Princess Royal",
+   "currency": "GBP",
+   "wines": 132,
+   "glass": 38,
+   "cards": 132,
+   "otherDrinks": 0,
+   "dishes": 55,
+   "paired": 55,
+   "cocktails": 25,
+   "questions": 1343,
+   "wineQuestions": 1008,
+   "dishQuestions": 224,
+   "cocktailQuestions": 111,
+   "held": 188,
+   "team": 7,
+   "roles": {
+    "Manager": 1,
+    "Sommelier": 1,
+    "Bartender": 1,
+    "Server": 4
+   },
+   "console": "preview"
+  },
+  "barbary": {
+   "name": "The Barbary",
+   "currency": "GBP",
+   "wines": 314,
+   "glass": 43,
+   "cards": 314,
+   "otherDrinks": 0,
+   "dishes": 32,
+   "paired": 32,
+   "cocktails": 0,
+   "questions": 999,
+   "wineQuestions": 927,
+   "dishQuestions": 72,
+   "cocktailQuestions": 0,
+   "held": 0,
+   "team": 7,
+   "roles": {
+    "Manager": 1,
+    "Sommelier": 1,
+    "Bartender": 1,
+    "Server": 4
+   },
+   "console": "preview"
+  }
+ }
+}

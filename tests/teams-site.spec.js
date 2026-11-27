@@ -594,3 +594,70 @@ test('the pricing page shows each plan in the currency picked', async ({ browser
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   await page.close();
 });
+
+// The internal page: every restaurant with its marketing page, demo and latest preview, and what its demo holds.
+test('the internal page lists every restaurant with its links and counts, and stays out of search', async ({ page }) => {
+  await page.goto(`${BASE}/internal`);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  const venues = page.locator('[data-venue]');
+  await expect(venues).toHaveCount(5);
+  const social = page.locator('[data-venue="social"]');
+  await expect(social).toContainText('The Social Corner'); await expect(social).toContainText('Quiz questions'); await expect(social).toContainText('by the glass');
+  const hrefs = await social.locator('a.btn').evaluateAll((as) => as.map((a) => a.getAttribute('href')));
+  // Their address lands on the page written for them; the demo is at /demo/; each has its preview beside it.
+  expect(hrefs).toEqual(['https://socialcorner.vinterest.team/', 'https://claude-teams-site.vinterest-teams.pages.dev/for/social-corner',
+    'https://socialcorner.vinterest.team/demo/?view=console', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=console',
+    'https://socialcorner.vinterest.team/demo/?view=phone', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=phone']);
+  // The counts are the app's own (site/teams/internal.json), and the totals add up.
+  const stats = require('../site/teams/internal.json').venues, total = Object.values(stats).reduce((a, v) => a + v.wines, 0);
+  await expect(page.locator('.in-sum')).toContainText(total.toLocaleString('en-GB'));
+  await expect(page.locator('[data-venue="eloise"]')).toContainText(String(stats.eloise.questions));
+  // The Barbary has its own address too.
+  expect(await page.locator('[data-venue="barbary"] a.btn').first().getAttribute('href')).toBe('https://barbary.vinterest.team/');
+  // A greeting by where the visitor is: Martin from Canada by Toronto's clock, Carey from the UK by London's, else none.
+  const hi = async (country, at) => { const p = await page.context().newPage(); await p.clock.install({ time: new Date(at) });
+    await p.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ country }) })); await p.goto(`${BASE}/internal`);
+    await p.waitForTimeout(400); const t = await p.locator('#in-hi').innerText(); await p.close(); return t.toLowerCase(); };
+  expect(await hi('CA', '2026-07-01T13:30:00Z')).toBe('good morning, martin');   // 09:30 in Toronto
+  expect(await hi('CA', '2026-07-01T23:30:00Z')).toBe('good evening, martin');   // 19:30 in Toronto
+  expect(await hi('GB', '2026-07-01T13:30:00Z')).toBe('good afternoon, carey');  // 14:30 in London, summer time
+  expect(await hi('GB', '2026-12-01T11:30:00Z')).toBe('good morning, carey');    // 11:30 in London, winter
+  expect(await hi('FR', '2026-07-01T13:30:00Z')).toBe('restaurants and demos');
+  // Nothing on the public pages links to it, and the sitemap leaves it out.
+  const fs = require('node:fs'), path = require('node:path'), dist = path.join(__dirname, '..', 'site-teams-dist');
+  expect(fs.readFileSync(path.join(dist, 'sitemap.xml'), 'utf8')).not.toContain('internal');
+  expect(fs.readFileSync(path.join(dist, 'robots.txt'), 'utf8')).toContain('Disallow: /internal');
+  expect(fs.readFileSync(path.join(dist, 'index.html'), 'utf8')).not.toContain('/internal');
+});
+
+// The internal page sits behind a username and password (the INTERNAL_USERS secret), at internal.vinterest.team.
+test('the internal page asks for a username and password, and is closed until they are set', async () => {
+  const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+  const copy = path.join(os.tmpdir(), `worker-teams-internal-${process.pid}.mjs`);
+  fs.copyFileSync(path.join(__dirname, '..', 'site', 'teams', '_worker.js'), copy);
+  const worker = (await import(require('node:url').pathToFileURL(copy).href + `?t=${Date.now()}`)).default;
+  const asked = [], ASSETS = { fetch: async (r) => { asked.push(new URL(r.url).pathname); return new Response('<html><body class="in dark"><h1>Every restaurant</h1></body></html>', { headers: { 'content-type': 'text/html' } }); } };
+  const users = JSON.stringify({ ada: 'correct horse', Grace: 'p:w,d"1' }), env = { ASSETS, INTERNAL_USERS: users };
+  const basic = (u, p) => ({ authorization: 'Basic ' + Buffer.from(`${u}:${p}`).toString('base64') });
+  const get = (url, headers = {}, e = env) => worker.fetch(new Request(url, { headers }), e, { waitUntil() {} });
+  // No secret: there is no page at all.
+  expect((await get('https://internal.vinterest.team/', basic('ada', 'correct horse'), { ASSETS })).status).toBe(404);
+  // No sign-in, a wrong password, a wrong name: asked to sign in, and the page is never fetched.
+  for (const h of [{}, basic('ada', 'wrong'), basic('nobody', 'correct horse'), basic('ada', ''), { authorization: 'Bearer x' }]) {
+    const r = await get('https://internal.vinterest.team/', h); expect(r.status).toBe(401); expect(r.headers.get('www-authenticate')).toContain('Basic'); expect(await r.text()).not.toContain('Every restaurant'); }
+  expect(asked).toEqual([]);
+  // The right ones: the page, told who it is (names don't mind capitals; a password may hold a colon).
+  const ok = await get('https://internal.vinterest.team/', basic('Ada', 'correct horse')); expect(ok.status).toBe(200);
+  expect(await ok.text()).toContain('data-user="ada"'); expect(ok.headers.get('cache-control')).toContain('no-store'); expect(ok.headers.get('x-robots-tag')).toContain('noindex');
+  expect(await (await get('https://internal.vinterest.team/', basic('grace', 'p:w,d"1'))).text()).toContain('data-user="grace"');
+  expect(asked).toEqual(['/internal', '/internal']);
+  // vinterest.team/internal sends people to its own address; a preview serves it in place, behind the same sign-in.
+  const moved = await get('https://vinterest.team/internal'); expect(moved.status).toBe(302); expect(moved.headers.get('location')).toBe('https://internal.vinterest.team/');
+  expect((await get('https://x.vinterest-teams.pages.dev/internal')).status).toBe(401);
+  expect((await get('https://x.vinterest-teams.pages.dev/internal', basic('ada', 'correct horse'))).status).toBe(200);
+  // Its address serves only the page and its files; the rest of the site stays on vinterest.team.
+  const other = await get('https://internal.vinterest.team/pricing'); expect(other.status).toBe(302); expect(other.headers.get('location')).toBe('https://vinterest.team/pricing');
+  expect((await get('https://internal.vinterest.team/site.css?v=1')).status).toBe(200);
+  // No password is written anywhere in the repository's site files.
+  expect(fs.readFileSync(path.join(__dirname, '..', 'site', 'teams', '_worker.js'), 'utf8')).not.toMatch(/INTERNAL_USERS\s*=\s*["'{]/);
+});

@@ -249,7 +249,7 @@ function TeamGuest({pid,back,open}){ const T=useTheme(), cr=T.lift(C.cr);
     </div></div>
     :mark?<div style={{borderTop:`1px solid ${T.line}`,background:T.bg,padding:'10px 16px calc(env(safe-area-inset-bottom) + 10px)',flexShrink:0}}><div style={{maxWidth:720,margin:'0 auto',display:'flex',gap:8}}><Btn primary style={{flex:1}} onClick={again}>Another table</Btn><Btn style={{flex:1}} onClick={back}>Done</Btn></div></div>
     :null;
-  return <div data-testid="team-guest" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha(cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
+  return <div data-testid="team-guest" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:T.bg,color:T.ink}}>
     {bar}
     <div style={{flex:1,overflowY:'auto',padding:'14px 16px 20px'}}><div style={{maxWidth:720,margin:'0 auto'}}>
     {sc.why&&sc.why.length>0&&<div data-testid="guest-why" style={{fontSize:14,color:T.mid,fontFamily:C.P,lineHeight:1.45,margin:'0 0 12px'}}>Picked for you: {sc.why.join(', and ')}.</div>}
