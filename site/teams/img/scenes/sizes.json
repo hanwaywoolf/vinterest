@@ -32,9 +32,9 @@
  "sales": 2399,
  "team": 1994,
  "training": 2284,
- "wines": 5175,
+ "wines": 5176,
  "menu": 3237,
- "cardAt": 0.455,
+ "cardAt": 0.4549,
  "cardTap": {
   "x": 179,
   "y": 415
@@ -52,9 +52,9 @@
  "dish": 1105,
  "mgrW": 820,
  "mgrNav": 0,
- "mgr": 3101,
+ "mgr": 3080,
  "plan": [
   921,
-  814
+  795
  ]
 }
