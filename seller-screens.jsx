@@ -54,14 +54,15 @@ function _SPrices({f,cols}){ const i=f.item, L=f.landing, m=SellerMatch.maths(f)
 function _SPitch({f,open}){ const T=useTheme(), acc=_sAcc(), P=f.pitch, M=n=>TeamData.money(Math.round(n)), line={fontSize:14,fontFamily:C.P,color:T.ink2,lineHeight:1.6};
   const sec=(label,body,right)=><div style={{marginTop:18}}><div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline',marginBottom:8}}><div style={{..._sCaps,color:T.mid}}>{label}</div>{right}</div>{body}</div>;
   return <div>
-    {sec('The pitch',<div>{P.story.map((s,k)=><div key={k} data-testid="seller-story" style={{display:'grid',gridTemplateColumns:'minmax(0,118px) minmax(0,1fr)',gap:'4px 14px',padding:'9px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
+    {!P.written&&<div data-testid="seller-unwritten" style={{...line,marginTop:16,color:T.mid}}>No pitch has been written for this bottle yet. Its figures, the dishes it suits and how it scores are below.</div>}
+    {P.story.length>0&&sec('The pitch',<div>{P.story.map((s,k)=><div key={k} data-testid="seller-story" style={{display:'grid',gridTemplateColumns:'minmax(0,118px) minmax(0,1fr)',gap:'4px 14px',padding:'9px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <div><div style={{fontSize:14,fontWeight:500,fontFamily:C.P,color:T.ink}}>{s.h}</div><div style={{marginTop:3}}><_SBasis b={s.basis}/></div></div><div style={line}>{s.t}</div></div>)}</div>)}
     {P.pairings.length>0&&sec(`Dish by dish · ${P.pairings.length} on their menu`,<div>{P.pairings.map((x,k)=><div key={x.dish.id} data-testid="seller-pairing" style={{padding:'10px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:10,alignItems:'baseline',flexWrap:'wrap'}}><span style={{fontSize:15,fontWeight:500,fontFamily:C.P}}>{x.dish.name}{x.dish.price&&<span style={{color:T.mid,fontWeight:400}}> · {x.dish.price}</span>}</span>{x.like&&<span style={{fontSize:13,fontFamily:C.P,color:T.mid}}>beside {TeamData.nick(x.like)}{x.likePrice?` (${M(x.likePrice)})`:''}</span>}</div>
       {x.dish.desc&&<div style={{fontSize:13,fontFamily:C.P,color:T.mid,marginTop:2}}>{x.dish.desc}</div>}
-      <div style={{...line,color:T.ink,marginTop:5}}>{x.why}</div>
+      {x.why&&<div style={{...line,color:T.ink,marginTop:5}}>{x.why}</div>}
     </div>)}</div>,<_SBasis b="estimate"/>)}
-    {sec('Why it scores',<div>{f.reasons.map((r,k)=><div key={k} data-testid="seller-reason" style={{display:'flex',gap:'2px 10px',flexWrap:'wrap',alignItems:'baseline',padding:'6px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
+    {sec('How it scores',<div>{f.reasons.map((r,k)=><div key={k} data-testid="seller-reason" style={{display:'flex',gap:'2px 10px',flexWrap:'wrap',alignItems:'baseline',padding:'6px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}>
       <span style={{width:34,flexShrink:0,textAlign:'right',fontSize:14,fontFamily:C.P,fontWeight:500,color:r.pts>0?'#6FD79C':'#F58B7C'}}>{r.pts>0?'+':'−'}{Math.abs(r.pts)}</span>
       <span style={{flex:'1 1 220px',minWidth:0,...line,color:T.ink}}>{r.text}</span><span style={{marginLeft:44}}><_SBasis b={r.basis}/></span></div>)}</div>)}
     {P.objections.length>0&&sec('If they push back',<div>{P.objections.map((o,k)=><div key={k} data-testid="seller-objection" style={{padding:'9px 0',borderTop:k?`1px solid ${_sLine}`:'none'}}><div style={{...line,color:T.ink,fontWeight:500}}>{o.q}</div><div style={{...line,marginTop:2}}>{o.a}</div></div>)}</div>)}
@@ -92,7 +93,7 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
           {B.shortlist.slice(0,3).map((f,i)=><div key={f.item.id} role="button" onClick={()=>go('shortlist',f.item.id)} style={{display:'flex',gap:14,alignItems:'flex-start',padding:'12px 0',borderTop:i?`1px solid ${_sLine}`:'none',cursor:'pointer'}}>
             <_SScore f={f} small/>
             <div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:500,fontFamily:C.P}}>{_sName(f.item)}</div>
-              <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,marginTop:3,lineHeight:1.5}}>{f.pitch.say}</div></div>
+              <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,marginTop:3,lineHeight:1.5}}>{f.pitch.say||f.fills.map(o=>o.title).join('; ')}</div></div>
           </div>)}
         </_SCard>
         <div style={{display:'flex',flexDirection:'column',gap:16,minWidth:0}}>
@@ -152,7 +153,7 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
    reasons and the objections. The switch says which it is showing and what the other holds. */
 function SellerBottle({f,focus,shut,toggle,open}){ const T=useTheme(), acc=_sAcc(), i=f.item, P=f.pitch, ref=React.useRef(null), [r2,w]=_c2Width(), cols=w>=820?4:w>=480?2:1;
   React.useEffect(()=>{ if(focus&&ref.current&&ref.current.scrollIntoView) ref.current.scrollIntoView({block:'start'}); },[focus]);
-  const holds=[`the pitch`,P.pairings.length?`${P.pairings.length} dish${P.pairings.length===1?'':'es'}`:null,`${f.reasons.length} reasons`,P.objections.length?`${P.objections.length} objection${P.objections.length===1?'':'s'}`:null].filter(Boolean).join(' · ');
+  const holds=[P.story.length?`the pitch`:null,P.pairings.length?`${P.pairings.length} dish${P.pairings.length===1?'':'es'}`:null,`${f.reasons.length} reasons`,P.objections.length?`${P.objections.length} objection${P.objections.length===1?'':'s'}`:null].filter(Boolean).join(' · ');
   const seg=(on,label,tid)=><span role="button" data-pill data-testid={tid} aria-pressed={on} onClick={()=>{ if(!on) toggle(); }} style={{..._sCaps,fontSize:'11px',padding:'6px 10px',background:on?acc:'transparent',color:on?inkOn(acc):T.ink2,cursor:on?'default':'pointer',whiteSpace:'nowrap'}}>{label}</span>;
   return <div ref={ref} data-testid="seller-bottle" data-id={i.id} data-view={shut?'summary':'full'} style={{border:`1px solid ${focus?_alpha(acc,0.5):_sLine}`,background:'rgba(255,255,255,0.025)',padding:'20px 22px',..._sRule(T,i.type)}}><div ref={r2}>
     <div style={{display:'flex',gap:16,alignItems:'flex-start',flexWrap:'wrap'}}>
@@ -164,7 +165,8 @@ function SellerBottle({f,focus,shut,toggle,open}){ const T=useTheme(), acc=_sAcc
       </div>
       <div data-testid="seller-bottle-view" role="group" aria-label="How much to show" style={{display:'inline-flex',border:`1px solid ${_alpha(acc,0.6)}`,flexShrink:0}}>{seg(shut,'Summary','seller-view-summary')}{seg(!shut,'Full pitch','seller-view-full')}</div>
     </div>
-    <div data-testid="seller-say" style={{margin:'16px 0',padding:'13px 16px',borderLeft:`3px solid ${acc}`,background:_alpha(acc,0.07)}}><div style={{..._sCaps,fontSize:'10px',color:acc,marginBottom:5}}>One thing to say</div><div style={{fontSize:16,fontFamily:C.P,color:T.ink,lineHeight:1.5}}>{P.say}</div></div>
+    {P.say&&<div data-testid="seller-say" style={{margin:'16px 0',padding:'13px 16px',borderLeft:`3px solid ${acc}`,background:_alpha(acc,0.07)}}><div style={{..._sCaps,fontSize:'10px',color:acc,marginBottom:5}}>One thing to say</div><div style={{fontSize:16,fontFamily:C.P,color:T.ink,lineHeight:1.5}}>{P.say}</div></div>}
+    {!P.say&&<div style={{height:16}}/>}
     <_SPrices f={f} cols={cols}/>
     {!shut&&<_SPitch f={f} open={open}/>}
     <div role="button" tabIndex={0} data-testid="seller-bottle-fold" aria-expanded={!shut} onClick={toggle} onKeyDown={e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } }} style={{display:'flex',alignItems:'center',gap:10,marginTop:16,paddingTop:13,borderTop:`1px solid ${_sLine}`,cursor:'pointer'}}>
@@ -239,7 +241,7 @@ function SellerWineCard({id,close,open}){ const T=useTheme(), acc=_sAcc(), f=Sel
       <div data-testid="seller-card-fit" style={{marginTop:22,border:`1px solid ${f.out?_sLine:_alpha(acc,0.35)}`,padding:'16px 18px'}}>
         <div style={{..._sCaps,color:acc,marginBottom:10}}>At {(TeamData.get().venue||{}).name}</div>
         {f.out?<div style={{...line,color:T.ink}}>{f.out}.</div>:<>
-          <div style={{display:'flex',gap:14,alignItems:'center'}}><_SScore f={f}/><div style={{minWidth:0}}><div style={{..._sCaps,color:_sFit(f.score)}}>{f.fills.length?f.word:'No opening'}</div><div style={{fontSize:16,fontFamily:C.P,color:T.ink,lineHeight:1.5,marginTop:4}}>{f.fills.length?f.pitch.say:'It fits their prices, but fills nothing their list is missing.'}</div></div></div>
+          <div style={{display:'flex',gap:14,alignItems:'center'}}><_SScore f={f}/><div style={{minWidth:0}}><div style={{..._sCaps,color:_sFit(f.score)}}>{f.fills.length?f.word:'No opening'}</div><div style={{fontSize:16,fontFamily:C.P,color:T.ink,lineHeight:1.5,marginTop:4}}>{f.pitch.say||(f.fills.length?`Answers: ${f.fills.map(o=>o.title).join('; ')}.`:'It fits their prices, but fills nothing their list is missing.')}</div></div></div>
           <div style={{marginTop:14}}><_SPrices f={f} cols={2}/></div>
           <_SPitch f={f} open={open}/></>}
       </div>
@@ -285,7 +287,7 @@ function SellerSheet({B}){ const T=useTheme(), acc=_sAcc(), ref=React.useRef(nul
           <td style={cell}>{SellerCatalogue.money(i.price,2)}<div style={{color:mid}}>{i.ucs} × {SellerCatalogue.money(f.pitch.maths.cost,2)}</div><div style={{color:mid}}>{SellerCatalogue.supply(i).k==='now'?`${SellerCatalogue.supply(i).n} cs`:SellerCatalogue.supply(i).line}</div></td>
           <td style={cell}>{sweet?<>2oz glass<div style={{color:mid}}>{SellerCatalogue.money(f.pitch.maths.pourCost,2)} a pour</div></>:<>About {M(f.landing.bottle)}<div style={{color:mid}}>{f.landing.x.toFixed(1)}× cost</div>{f.landing.glass&&<div style={{color:mid}}>{M(f.landing.glass)} a glass</div>}</>}</td>
           <td style={{...cell,fontWeight:500}}>{f.pitch.say}</td>
-          <td style={cell}>{f.reasons.filter(r=>r.pts>0).slice(0,2).map((r,k)=><div key={k}>{r.text}.</div>)}{top&&<div style={{marginTop:3}}><span style={{fontWeight:600}}>{f.pitch.pairings.slice(0,3).map(x=>x.dish.name).join(', ')}.</span> {top.why}</div>}</td></tr>; })}</tbody></table>
+          <td style={cell}>{f.fills.slice(0,2).map((o,k)=><div key={k}>{o.title}.</div>)}{top&&<div style={{marginTop:3}}><span style={{fontWeight:600}}>{top.dish.name}.</span> {top.why}</div>}{f.pitch.pairings.length>1&&<div style={{color:mid,marginTop:2}}>Also: {f.pitch.pairings.slice(1,4).map(x=>x.dish.name).join(', ')}.</div>}</td></tr>; })}</tbody></table>
       <div style={{fontSize:'9px',color:mid,marginTop:12,lineHeight:1.5}}>Fit is the reasons added up, not a forecast: green is the strongest fit, red the weakest. List prices and style are estimates; costs, pack sizes and stock are from the {B.agency.short} catalogue of {B.agency.fetched}.</div>
     </div></div>
   </div>; }

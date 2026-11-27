@@ -201,28 +201,28 @@ const SellerMatch = {
     const add=(pts,text,basis,o)=>{ reasons.push({pts,text,basis}); if(o) fills.push(o); }, sweet=['sweet','fortified'].includes(sh.kind), std=i.ml===750;
     const suits=this.suits(i), opens=this.openings();
     opens.forEach(o=>{
-      if(o.kind==='ladder'&&std&&sh.colour===o.colour&&L.bottle>o.lo*1.08&&L.bottle<o.hi*0.92) add(o.pts,`Lands at about ${M(L.bottle)}, in the gap between ${M(o.lo)} and ${M(o.hi)} on their ${o.colour.toLowerCase()} list`,'estimate',o);
-      if(o.kind==='call'&&o.call.t(sh)&&(std||sweet)){ if(!o.under) add(o.pts,`${this._a(o.call.label)} ${o.call.label}, and they don't list one`,'sheet',o); else if(L.bottle<o.under*0.85) add(o.pts,`${this._a(o.call.label)} ${o.call.label} at about ${M(L.bottle)}, where theirs starts at ${M(o.under)}`,'estimate',o); }
-      if(o.kind==='glass'&&o.t(sh)&&(std||sweet)){ const g=sweet?null:L.glass, again=fills.some(x=>x.kind==='glass'); if(sweet||(g<=o.room&&g>=o.floor*0.9)) add(again?o.pts/2:o.pts,sweet?`A sweet wine to pour by the small glass with dessert`:`${o.say}, at about ${M(g)} (theirs run ${M(o.floor)} to ${M(Math.round(o.room/this.GLASS_ROOM))})`,sweet?'sheet':'estimate',o); }
-      if(o.kind==='dish'&&o.t(sh)) add(o.pts,`The fortified wine ${o.dishes.map(d=>d.name).join(' and ')} need${o.dishes.length===1?'s':''}`,'sheet',o);
+      if(o.kind==='ladder'&&std&&sh.colour===o.colour&&L.bottle>o.lo*1.08&&L.bottle<o.hi*0.92) add(o.pts,o.title,'estimate',o);
+      if(o.kind==='call'&&o.call.t(sh)&&(std||sweet)){ if(!o.under) add(o.pts,o.title,'sheet',o); else if(L.bottle<o.under*0.85) add(o.pts,o.title,'estimate',o); }
+      if(o.kind==='glass'&&o.t(sh)&&(std||sweet)){ const g=sweet?null:L.glass, again=fills.some(x=>x.kind==='glass'); if(sweet||(g<=o.room&&g>=o.floor*0.9)) add(again?o.pts/2:o.pts,o.title,sweet?'sheet':'estimate',o); }
+      if(o.kind==='dish'&&o.t(sh)) add(o.pts,o.title,'sheet',o);
       if(o.kind==='window'&&std){ const ws=this.shape(o.wine), p=this._m(o.wine.bottle); if(ws.kind===sh.kind&&ws.style&&sh.style){ const gap=Math.abs(sh.style.body-ws.style.body)+Math.abs((sh.style.tannin||0)-(ws.style.tannin||0))+Math.abs((sh.style.sweet||0)-(ws.style.sweet||0));
         const like=(ws.lead&&ws.lead===sh.lead)||(ws.region&&ws.region===sh.region)||gap===0;
-        if(gap<=1&&like&&Math.abs((sh.style.acid||0)-(ws.style.acid||0))<=1&&L.bottle>=p*0.7&&L.bottle<=p*1.3) add(o.pts+(/long|1\d|2\d|3\d/i.test(i.ageing||'')?4:0),`A successor to ${nick(o.wine)} ${o.wine.vintage} (${M(p)}), which is ${o.word}: the same style at about ${M(L.bottle)}`,'estimate',o); } }
-      if(o.kind==='mix'&&std&&sh.country===o.country&&sh.region===o.region&&sh.colour===o.colour) add(o.pts,`A ${o.colour.toLowerCase()} from ${o.region}, which their ${o.country==='Italy'?'Italian':o.country==='France'?'French':o.country} list doesn't have`,'sheet',o);
-      if(o.kind==='format'&&i.ml>=1500) add(o.pts,`A ${SellerCatalogue.format(i)} for their large-format section`,'sheet',o);
+        if(gap<=1&&like&&Math.abs((sh.style.acid||0)-(ws.style.acid||0))<=1&&L.bottle>=p*0.7&&L.bottle<=p*1.3) add(o.pts+(/long|1\d|2\d|3\d/i.test(i.ageing||'')?4:0),o.title,'estimate',o); } }
+      if(o.kind==='mix'&&std&&sh.country===o.country&&sh.region===o.region&&sh.colour===o.colour) add(o.pts,o.title,'sheet',o);
+      if(o.kind==='format'&&i.ml>=1500) add(o.pts,o.title,'sheet',o);
     });
-    if(L.lifted) add(4,`At their entry price of ${M(L.bottle)} it's ${L.x.toFixed(1)} times its cost, where they usually put ${L.usualX.toFixed(1)} on a bottle like it`,'estimate');
+    if(L.lifted) add(4,`Earns ${L.x.toFixed(1)}× at their entry price; their usual is ${L.usualX.toFixed(1)}×`,'estimate');
     // A house they already buy: the conversation is half had.
     const house=this.houseOn(i), mine=house&&this.ours().find(o=>o.wine.id===house.id);
-    if(house) add(mine?16:12,mine?`They already sell ${TeamData.short(house)} at ${M(this._m(house.bottle))}, and it's ours: this is the next wine from the same house`:`They already list ${TeamData.short(house)}, from the same house`,'list',{k:'house:'+this._tokens(i.producer)[0],kind:'house',pts:mine?16:12,tag:'Relationship',wine:house,title:`${i.supplier||i.producer} is already on the list`});
+    if(house) add(mine?16:12,`Same house as ${TeamData.short(house)}, already on their list`,'list',{k:'house:'+this._tokens(i.producer)[0],kind:'house',pts:mine?16:12,tag:'Relationship',wine:house,title:`${i.supplier||i.producer} is already on the list`});
     // The dishes it would be suggested with.
-    const savoury=suits.filter(s=>!s.rule); if(savoury.length) add(Math.min(12,savoury.length*3),`Suits ${savoury.length} dish${savoury.length===1?'':'es'} on the menu: ${savoury.slice(0,3).map(s=>s.dish.name).join(', ')}${savoury.length>3?' and more':''}`,'estimate');
-    if(suits.some(s=>s.rule==='fruit')) add(4,`Sweet with the acidity for ${suits.filter(s=>s.rule==='fruit').map(s=>s.dish.name).join(' and ')}`,'estimate');
+    const savoury=suits.filter(s=>!s.rule); if(savoury.length) add(Math.min(12,savoury.length*3),`${savoury.length} dish${savoury.length===1?'':'es'} on the menu`,'estimate');
+    if(suits.some(s=>s.rule==='fruit')) add(4,`A sweet pour for ${suits.filter(s=>s.rule==='fruit').map(s=>s.dish.name).join(' and ')}`,'estimate');
     // What counts against it.
     const same=this.list().filter(w=>{ const s=this.shape(w); return s.kind===sh.kind&&sh.lead&&s.lead===sh.lead&&(s.region&&sh.region?s.region===sh.region:s.country===sh.country); }), near=same.filter(w=>{ const p=this._m(w.bottle); return p&&Math.abs(p-L.bottle)/L.bottle<=this.DUP_NEAR; });
-    if(near.length) add(-18,`They already list ${nick(near[0])} at ${M(this._m(near[0].bottle))}: the same grape from the same place at about the same price`,'list');
-    else if(same.length&&!fills.some(o=>['ladder','glass','call','mix'].includes(o.kind))) add(-6,`They already list ${sh.lead} from ${sh.region||sh.country} (${nick(same[0])})`,'list');
-    if(std&&!sweet&&!fills.some(o=>['call','glass','dish'].includes(o.kind))){ const pile=L.lane.filter(y=>Math.abs(y.p-L.bottle)/L.bottle<=0.08); if(pile.length>=3) add(-6,`${pile.length} of their ${sh.colour.toLowerCase()} bottles are already within a few dollars of ${M(L.bottle)}`,'estimate'); }
+    if(near.length) add(-18,`Doubles up on ${nick(near[0])} (${M(this._m(near[0].bottle))})`,'list');
+    else if(same.length&&!fills.some(o=>['ladder','glass','call','mix'].includes(o.kind))) add(-6,`${sh.lead} from ${sh.region||sh.country} is already listed`,'list');
+    if(std&&!sweet&&!fills.some(o=>['call','glass','dish'].includes(o.kind))){ const pile=L.lane.filter(y=>Math.abs(y.p-L.bottle)/L.bottle<=0.08); if(pile.length>=3) add(-6,`Crowded price: ${pile.length} bottles near ${M(L.bottle)}`,'estimate'); }
     const sup=SellerCatalogue.supply(i); if(sup.k==='now') add(sup.n>=5?6:3,sup.line,'sheet'); else if(sup.k==='transit') add(1,sup.line,'sheet'); else if(sup.k==='store') add(-2,'LCBO stores only: nothing in the agency warehouse','sheet'); else add(-8,sup.line,'sheet');
     if(i.basis.grapes!=='sheet'&&!sh.lead) add(-4,'The sheet gives no grapes, so less of this could be checked','sheet');
     const openPts=reasons.filter(r=>r.pts>0).reduce((a,r)=>a+r.pts,0), score=fills.length?Math.max(0,Math.min(99,30+reasons.reduce((a,r)=>a+r.pts,0))):Math.max(0,Math.min(45,20+reasons.reduce((a,r)=>a+r.pts,0)));
@@ -249,7 +249,8 @@ const SellerMatch = {
         if(o.kind==='glass'){ const pours=list.filter(TeamData.byGlass).filter(w=>o.sweet?['sweet','fortified'].includes(this.shape(w).kind):o.k==='glass:fizz'?this.shape(w).kind==='sparkling':true); facts.push({label:o.k==='glass:local'?'Poured today':'Poured today',text:pours.slice(0,6).map(w=>`${TeamData.nick(w)} ${w.glass}`).join(', ')+(pours.length>6?` and ${pours.length-6} more`:'')}); }
         const ps=wines.filter(f=>!['sweet','fortified'].includes(f.shape.kind)).map(f=>f.landing.bottle); facts.push({label:'We have',text:`${wines.length} ${wines.length===1?'bottle':'bottles'}${ps.length?`, landing ${ps.length>1&&Math.min(...ps)!==Math.max(...ps)?`${M(Math.min(...ps))} to ${M(Math.max(...ps))}`:`at about ${M(ps[0])}`} on their list`:', poured by the 2oz glass'}`});
         if(top.suits.length) facts.push({label:'Pours with',text:top.suits.slice(0,5).map(s=>s.dish.name).join(', ')+(top.suits.length>5?` and ${top.suits.length-5} more`:'')}); }
-      return {...o,wines,facts}; }).filter(o=>o.wines.length||o.kind!=='mix').sort((a,b)=>(b.wines.length?1:0)-(a.wines.length?1:0)||b.pts-a.pts); },
+      const said=(this.written()||{openings:{}}).openings[o.k];
+      return {...o,fact:said||o.fact,wines,facts}; }).filter(o=>o.wines.length||o.kind!=='mix').sort((a,b)=>(b.wines.length?1:0)-(a.wines.length?1:0)||b.pts-a.pts); },
 
   /* ---- how to talk about a wine ---- */
   WORDS:{body:['light','light','medium-bodied','full-bodied','very full'],acid:['soft','soft','balanced','fresh','crisp'],tannin:['no tannin','silky','soft tannin','medium tannin','firm tannin','grippy tannin']},
@@ -295,109 +296,27 @@ const SellerMatch = {
   /* The other sizes and years of the same wine in the catalogue. */
   siblings(i){ return SellerCatalogue.items().filter(x=>x.id!==i.id&&x.producer===i.producer&&this._norm(x.name)===this._norm(i.name)); },
 
-  /* ---- why a wine suits a dish, in words a rep can say ---- */
-  /* Said once per wine: how this kind of wine works with food at all. The dishes then each get a short line of their
-     own about what is on that plate, so nothing is said five times. */
-  pairLead(i){ const sh=this.shape(i), st=sh.style||{};
-    if(sh.kind==='fortified') return `It is sweeter than their desserts, and that matters: a wine less sweet than the dish tastes sour beside it.`;
-    if(sh.kind==='sweet') return `It is sweet with high acidity, so it matches a dessert's sugar and still finishes fresh.`;
-    if(sh.kind==='sparkling') return `Bubbles and high acidity reset the palate, which is why it works with anything creamy, salty or fried: each bite tastes like the first.`;
-    if(sh.kind==='rosé') return `Dry, cold and light: it has the fruit for food with some heat or salt and none of the weight that would cover a delicate plate.`;
-    if(sh.kind==='white'||sh.kind==='orange') return st.acid>=4?`Its acidity is the tool: it cuts through fat and cream and matches a sharp dressing where a softer white would taste flat.`:`It has weight and a round texture, so it stands beside butter, cream and roasted flavours where a lean white would disappear.`;
-    return st.tannin>=4?`Its firm tannin binds to fat and protein, so with red meat the wine tastes smoother and the meat richer.`:st.tannin===3?`Medium tannin and fresh acidity: enough grip for red meat and slow cooking without drying out a leaner dish.`:`Soft tannin and bright acidity: it lifts poultry, mushrooms and lighter meat where a heavier red would flatten them.`; },
-  /* What on a plate a wine can speak to, found in the dish's own words. */
-  PLATE:{creamy:/burrata|labneh|gorgonzola|parfait|cr[eè]me anglaise|ice cream|cream/,salty:/pancetta|caper|kalamata olive|olive|parmigiano|gorgonzola|miso|ponzu|fleur de sel|crouton|bacon/,acidic:/ponzu|lemon|tomato|pickled shallot|pomegranate|orange|citrus/,spicy:/chili oil|'nduja|guajillo|peppercorn sauce|chilli/,
-    earthy:/oyster mushroom|mushroom|black kale|cauliflower|chickpea/,smoky:/charcoal|grill/,herbal:/rosemary|basil|crispy sage|sage|parsley|thyme/,nutty:/brown butter|pistachio|pumpkin seed|walnut|pangrattato|sourdough/,sweet:/squash|coffee caramel|caramel|meringue/},
-  /* What each kind of wine does to each of those, as the start of a sentence; null where it has nothing to say. */
-  _does(sh,key,fl){ const st=sh.style, k=sh.kind, pick=re=>fl.find(x=>re.test(x));
-    if(k==='sparkling') return {creamy:'cuts the',salty:'rinses the salt of the',acidic:'keeps pace with the',spicy:'cools the',earthy:pick(/brioche|toast|nut|almond/)?`its ${pick(/brioche|toast|nut|almond/)} meets the`:'lifts the',nutty:pick(/brioche|toast|nut|almond/)?`its ${pick(/brioche|toast|nut|almond/)} echoes the`:null,delicate:'leaves room for the',rich:'lifts the'}[key];
-    if(k==='rosé') return {creamy:'freshens the',salty:'has the fruit for the',acidic:'matches the',spicy:'cools the',delicate:'leaves room for the',herbal:'sits easily with the',earthy:'lightens the'}[key];
-    if(k==='white'||k==='orange'){ const crisp=st.acid>=4; return {creamy:crisp?'cuts the':'has the weight for the',rich:crisp?'cuts the richness of the':'stands beside the',salty:crisp?'refreshes after the salt of the':'rounds off the salt of the',acidic:crisp?'matches the':null,spicy:st.sweet>=2?'soothes the':null,delicate:st.body<=2?`won't cover the`:null,herbal:pick(/herb|grass|green/)?`its ${pick(/herb|grass|green/)} picks up the`:null,
-      nutty:pick(/butter|oak|vanilla|almond|honey|toast/)?`its ${pick(/butter|oak|vanilla|almond|honey|toast/)} echoes the`:crisp?null:'matches the',sweet:crisp?null:'has the ripeness for the',earthy:crisp?null:'stands up to the'}[key]; }
-    const oak=pick(/oak|vanilla|cocoa|mocha|spice|cedar|liquorice|toast|cinnamon|clove|tobacco|leather/);
-    return {rich:st.tannin>=4?'its tannin grips the':st.tannin===3?'has the grip for the':null,smoky:oak?`its ${oak} meets the`:null,spicy:st.body>=4?'stands up to the':null,herbal:'its savoury side picks up the',earthy:pick(/earth|leather|forest|tobacco|herb/)?`its ${pick(/earth|leather|forest|tobacco|herb/)} echoes the`:st.tannin<=2?'lifts the':null,nutty:st.tannin<=3?'sits well with the':null,delicate:st.tannin<=2?`won't flatten the`:null}[key]; },
-  /* One short line for one dish: the two things on that plate this wine speaks to, in the dish's own words. */
-  pairWhy(i,s){ const d=s.dish, sh=this.shape(i), f=new Set(d.flav||[]), t=[d.name,d.desc].join(', ').toLowerCase(), fl=i.flavours.map(x=>x.replace(/^ripe /,''));
-    const mainName=/beef cheek/i.test(d.name)?'beef cheek':/c[oô]te de boeuf/i.test(d.name)?'côte de boeuf':/steak/i.test(d.name)?'steak':/lettuce|greens/.test(d.main||'')||!d.main?(/salad/i.test(d.name)?'salad':d.name.toLowerCase()):d.main, parts=[], used=new Set();
-    let why;
-    if(s.rule==='dark'){ const m=['coffee caramel','chocolate','walnut'].find(x=>t.includes(x))||'dessert', extra=/fleur de sel/.test(t)?'; the fleur de sel sharpens both':/vanilla ice cream/.test(t)?'; cold ice cream against a warming wine':''; why=`Its ${fl.slice(-2).join(' and ')} against the ${m==='chocolate'?'dark chocolate':m}${extra}.`; }
-    else if(s.rule==='fruit'){ const m=(/orange|meringue|citrus/.exec(t)||[])[0]||'fruit'; why=`Its ${fl.slice(0,2).join(' and ')} with the ${m}, and enough acidity that the meringue doesn't make it cloying.`; }
-    else { const order=['rich','creamy','smoky','spicy','acidic','salty','earthy','nutty','herbal','sweet','delicate'];
-      order.forEach(key=>{ if(parts.length>=2) return; if(!f.has(key)&&!(this.PLATE[key]&&this.PLATE[key].test(t))) return; const verb=this._does(sh,key,fl); if(!verb) return;
-        const hit=key==='rich'||key==='delicate'?mainName:key==='smoky'?(/charcoal/.test(t)?'charcoal':'char from the grill'):((this.PLATE[key]&&this.PLATE[key].exec(t))||[])[0]; if(!hit||used.has(hit)) return; used.add(hit); parts.push(`${verb} ${hit}`); });
-      why=parts.length?parts.join(' and ').replace(/^./,c=>c.toUpperCase())+'.':`${fl.slice(0,2).join(' and ').replace(/^./,c=>c.toUpperCase())} beside the ${mainName}.`; }
-    const pr=TeamData.pairing(d.id)||{}, theirs=s.like&&[...(pr.best||[]),pr.glass].filter(Boolean).find(b=>b.id===s.like.id);
-    return {dish:d,why,like:s.like||null,likePrice:s.like?this._m(s.like.bottle):null,theirWhy:theirs?theirs.why:null}; },
-
-  /* ---- the pitch for one bottle ---- */
+  /* ---- the written brief ---- */
+  /* The words of a pitch are written, never assembled: a sentence built by filling a wine's name into a phrase reads
+     the same for every bottle, and a rep can hear it. data/seller-brief-eloise.json is the brief written for this
+     restaurant (for the prototype by hand, against the figures below; Vinny writes it per prospect once that call
+     exists): what to say about each opening, and for each shortlisted bottle one thing to say, the pitch, a line
+     for every dish it suits and what the buyer will say back. This module supplies only facts and figures. A written
+     bottle carries the figures it was written `against`; if matching now lands it somewhere else, its words are
+     held back rather than shown beside different numbers. A bottle nobody has written about shows its facts alone. */
+  written(){ const w=_loadJSON('data/seller-brief-eloise.json'); return w&&w.venue===this.venue().name?w:null; },
+  writtenFor(f){ const w=this.written(), b=w&&w.bottles[f.item.id]; if(!b) return null; const a=b.against||{}, L=f.landing, m=this.maths(f);
+    if(a.bottle!=null&&a.bottle!==L.bottle) return null; if(a.glass!=null&&a.glass!==L.glass) return null; if(a.pourCost!=null&&Math.abs(a.pourCost-(m.pourCost||0))>0.005) return null; return b; },
   POURS:5,
-  /* What each kind of wine has going for it with a buyer, and what a buyer says back. Trade knowledge, written once
-     and checked; `t` picks the wines it applies to. {{…}} are filled from the bottle and the restaurant's list. */
-  ANGLES:[
-    {k:'port',t:s=>s.kind==='fortified',sell:`A tawny has already spent years in wood, so once it's open it keeps for weeks rather than days. A slow night doesn't cost them a bottle, and a 750ml bottle is about twelve 2oz pours.`,
-      obj:[[`"Nobody orders port."`,`Nobody is offered it. It needs one line on the dessert menu beside {{dish}} and one sentence from the server: "the tawny with that?" The pour costs them about {{pour2}}.`],[`"An open bottle will go off."`,`Not a tawny. It's aged in contact with air before bottling, which is why it holds for weeks once opened.`]]},
-    {k:'icewine',t:s=>s.kind==='sweet'&&/icewine|ice wine/.test(s.text),sell:`Icewine is the Ontario wine visitors have heard of, made from grapes picked frozen on the vine. A half bottle is about six 2oz pours, so it's sold by the small glass, not the bottle.`,
-      obj:[[`"It's too sweet for our guests."`,`It is sweet, with the acidity to carry it: that's what stops it cloying. Pour 2oz with {{dish}}, as a dessert in its own right.`],[`"It's expensive."`,`By the bottle, yes. By the 2oz pour it costs them about {{pour2}}.`]]},
-    {k:'tradfizz',t:s=>s.kind==='sparkling'&&s.region!=='Champagne'&&/traditionnelle|traditional|classico|franciacorta|cremant|\bcava\b/.test(s.text),sell:`Traditional method means the second fermentation happens in the bottle, as in Champagne; Prosecco's happens in a tank. That's where the finer bubbles and the toasty, bready note come from, at a price well under Champagne.`,
-      obj:[[`"Guests who want bubbles want Prosecco or Champagne."`,`They do, at {{theirGlass}} or from {{champFrom}} a bottle. This is for the guest in between: a proper sparkling by the glass at about {{glass}}, and the natural step up to their Champagne.`],[`"Will a sparkling keep once it's open?"`,`With a stopper, a day or two. A case here is only {{ucs}} bottles, and each is five glasses.`]]},
-    {k:'champagne',t:s=>s.kind==='sparkling'&&s.region==='Champagne',sell:`A house guests know by name does the selling on a list: nobody needs it explained.`,obj:[[`"We already have Champagne."`,`They have {{sameCount}}, from {{sameFrom}}. This sits at about {{bottle}}.`]]},
-    {k:'chard',t:s=>s.kind==='white'&&s.lead==='Chardonnay',sell:`Chardonnay is the white a guest orders without opening the list. Theirs are all from France and Italy, from {{sameFrom}}: a guest asking for "a Chardonnay" today is steered to a Chablis.`,
-      obj:[[`"Our guests have moved on from big oaky Chardonnay."`,`Some have, and they have the Chablis. This is for the guest who asks for the round one by name: {{flav}}. Having both is the point.`]]},
-    {k:'cab',t:s=>s.kind==='red'&&s.lead==='Cabernet Sauvignon'&&!['France','Italy'].includes(s.country),sell:`Cabernet with steak is the easiest sale on a grill menu, and a guest who asks for one usually means the riper, softer New World style, not Bordeaux.`,
-      obj:[[`"We do Bordeaux for that."`,`Bordeaux is the same grape and a different wine: firmer, drier, more savoury. Their own New World Cabernets start at {{under}}, so the guest who asks has nothing to order.`]]},
-    {k:'rioja',t:s=>s.kind==='red'&&s.region==='Rioja',sell:`A Reserva has been aged at least three years before release, one of them in oak, so it arrives ready: soft tannin, vanilla and leather, no decanting. It's the Spanish red guests ask for by name.`,
-      obj:[[`"We already have Spanish reds."`,`They do: {{sameCountry}}. Those are lighter, modern wines for a guest who wants to explore. Rioja is for the one who wants what they know.`]]},
-    {k:'amarone',t:s=>s.kind==='red'&&/amarone|amaron\b/.test(s.text),sell:`Amarone is made from grapes dried for about three months before pressing, which concentrates everything: it's dry, but tastes of dried cherry, cocoa and spice. It's a bottle a table orders for an occasion.`,
-      obj:[[`"It's too big for most tables."`,`It is big, which is why it belongs with {{dish}} and not by the glass. Sell it as the bottle for the table sharing the largest cut.`],[`"We have Barolo and Brunello at that price."`,`Those are firm and savoury. Amarone is the rich, rounder one, for the guest who finds Barolo too dry.`]]},
-    {k:'provrose',t:s=>s.kind==='rosé'&&s.region==='Provence',sell:`Provence is the rosé guests name, and this is one of its reference estates: pale, dry, more about texture than sweetness.`,
-      obj:[[`"Rosé is a summer wine."`,`Their list carries four all year, and the 2023s are past their best. This replaces one; it doesn't add one.`]]},
-    {k:'pinot',t:s=>s.kind==='red'&&s.lead==='Pinot Noir',sell:`Pinot Noir is the red for the table split between fish and meat: light enough for one, enough fruit for the other.`,obj:[[`"We have Burgundy."`,`From {{sameFrom}}. This is the fruit-forward one at a price a table says yes to without thinking.`]]},
-    {k:'ontario',t:s=>s.country==='Canada',sell:`Estate-grown in Niagara, an hour and a half from the door. A local wine is something a server can talk about without any training.`,
-      obj:[[`"Ontario wine at our prices?"`,`Their own list already has five Canadian wines from {{homeFrom}}, all by the bottle. This is the one a guest can try by the glass first.`]]},
-  ],
-  angle(i){ const s=this.shape(i); return this.ANGLES.filter(a=>a.t(s)); },
   maths(f){ const i=f.item, L=f.landing, cost=SellerCatalogue.caseCost(i), sweet=['sweet','fortified'].includes(f.shape.kind), pours2=Math.floor(i.ml/59);
     if(sweet) return {cost,units:i.ucs,sweet:true,pours:pours2,pourCost:i.price/pours2};
     const glass=f.fills.some(o=>o.kind==='glass'), pourCost=i.ml===750?i.price/this.POURS:null;
     return {cost,units:i.ucs,by:glass?'glass':'bottle',bottleTake:i.ucs*L.bottle,glassTake:L.glass?i.ucs*this.POURS*L.glass:null,take:glass?i.ucs*this.POURS*L.glass:i.ucs*L.bottle,pours:i.ucs*this.POURS,pourCost,perBottle:L.bottle-i.price}; },
   first(text){ return this.sentences(text,1); },
-  pitch(f){ const i=f.item, L=f.landing, sh=f.shape, M=n=>TeamData.money(Math.round(n)), A=(n,dp=2)=>SellerCatalogue.money(n,dp), nick=w=>TeamData.nick(w), sweet=['sweet','fortified'].includes(sh.kind), std=i.ml===750;
-    const p=f.primary||f.fills.find(o=>o.kind!=='house')||f.fills[0], m=this.maths(f), name=SellerCatalogue.short(i), glassy=f.fills.some(o=>o.kind==='glass')&&!sweet;
-    const pairings=f.suits.map(s=>this.pairWhy(i,s)), top=pairings[0], dishName=top?top.dish.name:'dessert';
-    const list=this.list(), S=w=>this.shape(w), same=list.filter(w=>S(w).kind===sh.kind&&sh.lead&&S(w).lead===sh.lead), samePs=same.map(w=>this._m(w.bottle)).filter(Boolean);
-    const gl=list.filter(TeamData.byGlass), fizzGlass=gl.find(w=>S(w).kind==='sparkling'), champ=list.filter(w=>S(w).region==='Champagne').map(w=>this._m(w.bottle)).filter(Boolean);
-    const home=this.home(), homeWs=list.filter(w=>w.country===home).map(w=>this._m(w.bottle)).filter(Boolean), countryWs=list.filter(w=>w.country===i.country&&S(w).kind===sh.kind);
-    const fillIn=t=>t.replace('{{dish}}',top?`the ${top.dish.name}`:'dessert').replace('{{pour2}}',A(m.pourCost||i.price/Math.floor(i.ml/59))).replace('{{theirGlass}}',fizzGlass?fizzGlass.glass:'their glass price').replace('{{champFrom}}',champ.length?M(Math.min(...champ)):'well over $100')
-      .replace('{{glass}}',M(L.glass||0)).replace('{{ucs}}',i.ucs).replace('{{bottle}}',M(L.bottle)).replace('{{sameCount}}',same.length).replace('{{sameFrom}}',samePs.length?M(Math.min(...samePs)):'a higher price').replace('{{flav}}',i.flavours.join(', '))
-      .replace('{{under}}',p&&p.under?M(p.under):'a price few tables reach').replace('{{sameCountry}}',countryWs.slice(0,3).map(w=>`${nick(w)} (${S(w).lead||S(w).region}, ${w.bottle})`).join(', ')||'a few').replace('{{homeFrom}}',homeWs.length?M(Math.min(...homeWs)):'$75');
-    // One thing to say: the opening, as a sentence to the buyer.
-    const say=!p?`${name} would sit at about ${M(L.bottle)} on your list.`
-      :p.kind==='call'&&!p.under?`You don't list ${this._a(p.call.label).toLowerCase()} ${p.call.label}, and it's one guests ask for by name. ${name} would be your only one${sweet?', poured by the 2oz glass':`, at about ${M(L.bottle)}`}.`
-      :p.kind==='call'?`Your ${p.call.label} starts at ${M(p.under)}. ${name} is one at about ${M(L.bottle)}, for the table that wants it with ${top?`the ${top.dish.name}`:'dinner'} and won't spend ${M(p.under)}.`
-      :p.kind==='ladder'?`Between ${nick(L.below?L.below.w:{producer:'your'})} at ${M(p.lo)} and ${nick(L.above?L.above.w:{producer:'the next'})} at ${M(p.hi)} your ${p.colour.toLowerCase()} list has nothing. ${name} lands at about ${M(L.bottle)}${glassy?`, and pours at ${M(L.glass)}`:''}.`
-      :p.kind==='glass'&&p.k==='glass:local'?`Every ${home==='Canada'?'Ontario':'local'} wine you list is bottle only. ${name} gives you a local glass at about ${M(L.glass)}.`
-      :p.kind==='glass'&&p.k==='glass:fizz'?`The only bubbles you pour by the glass is Prosecco${fizzGlass?` at ${fizzGlass.glass}`:''}. ${name} is a traditional-method sparkling at about ${M(L.glass)} a glass.`
-      :p.kind==='glass'||p.kind==='dish'?`You have ${TeamData.dishes().filter(d=>/dessert|pudding|sweet/i.test(d.section||'')).length} desserts and one sweet pour. A 2oz glass of ${name} with ${top?`the ${top.dish.name}`:'dessert'} is a second sale after dinner.`
-      :p.kind==='window'?`${nick(p.wine)} ${p.wine.vintage} is ${p.word}. ${name} is the same style at about ${M(L.bottle)}, ready now.`
-      :p.kind==='mix'?`Your ${p.country==='Italy'?'Italian':p.country==='France'?'French':p.country} list covers most of the country and has no ${p.colour.toLowerCase()} from ${p.region}. ${name} is one at about ${M(L.bottle)}.`
-      :p.kind==='format'?`You already sell large formats. ${name} in ${SellerCatalogue.format(i)} is one for a table of six at about ${M(L.bottle)}.`
-      :`You already sell ${TeamData.short(p.wine)}. ${name} is the next wine from the same house, at about ${M(L.bottle)}.`;
-    // The pitch, in the order a rep would give it.
-    const story=[], angles=this.angle(i);
-    story.push({h:'The wine',t:`${this.about(i)}${i.notes.taste?' '+this.sentences(i.notes.taste,1):''}${i.certs.length?` ${i.certs.join(', ')}.`:''}`,basis:i.basis.flavours==='sheet'?'sheet':'estimate'});
-    if(angles[0]) story.push({h:'Why it sells',t:fillIn(angles[0].sell),basis:'guide'});
-    if(top) story.push({h:'At the table',t:`${this.pairLead(i)} Lead with ${top.dish.name}${top.dish.price?` (${top.dish.price})`:''}: ${/^(Its|It) /.test(top.why)?'':'it '}${top.why.charAt(0).toLowerCase()+top.why.slice(1)}${top.like?` There it does the job of ${nick(top.like)}, which they suggest there${top.likePrice?` at ${M(top.likePrice)}`:''}${top.likePrice&&!sweet&&L.bottle<top.likePrice*0.8?`, for ${M(top.likePrice-L.bottle)} less`:''}.`:''}`,basis:'estimate'});
-    if(sweet) story.push({h:'The price',t:`It costs them ${A(i.price)} a bottle, about ${A(m.pourCost)} for a 2oz pour (${m.pours} to a bottle). Their one dessert pour is on the list at $16, so the same price here returns ${M(16*m.pours)} from a ${A(i.price)} bottle.`,basis:'estimate'});
-    else story.push({h:'The price',t:`It costs them ${A(i.price)}. ${L.lifted?`At their entry price of ${M(L.bottle)} that's ${L.x.toFixed(1)} times cost, better than the ${L.usualX.toFixed(1)} they usually take on a bottle like it`:`At about ${M(L.bottle)} it carries ${L.x.toFixed(1)} times cost, what they usually put on a bottle at this price`}: ${M(m.perBottle)} a bottle to them.${std&&L.glass?` By the glass at ${M(L.glass)}, a pour costs them ${A(m.pourCost)} and a case of ${i.ucs} is ${m.pours} glasses, ${M(m.glassTake)}.`:''}${L.below&&L.above?` It sits between ${nick(L.below.w)} (${M(L.below.p)}) and ${nick(L.above.w)} (${M(L.above.p)}).`:L.lifted&&L.beside?` It sits beside ${nick(L.beside.w)}, their cheapest ${sh.colour.toLowerCase()}.`:''}`,basis:'estimate'});
-    if(f.house) story.push({h:'The relationship',t:`They already buy ${TeamData.short(f.house)} from the same house, so this is a line added to an order they place anyway.`,basis:'list'});
-    // What they'll say back: the wine's own category first, then what this list and this bottle raise.
-    const objections=[]; angles.forEach(a=>(a.obj||[]).forEach(([q,a2])=>objections.push({q,a:fillIn(a2)})));
-    const dup=f.reasons.find(r=>r.pts<0&&/already list/.test(r.text)); if(dup) objections.unshift({q:`"We already have one of those."`,a:`${dup.text}. Don't argue with it: offer this as the glass pour or the step beside it, never as a replacement.`});
-    if(L.lifted) objections.push({q:`"Is a ${A(i.price)} wine good enough for our list?"`,a:`The guest sees ${M(L.bottle)}, not the cost. Taste it beside ${L.beside?nick(L.beside.w):'their entry wine'} at the same price; if it holds up, it earns them ${M(m.perBottle)} a bottle.`});
-    if(p&&p.kind==='ladder'&&!objections.length) objections.push({q:`"Our list is long enough."`,a:`It's long at both ends of ${p.colour.toLowerCase()} and empty between ${M(p.lo)} and ${M(p.hi)}. This fills a rung; it doesn't compete with a bottle they sell.`});
-    if(glassy&&m.pours) objections.push({q:`"A case is a lot to commit to for a new glass pour."`,a:`A case is ${i.ucs} bottles, ${m.pours} glasses. At five glasses a night that's ${Math.round(m.pours/5)} nights, and ${M(m.glassTake)} against ${A(m.cost)} in.`});
-    const sup=SellerCatalogue.supply(i); if(sup.k!=='now') objections.push({q:`"Can you get it to us?"`,a:`${sup.line}. Check the delivery date before the meeting; don't promise it across the table.`});
-    return {say,story,pairings,pairLead:this.pairLead(i),objections:objections.slice(0,4),maths:m,primary:p,sell:angles[0]?fillIn(angles[0].sell):''}; },
+  /* One bottle at this restaurant: its figures always, and its words where they have been written. */
+  pitch(f){ const W=this.writtenFor(f), p=f.primary||f.fills.find(o=>o.kind!=='house')||f.fills[0];
+    const pairings=f.suits.map(s=>({dish:s.dish,why:W&&W.dishes?W.dishes[s.dish.id]||null:null,like:s.like||null,likePrice:s.like?this._m(s.like.bottle):null}));
+    return {written:!!W,say:W?W.say:null,story:W?W.story:[],pairings,objections:W?W.objections:[],maths:this.maths(f),primary:p}; },
 
   /* ---- the back bar ---- */
   SPIRIT:[['bourbon',/bourbon/],['rum',/\brum\b/],['Scotch',/scotch|single malt/],['Cognac',/cognac|brandy/],['ouzo',/ouzo|anise/]],

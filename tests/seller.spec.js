@@ -111,6 +111,12 @@ test('a bottle anywhere opens its wine card: the sheet, a taste profile, how to 
   await expect(card.getByTestId('seller-price-bottle')).toContainText('× cost'); await expect(card.getByTestId('seller-price-glass')).toContainText('a pour costs them');
   expect(await card.getByTestId('seller-pairing').count()).toBeGreaterThanOrEqual(3);
   expect(await card.getByTestId('seller-objection').count()).toBeGreaterThanOrEqual(2);
+  // A bottle nobody has written about shows its figures and dishes, and says no pitch is written: no filled-in phrases.
+  await page.getByTestId('seller-card-close').click();
+  await page.getByTestId('seller-row').and(page.locator('[data-id="a-419770"]')).click(); // Wines of Substance Cabernet
+  await expect(page.getByTestId('seller-card').getByTestId('seller-unwritten')).toBeVisible();
+  await expect(page.getByTestId('seller-card').getByTestId('seller-story')).toHaveCount(0);
+  expect(await page.getByTestId('seller-card').getByTestId('seller-pairing').count()).toBeGreaterThan(0);
   // A wine that can't go on the list still has its card, saying why.
   await page.getByTestId('seller-card-close').click();
   await page.getByTestId('seller-filter-out').click(); await page.getByTestId('seller-row').first().click();
@@ -122,19 +128,26 @@ test('a bottle anywhere opens its wine card: the sheet, a taste profile, how to 
 test('the shortlist says one thing per bottle, prices the bottle and the glass, and folds', async ({ page }) => {
   await open(page, { width: 1440, height: 900 });
   const r = await page.evaluate(() => { const B = SellerMatch.brief(); return {
-    says: B.shortlist.map((f) => f.pitch.say), opens: B.shortlist.map((f) => f.pitch.primary.k),
-    // every dish a bottle is said to suit comes with a reason, and no two dishes of one bottle read the same
+    says: B.shortlist.map((f) => f.pitch.say), opens: B.shortlist.map((f) => f.pitch.primary.k), written: B.shortlist.map((f) => f.pitch.written),
     pairs: B.shortlist.map((f) => f.pitch.pairings.map((x) => x.why)), story: B.shortlist.every((f) => f.pitch.story.length >= 3 && f.pitch.story.every((s) => s.t.length > 30)),
+    // every piece of writing a rep is shown: the openings, and each bottle's line, pitch, dishes and objections
+    texts: [...B.openings.filter((o) => o.wines.length).map((o) => o.fact), ...B.shortlist.flatMap((f) => [f.pitch.say, ...f.pitch.story.map((s) => s.t), ...f.pitch.pairings.map((x) => x.why), ...f.pitch.objections.flatMap((o) => [o.q, o.a])])],
     abouts: SellerCatalogue.wines().map((i) => SellerMatch.about(i)),
     green: _sFit(100), red: _sFit(0), mid: _sFit(50) }; });
-  // "In a sentence" is something to say out loud: no percentages, no doubled commas, one sentence.
-  for (const a of r.abouts) { expect(a, a).not.toMatch(/%|,,|\d{2}/); expect(a.split('. ').length, a).toBe(1); expect(a.length, a).toBeLessThan(190); }
+  // Every shortlisted bottle has its pitch written, against the figures the engine gives today.
+  expect(r.written.every(Boolean)).toBe(true);
   expect(new Set(r.says).size).toBe(r.says.length);
   expect(new Set(r.opens).size).toBe(r.opens.length); // one bottle for each opening
-  for (const ws of r.pairs) { expect(ws.every((w) => w.length > 15)).toBe(true); expect(new Set(ws).size).toBe(ws.length); }
-  // Dish lines are short and each its own: no opening run of words is shared by most of a bottle's dishes.
-  for (const ws of r.pairs.filter((x) => x.length >= 3)) { const starts = ws.map((w) => w.split(' ').slice(0, 6).join(' ')); expect(new Set(starts).size, starts.join(' | ')).toBeGreaterThan(ws.length / 2); expect(Math.max(...ws.map((w) => w.length))).toBeLessThan(170); }
+  for (const ws of r.pairs) expect(ws.every((w) => w && w.length > 15)).toBe(true);
   expect(r.story).toBe(true);
+  // Nothing is said twice. The words are written, never a phrase with another wine's name dropped in: no run of
+  // six words (figures aside) appears in two places anywhere in the brief.
+  const seen = new Map(), repeats = [];
+  r.texts.forEach((t, n) => { const ws = String(t).toLowerCase().replace(/[$\d.,×%]+/g, '#').replace(/[^a-zà-ÿ#' ]+/g, ' ').split(/\s+/).filter(Boolean);
+    for (let i = 0; i + 6 <= ws.length; i++) { const k = ws.slice(i, i + 6).join(' '); if (seen.has(k) && seen.get(k) !== n) repeats.push(k); else seen.set(k, n); } });
+  expect([...new Set(repeats)]).toEqual([]);
+  // "In a sentence" is something to say out loud: no percentages, no doubled commas, one sentence.
+  for (const a of r.abouts) { expect(a, a).not.toMatch(/%|,,|\d{2}/); expect(a.split('. ').length, a).toBe(1); expect(a.length, a).toBeLessThan(190); }
   // Fit runs from bright red at 0 through yellow to brilliant green at 100.
   expect(r.red).toContain('hsl(0,'); expect(r.mid).toContain('hsl(63,'); expect(r.green).toContain('hsl(125,');
   await page.getByTestId('seller-tab-shortlist').click();

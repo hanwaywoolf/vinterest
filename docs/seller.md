@@ -16,9 +16,8 @@ Toronto, the Teams install) and one agency (Authentic Wines & Spirits, Ontario).
   where each bottle would land at the restaurant's own multiple, the dishes it suits by the restaurant's own
   pairings, a fit score made of counted reasons, a shortlist spread over houses and openings, and a pitch for
   each bottle (where it goes, better together, lines from the sheet, objections, the case's sums).
-- **The words** (also `SellerMatch`, still no call): one thing to say to the buyer, a pitch in the order a rep
-  would give it (the wine, why its kind sells, the dish to lead with, the price with their multiple), every
-  dish it suits with a reason a rep can say out loud, and what a buyer says back, per kind of wine.
+- **The words** (`data/seller-brief-eloise.json`): one thing to say to the buyer, the pitch, a line for every
+  dish and the buyer's objections, written per bottle for this restaurant. See below.
 - **The screens** (`seller-screens.jsx`): Brief (openings filtered by kind), Shortlist, Catalogue and a
   printable Cheat sheet. Any bottle opens its wine card: picture, product sheet, taste profile, how to talk
   about it, and its fit and pitch at this restaurant.
@@ -43,11 +42,23 @@ from the abbreviations and need checking with the agency. Prices look like LCBO 
 
 ## Where the words come from
 
-Nothing is written by Claude at run time yet. A pitch is assembled from four sources, and each line on screen
-is marked with which: the restaurant's own list and menu; the agency's product sheet; Vinterest's checked
-grape and region notes (`data/knowledge.json`); and estimates (style figures, flavour words where the sheet
-has no tasting note, and where a bottle lands on the list). The selling lines and objections per kind of wine
-(`SellerMatch.ANGLES`) are fixed text written once: they are trade knowledge and want the agency's review.
+The words of a pitch are written, not assembled. An earlier version built each sentence by filling a wine's
+name and figures into a phrase, and every bottle read the same. Now the engine supplies only facts and
+figures, and `data/seller-brief-eloise.json` holds the writing for this restaurant: a line about each
+opening and, for each shortlisted bottle, one thing to say, the pitch, a line for every dish it suits and
+what the buyer will say back.
+
+For the prototype that file was written by hand against the engine's figures. The product version is one
+call per prospect, in which Vinny is given the same facts (the openings, each bottle's landing price and
+dishes, the restaurant's list and menu, the product sheets) and writes the brief; a rep or the agency then
+reads it before it's used. Two guards are already in place for that: each bottle's writing records the
+figures it was written against and is held back if matching later lands the bottle elsewhere, and a test
+fails if any run of six words appears twice anywhere in the brief.
+
+A bottle with no writing shows its figures, dishes and score, and says no pitch has been written.
+
+Each line on screen is still marked with what it rests on: the restaurant's list, the agency's product
+sheet, Vinterest's checked grape and region notes (`data/knowledge.json`), or an estimate.
 
 Pictures are loaded from the agency platform's own image host; 84 of 110 listings have one.
 
