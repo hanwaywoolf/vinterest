@@ -150,7 +150,7 @@ function TeamBriefing({pid,onAck,back,preview}){ const T=useTheme(), cr=T.lift(C
     {TeamShift.empty(c)&&<div style={{fontSize:15,color:T.mid,fontFamily:C.P,marginTop:16}}>Nothing in tonight's briefing.</div>}
   </div>;
   if(!onAck) return <div data-testid="team-briefing" style={{paddingTop:4}}>{body}</div>;
-  return <div data-testid="team-briefing" role="dialog" aria-label="Tonight's briefing" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:`radial-gradient(ellipse at 50% -10%, ${_alpha(cr,0.3)}, transparent 60%) ${T.bg}`,color:T.ink}}>
+  return <div data-testid="team-briefing" role="dialog" aria-label="Tonight's briefing" style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',background:T.bg,color:T.ink}}>
     <div data-scroll style={{flex:1,overflowY:'auto',WebkitOverflowScrolling:'touch',paddingTop:'calc(env(safe-area-inset-top) + 22px)'}}>{body}</div>
     <div style={{padding:'12px 18px calc(env(safe-area-inset-bottom) + 14px)',borderTop:`1px solid ${T.line}`,background:T.bg}}><div style={{maxWidth:640,margin:'0 auto'}}>
       <div data-testid="briefing-ack"><Btn primary full onClick={onAck}>{preview?'Close the preview':"Got it. I've read tonight's briefing"}</Btn></div>

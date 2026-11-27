@@ -152,12 +152,23 @@ try {
   // server's briefing, their Today, Practise, a drill question, the list, a wine's card, the menu and a dish.
   {
     const DAY = path.join(CROPS, 'day'); fs.mkdirSync(DAY, { recursive: true });
-    const pc = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
+    // Three device pixels to one: a phone's own screen is 3x, and at 2x (let alone the Vinny pictures' old 600px) the small
+    // text inside a 200px phone on the page went soft.
+    const pc = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, reducedMotion: 'reduce' });
     await pc.addInitScript(() => { window.VINTEREST_TOUR = 'off'; });
-    for (const p of ['**/claude', '**/tts', '**/stt']) await pc.route(p, (r) => r.fulfill({ status: 503, body: '{}' }));
+    for (const p of ['**/tts', '**/stt']) await pc.route(p, (r) => r.fulfill({ status: 503, body: '{}' }));
+    // Vinny's words in the pictures are written here, never fetched: an answer about the olives, and a guest who wants
+    // something lighter, answered and marked. Everything else that would call Claude gets nothing.
+    await pc.route('**/claude', (r) => { let b = {}; try { b = JSON.parse(r.request().postData() || '{}'); } catch (e) {} const c = JSON.stringify(b.messages || '');
+      const say = (o) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: JSON.stringify(o) }) });
+      if (b.purpose === 'team_vinny') { const w = (c.match(/(W\d+) Bründlmayer/) || [])[1] || ''; return say({ answer: `The Bründlmayer Grüner Veltliner${w ? ` (${w})` : ''}, by the glass: peppery and fresh, and it loves the salt of the olives.`, wines: w ? [w] : [], dishes: [] }); }
+      if (b.purpose === 'team_guest') return /SERVER:/.test(c)
+        ? say({ guest: "Perfect, we'll have a glass of that.", done: true, mark: { score: 0.85, verdict: 'right', good: 'You named the wine and its price, and said why it suits the dish.', missing: '', better: "Offer the bottle too when it's a table of two." } })
+        : say({ guest: "I'd love a glass of something with this, please. Nothing too heavy, something lighter. What would you suggest?", done: false });
+      return r.fulfill({ status: 503, body: '{}' }); });
     await pc.route('**/config', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     const ph = await pc.newPage(); ph.on('pageerror', (e) => errors.push(e.message));
-    const snap = async (name, also) => { await ph.waitForTimeout(350); const file = path.join(DAY, name + '.jpg'); await ph.screenshot({ path: file, type: 'jpeg', quality: 86 });
+    const snap = async (name, also) => { await ph.waitForTimeout(350); const file = path.join(DAY, name + '.jpg'); await ph.screenshot({ path: file, type: 'jpeg', quality: 82 });
       if (also) fs.copyFileSync(file, path.join(CROPS, also + '.jpg')); console.log(`day/${name}.jpg${also ? ' and ' + also + '.jpg' : ''}`); };
     const top = () => ph.evaluate(() => { const s = document.querySelector('[data-scroll]'); if (s) s.scrollTop = 0; });
     await ph.goto(`http://localhost:${port}/team/?seed=demo&view=phone`); await ph.waitForFunction(() => window.TeamLearn && TeamLearn.people().length);
@@ -185,6 +196,18 @@ try {
     await ph.getByTestId('team-dish-row').first().click(); await ph.getByTestId('team-dish').waitFor(); await snap('dish', 'phone-dish');
     await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('team-tab-vinny').click(); await top(); await snap('practise');
     await ph.getByTestId('vinny-next').getByText(/^(Start|Carry on|Practise|Take)/).last().click(); await ph.getByTestId('drill-q').first().waitFor(); await snap('drill', 'phone-drill');
+    // The Vinny pictures (img/vinny/): the hub, a question answered, his test and its first question, a guest at the
+    // table and the mark.
+    const VIN = path.join(CROPS, 'vinny'); fs.mkdirSync(VIN, { recursive: true });
+    const vin = async (name) => { await ph.waitForTimeout(450); await ph.screenshot({ path: path.join(VIN, name + '.jpg'), type: 'jpeg', quality: 82 }); console.log(`vinny/${name}.jpg`); };
+    const hub = async () => { await ph.goto(`http://localhost:${port}/team/?view=phone`); await ph.getByTestId('team-tab-vinny').click(); await ph.getByTestId('vinny-doors').waitFor(); await top(); };
+    await hub(); await vin('hub');
+    await ph.getByTestId('vinny-door-ask').click(); await ph.getByTestId('vinny-input').fill('What goes with the olives by the glass?'); await ph.getByLabel('Ask', { exact: true }).click(); await ph.getByTestId('vinny-answer').first().waitFor(); await vin('ask');
+    await hub(); await ph.getByTestId('vinny-door-test').click(); await ph.getByTestId('vinny-test').first().waitFor(); await vin('test');
+    await ph.getByTestId('vinny-test').getByText(/^(Start|Take|Begin)/).first().click(); await ph.getByTestId('drill-q').first().waitFor(); await vin('drill');
+    await hub(); await ph.getByTestId('vinny-door-guest').click(); await ph.getByTestId('guest-line').first().waitFor(); await vin('guest');
+    await ph.getByTestId('guest-help').getByText('On your own').click(); await ph.getByTestId('guest-reply').fill('The Chablis by the glass at £13: crisp and light, and it keeps the dish fresh.'); await ph.getByText('Say', { exact: true }).click();
+    await ph.getByTestId('guest-mark').first().waitFor(); await ph.evaluate(() => { const m = document.querySelector('[data-testid="guest-mark"]'); m && m.scrollIntoView({ block: 'center' }); }); await vin('mark');
     await pc.close();
   }
 
