@@ -38,7 +38,7 @@ body.in { background: var(--dark); color: #fff; }
 </div></header>
 <main class="wrap">
   <section class="in-hero">
-    <div class="eyebrow">Restaurants and demos</div>
+    <div class="eyebrow" id="in-hi" data-default="Restaurants and demos">Restaurants and demos</div>
     <h1>Every restaurant, <em>in one place.</em></h1>
     <p>Each restaurant's marketing page, its demo and the latest preview of both, with what its demo holds. Live is what a prospect sees today; Preview is the work in progress on <code>%%PREVIEW_BRANCH%%</code>, before it's rolled out.</p>
     <div class="in-sum">%%TOTALS%%</div>
@@ -47,5 +47,18 @@ body.in { background: var(--dark); color: #fff; }
   %%VENUES%%
   <p class="in-foot">Counted from each demo on %%STATS_AT%% (<code>npm run site:teams:stats</code>). Quiz questions are everything a team can be asked: about each wine, dish and cocktail. Teams and sales figures in the demos are invented. This page is kept out of search and isn't linked from the site.</p>
 </main>
+<script>
+// A greeting for whoever is likely reading: from Canada it's Martin, by Toronto's clock; from the UK it's Carey, by
+// London's. The country is Cloudflare's reading of the visitor's address (/api/country); anywhere else, or if it can't
+// be read, the heading stays as it is.
+(function () {
+  var WHO = { CA: ['Martin', 'America/Toronto'], GB: ['Carey', 'Europe/London'] }, el = document.getElementById('in-hi');
+  fetch('/api/country').then(function (r) { return r.json(); }).then(function (j) {
+    var w = WHO[j && j.country]; if (!w || !el) return;
+    var h = +new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: w[1] }).format(new Date());
+    el.textContent = 'Good ' + (h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening') + ', ' + w[0]; el.setAttribute('data-who', w[0]);
+  }).catch(function () {});
+})();
+</script>
 </body>
 </html>

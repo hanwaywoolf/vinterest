@@ -42,9 +42,7 @@ const INTERNAL_VENUES = [
   { seed: 'social', slug: 'social-corner', host: 'socialcorner.vinterest.team', where: 'Vancouver', logo: 'social-corner.png' },
   { seed: 'eloise', slug: 'eloise', host: 'eloise.vinterest.team', where: 'Toronto', logo: 'eloise.svg' },
   { seed: 'princess-royal', slug: 'princess-royal', host: 'princessroyal.vinterest.team', where: 'Notting Hill, London', logo: 'princess-royal.svg' },
-  // The Barbary has no address of its own yet: once barbary.vinterest.team is a custom domain on the vinterest Pages
-  // project (the Worker already routes it), give it `host` here and its Live buttons appear.
-  { seed: 'barbary', slug: 'barbary', host: null, where: 'London', logo: 'barbary.svg' },
+  { seed: 'barbary', slug: 'barbary', host: 'barbary.vinterest.team', where: 'London', logo: 'barbary.svg' },
 ];
 const SRC = path.join(ROOT, 'site/teams');
 const OUT = path.join(ROOT, 'site-teams-dist');

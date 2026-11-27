@@ -612,6 +612,17 @@ test('the internal page lists every restaurant with its links and counts, and st
   const stats = require('../site/teams/internal.json').venues, total = Object.values(stats).reduce((a, v) => a + v.wines, 0);
   await expect(page.locator('.in-sum')).toContainText(total.toLocaleString('en-GB'));
   await expect(page.locator('[data-venue="eloise"]')).toContainText(String(stats.eloise.questions));
+  // The Barbary has its own address too.
+  expect(await page.locator('[data-venue="barbary"] a.btn').first().getAttribute('href')).toBe('https://barbary.vinterest.team/');
+  // A greeting by where the visitor is: Martin from Canada by Toronto's clock, Carey from the UK by London's, else none.
+  const hi = async (country, at) => { const p = await page.context().newPage(); await p.clock.install({ time: new Date(at) });
+    await p.route('**/api/country', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ country }) })); await p.goto(`${BASE}/internal`);
+    await p.waitForTimeout(400); const t = await p.locator('#in-hi').innerText(); await p.close(); return t.toLowerCase(); };
+  expect(await hi('CA', '2026-07-01T13:30:00Z')).toBe('good morning, martin');   // 09:30 in Toronto
+  expect(await hi('CA', '2026-07-01T23:30:00Z')).toBe('good evening, martin');   // 19:30 in Toronto
+  expect(await hi('GB', '2026-07-01T13:30:00Z')).toBe('good afternoon, carey');  // 14:30 in London, summer time
+  expect(await hi('GB', '2026-12-01T11:30:00Z')).toBe('good morning, carey');    // 11:30 in London, winter
+  expect(await hi('FR', '2026-07-01T13:30:00Z')).toBe('restaurants and demos');
   // Nothing on the public pages links to it, and the sitemap leaves it out.
   const fs = require('node:fs'), path = require('node:path'), dist = path.join(__dirname, '..', 'site-teams-dist');
   expect(fs.readFileSync(path.join(dist, 'sitemap.xml'), 'utf8')).not.toContain('internal');
