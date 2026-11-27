@@ -258,12 +258,29 @@ const SellerMatch = {
   placeLine(i){ return [i.appellation||i.sub||i.region,i.appellation&&i.region&&i.appellation!==i.region?i.region:null,i.country].filter(Boolean).filter((x,k,a)=>a.indexOf(x)===k).join(', '); },
   sentences(text,n=1){ const out=String(text||'').split(/(?<=[.!?])\s+/).filter(s=>s.length>8).slice(0,n).join(' '); return out.length>320?out.slice(0,317).replace(/\s+\S*$/,'')+'…':out; },
   /* One line that says what the wine is, for anyone, whatever the restaurant. */
-  about(i){ const g=this.grapeLine(i), fl=i.flavours.length?i.flavours.join(', '):''; return `${g?g+' from ':'From '}${this.placeLine(i)}. ${this.styleWords(i).replace(/^./,c=>c.toUpperCase())}${fl?`: ${fl}`:''}.`; },
+  /* A sentence someone could say out loud: what kind of wine, where from, what it tastes of. Never the blend's
+     percentages or a row of style figures: those have their own lines (talk's The blend, the taste profile). */
+  NAMED:[[/amarone|amaron\b/,'Amarone'],[/barolo/,'Barolo'],[/valpolicella/,'Valpolicella'],[/rioja/,'Rioja'],[/\bgavi\b/,'Gavi'],[/cotes? du rhone/,'Côtes du Rhône'],[/prosecco|valdobbia/,'Prosecco'],[/icewine|ice wine/,'icewine']],
+  kindWord(i){ const sh=this.shape(i), t=sh.text, pink=/ros[eé]|pink/i.test(i.name), named=(this.NAMED.find(([re])=>re.test(t))||[])[1];
+    if(i.kind!=='wine') return String(i.family||'spirit').toLowerCase();
+    if(sh.kind==='fortified') return /port/.test(t)?(/tawny/i.test(i.notes.taste)||i.flavours.some(x=>/toffee|walnut|nut/.test(x))?'tawny port':'port'):'fortified wine';
+    if(sh.kind==='sparkling') return sh.region==='Champagne'?(pink?'rosé Champagne':'Champagne'):named==='Prosecco'?'Prosecco':/traditionnelle|traditional|classico/.test(t)?'traditional-method sparkling wine':pink?'sparkling rosé':'sparkling wine';
+    if(named) return sh.kind==='white'&&['Côtes du Rhône','Rioja'].includes(named)?`white ${named}`:named;
+    if(sh.kind==='rosé') return 'rosé';
+    if(sh.grapes.length===1||(i.shares&&i.shares[i.grapes[0]]>=85)) { const own=i.grapes[0]||sh.lead; return sh.kind==='red'||sh.kind==='white'?own:`${own} ${sh.kind}`; }
+    return sh.lead?`${sh.lead}-led ${sh.kind} blend`:`${sh.kind} wine`; },
+  about(i){ const sh=this.shape(i), st=i.style||{}, what=this.kindWord(i), red=['red','fortified'].includes(sh.kind);
+    const adj=[st.sweet>=4?'sweet':st.sweet>=2&&sh.kind!=='sparkling'?'off-dry':null, st.body>=5?'rich':st.body===4?'full-bodied':st.body<=2?(sh.kind==='sparkling'?'crisp':'light'):null, red&&sh.kind==='red'?(st.tannin>=4?'firm':st.tannin<=2?'soft':null):(!red&&st.acid>=4&&st.body>2?'fresh':!red&&st.acid>=4&&st.body<=2&&sh.kind!=='sparkling'?'crisp':null)].filter(Boolean).slice(0,2);
+    const lead=(adj.length?adj.join(', ')+' ':'')+what;
+    const where=(()=>{ const p=i.appellation||i.sub||i.region, n=this._norm(p); if(!p) return i.country; return this._norm(what).includes(n)||n.includes(this._norm(what))?[i.region&&this._norm(i.region)!==n?i.region:null,i.country].filter(Boolean).join(', '):[p,this._norm(p).includes(this._norm(i.country))?null:i.country].filter(Boolean).join(', '); })();
+    const fl=i.flavours.slice(0,3), taste=fl.length?`, with ${fl.length>1?fl.slice(0,-1).join(', ')+' and '+fl[fl.length-1]:fl[0]}`:'';
+    return `${this._a(lead)} ${lead} from ${/^(Douro|Rhône Valley|Niagara Peninsula|Valle Central|Peloponnese)$/.test(where.split(',')[0])?'the ':''}${where}${taste}.`; },
   /* What a seller can say about a wine before any restaurant comes into it: each line with where it comes from
      (the product sheet, Vinterest's checked grape and region notes, or an estimate). */
   talk(i){ const out=[], K=typeof KNOWLEDGE!=='undefined'?KNOWLEDGE:{grapes:{},regions:{}}, sh=this.shape(i), add=(label,text,basis)=>{ if(text) out.push({label,text,basis}); };
-    if(i.kind==='wine') add('In a sentence',this.about(i),i.basis.flavours==='sheet'&&i.basis.grapes==='sheet'?'estimate':'estimate');
+    if(i.kind==='wine') add('In a sentence',this.about(i),'estimate');
     add('How it tastes',this.sentences(i.notes.taste,3),'sheet');
+    if(i.kind==='wine'&&i.grapes.length>1) add('The blend',this.grapeLine(i)+'.',i.basis.grapes==='sheet'?'sheet':'estimate');
     const G=sh.lead&&K.grapes[sh.lead]; if(G) add(`The grape: ${sh.lead}`,`${G.profile}.${G.climate?' '+G.climate+'.':''}`,'guide');
     const R=sh.region&&K.regions[sh.region]; if(R) add(`The place: ${sh.region}`,[R.climate&&R.climate+'.',R.classification&&`Classification: ${R.classification}.`,R.agingRules&&/reserva|riserva|crianza|barolo|amarone/i.test(i.name+' '+i.appellation)?R.agingRules:null].filter(Boolean).join(' '),'guide');
     add('How it is made',this.sentences(i.notes.made,2),'sheet');

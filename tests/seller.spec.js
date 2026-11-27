@@ -125,7 +125,10 @@ test('the shortlist says one thing per bottle, prices the bottle and the glass, 
     says: B.shortlist.map((f) => f.pitch.say), opens: B.shortlist.map((f) => f.pitch.primary.k),
     // every dish a bottle is said to suit comes with a reason, and no two dishes of one bottle read the same
     pairs: B.shortlist.map((f) => f.pitch.pairings.map((x) => x.why)), story: B.shortlist.every((f) => f.pitch.story.length >= 3 && f.pitch.story.every((s) => s.t.length > 30)),
+    abouts: SellerCatalogue.wines().map((i) => SellerMatch.about(i)),
     green: _sFit(100), red: _sFit(0), mid: _sFit(50) }; });
+  // "In a sentence" is something to say out loud: no percentages, no doubled commas, one sentence.
+  for (const a of r.abouts) { expect(a, a).not.toMatch(/%|,,|\d{2}/); expect(a.split('. ').length, a).toBe(1); expect(a.length, a).toBeLessThan(190); }
   expect(new Set(r.says).size).toBe(r.says.length);
   expect(new Set(r.opens).size).toBe(r.opens.length); // one bottle for each opening
   for (const ws of r.pairs) { expect(ws.every((w) => w.length > 15)).toBe(true); expect(new Set(ws).size).toBe(ws.length); }
