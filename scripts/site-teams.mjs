@@ -143,6 +143,11 @@ export async function build() {
     const slug = f === 'index.html' ? '' : f.replace(/\.html$/, '');
     const nav = fill(part('nav'), vars).replace(`href="/${slug}"`, (m) => slug ? `${m} aria-current="page"` : m);
     let html = fill(fs.readFileSync(path.join(SRC, f), 'utf8'), { ...vars, NAV: nav });
+    // A picture with smaller copies beside it (made by scripts/site-teams-shots.mjs: x-1x.jpg, x-2x.jpg) is written as a
+    // srcset, so a 1x monitor is sent the picture made for it instead of shrinking the 3x one into jagged text.
+    html = html.replace(/src="(img\/[^"?]+)\.jpg"/g, (m, base) => { const has = (n) => fs.existsSync(path.join(SRC, `${base}-${n}x.jpg`)), u = (x) => `${x}?v=${vars.IMG_V}`;
+      if (!has(1)) return m; const set = has(2) ? `${u(base + '-1x.jpg')} 1x, ${u(base + '-2x.jpg')} 2x, ${u(base + '.jpg')} 3x` : `${u(base + '-1x.jpg')} 1x, ${u(base + '.jpg')} 2x`;
+      return `src="${base}${has(2) ? '-2x' : ''}.jpg" srcset="${set}"`; });
     html = html.replace(/(src="img\/[^"?]+)"/g, `$1?v=${vars.IMG_V}"`);
     if (!html.includes('</body>')) throw new Error(`site-teams: ${f} has no </body>`);
     fs.writeFileSync(path.join(OUT, f), html.replace('</body>', `${vars.ANALYTICS}</body>`));

@@ -211,6 +211,27 @@ try {
     await pc.close();
   }
 
+  /* Smaller copies for the screens that need them. A picture taken at three pixels to one and shown in a 214px phone
+     on a 1x monitor is shrunk five times over by the browser, which leaves its small text jagged (it read as
+     pixelated on vinterest.team). So each phone picture gets a -2x copy (half) and a -1x copy (a quarter), and each
+     console card, taken at two to one, a -1x copy, each made by halving on a canvas with smoothing; the build writes
+     them into the page as srcset (scripts/site-teams.mjs), so a browser takes the one made for its screen. */
+  {
+    const vp = await (await browser.newContext()).newPage();
+    const half = (file, out) => vp.evaluate(async (b64) => { const im = new Image(); im.src = 'data:image/jpeg;base64,' + b64; await im.decode();
+      const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth / 2); c.height = Math.round(im.naturalHeight / 2);
+      const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.9).split(',')[1]; }, fs.readFileSync(file).toString('base64')).then((b) => fs.writeFileSync(out, Buffer.from(b, 'base64')));
+    const own = (f) => f.endsWith('.jpg') && !/-[12]x\.jpg$/.test(f), at = (f, n) => f.replace(/\.jpg$/, `-${n}x.jpg`);
+    const phones = [...fs.readdirSync(path.join(CROPS, 'day')).filter(own).map((f) => path.join(CROPS, 'day', f)), ...['hub', 'ask', 'test', 'drill', 'guest', 'mark'].map((n) => path.join(CROPS, 'vinny', n + '.jpg')),
+      ...fs.readdirSync(CROPS).filter((f) => own(f) && f.startsWith('phone-')).map((f) => path.join(CROPS, f))];
+    for (const f of phones) { await half(f, at(f, 2)); await half(at(f, 2), at(f, 1)); }
+    const cards = fs.readdirSync(CROPS).filter((f) => own(f) && f.startsWith('crop-')).map((f) => path.join(CROPS, f));
+    for (const f of cards) await half(f, at(f, 1));
+    console.log(`${phones.length} phone pictures and ${cards.length} console cards given their smaller copies`);
+    await vp.context().close();
+  }
+
   fs.writeFileSync(path.join(OUT, 'sizes.json'), JSON.stringify(sizes, null, 1) + '\n');
   console.log('sizes.json', JSON.stringify(sizes));
   if (errors.length) { console.log('Page errors while taking them:', errors.slice(0, 3)); process.exitCode = 1; }
