@@ -37,6 +37,10 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // the restaurant's own address when it has one, and its logo in img/for/. PREVIEW_BRANCH is the branch whose Cloudflare
 // previews the page's Preview buttons open: the one Teams is being worked on.
 const PREVIEW_BRANCH = 'claude/teams-site';
+// Vinterest Seller (docs/seller.md) on the internal page: the branch its preview is on, until it is on main.
+const SELLER_BRANCH = 'claude/wonderful-knuth-rwxzit';
+// A branch's Cloudflare Pages preview name: slashes become dashes, and Cloudflare cuts it at 28 characters.
+const previewName = (branch) => branch.replace(/\//g, '-').slice(0, 28).replace(/-+$/, '');
 const INTERNAL_VENUES = [
   { seed: 'demo', main: true, host: 'demo.vinterest.team', where: 'The example restaurant on vinterest.team', note: 'invented', logo: 'larkspur.png', tall: true }, // its logo is the lark over the name, twice the height of a wordmark
   { seed: 'social', slug: 'social-corner', host: 'socialcorner.vinterest.team', where: 'Vancouver', logo: 'social-corner.png' },
@@ -191,7 +195,7 @@ export async function build() {
   const inFile = path.join(SRC, '_internal.html'), statFile = path.join(SRC, 'internal.json');
   if (fs.existsSync(inFile) && fs.existsSync(statFile)) {
     const stats = JSON.parse(fs.readFileSync(statFile, 'utf8')), esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const pv = PREVIEW_BRANCH.replace(/\//g, '-'), n = (x) => Number(x || 0).toLocaleString('en-GB');
+    const pv = previewName(PREVIEW_BRANCH), n = (x) => Number(x || 0).toLocaleString('en-GB');
     const rows = INTERNAL_VENUES.filter((v) => stats.venues[v.seed]).map((v) => ({ ...v, s: stats.venues[v.seed] }));
     const btn = (href, label, primary) => `<a class="btn small${primary ? ' primary' : ''}" href="${esc(href)}" target="_blank" rel="noopener">${label}</a>`;
     const venue = (v) => { const s = v.s, live = v.host ? `https://${v.host}` : null, app = (view) => `https://${pv}.vinterest.pages.dev/team/?seed=${v.seed}&view=${view}`;
@@ -209,10 +213,25 @@ export async function build() {
       <div><h3>Staff app</h3><p>What their team would train on: the drill, the cards and Vinny.</p><div class="row">${live2('phone')}${btn(app('phone'), 'Preview')}</div></div>
     </div>
   </section>`; };
+    // Vinterest Seller, the prototype for wine agencies: counted from its catalogue file at build time.
+    const sellerFile = path.join(ROOT, 'data/seller-awsm.json'); let seller = '', sellerJump = '';
+    if (fs.existsSync(sellerFile)) { const cat = JSON.parse(fs.readFileSync(sellerFile, 'utf8')), it = cat.items, wines = it.filter((i) => i.kind === 'wine'), eloise = stats.venues.eloise || {};
+      const stat = (b, label, small) => `<div><b>${b}</b><span>${label}</span>${small ? `<small>${small}</small>` : ''}</div>`, spv = previewName(SELLER_BRANCH);
+      const asOf = new Date(cat.agency.fetched + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      sellerJump = '<a class="btn small" href="#seller">Vinterest Seller</a>';
+      seller = `<section class="in-v" id="seller" data-product="seller">
+    <div class="in-head"><div><h2>Vinterest Seller</h2><p>Prototype · for agencies that sell wine to restaurants · ${esc(cat.agency.name)}, ${esc(cat.agency.market)}</p></div><span class="in-tag">In the works</span></div>
+    <div class="in-stats">${stat(n(it.length), 'Listings', `${n(wines.length)} wines, ${n(it.length - wines.length)} spirits`)}${stat(n(it.filter((i) => i.stock.warehouse > 0).length), 'In the warehouse', 'with cases to deliver')}${stat(n(wines.filter((i) => i.basis.grapes === 'sheet').length), 'Grapes on the sheet', `${n(wines.filter((i) => i.basis.grapes === 'estimate').length)} estimated`)}${stat(n(wines.filter((i) => i.vintage).length), 'With a vintage', 'the sheet rarely gives one')}${stat('Eloise', 'First prospect', eloise.wines ? `${n(eloise.wines)} wines, ${n(eloise.dishes)} dishes` : 'Toronto')}${stat(esc(asOf), 'Catalogue read', 'from the public site')}</div>
+    <div class="in-links">
+      <div><h3>Visit brief</h3><p>What Eloise's list leaves open, the bottles to lead with, and a cheat sheet for the meeting.</p><div class="row">${btn('https://vinterest.pages.dev/seller/', 'Live', true)}${btn(`https://${spv}.vinterest.pages.dev/seller/`, 'Preview')}</div></div>
+      <div><h3>What to check</h3><p>Whether the shortlist is what a rep would take. Listing types, licensee prices and the markup are guesses until the agency corrects them.</p></div>
+      <div><h3>Not built yet</h3><p>Vinny's written pitch, the practice conversation with the buyer, quizzes, terms and discounts, accounts, a stock feed.</p></div>
+    </div>
+  </section>`; }
     const sum = (k) => rows.reduce((a, v) => a + (v.s[k] || 0), 0), tot = (b, l) => `<div><b>${b}</b><span>${l}</span></div>`;
     const html = fill(fs.readFileSync(inFile, 'utf8'), { ...vars, PREVIEW_BRANCH, STATS_AT: new Date(stats.at + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
       TOTALS: tot(rows.length, 'Restaurants') + tot(n(sum('wines')), 'Wines') + tot(n(sum('dishes')), 'Menu items') + tot(n(sum('cocktails')), 'Cocktails') + tot(n(sum('questions')), 'Quiz questions'),
-      JUMP: rows.map((v) => `<a class="btn small" href="#${esc(v.seed)}">${esc(v.s.name)}</a>`).join(''), VENUES: rows.map(venue).join('\n  ') });
+      JUMP: rows.map((v) => `<a class="btn small" href="#${esc(v.seed)}">${esc(v.s.name)}</a>`).join('') + sellerJump, VENUES: rows.map(venue).join('\n  ') + (seller ? '\n  ' + seller : '') });
     fs.writeFileSync(path.join(OUT, 'internal.html'), html);
   }
   // A private page's data (the cards its list opens), served beside it.

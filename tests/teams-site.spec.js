@@ -608,6 +608,11 @@ test('the internal page lists every restaurant with its links and counts, and st
   expect(hrefs).toEqual(['https://socialcorner.vinterest.team/', 'https://claude-teams-site.vinterest-teams.pages.dev/for/social-corner',
     'https://socialcorner.vinterest.team/demo/?view=console', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=console',
     'https://socialcorner.vinterest.team/demo/?view=phone', 'https://claude-teams-site.vinterest.pages.dev/team/?seed=social&view=phone']);
+  // Vinterest Seller, the prototype for agencies, has its own block: its catalogue's size and where to open it.
+  const seller = page.locator('[data-product="seller"]');
+  await expect(seller).toContainText('Vinterest Seller'); await expect(seller).toContainText('Authentic Wines & Spirits');
+  await expect(seller).toContainText(String(require('../data/seller-awsm.json').items.length));
+  expect(await seller.locator('a.btn').evaluateAll((as) => as.map((a) => a.getAttribute('href')))).toEqual(['https://vinterest.pages.dev/seller/', 'https://claude-wonderful-knuth-rwxzi.vinterest.pages.dev/seller/']);
   // The counts are the app's own (site/teams/internal.json), and the totals add up.
   const stats = require('../site/teams/internal.json').venues, total = Object.values(stats).reduce((a, v) => a + v.wines, 0);
   await expect(page.locator('.in-sum')).toContainText(total.toLocaleString('en-GB'));

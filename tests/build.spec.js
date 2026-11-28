@@ -25,10 +25,13 @@ test('dist/app.js has no synchronous XHR and inlines every loader path', async (
   // The team app (dist/team/team.js) carries everything the consumer app does plus its own sample.
   const team = fs.readFileSync(path.join(ROOT, 'dist/team/team.js'), 'utf8');
   expect(team).not.toContain('XMLHttpRequest');
-  const inlined = assets(app), teamInlined = assets(team);
+  // Vinterest Seller (dist/seller/seller.js) carries the Teams files plus the agency's catalogue.
+  const seller = fs.readFileSync(path.join(ROOT, 'dist/seller/seller.js'), 'utf8');
+  expect(seller).not.toContain('XMLHttpRequest');
+  const inlined = assets(app), teamInlined = assets(team), sellerInlined = assets(seller);
   for (const file of fs.readdirSync(path.join(ROOT, 'data'))) {
     if (file === 'tts-say.json') continue; // read by the Worker as deployed (ttsApply), never by the app
-    const own = file.startsWith('team-') ? teamInlined : inlined;
+    const own = file.startsWith('seller-') ? sellerInlined : file.startsWith('team-') ? teamInlined : inlined;
     expect(own[`data/${file}`], `data/${file}`).toBe(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'));
   }
 });

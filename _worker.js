@@ -87,6 +87,8 @@ const CLAUDE_PURPOSE_LIMITS = {
   team_buyer: 6000,        // team-buyer.js TeamBuyer.review — the list read as a buyer: shop prices, dishes the menu lacks, wines the list lacks (prompts/team-buyer.txt)
   team_plan: 6000,         // team-plans.js TeamPlans.write — a bespoke training plan for one person, written by Vinny from the manager's request (prompts/team-plan.txt)
   team_special: 4096,      // team-shift.js TeamShift.read — tonight's specials from a photo of the chef's board or a typed note, each paired from the list (prompts/team-special.txt)
+  // Vinterest Seller (seller-*.js, docs/seller.md), open while it's a prototype like the team purposes:
+  seller_brief: 12288,     // seller-vinny.js SellerVinny.write — the visit brief's words for one prospect: each opening, each shortlisted bottle's pitch, dish lines and objections (prompts/seller-brief.txt)
   team_dishes: 12288       // team-data.js TeamData.writeDishCards — a dish in a sentence, its likely allergens for the kitchen to confirm, changes, what guests ask (prompts/team-dish-cards.txt)
 };
 
@@ -97,7 +99,7 @@ const CLAUDE_PURPOSE_LIMITS = {
    make the quiz banks' wrong answers any less obvious; the quiz prompts' own rule about them does. Refusal
    fallbacks are on, so a request their safety classifier declines is answered by another model
    in the same call instead of coming back empty. Earlier models get nothing extra. */
-const PURPOSE_EFFORT = { team_buyer: "medium", team_plan: "medium", team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
+const PURPOSE_EFFORT = { seller_brief: "medium", team_buyer: "medium", team_plan: "medium", team_special: "medium", team_cards: "medium", team_cocktails: "medium", team_dishes: "medium", team_fix: "medium", team_review: "medium", team_pairings: "medium", grape_quiz: "medium", region_quiz: "medium", quiz_variants: "medium", learn_article: "medium", winedna_summary: "medium", sommelier_script: "medium", wine_deep: "medium" };
 function modelOptions(model, purpose, env) {
   if (!/^claude-(sonnet|opus|fable)-5/.test(model)) return { body: {}, betas: [] };
   const effort = env.CLAUDE_EFFORT || PURPOSE_EFFORT[purpose] || "low";
@@ -140,14 +142,17 @@ function cacheSplit(messages) {
 const TEAM_DRAFT_DEFAULT = "claude-sonnet-5-5";
 function modelFor(purpose, env, draft) {
   if (draft && /^team_/.test(purpose)) return env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
+  if (draft && /^seller_/.test(purpose)) return env.SELLER_DRAFT_MODEL || env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
   if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
+  // Seller writes on its own model when SELLER_MODEL is set, else on the team's.
+  if (/^seller_/.test(purpose) && (env.SELLER_MODEL || env.TEAM_MODEL)) return env.SELLER_MODEL || env.TEAM_MODEL;
   return env.CLAUDE_MODEL || "claude-sonnet-4-6";
 }
 
 /* Opus 5 and Fable 5 always think, and the thinking is counted against max_tokens. The team's long
    writing caps (CLAUDE_PURPOSE_LIMITS) were set for a model that doesn't think, so a four-wine card call
    could be cut off part way; on those models they're doubled. Unused tokens cost nothing. */
-const THINKING_DOUBLED = { team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1, team_plan: 1, team_buyer: 1 };
+const THINKING_DOUBLED = { seller_brief: 1, team_list: 1, team_menu: 1, team_cards: 1, team_cocktails: 1, team_pairings: 1, team_fix: 1, team_review: 1, team_dishes: 1, team_special: 1, team_plan: 1, team_buyer: 1 };
 // The short team answers (a guest's line with its choices, Ask Vinny, a marked answer) were sized for a model that
 // doesn't think: on Opus the thinking used the whole cap and the answer came back cut off mid-JSON. They get room.
 const THINKING_FLOOR = { team_vinny: 4096, team_guest: 4096, team_grade: 2048 };

@@ -86,6 +86,12 @@ export const TEAM_SOURCES = [
 ];
 export const TEAM_ALL = [...APP_SOURCES.filter((f) => f !== 'pwa-app.jsx'), ...TEAM_SOURCES];
 
+// Vinterest Seller (dist/seller/, docs/seller.md): the Teams code without its shell, reading a prospect restaurant,
+// plus the agency's catalogue, the matching and Seller's own screens. seller-store.js goes straight after
+// pwa-store.js: it keeps everything in memory, so Seller never touches the restaurant a browser trains on at /team/.
+export const SELLER_SOURCES = ['seller-match.js', 'seller-vinny.js', 'seller-screens.jsx', 'seller-app.jsx'];
+export const SELLER_ALL = [...TEAM_ALL.filter((f) => f !== 'team-app.jsx').flatMap((f) => (f === 'pwa-store.js' ? [f, 'seller-store.js'] : [f])), ...SELLER_SOURCES];
+
 // Copied into dist/ unchanged. Directories are copied recursively.
 export const STATIC_FILES = [
   'manifest.json',

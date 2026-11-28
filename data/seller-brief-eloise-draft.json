@@ -1,0 +1,396 @@
+{
+ "venue": "Eloise",
+ "agency": "Authentic Wines & Spirits",
+ "written": "2026-11-28",
+ "by": "Vinny",
+ "openings": {
+  "call:chard": "Their three Chardonnays are Burgundy's Olivier Leflaive Bourgogne Les Sétilles at $150, Lis Neris Jurosa at $169 and Domaine des Hâtes Chablis at $110. A guest who wants a New World Chardonnay has nothing to order.",
+  "call:provrose": "Their four rosés are Montirius at $75, St. John Beausoleil at $84, Feudi di San Gregorio Ros'Aura at $70 and Two Sisters Margo at $75. None is from Provence, so a guest asking for Provence rosé has nothing to order.",
+  "call:rioja": "Their Spanish reds are Fedellos do Couto As Xaras at $153, Envínate Lousas at $173 and Envínate La Santa de Úrsula at $196. None is a Rioja, so a guest asking for Rioja has nothing to order.",
+  "call:amarone": "Their Italian reds run from Travignoli Chianti Rùfina at $70 up to Valdicava Brunello Riserva at $820. None is an Amarone, so a guest wanting that dried-grape style can't get it.",
+  "call:icewine": "Their only sweet wine is Château Nairac Esquisse de Nairac at $16 a glass. There is no Icewine, so a guest looking for a Canadian dessert wine has nothing to order.",
+  "dish:dark": "The Chocolate Tart and the Sticky Coffee Pudding are $14 each and serve two. The only sweet wine to go with them is Château Nairac at $16 a glass, and there is no fortified wine.",
+  "ladder:Sparkling:75": "Their sparkling list goes from Serenissima Prosecco at $75 to Tarlant Brut Réserve at $125. A guest who wants real sparkling wine but won't spend $125 has nowhere to land.",
+  "glass:local": "All five Ontario wines on the list are bottle only. Their eleven glasses run from $15 to $23, so a guest can't order a local glass.",
+  "glass:fizz": "The only sparkling wine by the glass is Serenissima Prosecco Millesimato at $16. Every Champagne and the Franciacorta is bottle only, so a guest can't have a glass of either.",
+  "glass:sweet": "Eloise has three desserts and one sweet wine by the glass, Château Nairac at $16. After dinner a guest has no second sweet pour to choose.",
+  "call:cab": "The two New World Cabernets are Crown Point at $460 and Staglin Family at $930. Their Bordeaux Cabernets start at $84, so nothing in between represents the grape from outside France.",
+  "mix:Sicily|White": "Thirty-five of their 76 wines are Italian, from 11 regions. None is a white from Sicily, so the nearest island white is Antonella Corda's Sardinian Vermentino at $98.",
+  "format": "The two large-format bottles on the list are Paul Jaboulet Aîné Hermitage La Chapelle and Fontodi Flaccianello della Pieve, neither with a price printed. A table that wants a big bottle has two choices, both red."
+ },
+ "bottles": {
+  "a-157586": {
+   "against": {
+    "bottle": 70,
+    "glass": 13,
+    "pourCost": 1.76
+   },
+   "say": "Your only sweet pour is Château Nairac at $16 a glass, and you have no Port. This tawny gives the Chocolate Tart and the Sticky Coffee Pudding a second sweet glass.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "A tawny Port from the Douro. The sheet describes very ripe plum, apricot and marmalade, with spice and nutty notes from ageing in oak. It is sweet and full, and 20% alcohol because it is fortified.",
+     "basis": "sheet"
+    },
+    {
+     "h": "Why it sells",
+     "t": "Port is a name guests already know and ask for after dinner. Tawny means it was aged in wood, which is why it tastes of nuts and toffee. The label tells the story of Dona Antónia Ferreira, a woman who led the house in the 19th century.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "Nairac is a lighter, fresher, honeyed Sauternes. This is darker, richer and nuttier. It suits chocolate and coffee flavours, and it can also go with cheese. It is poured in 2oz glasses, so it works as an end-of-meal pour and not a wine for the meal.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $21.10 a bottle, $253.20 for a case of 12. On their list it lands at $70 a bottle and $13 a glass, 3.3 times cost. A 2oz glass would sit under Nairac's $16. A bottle gives 12 pours at $1.76 cost each.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-chocolate-tart": "Dark chocolate and fleur de sel suit a tawny's toffee and nut. The salt lifts the dried fruit, and the crème anglaise matches its sweetness. Nairac is lighter than this.",
+    "d-sticky-coffee-pudding": "The coffee caramel and walnut echo the oak and nut in a tawny. Its dried plum and toffee sit well with the pudding's sticky sweetness and vanilla ice cream."
+   },
+   "objections": [
+    {
+     "q": "\"I already have a sweet wine in Nairac. Why add another?\"",
+     "a": "Fair. But Nairac is the only one, for three desserts. A Sauternes and a Port give a guest a real choice, and Port is the one guests ask for by name."
+    },
+    {
+     "q": "\"Will anyone order a 2oz glass of Port at the end of a meal?\"",
+     "a": "I can't say what your guests order. Nairac already sets the 2oz glass format on your list, so this fits it. The glass price is a call for you."
+    },
+    {
+     "q": "\"Is $13 a glass too low next to Nairac at $16?\"",
+     "a": "It is lower, and it may read as a cheaper wine. You could price it level with Nairac. The list price here is a starting point, not a rule."
+    }
+   ]
+  },
+  "a-224766": {
+   "against": {
+    "bottle": 110,
+    "glass": 21
+   },
+   "say": "Your sparkling list jumps from Serenissima Prosecco at $75 to Tarlant at $125. This Ontario traditional-method wine would sit at $110, and it gives you an Ontario glass.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "A traditional-method sparkling wine from Niagara-on-the-Lake. The grapes are likely Chardonnay and Pinot Noir. We expect green apple, citrus and brioche, with a crisp, dry finish. The sheet gives no tasting note, so this is our estimate.",
+     "basis": "estimate"
+    },
+    {
+     "h": "Why it sells",
+     "t": "Traditional method means the second fermentation happens in the bottle, as in Champagne. That is the term to say at the table. It is an Ontario wine, which gives the floor a local story in one line.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "It is drier and sharper than Serenissima Prosecco and has more bread-like richness. It stays lighter than the Champagnes. It suits the cold, salty and creamy starters: Tuna Carpaccio, Burrata and the Caesar.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $32.95 a bottle, $197.70 for a case of 6. On their list it lands at $110 a bottle and $21 a glass, 3.3 times cost. It sits between Serenissima at $75 and Tarlant at $125. The $21 glass is above the Prosecco's $16. A bottle gives 5 glasses at $6.59 cost each.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-tuna-carpaccio": "The ponzu and caper bring salt and sharp acid, and the wine's crisp bubbles cut through them. It is lighter than Tarlant, which suits raw fish better.",
+    "d-seared-scallop": "The sweet scallop and salty pancetta suit a dry wine with brioche notes. It is far lighter than Bollinger at $215 and costs much less.",
+    "d-mushroom-parfait": "The rich, smooth parfait wants bubbles and acidity to cut it, and the pickled shallot adds more acid. Its bready notes match the sourdough.",
+    "d-burrata-tomato": "Creamy burrata and tomato acid work with a dry, crisp sparkling wine. The chili oil is helped by bubbles. It is a plain dry style, unlike the rosé.",
+    "d-caesar-salad": "Garlic, parmigiano and crouton are salty and rich, and sparkling wine cleans the palate between bites. This is leaner than the Franciacorta."
+   },
+   "objections": [
+    {
+     "q": "\"I have a glass of Prosecco at $16. Why would I add a $21 glass?\"",
+     "a": "They are different wines. Prosecco is soft and fruity, and this is drier with a bread note. It is also the one Ontario glass, which you don't have. Whether guests pay $21 is your call."
+    },
+    {
+     "q": "\"Will a guest pay $110 for Ontario sparkling when Tarlant Champagne is $125?\"",
+     "a": "That is the risk. Tarlant is a Champagne name, and this is not. The case for it is the local story, and a step between $75 and $125 for guests who won't spend that much."
+    },
+    {
+     "q": "\"Is your price of $110 just lifted to fit my gap?\"",
+     "a": "Partly, yes. It lands where the list has an empty space. The fixed point is that it costs $32.95. You can set the price lower if you want it to sell more easily."
+    }
+   ]
+  },
+  "a-81653": {
+   "against": {
+    "bottle": 75,
+    "glass": 15
+   },
+   "say": "Your three Chardonnays are all French or Italian, from $110 to $169, and none is a glass. This one is Ontario, would sit at $75 and $15 a glass, and it is the first local wine you could pour by the glass.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "Château des Charmes Barrel Fermented Chardonnay comes from Niagara-on-the-Lake. It is 12% alcohol with 2 g/L of sugar, so it is dry. Expect baked apple, butter and toasty oak, in a medium-bodied, balanced style. Those flavours are our estimate, as the sheet gives no tasting note.",
+     "basis": "sheet"
+    },
+    {
+     "h": "Why it sells",
+     "t": "A guest who wants a Chardonnay with some oak and roundness has nothing to order today, because every Chardonnay on the list is French or Italian. 'Barrel fermented' on the label tells a server the wine was fermented in oak, which explains the butter and toast in a sentence. It is also an Ontario wine a guest can have in a glass.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "It is richer and rounder than Domaine des Hâtes Chablis, which is the lean, mineral end of Chardonnay. It sits close to Olivier Leflaive Bourgogne Les Sétilles in weight but costs half as much. It suits the brown butter in the Squash Ravioli, the pancetta on the Seared Scallop and the Caesar Salad.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $17.95 a bottle, or $215.40 for a case of 12. At their usual 3.4 times it would land under their cheapest bottle, so it goes on at their entry price of $75, which is 4.2 times cost. That puts it level with Tiefenbrunner Pinot Grigio at $75 and just under Two Sisters Riesling at $79. By the glass it is $15, five pours to the bottle.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-seared-scallop": "Sweet scallop and salty pancetta suit a Chardonnay with butter and light oak. The Les Sétilles at $150 is the nearest on your list, and this is softer and warmer.",
+    "d-squash-ravioli": "Brown butter and sage meet the buttery, toasty side of this Chardonnay. Squash adds sweetness, which a dry, round white handles better than a lean one like the Chablis.",
+    "d-seared-rainbow-trout": "Trout is delicate, but piquillo pepper and kalamata olive add sweetness and salt. A medium-bodied Chardonnay holds up to them. The Pigato at $157 is the nearest, and this costs far less.",
+    "d-eloise-wedge-salad": "Gorgonzola is rich and sharp, and the roasted pepper is sweet. A round, dry white with some body copes with that. The Antonutti Sauvignon Blanc at $80 is leaner and greener.",
+    "d-caesar-salad": "Garlic, parmigiano and crouton are all savoury and creamy. Oak and baked apple answer the croutons and cheese. The Vermentino at $98 is lighter and more saline.",
+    "d-shrimp-linguine": "Lemon, caper and 'nduja call for acid and some weight. This is dry and medium-bodied, so it handles the chili heat gently. It is softer than the Vermentino at $98."
+   },
+   "objections": [
+    {
+     "q": "\"I already have three Chardonnays.\"",
+     "a": "All three are from France or Italy and cost $110 to $169. None is a New World style and none is a glass. This is Ontario, oaked, and well under all of them."
+    },
+    {
+     "q": "\"$75 is the floor of my list. Why would I put a Chardonnay there?\"",
+     "a": "Fair. At their usual multiple it would land under your cheapest bottle, so we lifted it to $75. It sits level with the Tiefenbrunner Pinot Grigio, which is the same entry point."
+    },
+    {
+     "q": "\"Will a guest pay $15 a glass for an Ontario Chardonnay?\"",
+     "a": "It is level with Tiefenbrunner Pinot Grigio at $15 and under Domaine des Hâtes Chablis at $23. We don't know what your guests will pay, but it fits inside your glass range."
+    }
+   ]
+  },
+  "a-353184": {
+   "against": {
+    "bottle": 75,
+    "glass": 14
+   },
+   "say": "You list three Spanish reds, all from Ribeira Sacra or the Canaries, at $153 to $196. A Rioja Reserva would be your first from Spain's best-known red region, and it would land at $75.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "Bodegas Olarra Rioja Classico Riserva is 13.5% alcohol. Rioja is usually Tempranillo, but the sheet does not name the grape or the region in full, so those are our estimates. Expect red cherry, vanilla and leather, medium body, fresh acidity and medium tannin.",
+     "basis": "sheet"
+    },
+    {
+     "h": "Why it sells",
+     "t": "Rioja is a name most guests already know. 'Riserva' is a legal term in Spain: the wine must age for a minimum period in oak and bottle before release. A server can say that in one line, and it explains the vanilla and the softness.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "It is lighter and more savoury than the Bordeaux on your list, and warmer than Dissegna Pinot Nero at $75. The tannin is moderate, so it works with braised beef and roast chicken rather than a big grilled cut. Beef Cheek Pappardelle suits it well.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $21.95 a bottle, or $263.40 a case of 12. At their usual 3.4 times it lands at $75, with a glass at $14. That sits level with Dissegna Pinot Nero at $75 and just under Château Camino Salva Haut-Médoc at $84. Stock is only 22 cases, on consignment.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "Slow-cooked beef cheek and rosemary suit a red with leather and cherry. It has moderate tannin and fresh acidity. The Chianti Rùfina at $70 is brighter and more tart.",
+    "d-charcoal-roasted-chicken": "Charred chicken with oyster mushroom and guajillo wants a red with softness and a little spice. This is lighter and cheaper than the Envínate Lousas at $173, which is more mineral."
+   },
+   "objections": [
+    {
+     "q": "\"I have three Spanish reds already.\"",
+     "a": "None is Rioja, and all cost $153 to $196. This would be your only Spanish red under $100, and the only one most guests would recognize by name."
+    },
+    {
+     "q": "\"Only 22 cases. Can you keep me supplied?\"",
+     "a": "That is a limit. It is on consignment, so stock is what it is. If you want it as a steady by-the-glass pour, ask about supply before you list it."
+    },
+    {
+     "q": "\"It lands right on top of Dissegna Pinot Nero at $75.\"",
+     "a": "It does. The two are different wines though: this is oaked and savoury, while the Pinot Nero is a lighter style. It also sits close to your Chianti Rùfina at $70."
+    }
+   ]
+  },
+  "a-317057": {
+   "against": {
+    "bottle": 165,
+    "glass": 32
+   },
+   "say": "You list 19 Italian reds from $70 to $820 and no Amarone. Masi Costasera would sit at $165, between your Frecciarossa Pinot Nero at $163 and the Envínate Lousas at $173.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "Costasera is an Amarone from Valpolicella in Veneto, made from Corvina, Rondinella and Molinara. The sheet describes cherry and plum jam with cinnamon and cloves, firm structure and velvety tannin. It is 15% alcohol, and by our estimate it finishes dry, though the sheet gives 6.5 g/L of sugar.",
+     "basis": "sheet"
+    },
+    {
+     "h": "At the table",
+     "t": "It is heavier than your Barbaresco or Chianti Classico and carries more alcohol than any Bordeaux you list. Its acidity is marked, so it does not feel sweet beside red meat. It suits grilled and roasted beef, and hard aged cheese such as the parmigiano you already cook with.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $56.50 a bottle, and it would land at $165 on your list, 2.9 times cost. That is about level with the Frecciarossa Giorgio Odero Pinot Nero at $163, just under the Envínate Lousas Viña de Aldea at $173. A glass would be $32, five pours to the bottle.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-10oz-steak-frites": "Peppercorn sauce wants weight and some spice, and the cinnamon and clove in this Amarone meet it. It is fuller and riper than the Château Le Crock Saint-Estèphe you'd reach for.",
+    "d-42oz-cote-de-boeuf": "A shared côte de boeuf with a red wine and mustard jus can carry a 15% wine. Its marked acidity cuts the fat where Le Crock would give you structure and less fruit."
+   },
+   "objections": [
+    {
+     "q": "\"I already have 19 Italian reds. Why add another?\"",
+     "a": "None of them is an Amarone, and none is made from dried grapes. A guest who asks for one has nothing to order today."
+    },
+    {
+     "q": "\"At $165 it's right next to bottles I already like.\"",
+     "a": "It is. The Frecciarossa Pinot Nero at $163 and the Envínate Lousas at $173 sit beside it, but both are lighter. This is the one big, ripe red in that band."
+    },
+    {
+     "q": "\"15% is a lot of alcohol for lunch.\"",
+     "a": "Fair. It is a dinner bottle, aimed at the steak frites and the côte de boeuf, and a $32 glass lets one guest try it without a full bottle."
+    }
+   ]
+  },
+  "a-677046": {
+   "against": {
+    "bottle": 70,
+    "glass": 13
+   },
+   "say": "Your only New World Cabernets are Crown Point and Staglin, from $460, and your Haut-Médoc is $84. Bishop Pine would land at $70, the lowest price on your list for a California Cabernet.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "This is a Cabernet Sauvignon from California, 13% alcohol. The sheet gives no tasting notes. By our estimate it is full-bodied and dry, with blackcurrant, black cherry and mocha, and medium tannin.",
+     "basis": "estimate"
+    },
+    {
+     "h": "Why it sells",
+     "t": "California Cabernet is a style guests ask for by name, and your list offers it only at $460 and up. This gives a server something to say to the guest who wants that style but not that bill. It is a modest label, so the style is the pitch, not the name.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "It is riper and softer than your Bordeaux, including the Château Camino Salva Haut-Médoc at $84. It suits grilled beef and rich sauces more than the lighter dishes on your menu.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $20.21 a bottle, and it would land at $70 on your list, 3.5 times cost. That is level with Piattelli Alto Molino Malbec at $70 and just under Dissegna Pinot Nero at $75. A glass would be $13, five pours to the bottle.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "Braised beef cheek with rosemary and parmigiano wants dark fruit and some tannin. This is simpler and fruitier than the Cordella Brunello at $181, and much cheaper.",
+    "d-10oz-steak-frites": "Peppercorn sauce suits a ripe, dry Cabernet with black fruit and medium tannin. It is lighter than Château Le Crock Saint-Estèphe at $180, at well under half the price.",
+    "d-42oz-cote-de-boeuf": "The red wine and mustard jus works with blackcurrant fruit and mocha. For a shared côte de boeuf it is a plain, approachable bottle where Le Crock is the serious one."
+   },
+   "objections": [
+    {
+     "q": "\"Bishop Pine isn't a name my guests know.\"",
+     "a": "True, and the sheet gives no tasting notes. It sells as a California Cabernet at $70, a style your list only offers from $460."
+    },
+    {
+     "q": "\"I already have Cabernet blends from Bordeaux at $84.\"",
+     "a": "You do, and the Camino Salva is a French style. This one is riper and from California, so it answers a different guest."
+    },
+    {
+     "q": "\"Only 22 cases. Can you keep me supplied?\"",
+     "a": "It is limited stock on consignment. If it runs out, we'd replace it with another of our Cabernets that would land at a similar price."
+    }
+   ]
+  },
+  "a-490896": {
+   "against": {
+    "bottle": 115,
+    "glass": 22
+   },
+   "say": "Your list has four rosés and none of them is from Provence. This one is a Côtes de Provence at $115, so a guest who asks for Provence rosé finally has something to order.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "Domaines Ott By OTT is a pale pink rosé from Côtes de Provence, mostly Grenache with Cinsault, a little Syrah and Mourvèdre. The sheet describes white peach, apricot, passion fruit and mango, then citrus zest and a touch of cinnamon and cardamom. It is light and dry, and the sheet calls the mouth fresh and crunchy. The 2020 vintage is a few years older than most rosé on a list.",
+     "basis": "sheet"
+    },
+    {
+     "h": "Why it sells",
+     "t": "Provence is the rosé region most guests know by name, and the word on the label does the selling. A server can say it is the pale, dry style from the south of France. The sheet says the vineyard sits inland on limestone hills with stony, low-yielding soil, which is a one-line story for the floor.",
+     "basis": "guide"
+    },
+    {
+     "h": "At the table",
+     "t": "It is lighter and more citrus-led than your Côtes du Rhône rosé from Domaine Montirius, which is Grenache and Syrah from the Rhône. It sits close to the St. John Beausoleil in weight. It suits raw fish, shellfish and lemon-led pasta, and the sheet itself names scallops. It would pour well ahead of the seafood on your menu.",
+     "basis": "estimate"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $34.95 a bottle, or $209.70 for a case of 6. On your list it lands at $115 a bottle and $22 a glass, 3.3 times cost, which is well above your other rosés. The nearest one below is St. John Beausoleil at $84. Five glasses come out of a bottle at $6.99 a pour. It is sold through LCBO stores only, so there is no agency warehouse stock.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-tuna-carpaccio": "Raw tuna under ponzu and eggplant miso needs a cool, dry wine with some fruit. This Provence rosé keeps the fish clean, where Ros'Aura at $70 is built on Aglianico and fuller.",
+    "d-shrimp-linguine": "Lemon and caper lift the shrimp, and 'nduja adds a little heat. The citrus zest in this rosé meets the lemon, and the tomato sits easily with its peach and apricot fruit.",
+    "d-roasted-cauliflower": "Pomegranate, chili oil and labneh bring sweetness, spice and tang. A dry rosé with passion fruit and a hint of cardamom holds up to that better than a heavier wine, and it is lighter than St. John at $84.",
+    "d-seared-rainbow-trout": "Trout is delicate, with piquillo pepper, olive and basil around it. This rosé is light enough not to cover the fish, and its crisp fruit answers the salty olive."
+   },
+   "objections": [
+    {
+     "q": "\"I already have four rosés. Why add a fifth?\"",
+     "a": "None of the four is from Provence. If a guest asks for it by name today, there is nothing to point to. This is the only one that answers that."
+    },
+    {
+     "q": "\"It's a 2020. Isn't rosé supposed to be drunk young?\"",
+     "a": "Fair point. Your rosés are 2023 and 2024, so this one is older. Taste it before deciding, and ask whether a newer vintage is coming. Rosé is generally best young, so freshness is the thing to check."
+    }
+   ]
+  },
+  "a-616276": {
+   "against": {
+    "bottle": 160
+   },
+   "say": "Your large-format section has two bottles, and neither is a magnum from the Veneto. Masi Campofiorin in 1.5L would land at $160, level with your Montepulciano d'Abruzzo and just under Châteauneuf-du-Pape.",
+   "story": [
+    {
+     "h": "The wine",
+     "t": "Masi Campofiorin is a full-bodied red from Veneto, mostly Corvina with Rondinella and Molinara. The sheet describes ripe cherry, sweet spice, soft tannins and a long finish. It is made by the double fermentation method, where the finished wine is refermented on semi-dried grapes of the same varieties. That adds richness and body, in the same family as Amarone. It is dry, and the sheet gives 13.5% alcohol and 0.4 g/L of sugar.",
+     "basis": "sheet"
+    },
+    {
+     "h": "Why it sells",
+     "t": "Masi is a name many Ontario guests know, and Campofiorin is often called a baby Amarone. A server can explain the semi-dried grape method in a sentence. A magnum also suits a table of four or more, and it makes a good shared bottle with the côte de boeuf.",
+     "basis": "guide"
+    },
+    {
+     "h": "The price",
+     "t": "They pay $47.00 a bottle, or $282.00 for a case of 6, with 309 cases in the warehouse. At $160 it is 3.4 times cost. It lands level with Masciarelli Marina Cvetic Montepulciano d'Abruzzo at $160, and just under Domaine Roger Perrin Châteauneuf-du-Pape at $163. There is no glass price, as this is a magnum.",
+     "basis": "list"
+    }
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "Braised beef cheek with rosemary and parmigiano suits a red with ripe cherry and soft tannin. This is rounder and less severe than Cordella Brunello at $181, and the sheet names meat sauces.",
+    "d-10oz-steak-frites": "Peppercorn sauce wants fruit and body without hard tannin. Campofiorin brings cherry and sweet spice, and is fuller and softer than the Saint-Estèphe at $180, which is firmer and more structured.",
+    "d-42oz-cote-de-boeuf": "A shared 42oz cut with a red wine and mustard jus suits a big bottle. A magnum serves the table, and its dried-fruit richness stands up to the jus."
+   },
+   "objections": [
+    {
+     "q": "\"I already have a Montepulciano d'Abruzzo at $160. Isn't this the same slot?\"",
+     "a": "Same price, different style. Yours is a single-grape Abruzzo red. This is a Veneto blend with semi-dried grapes, and it comes in a magnum, which nothing at that price on your list does."
+    },
+    {
+     "q": "\"Campofiorin is a well-known supermarket-level red. Will it look cheap at $160?\"",
+     "a": "That is a real risk in a 750ml. In a 1.5L it is a shared bottle, and the price reflects the size. The name helps guests recognise it, but you would be selling the format more than the label."
+    },
+    {
+     "q": "\"I only have two large formats and they are both serious wines. Does a Veneto red fit?\"",
+     "a": "It is a different kind of large format: easy and generous, not a collector bottle. It gives a table a way to share a magnum without spending at the level of your other two."
+    }
+   ]
+  }
+ }
+}

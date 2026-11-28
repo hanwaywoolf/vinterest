@@ -1,0 +1,105 @@
+# Three or four flavour words for each wine in Authentic's Ontario catalogue: cspc | flavours.
+# Where the product sheet has a tasting note these are taken from it; where it has none (the script knows which)
+# they are what the grape and place usually give, and the app marks them as an estimate.
+620880|ripe plum, blackberry jam, cocoa
+162610|plum, blackberry, vanilla oak
+35170|plum, red berries, soft spice
+11933|blackberry, plum, vanilla oak, spice
+296848|green apple, pear, mineral
+38828|baked apple, butter, toasty oak
+81653|baked apple, butter, toasty oak
+224766|green apple, citrus, brioche
+370320|blackcurrant, cedar, green pepper
+38810|blackcurrant, plum, soft oak
+556951|blackcurrant, plum, soft oak
+53225|strawberry, raspberry, cream
+51939|apple, pear, citrus
+57349|red cherry, cranberry, pepper
+454967|red cherry, earth, light spice
+391300|grapefruit, gooseberry, cut grass
+565861|apricot, honey, candied citrus
+413732|apricot, honey, candied citrus
+524371|plum, raspberry, cacao
+321448|citrus, white peach, pineapple
+341602|cherry, raspberry, light smoke
+318014|cherry, sour cherry, strawberry
+566836|apricot, white peach, orange blossom
+64287|apricot, white peach, orange blossom
+365205|raspberry, blueberry, mineral
+553792|plum, blackberry, spice
+230565|grapefruit, lime, orange blossom
+16363|cherry, wild berries, toast
+25005|blackcurrant, plum, vanilla
+257170|ripe plum, vanilla, chocolate
+306472|citrus, green herbs, lime
+10481|white peach, apricot, passion fruit
+490896|white peach, apricot, passion fruit
+74617|grapefruit, yellow peach, redcurrant
+490888|grapefruit, yellow peach, redcurrant
+561290|black cherry, bramble, earth
+589432|pear, white peach, white flowers
+21445|black cherry, garrigue herbs, pepper
+931360|lemon, chalk, brioche
+35705|yellow fruit, roasted nuts, citrus
+35706|red berries, citrus zest, chalk
+981027|citrus, smoky mineral, toasted almond
+93054|ripe pear, citrus, brioche
+268771|ripe pear, citrus, brioche
+440883|ripe pear, citrus, brioche
+268755|candied citrus, pear, toasted hazelnut
+93062|candied citrus, pear, toasted hazelnut
+352716|wild strawberry, citrus zest, chalk
+368415|wild strawberry, raspberry, spice
+20766|wild strawberry, raspberry, spice
+46892|wild red berries, citrus zest, cocoa
+48528|red cherry, plum, sweet spice
+47650|lemon, sea salt, wet stone
+295618|dark cherry, plum, vanilla, leather
+647230|red berries, plum, soft spice
+39679|black cherry, plum, liquorice
+31003|citrus, pineapple, peach
+297655|ripe cherry, sweet spice, dried fruit
+155051|ripe cherry, sweet spice, dried fruit
+616276|ripe cherry, sweet spice, dried fruit
+297663|cherry jam, dried plum, cinnamon, clove
+317057|cherry jam, dried plum, cinnamon, clove
+324137|ripe berry fruit, cocoa, cinnamon
+620773|ripe pear, honey, citrus
+27001|apple, pear, white flowers
+342444|marasca cherry, cocoa, liquorice
+285585|cherry, green pepper, fresh herbs
+349562|golden apple, pear, white spice
+11096|apple, pear, mineral
+349596|citrus, fresh herbs, white peach
+261999|red berries, plum, clove, black pepper
+143379|berries in spirit, dried plum, cocoa
+533026|marasca cherry, plum, forest floor
+27854|marasca cherry, plum, forest floor
+564674|pear, green apple, grapefruit
+276625|sour cherry, plum, violet
+31810|red berries, liquorice, tobacco
+355361|rose petal, juniper, fine spice
+209360|white flowers, green apple, almond
+260984|blackcurrant, dark plum, cedar, graphite
+113778|red cherry, plum, sweet spice
+388645|citrus, white peach, almond
+296202|plum, wild berries, spice
+465989|passion fruit, gooseberry, lime
+699322|red cherry, dried herbs, earth
+470070|gooseberry, white peach, lime
+47477|red cherry, raspberry, thyme
+47476|passion fruit, grapefruit, cut grass
+277707|grapefruit, passion fruit, wet stone
+344621|red fruit, balsamic, stone
+11157|black and red fruit, heather, resin
+43697|citrus, white flowers, stone fruit
+300086|black fruit, pepper, liquorice
+157586|dried plum, apricot, toffee, walnut
+464214|black cherry, leather, tobacco, vanilla
+526772|red berries, strawberry, soft spice
+353184|red cherry, vanilla, leather
+677046|blackcurrant, black cherry, mocha
+722289|ripe apple, pear, vanilla
+419770|cassis, pipe tobacco, black cherry
+175430|lemon, pear, toasty oak
+301507|ripe blackberry, fig, baking spice

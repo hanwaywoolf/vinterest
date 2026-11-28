@@ -1,0 +1,43 @@
+# Emails Vinterest's own people (the NOTIFY_TO variable) through Resend that there is something to look at
+# (scripts/notify.mjs, docs/notify.md). Two ways to send:
+#   - by hand: Actions → Notify → Run workflow, with the words and the link;
+#   - on a push to main whose commit message has [notify] (a pull request's title or description carries it into the
+#     merge commit), or on every push to main while the NOTIFY_ON_MAIN variable is 1.
+name: Notify
+on:
+  workflow_dispatch:
+    inputs:
+      subject:
+        description: Subject line
+        required: true
+      message:
+        description: What to look at, in a sentence or two
+        required: true
+      link:
+        description: Where to look
+        default: https://internal.vinterest.team/
+  push:
+    branches: [main]
+jobs:
+  send:
+    if: github.event_name == 'workflow_dispatch' || vars.NOTIFY_ON_MAIN == '1' || contains(github.event.head_commit.message, '[notify]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Send
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ vars.RESEND_FROM }}
+          NOTIFY_TO: ${{ vars.NOTIFY_TO }}
+          NOTIFY_REPLY_TO: ${{ vars.NOTIFY_REPLY_TO }}
+          NOTIFY_SUBJECT: ${{ inputs.subject }}
+          NOTIFY_MESSAGE: ${{ inputs.message }}
+          NOTIFY_LINK: ${{ inputs.link }}
+          NOTIFY_COMMIT: ${{ github.event.head_commit.message }}
+        run: node scripts/notify.mjs

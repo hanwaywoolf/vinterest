@@ -1,0 +1,182 @@
+{
+ "venue": "Eloise",
+ "agency": "AWSM",
+ "written": "2026-11-27",
+ "by": "Written for the prototype against the engine's figures; Vinny writes this per prospect once the call is built.",
+ "openings": {
+  "call:chard": "Three Chardonnays, all Burgundy or Friuli, and the cheapest is the Chablis at $110. The guest who asks for \"a Chardonnay\" and means round and oaky is handed something lean.",
+  "call:provrose": "Four rosés from the Rhône, the Languedoc, Campania and Niagara, none over $84. The pale Provence style, the one people ask for by region, isn't among them.",
+  "call:rioja": "Spain is three reds from Ribeira Sacra and the Canary Islands, $153 to $196: wines for the curious. The Spanish red most guests can name is missing.",
+  "call:amarone": "Nineteen Italian reds run from a $70 Chianti to an $820 Brunello Riserva, with Barolo and Barbaresco in depth, yet nothing made from dried grapes.",
+  "call:port": "After dinner the list stops at one Sauternes. A guest who wants something with the cheese course or instead of dessert has no port to order.",
+  "call:icewine": "A Toronto restaurant with five Ontario wines and not the one visitors from abroad come asking about.",
+  "dish:dark": "Two of the three desserts are built on chocolate, coffee and caramel. Their own pairing notes fall back on Sauternes and a dry Malbec, and admit neither really works.",
+  "ladder:Sparkling:75": "Bubbles jump from the house Prosecco at $75 to Tarlant at $125. A table celebrating on a budget either trades down or orders still wine.",
+  "glass:local": "Riesling, rosé, Cabernet Franc, Syrah and a Merlot blend from Niagara are all on the list, every one of them bottle only. Twelve wines are poured by the glass and none is from the province.",
+  "glass:fizz": "Four Champagnes and a Franciacorta sit on the list by the bottle. By the glass the only sparkling is Prosecco at $16, so a single guest can't start with a proper one.",
+  "glass:sweet": "Citrus parfait, chocolate tart and sticky coffee pudding each serve two, and all three lean on the same $16 Sauternes. There is no second pour to suggest.",
+  "call:cab": "Cabernet from California is here, at $460 and $930. The steak frites at $58 and the côte de boeuf for the table have no New World Cabernet a normal Tuesday will order.",
+  "mix:Sicily|White": "Italy is nearly half the list and reaches from Alto Adige to Sardinia, with wines from eleven regions. Sicily is the gap on the map.",
+  "format": "Hermitage La Chapelle and Flaccianello are listed in large format, both collector bottles. Nothing in the section suits a table of six that simply wants a magnum."
+ },
+ "bottles": {
+  "a-157586": {
+   "against": {"pourCost": 1.76},
+   "say": "Your desserts are chocolate, coffee and caramel, and the list has no port. A 2oz glass of this tawny beside the chocolate tart is a sale you aren't making today.",
+   "story": [
+    {"h": "The wine", "t": "Ferreira's Dona Antonia is a reserve tawny: port aged in wood until it turns amber and nutty. Dried plum and apricot up front, toffee and walnut on the finish.", "basis": "sheet"},
+    {"h": "Why it sells", "t": "Tawny is the low-risk way to add an after-dinner pour. It has already met air in the barrel, so an open bottle holds for weeks, and a quiet week doesn't mean pouring it away.", "basis": "guide"},
+    {"h": "At the table", "t": "Port is sweeter than either dessert, which is the point: a wine drier than the dish tastes thin and sour next to it. Put it on the dessert menu, not the wine list, with the price beside each dish.", "basis": "estimate"},
+    {"h": "The price", "t": "A bottle is $21.10 and gives twelve 2oz pours, so each costs them $1.76. At the $16 they already charge for Sauternes, one bottle returns $192.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-chocolate-tart": "Walnut and toffee meet the dark chocolate, and the fleur de sel on the tart makes the wine taste sweeter still.",
+    "d-sticky-coffee-pudding": "The pudding is already toffee, coffee caramel and walnut. This is the same set of flavours in a glass, with the ice cream as the contrast."
+   },
+   "objections": [
+    {"q": "\"Nobody orders port.\"", "a": "Nobody is offered it. One line under the chocolate tart, and a server who says \"the tawny with that?\", is all it takes."},
+    {"q": "\"An open bottle will go off before we finish it.\"", "a": "A ruby or vintage port would. A tawny keeps for several weeks once opened, in the fridge door or on the back bar."}
+   ]
+  },
+  "a-224766": {
+   "against": {"bottle": 110, "glass": 21},
+   "say": "Between your $75 Prosecco and your $125 Champagne there is nothing. This is a Niagara sparkling made the Champagne way that lands at about $110, and at $21 it's a glass you can pour.",
+   "story": [
+    {"h": "The wine", "t": "Château des Charmes Brut, estate grown in Niagara-on-the-Lake and fermented a second time in the bottle. Dry and crisp: green apple, citrus, a little brioche. The grapes aren't on the sheet; Chardonnay and Pinot Noir would be usual.", "basis": "estimate"},
+    {"h": "Why it sells", "t": "It answers three gaps with one bottle: a rung in the sparkling prices, an Ontario wine by the glass, and a traditional-method pour for the guest who wants better than Prosecco but not a whole bottle of Champagne.", "basis": "list"},
+    {"h": "At the table", "t": "It belongs with the first half of the menu. High acidity and fine bubbles clear cream, salt and oil off the palate, which is most of what their appetizers are.", "basis": "estimate"},
+    {"h": "The price", "t": "It costs them $32.95. At about $110 that is their usual 3.3 times, $77 a bottle. Poured at $21, a six-bottle case is thirty glasses and about $630 against $197.70.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-tuna-carpaccio": "Lean, raw and dressed in ponzu: it needs acidity more than weight, and the citrus in the wine sits on the same line.",
+    "d-seared-scallop": "The brioche note picks up the sear on the scallop while the bubbles deal with the pancetta fat.",
+    "d-mushroom-parfait": "A rich, earthy spread on sourdough is exactly what toasty sparkling wine was made for.",
+    "d-burrata-tomato": "Cream from the burrata, heat from the chili oil: cold bubbles settle both.",
+    "d-caesar-salad": "Parmigiano and garlic crouton are salt and crunch, and that is when sparkling wine tastes most refreshing."
+   },
+   "objections": [
+    {"q": "\"Guests who want bubbles order Prosecco or Champagne.\"", "a": "Because those are the choices. Their own list jumps $50 between the two, and a table that stalls there needs somewhere to land."},
+    {"q": "\"Sparkling by the glass goes flat.\"", "a": "With a proper stopper it holds two days. The case is six bottles, so they are never sitting on much."},
+    {"q": "\"Our guests don't think of Ontario for sparkling.\"", "a": "That is the story the server gets to tell. Niagara's cool climate is why it works, and it is an hour and a half down the road."}
+   ]
+  },
+  "a-81653": {
+   "against": {"bottle": 75, "glass": 15},
+   "say": "Ask for a Chardonnay here and you're given Chablis at $110. This one is barrel fermented, from Niagara, and can go on at your $75 entry price or $15 a glass.",
+   "story": [
+    {"h": "The wine", "t": "A Chardonnay fermented in oak in Niagara-on-the-Lake: medium weight, baked apple and butter with a toasty edge. It is the round style, and says so on the label.", "basis": "estimate"},
+    {"h": "Why it sells", "t": "Chardonnay is ordered by name more than any other white. Theirs are a Chablis, a Bourgogne and a Friulian, all restrained and all over $100, so the guest who wants a richer glass has nowhere to go.", "basis": "list"},
+    {"h": "At the table", "t": "It has the texture for butter and cream, where their Pinot Grigio and Sauvignon Blanc are too lean. Offer it as the fuller white by the glass, beside the Chablis for those who want it crisp.", "basis": "estimate"},
+    {"h": "The price", "t": "At $17.95 it would usually land near $60, under their cheapest white. Listed at their $75 floor it earns 4.2 times, against the 3.4 they normally take. A case is sixty $15 glasses.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-seared-scallop": "Butter beans and a hard sear want a white with some oak; this stands in for the $150 Bourgogne they suggest there.",
+    "d-squash-ravioli": "Brown butter and crispy sage are the best argument for a barrel-fermented white anywhere on the menu.",
+    "d-seared-rainbow-trout": "Rounder than the Pigato they pair with it, so pour it for the guest who finds that wine too sharp.",
+    "d-eloise-wedge-salad": "Gorgonzola needs weight in the glass, and a lean white turns bitter against blue cheese.",
+    "d-caesar-salad": "Toast in the wine, toast in the crouton, and enough body for the parmigiano.",
+    "d-shrimp-linguine": "The 'nduja brings heat, so serve this well chilled; its ripe fruit softens the spice."
+   },
+   "objections": [
+    {"q": "\"Our guests have moved on from oaky Chardonnay.\"", "a": "Some have, and the list already serves them three times over. Nobody is serving the others."},
+    {"q": "\"It's an $18 wine. Does it belong on our list?\"", "a": "The guest sees $75, the same as the Tiefenbrunner Pinot Grigio. Taste the two side by side before deciding."},
+    {"q": "\"We'd rather not add another glass pour.\"", "a": "It can replace one. Twelve wines are poured, and the Pinot Grigio and the Soave already do much the same job as each other."}
+   ]
+  },
+  "a-353184": {
+   "against": {"bottle": 75},
+   "say": "Your Spanish reds start at $153 and none of them is Rioja. A Reserva at about $75 gives the table that wants Spain a bottle they recognise.",
+   "story": [
+    {"h": "The wine", "t": "Bodegas Olarra's Clásico Reserva. The sheet gives no grapes or tasting note; a Rioja Reserva is mostly Tempranillo and tastes of red cherry, vanilla and leather.", "basis": "estimate"},
+    {"h": "Why it sells", "t": "Reserva is a legal term in Rioja: three years of ageing before release, at least one in oak. The winery has done the cellaring, so it drinks soft and ready the day it arrives.", "basis": "guide"},
+    {"h": "At the table", "t": "Medium weight with gentle tannin, so it goes where their big Bordeaux would be too much: braises, roast chicken, anything with rosemary or smoke.", "basis": "estimate"},
+    {"h": "The price", "t": "They pay $21.95. Their normal 3.4 times makes it roughly $75, level with their cheapest reds and a long way under the Mencías.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "Slow-cooked beef with rosemary is close to what Rioja is eaten with at home; the oak takes the place of a heavier wine.",
+    "d-charcoal-roasted-chicken": "Smoke from the charcoal and vanilla from the barrel, with tannin light enough not to dry out the bird."
+   },
+   "objections": [
+    {"q": "\"We chose our Spanish wines on purpose.\"", "a": "And they're good ones. They are also all from the Atlantic edge and all over $150. Rioja is the entry, not the replacement."},
+    {"q": "\"Only 22 cases?\"", "a": "It's a consignment wine. Agree a standing order before they print it on the list."}
+   ]
+  },
+  "a-317057": {
+   "against": {"bottle": 165},
+   "say": "You have the great dry Italian reds and no Amarone. Costasera would sit at about $165, between your Barbaresco and your Brunello, for the table sharing the côte de boeuf.",
+   "story": [
+    {"h": "The wine", "t": "Masi's Costasera: Corvina, Rondinella and Molinara, the grapes dried for months before they are pressed. Cherry jam, dried plum, cinnamon and clove, with real weight.", "basis": "sheet"},
+    {"h": "Why it sells", "t": "Amarone is a name people save for an occasion, and Masi is the producer most of them have heard of. It needs no explaining at the table, only offering.", "basis": "guide"},
+    {"h": "At the table", "t": "This is a bottle for red meat and for sharing. Its richness matches the fat of a big cut, and the dried-fruit sweetness of flavour stands up to pepper and mustard.", "basis": "estimate"},
+    {"h": "The price", "t": "They pay $56.50. Around $165 is 2.9 times, in line with what they put on bottles at this level, and $109 a bottle. The warehouse has 787 cases, so supply is not a question.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-10oz-steak-frites": "Peppercorn sauce flattens delicate reds. This has the concentration to carry it.",
+    "d-42oz-cote-de-boeuf": "A $185 rib for the table deserves a bottle with the same sense of occasion, and the mustard jus wants a wine this ripe."
+   },
+   "objections": [
+    {"q": "\"It's too heavy for most of our menu.\"", "a": "Agreed, and that is fine. It only has to sell with two dishes, and they are the two most expensive mains."},
+    {"q": "\"We already have Barolo and Brunello at that money.\"", "a": "Those are firm and savoury. Amarone is for the guest who says they find Barolo too dry."}
+   ]
+  },
+  "a-677046": {
+   "against": {"bottle": 70},
+   "say": "The only California Cabernet on your list costs $460. Bishop Pine would be about $70, which makes it the one a guest ordering the steak frites can say yes to.",
+   "story": [
+    {"h": "The wine", "t": "A California Cabernet Sauvignon from ASV Wines. The sheet carries no notes; expect the ripe, full style, blackcurrant and black cherry with a mocha edge from oak.", "basis": "estimate"},
+    {"h": "Why it sells", "t": "A guest who asks for Cabernet at a grill usually pictures California: riper fruit and softer tannin than Bordeaux. Here that request currently ends at a trophy bottle or a different wine.", "basis": "list"},
+    {"h": "At the table", "t": "Full enough for beef, and softer than the Haut-Médoc they pour by the glass, so it suits the guest who wants a big red without the grip.", "basis": "estimate"},
+    {"h": "The price", "t": "$20.21 a bottle. Marked up 3.5 times it comes out near $70, the bottom rung of their reds, which is where an easy steak wine should be.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "Their picks run up to a $181 Brunello. Some tables want a red with the pasta and won't go that far.",
+    "d-10oz-steak-frites": "The plainest match on the menu, and the one a server can suggest without being asked.",
+    "d-42oz-cote-de-boeuf": "For a second bottle once the Pauillac is finished, when the table wants more of the same idea for less."
+   },
+   "objections": [
+    {"q": "\"We cover that with Bordeaux.\"", "a": "Same grape, different drink. The Haut-Médoc is drier and firmer; the guest asking for Napa-style fruit notices."},
+    {"q": "\"We've never heard of it.\"", "a": "Fair. Leave a bottle to taste, because there are no notes on the sheet to lean on."}
+   ]
+  },
+  "a-490896": {
+   "against": {"bottle": 115, "glass": 22},
+   "say": "None of your four rosés is from Provence, and two are 2023s on their way out. By Ott comes from the estate that defined the style and would list at about $115.",
+   "story": [
+    {"h": "The wine", "t": "By Ott is the Côtes de Provence from Domaines Ott: Grenache and Cinsault with a little Syrah and Mourvèdre. Very pale, dry, white peach and apricot.", "basis": "sheet"},
+    {"h": "Why it sells", "t": "Guests who drink rosé seriously look for Provence first and often know Ott by its bottle. It gives the section a top, where today everything sits between $70 and $84.", "basis": "list"},
+    {"h": "At the table", "t": "Rosé this dry behaves like a white with a little more fruit, so it covers the dishes with heat or salt that their lighter whites struggle with.", "basis": "estimate"},
+    {"h": "The price", "t": "$34.95 to them, about $115 on the list, or $22 a glass if they wanted a premium rosé pour. It comes in sixes at $209.70.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-tuna-carpaccio": "Raw fish with ponzu and capers: a pale rosé has the salt-friendly fruit that a Sauvignon Blanc lacks.",
+    "d-shrimp-linguine": "Tomato, lemon and 'nduja is a southern French plate in all but name.",
+    "d-roasted-cauliflower": "Pomegranate and labneh echo the wine's red fruit and freshness, and it stays cool against the chili oil.",
+    "d-seared-rainbow-trout": "Olive and basil with a pink-fleshed fish is as Provençal as the menu gets."
+   },
+   "objections": [
+    {"q": "\"That's a 2020.\"", "a": "It is what the catalogue shows, and it's too old for a rosé. Confirm the vintage actually shipping before this goes anywhere near the meeting."},
+    {"q": "\"$115 is a lot for rosé.\"", "a": "It is $31 above their dearest. Pitch it as the one prestige rosé, not as a swap for the house pour."},
+    {"q": "\"Can we get it reliably?\"", "a": "Today it is in LCBO stores only, with nothing in the agency warehouse. Don't promise a delivery date."}
+   ]
+  },
+  "a-616276": {
+   "against": {"bottle": 160},
+   "say": "Your large formats are both collector bottles. A magnum of Campofiorin at about $160 is the one a table of six orders on impulse.",
+   "story": [
+    {"h": "The wine", "t": "Campofiorin is Masi's Corvina blend, refermented with a share of semi-dried grapes: the technique the house is known for. Ripe cherry, sweet spice, soft tannin.", "basis": "sheet"},
+    {"h": "Why it sells", "t": "A magnum is theatre. It arrives at the table as an event, pours ten glasses, and costs the guest less than two bottles of most reds on this list.", "basis": "guide"},
+    {"h": "At the table", "t": "Generous and smooth, with none of the edge of their Nebbiolos, so a mixed table can share it across beef, pasta and whatever else is ordered.", "basis": "estimate"},
+    {"h": "The price", "t": "$47 a magnum to them and about $160 listed, the equivalent of an $80 bottle. There are 309 cases of six in the warehouse.", "basis": "estimate"}
+   ],
+   "dishes": {
+    "d-beef-cheek-pappardelle": "A crowd-pleasing red for a table ordering pasta to share.",
+    "d-10oz-steak-frites": "When four people order the steak, one magnum is simpler than two different bottles.",
+    "d-42oz-cote-de-boeuf": "The sharing cut and the sharing bottle: sell them as a pair."
+   },
+   "objections": [
+    {"q": "\"Magnums don't move.\"", "a": "Not at Hermitage prices. This would be the only large format a group orders without checking with each other first."},
+    {"q": "\"Where would we keep them?\"", "a": "A case is six. Suggest starting with one and listing it as a feature for groups."}
+   ]
+  }
+ }
+}
