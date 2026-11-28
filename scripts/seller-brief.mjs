@@ -1,7 +1,7 @@
 // Vinny writes a prospect's visit brief (SellerVinny.write, prompts/seller-brief.txt): the same call the Brief page's
 // "Have Vinny write it" makes, run on the built app against the deployed Worker, with what it used and what it cost.
 // One call (billed); VINTEREST_API_ORIGIN picks the Worker (default production).
-// Usage: npm run seller:brief -- eloise   [--out file.json] [--prompt]   (--prompt prints the prompt and makes no call)
+// Usage: npm run seller:brief -- eloise   [--out file.json] [--prompt] [--draft]   (--draft: the Worker's cheaper draft model, Sonnet 5.5 unless SELLER_DRAFT_MODEL says otherwise)   (--prompt prints the prompt and makes no call)
 import fs from 'node:fs';
 import { spawn, execSync } from 'node:child_process';
 import { chromium } from 'playwright';
@@ -23,7 +23,7 @@ try {
   await page.route('**/claude', async (route) => {
     try {
       const res = await new Promise((ok, no) => { const c = spawn('curl', ['-sS', '-m', '540', '-X', 'POST', `${API}/claude`, '-H', 'Content-Type: application/json', '-H', `Origin: ${API}`, '--data-binary', '@-', '-w', '\n%{http_code}']);
-        let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', (code) => code ? no(new Error('curl ' + code)) : ok(o)); c.stdin.end(route.request().postData()); });
+        let o = ''; c.stdout.on('data', (d) => { o += d; }); c.on('close', (code) => code ? no(new Error('curl ' + code)) : ok(o)); c.stdin.end(args.includes('--draft') ? JSON.stringify({ ...JSON.parse(route.request().postData()), draft: true }) : route.request().postData()); });
       const i = res.lastIndexOf('\n'), status = Number(res.slice(i + 1)) || 502;
       if (status !== 200) console.log(`  /claude answered ${status}: ${res.slice(0, Math.min(i, 300))}`);
       await route.fulfill({ status, headers: { 'content-type': 'application/json' }, body: res.slice(0, i) });

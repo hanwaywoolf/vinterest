@@ -142,6 +142,7 @@ function cacheSplit(messages) {
 const TEAM_DRAFT_DEFAULT = "claude-sonnet-5-5";
 function modelFor(purpose, env, draft) {
   if (draft && /^team_/.test(purpose)) return env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
+  if (draft && /^seller_/.test(purpose)) return env.SELLER_DRAFT_MODEL || env.TEAM_DRAFT_MODEL || TEAM_DRAFT_DEFAULT;
   if (env.TEAM_MODEL && /^team_/.test(purpose)) return env.TEAM_MODEL;
   // Seller writes on its own model when SELLER_MODEL is set, else on the team's.
   if (/^seller_/.test(purpose) && (env.SELLER_MODEL || env.TEAM_MODEL)) return env.SELLER_MODEL || env.TEAM_MODEL;
