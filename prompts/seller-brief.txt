@@ -21,14 +21,20 @@ The menu (dish | section | description | price):
 What their list leaves open, and what we have for each (key | kind | the opening | the engine's own line | the facts):
 {{openings}}
 
-The shortlist: the bottles to pitch, best fit first. Each block gives the bottle, what the agency's product sheet says, where it would land on their list and the dishes it suits (with the wine they pour there today).
+[[cache-above]]
+
+In this call, write only what is asked for here.
+
+Openings to write: {{ask_openings}}
+
+Bottles to write. Each block gives the bottle, what the agency's product sheet says, where it would land on their list and the dishes it suits (with the wine they pour there today).
 {{bottles}}
 
 Return ONLY valid JSON, no markdown, no code fences. Never put a double quotation mark inside a string: when you quote what someone says, or a word on a label, use single quotes.
 {"openings":{"<key>":"..."},"bottles":{"<bottle id>":{"say":"...","story":[{"h":"The wine","t":"...","basis":"sheet"},{"h":"Why it sells","t":"...","basis":"guide"},{"h":"At the table","t":"...","basis":"estimate"},{"h":"The price","t":"...","basis":"list"}],"dishes":{"<dish id>":"..."},"objections":[{"q":"...","a":"..."}]}}}
 
-- "openings": one entry for EVERY key above. Two sentences at most, 45 words at most: what their list has there today, in their own wines and prices, and what a guest therefore can't order. It describes the gap, never our wine.
-- "bottles": one entry for EVERY bottle id above.
+- "openings": when asked for, one entry for EVERY key in the openings table above; otherwise an empty object. Two sentences at most, 45 words at most: what their list has there today, in their own wines and prices, and what a guest therefore can't order. It describes the gap, never our wine.
+- "bottles": one entry for EVERY bottle block in this call, and no other.
   - "say": the one thing to say to the buyer about this bottle. Two sentences at most, 40 words at most. It starts from their list, not from the wine.
   - "story": exactly these four parts, in this order, each two or three sentences:
     "The wine": what it is and what it tastes like, from the sheet where the sheet says, otherwise from what such a wine is, said to be so.

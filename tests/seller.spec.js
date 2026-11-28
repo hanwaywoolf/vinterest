@@ -192,3 +192,43 @@ test('What to bring lists the bottles to taste, marked by fit, and the fit filte
   // A bottle can be ticked off as packed, and opens its wine card.
   await rows.first().getByTestId('seller-bring-pack').click(); await expect(rows.first().getByTestId('seller-bring-pack')).toHaveAttribute('aria-checked', 'true');
 });
+
+test('Vinny writes the brief: a few calls, checked before it is shown, beside the hand-written one', async ({ page }) => {
+  await open(page, { width: 1440, height: 900 });
+  // Eloise has both: the hand-written brief shows first, and Vinny's saved one is a pill away, whole.
+  await expect(page.getByTestId('seller-writer-who')).toContainText('by hand');
+  const hand = await page.evaluate(() => SellerMatch.brief().shortlist.map((f) => f.pitch.say));
+  await page.getByTestId('seller-writer-vinny').click();
+  await expect(page.getByTestId('seller-writer-who')).toContainText('Vinny');
+  const saved = await page.evaluate(() => SellerMatch.brief().shortlist.map((f) => ({ say: f.pitch.say, written: f.pitch.written, story: f.pitch.story.length, dishes: f.pitch.pairings.every((p) => p.why) })));
+  expect(saved.every((b) => b.written && b.story === 4 && b.dishes)).toBe(true);
+  expect(saved.map((b) => b.say)).not.toEqual(hand);
+  // Writing it again: the model is stubbed to answer each call with its own bottles, one of them carrying a price
+  // the facts never gave, one a sentence lifted from another bottle, and figures of its own for `against`.
+  const r = await page.evaluate(async () => {
+    // Every other word a number, so no two fixture lines share a run of six words unless the test means them to.
+    let calls = 0; const prompts = [], w = (words, n) => words.split(' ').map((x) => `${x} ${n}`).join(' ') + '.';
+    window.claude = { complete: async ({ purpose, messages }) => { calls++; const text = messages[0].content; prompts.push(text);
+      const ids = [...text.split('[[cache-above]]').pop().matchAll(/^BOTTLE (a-\d+):/gm)].map((m) => m[1]), out = { openings: {}, bottles: {} };
+      if (/Openings to write: yes/.test(text)) SellerVinny.ctx().opens.forEach((o, n) => { out.openings[o.k] = w('opening on their list said plainly', 9000 + n); });
+      ids.forEach((id) => { const f = SellerMatch.shortlist().find((x) => x.item.id === id), n = id.slice(2);
+        out.bottles[id] = { against: { bottle: 1 }, say: id === 'a-353184' ? 'This one lands at $4321 on your list.' : w('answers a gap only this code names', n),
+          story: [{ h: 'The wine', t: id === 'a-317057' ? 'Shared words that every single bottle would say again.' : id === 'a-677046' ? 'Shared words that every single bottle would say again.' : w('story told once for this wine alone', n), basis: 'sheet' }],
+          dishes: Object.fromEntries(f.suits.map((s) => [s.dish.id, w('reason given for this dish only', n + s.dish.id.length)]).concat([['d-not-a-dish', 'Never kept.']])),
+          objections: [{ q: `Why ${n}?`, a: w('because it is what you asked for', n) }] }; });
+      return JSON.stringify(out); } };
+    const res = await SellerVinny.write(), d = res.doc;
+    return { calls, cached: prompts.every((p) => p.split('[[cache-above]]')[0] === prompts[0].split('[[cache-above]]')[0]), report: res.report, rioja: !!d.bottles['a-353184'],
+      against: d.bottles['a-157586'].against.bottle === SellerMatch.shortlist().find((f) => f.item.id === 'a-157586').landing.bottle,
+      stories: [d.bottles['a-317057'], d.bottles['a-677046']].map((b) => b.story.length), stray: Object.values(d.bottles).some((b) => 'd-not-a-dish' in b.dishes), quoted: d.bottles['a-157586'].objections[0].q, stored: Object.keys(localStorage).filter((k) => /seller/i.test(k)) }; });
+  expect(r.calls).toBe(4); expect(r.cached).toBe(true); // two bottles a call, the same cached head on each
+  expect(r.rioja).toBe(false); expect(r.report.missing).toEqual(['a-353184']); // a made-up price leaves the bottle unwritten
+  expect(r.against).toBe(true); // the figures are the engine's, never the answer's
+  expect(r.stories.sort()).toEqual([0, 1]); // the second use of a sentence is left out
+  expect(r.stray).toBe(false); expect(r.quoted).toBe('"Why 157586?"'); expect(r.stored).toEqual([]);
+  // The page now shows Vinny's, and says what the checks left out. The unwritten bottle shows its figures alone.
+  await page.getByTestId('seller-writer-vinny').click();
+  await page.getByTestId('seller-tab-shortlist').click();
+  await expect(page.getByTestId('seller-shortlist')).toContainText('answers 157586 a 157586 gap');
+  expect(await page.evaluate(() => SellerMatch.brief().shortlist.find((f) => f.item.id === 'a-353184').pitch.written)).toBe(false);
+});
