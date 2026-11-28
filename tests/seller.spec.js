@@ -232,3 +232,18 @@ test('Vinny writes the brief: a few calls, checked before it is shown, beside th
   await expect(page.getByTestId('seller-shortlist')).toContainText('answers 157586 a 157586 gap');
   expect(await page.evaluate(() => SellerMatch.brief().shortlist.find((f) => f.item.id === 'a-353184').pitch.written)).toBe(false);
 });
+
+test('the brief is written from the list, cocktail list and menu alone: no sales, and a line that claims them is dropped', async ({ page }) => {
+  await open(page, { width: 1440, height: 900 });
+  const r = await page.evaluate(() => { const c = SellerVinny.ctx(), prompt = SellerVinny.prompt(c), id = c.short[0].item.id;
+    const j = { openings: {}, bottles: { [id]: { say: 'One plain thing to say about this bottle here.', story: [
+      { h: 'Why it sells', t: 'You sold 60 glasses of the Sauternes, so the demand is plain.', basis: 'list' },
+      { h: 'At the table', t: 'The Chablis is sold by the bottle and by the glass at your entry point.', basis: 'list' }], dishes: {}, objections: [] } } };
+    const out = SellerVinny.clean(j, c, prompt);
+    return { sold: /\bsold (lately|in the last)|\d+ glasses, \d+ bottles/i.test(prompt), cocktails: /The cocktail list/.test(prompt) && prompt.includes(TeamData.cocktails()[0].name), kept: out.doc.bottles[id].story.map((p) => p.h), why: out.report.dropped.map((d) => d.why).join('|') }; });
+  expect(r.sold).toBe(false); expect(r.cocktails).toBe(true);
+  expect(r.kept).toEqual(['At the table']); expect(r.why).toContain('sell or pour');
+  // Neither saved brief says what Eloise sells.
+  const texts = await page.evaluate(() => ['vinny', 'draft'].flatMap((k) => { const b = SellerMatch.briefs()[k]; return [...Object.values(b.openings), ...Object.values(b.bottles).flatMap((x) => [x.say, ...x.story.map((p) => p.t), ...Object.values(x.dishes), ...x.objections.map((o) => o.q + ' ' + o.a)])]; }).filter((t) => SellerVinny.SALES.test(t)));
+  expect(texts).toEqual([]);
+});

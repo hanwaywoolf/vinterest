@@ -36,16 +36,22 @@ const SellerVinny={
       m.sweet?`Poured by the 2oz glass: ${m.pours} pours a bottle at ${M2(m.pourCost)} cost each.`:m.pourCost&&L.glass?`By the glass: ${SellerMatch.POURS} pours a bottle, ${M2(m.pourCost)} cost a pour.`:null,
       `Answers: ${f.fills.filter(o=>o.kind!=='house').map(o=>o.title).join('; ')||'no single opening'}`,
       `Fit ${f.score}. For it: ${f.reasons.filter(r=>r.pts>0).map(r=>r.text).join('; ')}.${f.reasons.some(r=>r.pts<0)?` Against it: ${f.reasons.filter(r=>r.pts<0).map(r=>r.text).join('; ')}.`:''}`,
-      f.suits.length?'Dishes it suits (dish id | dish | description | the wine they pour there today):':'Dishes it suits: none found',
+      f.suits.length?'Dishes it suits (dish id | dish | description | the nearest wine on their list for it, by our pairing):':'Dishes it suits: none found',
       ...f.suits.map(s=>`  ${s.dish.id} | ${s.dish.name} | ${s.dish.desc||''} | ${s.like?`${TeamData.short(s.like)}${s.like.bottle?' at '+s.like.bottle:''}`:'none'}`)];
     return lines.filter(Boolean).join('\n'); },
+  /* Their list as printed and nothing else. A rep has the wine list, the cocktail list and the menu: never what sells
+     (Teams' demo restaurants carry invented sales, and TeamBuyer's own list lines include them), and never what is
+     poured with which dish, which is our pairing. */
+  _list(){ return TeamBuyer.wines().map(w=>`${w.id} | ${TeamData.label(w)} | ${w.type} | ${(w.grapes||[]).join(', ')||'?'} | ${[w.region,w.country].filter(Boolean).join(', ')} | ${[w.glass&&'glass '+w.glass,w.bottle&&'bottle '+w.bottle].filter(Boolean).join(', ')||'no price printed'}`).join('\n'); },
+  /* A line that claims to know what they sell or pour: nothing the rep was given says so. */
+  SALES:/\b(sell-?through|best-?sell\w*|top-?sell\w*|sales (figures|data|numbers))\b|\b(sold|sells?|mov(?:e|es|ed)|pour(?:s|ed)?) (about |around |some |only )?\d+ (glasses|bottles|cases|covers)\b|\b\d+ (glasses|bottles|covers) (of (it|this|that|the \w+) )?(sold|lately|a week|a month|a night|last (week|month))\b|\b(pour(?:s|ed)?|suggest(?:s|ed)?) (it |this |that )?(here|there) (now|today)\b|\b(does|covers) (this|that) (job|plate|dish) (now|today)\b/i,
   ctx(){ const opens=SellerMatch.answered({plain:true}).filter(o=>o.wines.length), short=SellerMatch.shortlist(); return {opens,short}; },
   /* The prompt for one call: everything about the restaurant and its openings above the cache mark (the same for
      every call of a brief, so the Worker's prompt cache serves it to the later ones), then this call's own bottles. */
   PER_CALL:2,
   prompt(c=this.ctx(),part=null){ const v=SellerMatch.venue(), a=SellerCatalogue.agency()||{}, p=part||{openings:true,bottles:c.short};
     return _loadTextSync('prompts/seller-brief.txt').replace(/\{\{venue\}\}/g,v.name||'the restaurant').replace('{{agency}}',a.name||'the agency').replace('{{market}}',this.market()).replace('{{about}}',TeamData.about())
-      .replace('{{list}}',TeamBuyer._lines()).replace('{{menu}}',TeamData._menuFull()).replace('{{openings}}',c.opens.map(o=>this._opening(o)).join('\n'))
+      .replace('{{list}}',this._list()).replace('{{cocktails}}',TeamData.cocktails&&TeamData.cocktails().length?TeamData._drinkLines():'(none uploaded)').replace('{{menu}}',TeamData._menuFull()).replace('{{openings}}',c.opens.map(o=>this._opening(o)).join('\n'))
       .replace('{{ask_openings}}',p.openings?'yes, every key in the table above':'none in this call').replace('{{bottles}}',p.bottles.map(f=>this._bottle(f)).join('\n\n')||'(none in this call)'); },
   /* The calls of one brief: the openings with the first bottles, then the rest a few at a time. */
   parts(c=this.ctx()){ const out=[]; for(let i=0;i<c.short.length;i+=this.PER_CALL) out.push({openings:i===0,bottles:c.short.slice(i,i+this.PER_CALL)}); return out.length?out:[{openings:true,bottles:[]}]; },
@@ -60,9 +66,10 @@ const SellerVinny={
     // A run of six words is a repeat only when it's phrasing: not when it holds a figure ("they pay # a bottle") or
     // is mostly a name (a wine's, a dish's or its ingredients'), which a brief has to say more than once.
     const names=new Set(), nw=t=>String(t||'').toLowerCase().replace(/[^a-zà-ÿ' ]+/g,' ').split(/\s+/).filter(w=>w.length>=4).forEach(w=>names.add(w));
-    TeamBuyer.wines().forEach(w=>nw(TeamData.label(w))); TeamData.dishes().forEach(x=>{ nw(x.name); nw(x.desc); }); c.short.forEach(f=>nw(SellerCatalogue.label(f.item)));
+    TeamBuyer.wines().forEach(w=>nw(TeamData.label(w))); TeamData.dishes().forEach(x=>{ nw(x.name); nw(x.desc); }); c.short.forEach(f=>{ const i=f.item; nw(SellerCatalogue.label(i)); nw([i.region,i.sub,i.appellation,i.country].filter(Boolean).join(' ')); });
     const ok=(text,max,where,figures)=>{ const t=s(text); if(!t) return null;
       if(this._words(t)>max*1.5){ dropped.push({where,why:'too long'}); return null; }
+      if(this.SALES.test(t)){ dropped.push({where,why:'says what they sell or pour, which nobody told us'}); return null; }
       const bad=this._amounts(t).find(n=>!known.has(n)); if(bad!=null){ dropped.push({where,why:`an amount the facts never gave (${bad})`}); return null; }
       const sh=this._shingles(t).filter(k=>!k.includes('#')&&k.split(' ').filter(w=>names.has(w)).length<2), rep=figures?null:sh.find(k=>seen.has(k)); if(rep){ dropped.push({where,why:`repeats "${rep}"`}); return null; }
       sh.forEach(k=>seen.add(k)); return t; };
