@@ -63,7 +63,7 @@ const SellerVinny={
       const L=f.landing, m=SellerMatch.maths(f), against={bottle:L.bottle}; if(L.glass!=null) against.glass=L.glass; if(m.sweet&&m.pourCost!=null) against.pourCost=Math.round(m.pourCost*100)/100;
       const story=(Array.isArray(b.story)?b.story:[]).slice(0,4).map((p,k)=>{ const t=p&&ok(p.t,W.story,`${id} story ${k+1}`); return t&&s(p.h)?{h:s(p.h),t,basis:this.BASIS.includes(p.basis)?p.basis:'estimate'}:null; }).filter(Boolean);
       const dishes={}; f.suits.forEach(x=>{ const t=ok((b.dishes||{})[x.dish.id],W.dish,`${id} ${x.dish.id}`); if(t) dishes[x.dish.id]=t; });
-      const objections=(Array.isArray(b.objections)?b.objections:[]).slice(0,3).map((o,k)=>{ const q=o&&s(o.q); if(!q||this._words(q)>W.q*1.5) return null; const a=ok(o.a,W.a,`${id} objection ${k+1}`); return a?{q,a}:null; }).filter(Boolean);
+      const objections=(Array.isArray(b.objections)?b.objections:[]).slice(0,3).map((o,k)=>{ let q=o&&s(o.q).replace(/^["'“‘]+|["'”’]+$/g,''); if(!q||this._words(q)>W.q*1.5) return null; q=`"${q}"`; const a=ok(o.a,W.a,`${id} objection ${k+1}`); return a?{q,a}:null; }).filter(Boolean);
       out.bottles[id]={against,say,story,dishes,objections}; });
     const jo=(j&&j.openings)||{}; c.opens.forEach(o=>{ const t=ok(jo[o.k],W.opening,`opening ${o.k}`); if(t) out.openings[o.k]=t; });
     const missing=c.short.filter(f=>!out.bottles[f.item.id]).map(f=>f.item.id), dishesAsked=c.short.reduce((a,f)=>a+f.suits.length,0), dishesGot=Object.values(out.bottles).reduce((a,b)=>a+Object.keys(b.dishes).length,0);
@@ -73,7 +73,7 @@ const SellerVinny={
   write(){ if(this._busy) return this._busy;
     const run=async()=>{ const c=this.ctx(), prompt=this.prompt(c); let usage=null; const hear=e=>{ if(e.detail&&e.detail.purpose===this.PURPOSE) usage={model:e.detail.model,usage:e.detail.usage,ms:e.detail.ms}; };
       window.addEventListener('vinterest:claude-usage',hear);
-      try{ const j=TeamData._json(await window.claude.complete({purpose:this.PURPOSE,messages:[{role:'user',content:prompt}]}));
+      try{ let j=null; const text=await window.claude.complete({purpose:this.PURPOSE,messages:[{role:'user',content:prompt}]}); try{ j=TeamData._json(text); }catch(e){ this.lastRaw=text; this.lastUsage=usage; }
         if(!j||typeof j!=='object'||!j.bottles) throw new Error('Vinny couldn\'t write the brief just now. Try again in a minute.');
         const r=this.clean(j,c,prompt); if(!r.report.bottles) throw new Error('Vinny\'s brief didn\'t pass its checks. Try again in a minute.');
         this.last={...r,usage,chars:prompt.length}; this.set(r.doc); return this.last; }

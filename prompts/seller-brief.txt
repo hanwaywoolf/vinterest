@@ -24,7 +24,7 @@ What their list leaves open, and what we have for each (key | kind | the opening
 The shortlist: the bottles to pitch, best fit first. Each block gives the bottle, what the agency's product sheet says, where it would land on their list and the dishes it suits (with the wine they pour there today).
 {{bottles}}
 
-Return ONLY valid JSON, no markdown, no code fences:
+Return ONLY valid JSON, no markdown, no code fences. Never put a double quotation mark inside a string: when you quote what someone says, or a word on a label, use single quotes.
 {"openings":{"<key>":"..."},"bottles":{"<bottle id>":{"say":"...","story":[{"h":"The wine","t":"...","basis":"sheet"},{"h":"Why it sells","t":"...","basis":"guide"},{"h":"At the table","t":"...","basis":"estimate"},{"h":"The price","t":"...","basis":"list"}],"dishes":{"<dish id>":"..."},"objections":[{"q":"...","a":"..."}]}}}
 
 - "openings": one entry for EVERY key above. Two sentences at most, 45 words at most: what their list has there today, in their own wines and prices, and what a guest therefore can't order. It describes the gap, never our wine.
@@ -37,4 +37,4 @@ Return ONLY valid JSON, no markdown, no code fences:
     "The price": what they pay, the multiple, where that lands among their own bottles (the ones named just below and above it), and the glass price if one is given.
     "basis" says what the paragraph mostly rests on: "sheet" (the agency's product sheet), "list" (their list and menu), "guide" (general wine knowledge) or "estimate" (our style estimates).
   - "dishes": one line for EVERY dish id listed under that bottle, 30 words at most: why this wine with this dish, from what is in the dish and how the wine tastes. Where a wine they pour there today is given, you may say how this one differs. Each line must be about that dish and no other.
-  - "objections": the two or three things THIS buyer is most likely to say back about THIS bottle, as they would say them (in quotation marks), each with a short honest answer. Take them from the facts: what counts against it (a similar bottle already on the list, a crowded price, little stock, an old vintage, an unknown name, a price lifted to their entry point), never a stock objection that fits any wine. If the honest answer is a concession, concede.
+  - "objections": the two or three things THIS buyer is most likely to say back about THIS bottle, in their own words as they would say them, each with a short honest answer. Take them from the facts: what counts against it (a similar bottle already on the list, a crowded price, little stock, an old vintage, an unknown name, a price lifted to their entry point), never a stock objection that fits any wine. If the honest answer is a concession, concede.

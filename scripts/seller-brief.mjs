@@ -34,7 +34,7 @@ try {
   if (only) { console.log(await page.evaluate(() => SellerVinny.prompt())); }
   else {
     const t0 = Date.now(), r = await page.evaluate(async () => { try { const x = await SellerVinny.write(); return { ...x, name: SellerMatch.venue().name }; } catch (e) { return { error: e.message }; } });
-    if (r.error) { console.error(r.error); process.exitCode = 1; }
+    if (r.error) { console.error(r.error); const u = await page.evaluate(() => SellerVinny.lastUsage); if (u) console.error(`  the call was still made: ${u.model}, ${JSON.stringify(u.usage)}`); process.exitCode = 1; }
     else {
       const R = r.report, u = (r.usage && r.usage.usage) || {}, model = r.usage && r.usage.model, p = priceOf(model);
       console.log(`${r.name}: ${R.bottles} of ${R.asked} bottles written, ${R.openings} of ${R.openingsAsked} openings, ${R.dishes} of ${R.dishesAsked} dish lines; ${R.dropped.length} left out by the checks`);
