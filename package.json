@@ -37,6 +37,7 @@
     "team:buyer": "node scripts/team-buyer.mjs",
     "team:cost": "node scripts/team-cost.mjs",
     "team:intake": "node scripts/team-intake.mjs",
+    "seller:brief": "node scripts/seller-brief.mjs",
     "seller:catalogue": "node scripts/seller-catalogue.mjs"
   },
   "keywords": [

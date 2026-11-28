@@ -68,7 +68,8 @@ const items = rows.map((x) => {
     upc: x.upc || null, abv: v.volume || null, sugar: v.sugar ?? null, acidity: v.acidity ?? null, ph: v.ph ?? null, temp: v.temperature ?? null, ageing: clean(v.aging_potential_en || ''), certs: Object.values(x.certification_slugs || {}),
     notes: { taste: clean(v.tasting_notes_en || v.tasting_notes_short_en), food: clean(v.food_notes_en || v.food_notes_short_en), made: clean(v.winemaking_notes_en || v.winemaking_notes_short_en), vines: clean(v.viticultural_notes_en || v.viticultural_notes_short_en) },
     house: clean((x.brand_details || {}).web_text_short_en || '').slice(0, 700), img: pic(x.image_bottle_path), houseLogo: pic((x.brand_details || {}).image),
-    lcbo: x.store_link || null,
+    // The agency's own links use lcbo.com's old '#q=' form, which now opens an empty search. The product number in '?q=' finds the bottle.
+    lcbo: x.store_link ? `https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(String(x.cspc || '').trim())}` : null,
   };
 });
 const missing = items.filter((i) => i.kind === 'wine' && (!i.style || !i.flavours.length)).map((i) => i.cspc);

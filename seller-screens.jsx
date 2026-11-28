@@ -77,6 +77,18 @@ function _SPitch({f,open}){ const T=useTheme(), acc=_sAcc(), P=f.pitch, M=n=>Tea
   </div>; }
 
 /* ---- the brief ---- */
+/* Who wrote the brief's words, and Vinny writing them now: one call (SellerVinny.write), a minute or two. Both stay
+   to compare where a restaurant has a hand-written brief too. Nothing here says what a call costs. */
+function SellerWriter(){ const T=useTheme(), acc=_sAcc(), [state,setState]=React.useState({busy:false,err:null,note:null}), b=SellerMatch.briefs(), who=SellerMatch.writer(), cap={..._sCaps,fontSize:'10px',color:T.mid};
+  const write=()=>{ setState({busy:true,err:null,note:null}); SellerVinny.write().then(r=>{ SellerMatch.pick('vinny'); const d=r.report.dropped.length; setState({busy:false,err:null,note:`Written: ${r.report.bottles} of ${r.report.asked} bottles, ${r.report.openings} openings, ${r.report.dishes} dish lines${d?`. ${d} line${d===1?'':'s'} left out by the checks`:''}.`}); }).catch(e=>setState({busy:false,err:(e&&e.message)||"Vinny couldn't write the brief just now.",note:null})); };
+  return <div data-testid="seller-writer" style={{display:'flex',gap:'10px 14px',flexWrap:'wrap',alignItems:'center',padding:'12px 16px',border:`1px solid ${_sLine}`,marginBottom:16}}>
+    <span data-cap style={cap}>The words</span>
+    <span data-testid="seller-writer-who" style={{fontSize:14,fontFamily:C.P,color:T.ink2}}>{who==='vinny'?`Written by Vinny${b.vinny&&b.vinny.written?' on '+b.vinny.written:''}`:who==='hand'?'Written by hand for the prototype':'Not written yet: figures only'}</span>
+    {b.hand&&b.vinny&&<div style={{display:'flex',gap:8}}><_SPill on={who==='hand'} onClick={()=>SellerMatch.pick('hand')} testid="seller-writer-hand">By hand</_SPill><_SPill on={who==='vinny'} onClick={()=>SellerMatch.pick('vinny')} testid="seller-writer-vinny">Vinny</_SPill></div>}
+    <span style={{flex:1}}/>
+    {state.busy?<span data-testid="seller-writer-busy" style={{fontSize:14,fontFamily:C.P,color:acc}}>Vinny is writing the brief… a minute or two</span>:<TeamBtn primary onClick={write} testid="seller-writer-go">{b.vinny?'Have Vinny write it again':'Have Vinny write it'}</TeamBtn>}
+    {(state.err||state.note)&&<div data-testid={state.err?'seller-writer-error':'seller-writer-note'} style={{flexBasis:'100%',fontSize:14,fontFamily:C.P,color:state.err?'#F2B84B':T.mid}}>{state.err||state.note}</div>}
+  </div>; }
 function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2Width(), two=w>=900, [kind,setKind]=React.useState('all');
   const can=B.openings.filter(o=>o.wines.length), shut=B.openings.filter(o=>!o.wines.length), lead=B.shortlist.filter(f=>f.score>=SellerMatch.LEAD);
   const kinds=Object.keys(_S_KIND).filter(k=>can.some(o=>o.kind===k)), shown=can.filter(o=>kind==='all'||o.kind===kind), cap={..._sCaps,fontSize:'10px',color:T.mid};
@@ -88,6 +100,7 @@ function SellerBrief({B,go,open}){ const T=useTheme(), acc=_sAcc(), [ref,w]=_c2W
       </div>
       {two&&<div data-testid="seller-prospect" style={{flexShrink:0,paddingTop:6}}><_SLogo height={30}/></div>}
     </div>
+    <SellerWriter/>
     <div style={{display:'grid',gridTemplateColumns:`repeat(${two?4:2},minmax(0,1fr))`,gap:0,marginBottom:16}}>
       <_STile testid="seller-kpi-open" label="Openings" value={`${can.length} of ${B.openings.length}`} note="found on their list and menu that we can answer"/>
       <_STile label="Bottles that fit" value={B.fits} note={`of ${B.catalogue} listings; ${B.ruled} can't go on this list`}/>

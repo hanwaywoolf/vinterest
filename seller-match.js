@@ -240,7 +240,7 @@ const SellerMatch = {
       house[h]=(house[h]||0)+1; open[first.k]=(open[first.k]||0)+1; picked.push({...f,primary:first}); });
     return picked; },
   /* Each opening with the catalogue wines that fill it, best first: what the visit can answer, and what it can't. */
-  answered(){ const all=this.all().filter(f=>!f.out), M=n=>TeamData.money(Math.round(n)), list=this.list();
+  answered(opt){ const all=this.all().filter(f=>!f.out), M=n=>TeamData.money(Math.round(n)), list=this.list();
     return this.openings().map(o=>{ const wines=all.filter(f=>f.fills.some(x=>x.k===o.k)), top=wines[0], facts=[];
       if(top){ const st=top.shape.style, sweet=['sweet','fortified'].includes(top.shape.kind);
         // What a guest is handed today instead: the wine on their list nearest the one we'd bring.
@@ -249,8 +249,8 @@ const SellerMatch = {
         if(o.kind==='glass'){ const pours=list.filter(TeamData.byGlass).filter(w=>o.sweet?['sweet','fortified'].includes(this.shape(w).kind):o.k==='glass:fizz'?this.shape(w).kind==='sparkling':true); facts.push({label:o.k==='glass:local'?'Poured today':'Poured today',text:pours.slice(0,6).map(w=>`${TeamData.nick(w)} ${w.glass}`).join(', ')+(pours.length>6?` and ${pours.length-6} more`:'')}); }
         const ps=wines.filter(f=>!['sweet','fortified'].includes(f.shape.kind)).map(f=>f.landing.bottle); facts.push({label:'We have',text:`${wines.length} ${wines.length===1?'bottle':'bottles'}${ps.length?`, landing ${ps.length>1&&Math.min(...ps)!==Math.max(...ps)?`${M(Math.min(...ps))} to ${M(Math.max(...ps))}`:`at about ${M(ps[0])}`} on their list`:', poured by the 2oz glass'}`});
         if(top.suits.length) facts.push({label:'Pours with',text:top.suits.slice(0,5).map(s=>s.dish.name).join(', ')+(top.suits.length>5?` and ${top.suits.length-5} more`:'')}); }
-      const said=(this.written()||{openings:{}}).openings[o.k];
-      return {...o,fact:said||o.fact,wines,facts}; }).filter(o=>o.wines.length||o.kind!=='mix').sort((a,b)=>(b.wines.length?1:0)-(a.wines.length?1:0)||b.pts-a.pts); },
+      const said=opt&&opt.plain?null:((this.written()||{}).openings||{})[o.k];
+      return {...o,engineFact:o.fact,fact:said||o.fact,wines,facts}; }).filter(o=>o.wines.length||o.kind!=='mix').sort((a,b)=>(b.wines.length?1:0)-(a.wines.length?1:0)||b.pts-a.pts); },
 
   /* ---- how to talk about a wine ---- */
   WORDS:{body:['light','light','medium-bodied','full-bodied','very full'],acid:['soft','soft','balanced','fresh','crisp'],tannin:['no tannin','silky','soft tannin','medium tannin','firm tannin','grippy tannin']},
@@ -304,7 +304,13 @@ const SellerMatch = {
      for every dish it suits and what the buyer will say back. This module supplies only facts and figures. A written
      bottle carries the figures it was written `against`; if matching now lands it somewhere else, its words are
      held back rather than shown beside different numbers. A bottle nobody has written about shows its facts alone. */
-  written(){ const w=_loadJSON('data/seller-brief-eloise.json'); return w&&w.venue===this.venue().name?w:null; },
+  /* Who wrote the words: by hand (the file, for Eloise) or Vinny (seller-vinny.js: written this visit, or a brief
+     the script saved). `pick` chooses when both exist; otherwise whichever there is. */
+  _pick:null,
+  briefs(){ const v=this.venue().name, hand=_loadJSON('data/seller-brief-eloise.json'), held=typeof SellerVinny!=='undefined'?SellerVinny.held():null; return {hand:hand&&hand.venue===v?hand:null,vinny:held||null}; },
+  pick(k){ this._pick=k||null; try{ window.dispatchEvent(new CustomEvent('vinterest:seller-brief')); }catch(e){} },
+  writer(){ const b=this.briefs(); return this._pick&&b[this._pick]?this._pick:b.hand?'hand':b.vinny?'vinny':null; },
+  written(){ const k=this.writer(); return k?this.briefs()[k]:null; },
   writtenFor(f){ const w=this.written(), b=w&&w.bottles[f.item.id]; if(!b) return null; const a=b.against||{}, L=f.landing, m=this.maths(f);
     if(a.bottle!=null&&a.bottle!==L.bottle) return null; if(a.glass!=null&&a.glass!==L.glass) return null; if(a.pourCost!=null&&Math.abs(a.pourCost-(m.pourCost||0))>0.005) return null; return b; },
   POURS:5,

@@ -5,7 +5,10 @@
    nothing here touches a device's Teams data. A bottle tapped anywhere opens its wine card over the page. */
 const SELLER_TABS=[{k:'brief',label:'Brief'},{k:'shortlist',label:'Shortlist'},{k:'bring',label:'What to bring'},{k:'catalogue',label:'Catalogue'},{k:'sheet',label:'Cheat sheet'}];
 function SellerApp(){ const T=_S_FLAT, acc=TeamBrand.GOLD, [tab,setTab]=React.useState('brief'), [focus,setFocus]=React.useState(null), [card,setCard]=React.useState(null), scrollRef=React.useRef(null), [badLogo,setBadLogo]=React.useState(false);
-  const B=React.useMemo(()=>SellerMatch.brief(),[]);
+  // The brief is drawn again when its words change hands (Vinny wrote it, or the other writer was picked).
+  const [words,setWords]=React.useState(0);
+  React.useEffect(()=>{ const h=()=>setWords(n=>n+1); window.addEventListener('vinterest:seller-brief',h); return ()=>window.removeEventListener('vinterest:seller-brief',h); },[]);
+  const B=React.useMemo(()=>SellerMatch.brief(),[words]);
   const phone=useLayoutSize()==='phone';
   const venue=<div data-testid="seller-venue" style={{fontFamily:C.P,minWidth:0}}>
     <div style={{fontSize:'11px',letterSpacing:'0.16em',textTransform:'uppercase',fontWeight:500,color:acc}}>Visit brief</div>
@@ -35,6 +38,9 @@ function SellerApp(){ const T=_S_FLAT, acc=TeamBrand.GOLD, [tab,setTab]=React.us
       {card&&<ScreenErrorBoundary><SellerWineCard id={card} close={()=>setCard(null)} open={setCard}/></ScreenErrorBoundary>}
     </div>
   </DeckTheme.Provider>; }
-TeamSample.load('eloise');
+// The prospect: Eloise unless the address names another Teams restaurant (?venue=social). One without a buyer review
+// (shop prices, `npm run team:buyer -- <seed>`) is matched on thinner evidence.
+const SELLER_SEED=(()=>{ try{ const q=new URLSearchParams(location.search).get('venue'), k=q&&(TeamSample.ALIAS[q]||q); return k&&TeamSample.SEEDS[k]&&k!=='sample'?k:'eloise'; }catch(e){ return 'eloise'; } })();
+TeamSample.load(SELLER_SEED);
 TeamBrand.apply(true);
 ReactDOM.createRoot(document.getElementById('root')).render(<SellerApp/>);
