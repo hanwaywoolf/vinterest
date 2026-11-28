@@ -307,7 +307,8 @@ const SellerMatch = {
   /* Who wrote the words: by hand (the file, for Eloise) or Vinny (seller-vinny.js: written this visit, or a brief
      the script saved). `pick` chooses when both exist; otherwise whichever there is. */
   _pick:null,
-  briefs(){ const v=this.venue().name, hand=_loadJSON('data/seller-brief-eloise.json'), held=typeof SellerVinny!=='undefined'?SellerVinny.held():null, saved=_loadJSON('data/seller-brief-eloise-vinny.json'); return {hand:hand&&hand.venue===v?hand:null,vinny:held||(saved&&saved.venue===v?saved:null)}; },
+  briefs(){ const v=this.venue().name, hand=_loadJSON('data/seller-brief-eloise.json'), held=typeof SellerVinny!=='undefined'?SellerVinny.held():null, saved=_loadJSON('data/seller-brief-eloise-vinny.json'); const quick=_loadJSON('data/seller-brief-eloise-draft.json'); return {hand:hand&&hand.venue===v?hand:null,vinny:held||(saved&&saved.venue===v?saved:null),draft:quick&&quick.venue===v?quick:null}; },
+  /* `draft` is the same brief written by the Worker's cheaper draft model (npm run seller:brief -- eloise --draft), kept beside the others to compare. */
   pick(k){ this._pick=k||null; try{ window.dispatchEvent(new CustomEvent('vinterest:seller-brief')); }catch(e){} },
   writer(){ const b=this.briefs(); return this._pick&&b[this._pick]?this._pick:b.hand?'hand':b.vinny?'vinny':null; },
   written(){ const k=this.writer(); return k?this.briefs()[k]:null; },
