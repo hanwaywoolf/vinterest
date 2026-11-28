@@ -173,3 +173,22 @@ test('the shortlist says one thing per bottle, prices the bottle and the glass, 
   await expect(page.getByTestId('seller-tab-shortlist')).toContainText(`(${r.says.length})`);
   await first.getByTestId('seller-bottle-name').click(); await expect(page.getByTestId('seller-card')).toBeVisible();
 });
+
+test('What to bring lists the bottles to taste, marked by fit, and the fit filter shrinks or grows it', async ({ page }) => {
+  await open(page, { width: 1440, height: 900 });
+  await page.getByTestId('seller-tab-bring').click();
+  const rows = page.getByTestId('seller-bring-row'), scores = () => rows.evaluateAll((els) => els.map((e) => +e.dataset.score));
+  const base = await scores();
+  expect(base.length).toBeGreaterThan(3); expect(base.every((s) => s >= 55)).toBe(true);
+  expect(base.every((s, i) => !i || base[i - 1] >= s)).toBe(true); // best fit first
+  await page.getByTestId('seller-bring-70').click();
+  const fewer = await scores(); expect(fewer.length).toBeLessThan(base.length); expect(fewer.every((s) => s >= 70)).toBe(true);
+  await page.getByTestId('seller-bring-0').click();
+  const more = await scores(); expect(more.length).toBeGreaterThan(base.length);
+  await expect(page.getByTestId('seller-bring-count')).toContainText(String(more.length));
+  // One bottle of each wine: no wine is carried twice in two sizes.
+  const names = await page.evaluate(() => SellerMatch.bring(0).rows.map((r) => r.item.producer + '|' + r.item.name));
+  expect(new Set(names).size).toBe(names.length);
+  // A bottle can be ticked off as packed, and opens its wine card.
+  await rows.first().getByTestId('seller-bring-pack').click(); await expect(rows.first().getByTestId('seller-bring-pack')).toHaveAttribute('aria-checked', 'true');
+});

@@ -332,6 +332,18 @@ const SellerMatch = {
     const next=o=>all.filter(f=>!f.out&&f.house&&f.house.id===o.wine.id);
     return {venue:v,agency:SellerCatalogue.agency(),ours:ours.map(o=>({...o,bottle:this._m(o.wine.bottle),x:this._m(o.wine.bottle)/o.item.price,next:next(o)})),openings:opens,answered:opens.filter(o=>o.wines.length).length,shortlist:short.map(f=>({...f,pitch:this.pitch(f)})),fits:fit.length,ruled:all.filter(f=>f.out).length,catalogue:all.length,
       multiple:{low:this.multipleAt(20).x,high:this.multipleAt(100).x,points:this._points().length,exact:this._points().filter(p=>p.exact).length},glassRatio:this.glassRatio(),backBar:this.backBar(),cocktailWines:this.cocktailWines()}; },
+  /* ---- what to bring ---- */
+  /* The bottles to carry into the meeting for tasting: every wine with a place on their list whose fit is at least
+     `min`, best first, one bottle per wine (a magnum or half is tasted from its 750ml where the catalogue has one).
+     Each says what it is there to answer, whether it needs chilling, and whether the agency has it to hand. */
+  BRING_STEPS:[70,60,50,40,0], BRING_DEFAULT:55,
+  CHILL:{sparkling:'Chill well',white:'Chill',rosé:'Chill',sweet:'Chill',fortified:'Cool',red:'No chilling'},
+  bring(min=this.BRING_DEFAULT){ const short=new Set(this.shortlist().map(f=>f.item.id)), seen=new Set(), rows=[];
+    this.all().filter(f=>!f.out&&f.fills.some(o=>o.kind!=='house')).forEach(f=>{ const i=f.item, key=this._norm(i.producer+' '+i.name); if(seen.has(key)) return; seen.add(key);
+      const sample=i.ml===750?i:(this.siblings(i).find(x=>x.ml===750)||i), sup=SellerCatalogue.supply(sample);
+      rows.push({f,item:i,sample,score:f.score,word:f.word,shortlisted:short.has(i.id),answers:f.fills.filter(o=>o.kind!=='house').map(o=>o.title),chill:this.CHILL[f.shape.kind]||'No chilling',cold:!['red'].includes(f.shape.kind),temp:sample.temp||null,supply:sup,toHand:sup.k==='now'}); });
+    const list=rows.filter(r=>r.score>=min);
+    return {min,rows:list,all:rows,counts:Object.fromEntries(this.BRING_STEPS.map(t=>[t,rows.filter(r=>r.score>=t).length])),cold:list.filter(r=>r.cold).length,cost:list.reduce((a,r)=>a+r.sample.price,0),missing:list.filter(r=>!r.toHand)}; },
   /* One bottle with its fit and pitch, for the wine card. */
   card(id){ const f=this.all().find(x=>x.item.id===id); if(!f) return null; const short=this.shortlist().find(x=>x.item.id===id); return f.out?{...f,pitch:null}:{...f,primary:short?short.primary:undefined,pitch:this.pitch(short||f)}; },
 };

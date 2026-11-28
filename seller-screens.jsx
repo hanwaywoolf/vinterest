@@ -298,4 +298,40 @@ function SellerSheet({B}){ const T=useTheme(), acc=_sAcc(), ref=React.useRef(nul
       <div style={{fontSize:'9px',color:mid,marginTop:12,lineHeight:1.5}}>Fit is the reasons added up, not a forecast: green is the strongest fit, red the weakest. List prices and style are estimates; costs, pack sizes and stock are from the {B.agency.short} catalogue of {B.agency.fetched}.</div>
     </div></div>
   </div>; }
-Object.assign(window,{SellerLogo,SellerBrief,SellerShortlist,SellerCatalogueTab,SellerSheet,SellerWineCard,_S_FLAT,_sFit});
+/* ---- what to bring: the bottles to taste in the meeting ---- */
+function SellerBring({B,open}){ const T=useTheme(), acc=_sAcc(), [min,setMin]=React.useState(SellerMatch.BRING_DEFAULT), [packed,setPacked]=React.useState({}), K=SellerMatch.bring(min), [ref,w]=_c2Width(), wide=w>=760;
+  const done=K.rows.filter(r=>packed[r.item.id]).length, cap={..._sCaps,fontSize:'10px',color:T.mid};
+  return <div ref={ref} data-testid="seller-bring">
+    <div style={{marginBottom:18}}><div style={{fontSize:30,lineHeight:1.15,fontWeight:300,fontFamily:C.P}}><span data-testid="seller-bring-count" style={{fontWeight:500,color:acc}}>{K.rows.length} bottle{K.rows.length===1?'':'s'}</span> to taste at {B.venue.name}.</div>
+      <div style={{fontSize:15,fontWeight:300,fontFamily:C.P,color:T.ink2,marginTop:8,lineHeight:1.5}}>One bottle of each wine, best fit first. Raise the fit to carry less, lower it to carry more.</div></div>
+    <div style={{display:'flex',gap:'10px 14px',flexWrap:'wrap',alignItems:'center',marginBottom:14}}>
+      <span data-cap style={cap}>Fit of at least</span>
+      <div data-testid="seller-bring-filters" style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        {[...new Set([...SellerMatch.BRING_STEPS,SellerMatch.BRING_DEFAULT])].sort((a,b)=>b-a).map(t=><_SPill key={t} on={min===t} onClick={()=>setMin(t)} testid={'seller-bring-'+t}>{t?`${t}+`:'Any fit'} · {t===SellerMatch.BRING_DEFAULT?SellerMatch.bring(t).rows.length:K.counts[t]}</_SPill>)}
+      </div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:`repeat(${wide?4:2},minmax(0,1fr))`,gap:0,marginBottom:16}}>
+      <_STile label="To carry" value={K.rows.length} note={`${done} packed`}/>
+      <_STile label="To chill" value={K.cold} note="sparkling, white, rosé and sweet, before you leave"/>
+      <_STile label="Sample cost" value={SellerCatalogue.money(K.cost,2)} note="one bottle of each at list price"/>
+      <_STile label="Not to hand" value={K.missing.length} note={K.missing.length?'not in the agency warehouse: source these first':'everything is in the warehouse'} col={K.missing.length?'#F2B84B':undefined}/>
+    </div>
+    <div style={{border:`1px solid ${_sLine}`}}>
+      {K.rows.map((r,k)=>{ const i=r.item, on=!!packed[i.id]; return <div key={i.id} data-testid="seller-bring-row" data-id={i.id} data-score={r.score} style={{display:'flex',gap:14,alignItems:'center',padding:'12px 16px',borderTop:k?`1px solid ${_sLine}`:'none',..._sRule(T,i.type),opacity:on?0.55:1}}>
+        <div role="checkbox" tabIndex={0} aria-checked={on} aria-label={`${SellerCatalogue.short(i)} packed`} data-testid="seller-bring-pack" onClick={()=>setPacked(p=>({...p,[i.id]:!on}))} onKeyDown={e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); setPacked(p=>({...p,[i.id]:!on})); } }} style={{width:22,height:22,flexShrink:0,border:`1px solid ${on?acc:'rgba(255,255,255,0.35)'}`,background:on?acc:'transparent',color:inkOn(acc),display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'14px',fontWeight:700,fontFamily:C.P}}>{on?'✓':''}</div>
+        <_SScore f={r.f} small/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:'flex',gap:10,alignItems:'baseline',flexWrap:'wrap'}}><span role="button" onClick={()=>open(i.id)} style={{fontSize:16,fontWeight:500,fontFamily:C.P,cursor:'pointer'}}>{SellerCatalogue.label(i)}</span>{r.shortlisted&&<_STag text="Shortlist" tone={acc}/>}</div>
+          <div style={{fontSize:14,fontFamily:C.P,color:T.ink2,marginTop:3,lineHeight:1.45}}>{r.answers.join(' · ')}</div>
+          {r.sample.id!==i.id&&<div style={{fontSize:13,fontFamily:C.P,color:T.mid,marginTop:2}}>Pitched in {SellerCatalogue.format(i)}; taste it from the 750ml.</div>}
+        </div>
+        <div style={{textAlign:'right',flexShrink:0}}>
+          <div style={{fontSize:14,fontFamily:C.P,color:r.cold?'#9CC9F5':T.ink2}}>{r.chill}{r.temp?` · ${r.temp}°C`:''}</div>
+          <div style={{fontSize:13,fontFamily:C.P,color:r.toHand?T.mid:'#F2B84B',marginTop:2}}>{r.toHand?`${r.supply.n} cs in the warehouse`:r.supply.line}</div>
+        </div>
+      </div>; })}
+      {!K.rows.length&&<div style={{padding:'18px 16px',fontSize:14,fontFamily:C.P,color:T.mid}}>No bottle fits that well. Lower the fit.</div>}
+    </div>
+    <div style={{fontSize:13,fontFamily:C.P,color:T.mid,lineHeight:1.5,marginTop:12}}>Fit is the reasons added up, not a forecast. Serving temperatures are from the product sheet where it gives one.</div>
+  </div>; }
+Object.assign(window,{SellerBring,SellerLogo,SellerBrief,SellerShortlist,SellerCatalogueTab,SellerSheet,SellerWineCard,_S_FLAT,_sFit});

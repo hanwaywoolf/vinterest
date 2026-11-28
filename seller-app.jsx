@@ -3,7 +3,7 @@
    Spirits' Ontario catalogue (data/seller-awsm.json), whose logo sits top right (seller/brand/awsm.svg), with Seller's own (SellerLogo) top left. Booted
    instead of team-app.jsx (SELLER_ALL in scripts/app-sources.mjs); seller-store.js keeps everything in memory, so
    nothing here touches a device's Teams data. A bottle tapped anywhere opens its wine card over the page. */
-const SELLER_TABS=[{k:'brief',label:'Brief'},{k:'shortlist',label:'Shortlist'},{k:'catalogue',label:'Catalogue'},{k:'sheet',label:'Cheat sheet'}];
+const SELLER_TABS=[{k:'brief',label:'Brief'},{k:'shortlist',label:'Shortlist'},{k:'bring',label:'What to bring'},{k:'catalogue',label:'Catalogue'},{k:'sheet',label:'Cheat sheet'}];
 function SellerApp(){ const T=_S_FLAT, acc=TeamBrand.GOLD, [tab,setTab]=React.useState('brief'), [focus,setFocus]=React.useState(null), [card,setCard]=React.useState(null), scrollRef=React.useRef(null), [badLogo,setBadLogo]=React.useState(false);
   const B=React.useMemo(()=>SellerMatch.brief(),[]);
   const phone=useLayoutSize()==='phone';
@@ -30,7 +30,7 @@ function SellerApp(){ const T=_S_FLAT, acc=TeamBrand.GOLD, [tab,setTab]=React.us
         <div role="tablist" style={{display:'flex',gap:4,marginTop:14,overflowX:'auto'}}>{SELLER_TABS.map(t=><div key={t.k} role="tab" aria-selected={tab===t.k} data-testid={'seller-tab-'+t.k} onClick={()=>go(t.k)} style={{padding:'9px 14px 11px',fontSize:'12px',letterSpacing:'0.12em',textTransform:'uppercase',fontWeight:500,fontFamily:C.P,color:tab===t.k?T.ink:T.mid,borderBottom:`2px solid ${tab===t.k?acc:'transparent'}`,cursor:'pointer',whiteSpace:'nowrap'}}>{t.label}{t.k==='shortlist'&&<span data-testid="seller-tab-count"> ({B.shortlist.length})</span>}</div>)}</div>
       </div>
       <div ref={scrollRef} data-scroll style={{flex:1,minHeight:0,overflowY:'auto',padding:'26px 24px calc(env(safe-area-inset-bottom) + 40px)'}}><div style={{maxWidth:1180,margin:'0 auto'}}><ScreenErrorBoundary>
-        {tab==='brief'?<SellerBrief B={B} go={go} open={setCard}/>:tab==='shortlist'?<SellerShortlist key={focus||'all'} B={B} focus={focus} open={setCard}/>:tab==='catalogue'?<SellerCatalogueTab B={B} open={setCard}/>:<SellerSheet B={B}/>}
+        {tab==='brief'?<SellerBrief B={B} go={go} open={setCard}/>:tab==='shortlist'?<SellerShortlist key={focus||'all'} B={B} focus={focus} open={setCard}/>:tab==='bring'?<SellerBring B={B} open={setCard}/>:tab==='catalogue'?<SellerCatalogueTab B={B} open={setCard}/>:<SellerSheet B={B}/>}
       </ScreenErrorBoundary></div></div>
       {card&&<ScreenErrorBoundary><SellerWineCard id={card} close={()=>setCard(null)} open={setCard}/></ScreenErrorBoundary>}
     </div>

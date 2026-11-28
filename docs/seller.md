@@ -84,3 +84,7 @@ Vinny's written brief (positioning and selling tips in prose), the two-way pract
 buyer, quizzes and objection drills, volume discounts and terms, accounts and per-seat billing, an inventory
 feed, sales history with an existing customer, who supplies each wine on a prospect's list, and ingesting a
 new prospect from its PDFs (Teams' `npm run team:intake` already does the reading).
+
+## What to bring
+
+What to bring (`SellerMatch.bring(min)`, `SellerBring`) is the bottles to carry in for tasting: every wine with a place on their list at or above a fit (`BRING_DEFAULT` 55, pills over `BRING_STEPS`), best first, one bottle per wine (a magnum or half is tasted from its 750ml), each with its fit score, what it answers, whether to chill it (`CHILL`), whether the warehouse has it, and a tick for packed (kept for the visit only), over tiles for how many to carry and chill, the samples' list cost and what isn't to hand.
